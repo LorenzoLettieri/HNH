@@ -1,5 +1,8 @@
 import * as THREE from 'three';
-import { consumeMouseDelta, initInput, isKeyDown, isPointerLocked } from './input';
+import { initInput } from './input';
+import { buildCommand, updateLook, view } from './controls';
+import { TICK_DT, EYE_HEIGHT } from './sim/config';
+import { copyPlayer, createPlayer, stepPlayer } from './sim/player';
 
 // --- Renderer -------------------------------------------------------------
 const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -18,7 +21,6 @@ scene.fog = new THREE.Fog(SKY_COLOR, 5, 30); // starts at 5m, fully opaque at 30
 
 // --- Camera ---------------------------------------------------------------
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 1.7, 5); // eye height ~1.7m, 5m back from the origin
 
 // --- Lights ---------------------------------------------------------------
 // Hemisphere light: soft ambient light, one color from above (sky) and one from below (ground).
@@ -53,17 +55,9 @@ for (const [x, z] of [[-6, -4], [5, -8], [8, 3], [-4, 7]]) {
   scene.add(extra);
 }
 
-// --- First-person camera --------------------------------------------------
-// The view is described by two angles instead of a free 3D rotation:
-//   yaw   = turning left/right (around the vertical Y axis)
-//   pitch = looking up/down    (around the camera's own X axis)
-// Rotation order 'YXZ' applies yaw first, then pitch: this keeps the horizon level.
-const MOUSE_SENSITIVITY = 0.002; // radians per pixel of mouse movement
-const MOVE_SPEED = 6; // meters per second (temporary, no physics yet)
-const MAX_PITCH = Math.PI / 2 - 0.01; // just under 90°, so you can't flip over
-
-let yaw = 0;
-let pitch = 0;
+// --- Player & camera ------------------------------------------------------
+// Rotation order 'YXZ': yaw (turn left/right) first, then pitch (look up/down).
+// This keeps the horizon level.
 camera.rotation.order = 'YXZ';
 
 const overlay = document.getElementById('overlay')!;
@@ -71,45 +65,11 @@ initInput(renderer.domElement, (locked) => {
   overlay.style.display = locked ? 'none' : 'flex';
 });
 
-function updateCamera(dt: number): void {
-  if (!isPointerLocked()) return;
-
-  // Look: mouse right -> turn right (yaw decreases), mouse down -> look down.
-  const { dx, dy } = consumeMouseDelta();
-  yaw -= dx * MOUSE_SENSITIVITY;
-  pitch -= dy * MOUSE_SENSITIVITY;
-  pitch = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, pitch));
-  camera.rotation.set(pitch, yaw, 0);
-
-  // Move: build a direction from the keys, relative to where we're facing.
-  let forward = 0;
-  let strafe = 0;
-  if (isKeyDown('KeyW')) forward += 1;
-  if (isKeyDown('KeyS')) forward -= 1;
-  if (isKeyDown('KeyD')) strafe += 1;
-  if (isKeyDown('KeyA')) strafe -= 1;
-
-  // Forward and right vectors on the ground plane, derived from yaw only
-  // (looking up shouldn't make you fly).
-  const fwdX = -Math.sin(yaw);
-  const fwdZ = -Math.cos(yaw);
-  const rightX = Math.cos(yaw);
-  const rightZ = -Math.sin(yaw);
-
-  let moveX = fwdX * forward + rightX * strafe;
-  let moveZ = fwdZ * forward + rightZ * strafe;
-
-  // Normalize, otherwise diagonal movement would be ~41% faster (√2).
-  const len = Math.hypot(moveX, moveZ);
-  if (len > 0) {
-    moveX /= len;
-    moveZ /= len;
-  }
-
-  // Distance = speed × time: same speed at 60 or 144 fps.
-  camera.position.x += moveX * MOVE_SPEED * dt;
-  camera.position.z += moveZ * MOVE_SPEED * dt;
-}
+// Two copies of the player state: the previous tick and the current one.
+// The camera is drawn somewhere in between (interpolation).
+const player = createPlayer(0, 0, 5);
+const prevPlayer = createPlayer();
+copyPlayer(player, prevPlayer);
 
 // --- Resize ---------------------------------------------------------------
 window.addEventListener('resize', () => {
@@ -119,12 +79,40 @@ window.addEventListener('resize', () => {
 });
 
 // --- Loop -----------------------------------------------------------------
-const clock = new THREE.Clock();
+// Fixed timestep with an accumulator:
+// rendering runs at the monitor's rate (60, 144, ... fps), the simulation
+// always advances in fixed TICK_DT steps. The accumulator stores the
+// "leftover" time that isn't enough for a full tick yet.
+let tick = 0;
+let accumulator = 0;
+let lastTime = performance.now();
 
-renderer.setAnimationLoop(() => {
-  // Seconds since the previous frame. Capped so a hiccup (e.g. switching tab)
-  // doesn't teleport you.
-  const dt = Math.min(clock.getDelta(), 0.1);
-  updateCamera(dt);
+renderer.setAnimationLoop((now: number) => {
+  // Seconds since the previous frame, capped so a hiccup (e.g. switching tab)
+  // doesn't trigger hundreds of ticks in a row ("spiral of death").
+  const frameTime = Math.min((now - lastTime) / 1000, 0.25);
+  lastTime = now;
+
+  updateLook(); // mouse look every frame, for the snappiest aim
+
+  accumulator += frameTime;
+  while (accumulator >= TICK_DT) {
+    copyPlayer(player, prevPlayer);
+    stepPlayer(player, buildCommand(tick), TICK_DT);
+    tick++;
+    accumulator -= TICK_DT;
+  }
+
+  // How far we are between the previous tick (0) and the current one (1).
+  const alpha = accumulator / TICK_DT;
+  camera.position.set(
+    prevPlayer.x + (player.x - prevPlayer.x) * alpha,
+    prevPlayer.y + (player.y - prevPlayer.y) * alpha + EYE_HEIGHT,
+    prevPlayer.z + (player.z - prevPlayer.z) * alpha,
+  );
+  // View angles come straight from the mouse, not from the simulation:
+  // interpolating them would add a tick of delay to aiming.
+  camera.rotation.set(view.pitch, view.yaw, 0);
+
   renderer.render(scene, camera);
 });

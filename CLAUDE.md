@@ -34,9 +34,13 @@ Three.js, netcode, ecc. Il codice prodotto conta meno della sua comprensione.
 
 ## Dove trovare le cose
 Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella rilevante.
-- `src/main.ts`: entry point (renderer, scena, atmosfera/nebbia, luci, oggetti di prova,
-  camera in prima persona con sensibilità mouse e velocità, render loop)
+- `src/main.ts`: entry point (renderer, scena, luci, oggetti di prova, game loop a passo fisso + interpolazione camera)
 - `src/input.ts`: input grezzo (tasti premuti, movimento mouse, Pointer Lock)
+- `src/controls.ts`: sensibilità mouse, angoli di vista, mappatura tasti → `InputCommand`
+- `src/sim/`: simulazione pura (niente Three.js/DOM)
+  - `config.ts`: **costanti di tuning** (tick rate, velocità, altezza occhi)
+  - `command.ts`: tipo `InputCommand` (cosa vuole fare il giocatore in un tick)
+  - `player.ts`: stato del giocatore e `stepPlayer()` (movimento per tick)
 - `index.html`: pagina che ospita il canvas e l'overlay "Click to play"
 - `vite.config.ts`: config del dev server e della build
 
