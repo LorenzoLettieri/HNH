@@ -34,6 +34,8 @@ export interface PlayerState {
   wallJumpsLeft: number;
   /** Ticks left before another wall jump is allowed. */
   wallJumpCooldownTicks: number;
+  /** Ticks spent on the ground since the last landing (big number = "long ago"). */
+  groundTicks: number;
 }
 
 export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
@@ -55,6 +57,7 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     slideCooldownTicks: 0,
     wallJumpsLeft: tuning.wallJumpsMax,
     wallJumpCooldownTicks: 0,
+    groundTicks: 999,
   };
 }
 
@@ -120,6 +123,9 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
 
   const canJump = p.onGround || p.coyoteTicks > 0;
   if (p.jumpBufferTicks > 0 && canJump) {
+    // A "hop": jumping again shortly after landing. Reward it with a bit of speed.
+    const isHop = p.onGround && p.groundTicks <= secondsToTicks(tuning.bhopGraceTime);
+    if (isHop) addSpeedAlongVelocity(p, tuning.bhopBoost);
     p.vy = tuning.jumpSpeed;
     p.onGround = false;
     p.sliding = false; // slide-jump: the slide ends, its speed stays with you
@@ -150,12 +156,19 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
     accelerate(p, wishX, wishZ, tuning.maxGroundSpeed, tuning.airSpeedCap, tuning.slideSteer, dt);
   } else if (p.onGround) {
     // On foot (standing or crouch-walking): friction + ground acceleration.
+    // Right after landing there's a grace window with no friction: a hop
+    // within it keeps all your speed (forgiving bunny hopping).
     const maxSpeed = p.crouched ? tuning.crouchSpeed : tuning.maxGroundSpeed;
-    applyFriction(p, tuning.groundFriction, dt);
+    if (p.groundTicks >= secondsToTicks(tuning.bhopGraceTime)) {
+      applyFriction(p, tuning.groundFriction, dt);
+    }
     accelerate(p, wishX, wishZ, maxSpeed, maxSpeed, tuning.groundAccel, dt);
   } else {
-    // In the air: no friction, air acceleration (air-strafing).
+    // In the air: Quake air acceleration (air-strafing) + air control.
+    // (No extra "air brake" needed: Quake's acceleration already slows you
+    // down hard when you hold the opposite direction.)
     accelerate(p, wishX, wishZ, tuning.maxGroundSpeed, tuning.airSpeedCap, tuning.airAccel, dt);
+    airSteer(p, wishX, wishZ, dt);
   }
 
   // Gravity applies ALWAYS, even on the ground: every tick it pushes us a tiny
@@ -165,8 +178,11 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
   p.vy -= tuning.gravity * dt;
 
   // 6. Move, colliding with the level.
+  const wasOnGround = p.onGround;
   const { landed } = moveAndCollide(p, tuning.playerRadius, currentHeight(p), world.boxes, dt);
   p.onGround = landed;
+  // Count ticks on the ground: 0 on the landing tick, then 1, 2, ...
+  p.groundTicks = landed ? (wasOnGround ? p.groundTicks + 1 : 0) : 0;
   if (landed) p.wallJumpsLeft = tuning.wallJumpsMax; // touching ground recharges wall jumps
   if (!landed) p.sliding = false; // slid off a ledge: now we're just falling
 
@@ -205,24 +221,95 @@ function updateCrouchAndSlide(p: PlayerState, crouchHeld: boolean, world: World)
   }
 }
 
-/** Jumps off a nearby wall: up, and pushed away from it. Keeps the speed along the wall. */
+/**
+ * Apex-style wall jump: a strong kick UP, a small push away from the wall,
+ * and a speed boost ALONG the wall in the direction you're looking.
+ * Run along a wall, jump, and you're launched forward and up.
+ */
 function tryWallJump(p: PlayerState, world: World): void {
   const wall = findWall(p, tuning.playerRadius, currentHeight(p), tuning.wallJumpReach, world.boxes);
   if (!wall) return;
 
-  // Remove the part of our velocity going INTO the wall (dot product with the
-  // normal, again!), then add a push away from it.
+  // 1. Remove the part of our velocity going INTO the wall (dot product with
+  //    the normal): we keep only the motion parallel to the wall.
   const into = p.vx * wall.nx + p.vz * wall.nz;
   if (into < 0) {
     p.vx -= into * wall.nx;
     p.vz -= into * wall.nz;
   }
+
+  // 2. Boost along the wall, toward where we're looking. "Along the wall" =
+  //    the look direction with its into-the-wall part removed (projection
+  //    onto the wall plane). Looking straight at the wall → no boost, just up.
+  const fwdX = -Math.sin(p.yaw);
+  const fwdZ = -Math.cos(p.yaw);
+  const dot = fwdX * wall.nx + fwdZ * wall.nz;
+  let tx = fwdX - dot * wall.nx;
+  let tz = fwdZ - dot * wall.nz;
+  const tLen = Math.hypot(tx, tz);
+  if (tLen > 0.3) {
+    tx /= tLen;
+    tz /= tLen;
+    const boost = boostAt(horizontalSpeed(p), tuning.wallJumpBoost);
+    p.vx += tx * boost;
+    p.vz += tz * boost;
+  }
+
+  // 3. A small push off the wall (so you don't scrape along it) and the kick up.
   p.vx += wall.nx * tuning.wallJumpPush;
   p.vz += wall.nz * tuning.wallJumpPush;
   p.vy = tuning.wallJumpUp;
   p.wallJumpsLeft--;
   p.wallJumpCooldownTicks = secondsToTicks(tuning.wallJumpCooldown);
   p.jumpBufferTicks = 0;
+}
+
+/**
+ * How much of a boost to give at the current speed. Full boost up to
+ * bhopBoostFalloff, then it shrinks with the square of the speed:
+ * at 2× the falloff speed you get 1/4 of it, at 3× 1/9... No hard cap, but
+ * each extra m/s costs more and more hops: no 1000 km/h after two jumps.
+ */
+function boostAt(speed: number, boost: number): number {
+  const ratio = tuning.bhopBoostFalloff / Math.max(speed, tuning.bhopBoostFalloff);
+  return boost * ratio * ratio;
+}
+
+/** Adds speed in the direction we're already moving (horizontally). */
+function addSpeedAlongVelocity(p: PlayerState, boost: number): void {
+  const speed = horizontalSpeed(p);
+  if (speed < 1) return; // standing still: no direction to boost
+  const newSpeed = speed + boostAt(speed, boost);
+  p.vx *= newSpeed / speed;
+  p.vz *= newSpeed / speed;
+}
+
+/**
+ * Air control (our addition to Quake's air movement): holding a direction
+ * roughly where you're going turns your velocity toward it, keeping the same
+ * speed. Precise landings, no "greasy" drift.
+ * The effect scales with dot² (how aligned wish and velocity are): pure
+ * strafing (A/D, wish perpendicular to velocity) is untouched, so
+ * air-strafing still works exactly as before.
+ */
+function airSteer(p: PlayerState, wishX: number, wishZ: number, dt: number): void {
+  if (wishX === 0 && wishZ === 0) return;
+  const speed = horizontalSpeed(p);
+  if (speed < 0.1) return;
+  const dirX = p.vx / speed;
+  const dirZ = p.vz / speed;
+  const dot = dirX * wishX + dirZ * wishZ;
+
+  if (dot > 0) {
+    const k = Math.min(1, tuning.airControl * dot * dot * dt);
+    let nx = dirX + (wishX - dirX) * k;
+    let nz = dirZ + (wishZ - dirZ) * k;
+    const len = Math.hypot(nx, nz);
+    nx /= len;
+    nz /= len;
+    p.vx = nx * speed;
+    p.vz = nz * speed;
+  }
 }
 
 export function respawn(p: PlayerState, world: World): void {

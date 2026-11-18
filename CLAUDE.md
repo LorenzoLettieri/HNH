@@ -46,12 +46,12 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
 - `src/input.ts`: input grezzo (tasti premuti, movimento mouse, Pointer Lock)
 - `src/controls.ts`: sensibilità mouse (`controlSettings`), angoli di vista, **mappatura tasti** (WASD, Spazio, Shift/C = accovacciati/slide, R = respawn) → `InputCommand` (T = cambia atmosfera, P = pixel art on/off, tasto sotto Esc = pannello debug, in `main.ts`)
 - `src/sim/`: simulazione pura (niente Three.js/DOM)
-  - `config.ts`: **valori di tuning** (oggetto `tuning`, modificabile dal pannello debug) (tick rate, altezza occhi, dimensioni giocatore, movimento a terra, gravità/salto/coyote/buffer, movimento in aria, accovacciata, slide, wall jump)
+  - `config.ts`: **valori di tuning** (oggetto `tuning`, modificabile dal pannello debug) (tick rate, altezza occhi, dimensioni giocatore, movimento a terra, gravità/salto/coyote/buffer, movimento e controllo in aria, aiuti al bhop, accovacciata, slide, wall jump)
   - `command.ts`: tipo `InputCommand` (cosa vuole fare il giocatore in un tick)
   - `world.ts`: tipi del livello (`Box` AABB, `Prop` decorazioni, `World`) e helper `box()`
   - `props.ts`: **box di collisione invisibili dei props** (barile, palo del cartello, torcia) e zona di lancio degli sfiatatoi
   - `collision.ts`: movimento con collisioni asse per asse contro i box, `overlapsAny` (c'è spazio?), `findWall` (muro vicino?)
-  - `player.ts`: stato del giocatore e `stepPlayer()` (salto, slide/accovacciata, wall jump, attrito, accelerazione Quake a terra/in aria, gravità, respawn)
+  - `player.ts`: stato del giocatore e `stepPlayer()` (salto e bhop facilitato, slide/accovacciata, wall jump stile Apex, attrito, accelerazione Quake + air control, gravità, sfiatatoi, respawn)
 - `src/debug/`: pannello di debug
   - `panel.ts`: mini-libreria DOM per i controlli (slider, checkbox, colori, "Copy values")
   - `debugPanel.ts`: **quali valori sono esposti nel pannello** e i loro range

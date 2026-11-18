@@ -56,7 +56,7 @@ export const tuning = {
    * Jump buffer: a jump pressed up to this long BEFORE landing still counts,
    * and fires on the landing tick. Seconds.
    */
-  jumpBufferTime: 0.1,
+  jumpBufferTime: 0.15,
 
   // --- Air movement (Quake-style) ---
   /** Air acceleration. Higher = more air control and faster strafe gains. */
@@ -67,6 +67,25 @@ export const tuning = {
    * strafing keeps finding "new" directions to accelerate in → air-strafing.
    */
   airSpeedCap: 0.8,
+  /**
+   * Air control: holding a direction in the air TURNS your velocity toward it
+   * (without adding speed). Higher = more precise jumps. 0 = pure Quake.
+   */
+  airControl: 7,
+
+  // --- Bunny hop helpers (deliberately "unrealistic", to make it accessible) ---
+  /**
+   * Seconds after landing during which there's no ground friction: jump within
+   * this window and you keep all your speed. Real Quake: 1 tick. Here: forgiving.
+   */
+  bhopGraceTime: 0.12,
+  /**
+   * Speed added by each successful hop (jumping within the grace window), m/s.
+   * It shrinks as you go faster (see bhopBoostFalloff): speed grows, but slower and slower.
+   */
+  bhopBoost: 1,
+  /** Above this speed the hop boost starts shrinking: boost × (this / speed)². m/s. */
+  bhopBoostFalloff: 9,
 
   // --- Crouch ---
   /** Height of the collision box while crouched/sliding, meters (fits under 1.1 m). */
@@ -96,9 +115,14 @@ export const tuning = {
   /** How close a wall must be to jump off it, meters (beyond your body). */
   wallJumpReach: 0.35,
   /** Upward speed of a wall jump, m/s. */
-  wallJumpUp: 6.5,
-  /** Speed pushing you away from the wall, m/s. */
-  wallJumpPush: 6,
+  wallJumpUp: 7,
+  /** Speed pushing you away from the wall, m/s (small: it's not a bounce). */
+  wallJumpPush: 2.5,
+  /**
+   * Apex-style: speed added along the wall, in the direction you're looking, m/s.
+   * Shrinks at high speed like the hop boost (same falloff).
+   */
+  wallJumpBoost: 2.5,
   /** Wall jumps allowed before touching the ground again. */
   wallJumpsMax: 3,
   /** Minimum seconds between two wall jumps (else holding jump would burn them all at once). */

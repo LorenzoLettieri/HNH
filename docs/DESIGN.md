@@ -117,8 +117,14 @@ vagoni. 4 sfiatatoi di vapore. Tutti i percorsi sono stati verificati in simulaz
 ### Regole pratiche emerse (vincoli del movimento attuale)
 - **Salto massimo ≈ 1,17 m**: gradini e scalini al massimo **1 m**.
 - **Salto in corsa ≈ 5,6 m** di distanza: gap tra piattaforme ≤ 3–4 m per stare comodi.
-- **I wall jump spingono VIA dal muro**: non servono a scalare una parete singola. Funzionano
-  come spinta extra (+≈1 m) o tra **due muri vicini**. Per salire molto: sfiatatoi (o lazo).
+- **Wall jump in stile Apex**: spinta forte verso l'alto, piccola spinta via dal muro e
+  **velocità lungo il muro** nella direzione in cui guardi.
+  - Guardando il muro e concatenando i 3 wall jump si sale di **≈4,5 m** su una parete singola.
+  - Guardando lungo il muro il wall jump è uno slancio in avanti (+2,5 m/s).
+  - Oltre i ~4,5 m servono sfiatatoi, percorsi a gradini o (in futuro) il lazo.
+- **Bunny hop facilitato**: finestra di 0,12 s dopo l'atterraggio senza attrito, e ogni hop
+  riuscito dà velocità extra che cala con la velocità (8 → 13 m/s in ~8 hop tenendo solo W).
+  Nessun tetto rigido.
 
 ### Principi
 - **Niente vicoli ciechi**: ogni percorso è un anello.
