@@ -33,7 +33,7 @@ export const viewmodelSettings = {
   /** Up-down/side bob while running. */
   bob: 0.012,
   /** Duration of the left-hand fanning swipe, seconds (keep it ≤ the fire interval). */
-  fanDuration: 0.2,
+  fanDuration: 0.3,
 };
 
 /** Smoothly moves `current` toward `target` (same exponential easing as cameraFeel). */

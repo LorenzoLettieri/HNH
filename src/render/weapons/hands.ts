@@ -69,9 +69,11 @@ export function createHands(): Hands {
   // The forearm must leave the screen toward the bottom-left, like an arm
   // coming from off-camera. A box is built along Z; rotating it around X
   // tilts its back end DOWN, around Y swings it to the LEFT.
-  const leftArm = box(0.038, 0.038, 0.2, sleeve);
-  leftArm.position.set(-0.045, -0.08, 0.045);
-  leftArm.rotation.set(1.15, -0.6, 0);
+  // Nearly horizontal: rotating around Y by ~-1.25 rad turns the box (built
+  // along Z) so its far end points LEFT; a small X tilt lowers it a bit.
+  const leftArm = box(0.04, 0.04, 0.24, sleeve);
+  leftArm.position.set(-0.115, -0.025, 0.04);
+  leftArm.rotation.set(0.2, -1.25, 0);
   left.add(leftArm);
 
   return { right, left };
@@ -89,11 +91,14 @@ interface Pose {
   roll: number; // tilt of the palm, radians
 }
 
-const IDLE: Pose = { t: 1, x: -0.1, y: -0.09, z: 0.02, roll: 0.3 };
+// The contact comes early (12%): the shot fires the instant you click, so the
+// palm must reach the hammer almost immediately to look like it caused it.
+const IDLE: Pose = { t: 1, x: -0.16, y: -0.06, z: 0.03, roll: 0.15 };
 const FAN: Pose[] = [
-  { t: 0, x: -0.055, y: 0.1, z: 0.03, roll: -0.15 }, // raised, ready to strike
-  { t: 0.22, x: -0.008, y: 0.088, z: 0.025, roll: -0.05 }, // CONTACT: palm hits the hammer
-  { t: 0.4, x: 0.035, y: 0.062, z: 0.035, roll: 0.05 }, // follow-through to the right
+  { t: 0, x: -0.07, y: 0.1, z: 0.03, roll: -0.1 }, // raised above-left, ready to strike
+  { t: 0.12, x: -0.008, y: 0.086, z: 0.025, roll: 0 }, // CONTACT: palm slaps the hammer
+  { t: 0.35, x: 0.045, y: 0.07, z: 0.035, roll: 0.05 }, // follow-through to the right
+  { t: 0.6, x: -0.06, y: 0.02, z: 0.035, roll: 0.1 }, // pulling back left
   IDLE, // back to rest
 ];
 

@@ -132,7 +132,7 @@ export const tuning = {
   /** Shots in the cylinder. */
   revolverAmmo: 6,
   /** Minimum seconds between two shots (it's semi-automatic: one click = one shot). */
-  revolverFireInterval: 0.22,
+  revolverFireInterval: 0.3,
   /** A click slightly before the gun is ready still fires as soon as it is, seconds. */
   revolverFireBuffer: 0.12,
   /** Seconds to reload all 6 rounds. */
