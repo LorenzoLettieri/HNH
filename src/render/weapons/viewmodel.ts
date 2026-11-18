@@ -12,6 +12,7 @@ import type { Atmosphere } from '../atmospheres';
 import { directionFromAngles } from '../sky';
 import { PixelCanvas } from '../props/pixelCanvas';
 import { createRevolverModel } from './revolverModel';
+import { createHands, poseLeftHand } from './hands';
 
 /** Mutable so the debug panel can change them. */
 export const viewmodelSettings = {
@@ -31,6 +32,8 @@ export const viewmodelSettings = {
   sway: 0.5,
   /** Up-down/side bob while running. */
   bob: 0.012,
+  /** Duration of the left-hand fanning swipe, seconds (keep it ≤ the fire interval). */
+  fanDuration: 0.2,
 };
 
 /** Smoothly moves `current` toward `target` (same exponential easing as cameraFeel). */
@@ -94,6 +97,13 @@ export function createViewmodel(): Viewmodel {
   // `holder` is the gun's rest pose; all animations offset the gun inside it.
   const holder = new THREE.Group();
   holder.add(gun.root);
+
+  // Hands: the right one is part of the gun (recoils with it); the left one
+  // lives in the holder and fans the hammer at every shot.
+  const hands = createHands();
+  gun.root.add(hands.right);
+  holder.add(hands.left);
+  let fanTime = 1; // 0..1 progress of the fanning swipe (≥ 1 = idle)
   scene.add(holder);
 
   const flash = new THREE.Sprite(
@@ -130,6 +140,7 @@ export function createViewmodel(): Viewmodel {
     scene,
     camera,
     onShot() {
+      fanTime = 0;
       kick = 1;
       viewKick = s.viewKick;
       flashTime = 0.05;
@@ -193,6 +204,11 @@ export function createViewmodel(): Viewmodel {
         }
       }
       gun.cylinder.rotation.z = cylinderAngle;
+
+      // --- Left hand: fanning swipe after each shot (hidden while reloading) ---
+      fanTime = Math.min(1, fanTime + dt / s.fanDuration);
+      poseLeftHand(hands.left, fanTime);
+      hands.left.position.y -= reload * 0.15; // tucked away during the reload
 
       // --- Sway: the gun lags behind when you turn the mouse ---
       swayX = approach(swayX, THREE.MathUtils.clamp(dYaw * s.sway, -0.04, 0.04), 12, dt);

@@ -82,6 +82,7 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `weapons/`: **l'arma in mano (viewmodel)**
     - `viewmodel.ts`: scena/camera dell'arma, **posa, rinculo, ondeggiamento, bob, ricarica, lampo** (`viewmodelSettings`)
     - `revolverModel.ts`: modello procedurale del revolver (canna, tamburo, cane, calcio)
+    - `hands.ts`: **mani a blocchi** (guanti, maniche) e **keyframe del fanning** della mano sinistra
   - `weaponFx.ts`: effetti degli spari (lampo di luce, fori, scintille, suoni)
   - `impacts.ts`: fori di proiettile sulle superfici (decal, dimensione, quanti ne restano)
   - `materials.ts`: **quale texture usa ogni materiale** (`LOOKS`), densità dei pixel, mesh dei box
