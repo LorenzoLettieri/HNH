@@ -19,6 +19,13 @@ Three.js, netcode, ecc. Il codice prodotto conta meno della sua comprensione.
   Tieni aggiornata la sezione "Dove trovare le cose" qui sotto.
 - Niente codice "magico" o librerie che nascondono ciò che si vuole imparare, salvo accordo esplicito.
 
+## Design del gioco
+Le decisioni di gameplay (stile, nemici, mappa, loop) sono in **`docs/DESIGN.md`**: leggilo
+prima di lavorare su gameplay, nemici, armi o livelli, e aggiornalo quando si decide qualcosa.
+In sintesi: il **movimento è il cuore del gioco**; meter dello **Stile** a rank (niente punizioni
+per chi sta fermo); nemici che attaccano lo spazio (anche volanti e a distanza); mappa all'aperto
+(cittadina infernale, verticale, anche assurda/distopica).
+
 ## Obiettivi
 - **v1**: modalità a orde singleplayer (stile Megabonk), giocabile come sito statico.
 - **Poi**: arena multiplayer con server autoritativo Node.js (TypeScript) e WebSocket.
@@ -69,6 +76,7 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `heightFog.ts`: nebbia al suolo (patch dello shader della nebbia di Three.js)
   - `materials.ts`: **quale texture usa ogni materiale** (`LOOKS`), densità dei pixel, mesh dei box
 - `public/textures/`: texture PNG (servite così come sono da Vite su `/textures/...`)
+- `docs/DESIGN.md`: **documento di design** (decisioni di gameplay e domande aperte)
 - `CREDITS.md`: autori e licenze degli asset
 - `index.html`: pagina con canvas, overlay "Click to play" e HUD (stili CSS inclusi)
 - `vite.config.ts`: config del dev server e della build (`base: './'` per funzionare in sottocartella su GitHub Pages)
