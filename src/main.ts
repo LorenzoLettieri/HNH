@@ -6,6 +6,8 @@ import { copyPlayer, createPlayer, horizontalSpeed, stepPlayer } from './sim/pla
 import { testArena } from './levels/testArena';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
 import { createBoxMesh, loadMaterials } from './render/materials';
+import { ATMOSPHERES, type Atmosphere } from './render/atmospheres';
+import { applySky, createSky } from './render/sky';
 
 // --- Renderer -------------------------------------------------------------
 const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -16,24 +18,48 @@ document.body.appendChild(renderer.domElement);
 // --- Scene & atmosphere ---------------------------------------------------
 const scene = new THREE.Scene();
 
-// Dusty, hellish dusk: the background and the fog share the same color,
-// so distant objects fade seamlessly into the sky.
-const SKY_COLOR = 0x3a1810;
-scene.background = new THREE.Color(SKY_COLOR);
-scene.fog = new THREE.Fog(SKY_COLOR, 8, 45); // starts at 8m, fully opaque at 45m
+// Sky + fog. Colors and distances come from the atmosphere preset (see below).
+const sky = createSky();
+scene.add(sky);
+const fog = new THREE.Fog(0x000000);
+scene.fog = fog;
 
 // --- Camera ---------------------------------------------------------------
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
 // --- Lights ---------------------------------------------------------------
 // Hemisphere light: soft ambient light, one color from above (sky) and one from below (ground).
-const ambient = new THREE.HemisphereLight(0x8a4a30, 0x1a0d08, 0.6);
+const ambient = new THREE.HemisphereLight();
 scene.add(ambient);
 
 // Point light: a warm "lantern" that lights things around it and fades with distance.
 const lantern = new THREE.PointLight(0xffa040, 25, 12); // color, intensity, range (m)
 lantern.position.set(-1.5, 2.5, 1.5);
 scene.add(lantern);
+
+// --- Atmosphere -------------------------------------------------------------
+// Applies a preset to sky, fog and ambient light all at once.
+// The fog uses the horizon color: walls far away melt into the sky.
+function applyAtmosphere(a: Atmosphere): void {
+  applySky(sky, a);
+  fog.color.set(a.skyHorizon);
+  fog.near = a.fogNear;
+  fog.far = a.fogFar;
+  ambient.color.set(a.ambientSky);
+  ambient.groundColor.set(a.ambientGround);
+  ambient.intensity = a.ambientIntensity;
+}
+
+let atmosphereIndex = 0;
+applyAtmosphere(ATMOSPHERES[atmosphereIndex]);
+
+// T cycles through the presets. It's a visual setting of this client, not
+// something the player does in the game, so it doesn't go through InputCommand.
+window.addEventListener('keydown', (e) => {
+  if (e.code !== 'KeyT' || e.repeat) return;
+  atmosphereIndex = (atmosphereIndex + 1) % ATMOSPHERES.length;
+  applyAtmosphere(ATMOSPHERES[atmosphereIndex]);
+});
 
 // --- Level ----------------------------------------------------------------
 // The level is pure data (src/levels/). Here we build one textured mesh per box.
@@ -103,6 +129,8 @@ renderer.setAnimationLoop((now: number) => {
   // View angles come straight from the mouse, not from the simulation:
   // interpolating them would add a tick of delay to aiming.
   camera.rotation.set(view.pitch, view.yaw, 0);
+  // The sky follows the camera: you can never get closer to it.
+  sky.position.copy(camera.position);
 
   hud.textContent = `${horizontalSpeed(player).toFixed(1)} m/s  ${player.onGround ? 'GROUND' : 'AIR'}`;
 
