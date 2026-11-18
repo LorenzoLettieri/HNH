@@ -40,15 +40,17 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
 - `src/sim/`: simulazione pura (niente Three.js/DOM)
   - `config.ts`: **costanti di tuning** (tick rate, altezza occhi, dimensioni giocatore, movimento a terra, gravità/salto/coyote/buffer, movimento in aria)
   - `command.ts`: tipo `InputCommand` (cosa vuole fare il giocatore in un tick)
-  - `world.ts`: tipi del livello (`Box` AABB, `World`) e helper `box()`
+  - `world.ts`: tipi del livello (`Box` AABB, `Lantern`, `World`) e helper `box()`
   - `collision.ts`: movimento con collisioni asse per asse contro i box
   - `player.ts`: stato del giocatore e `stepPlayer()` (salto, attrito, accelerazione Quake a terra/in aria, gravità, respawn)
 - `src/levels/`: **i livelli** (dati puri)
-  - `testArena.ts`: arena di prova 40×40 (piattaforma, scale, corridoio, colonne, casse)
+  - `testArena.ts`: arena di prova 40×40 (piattaforma, scale, corridoio, colonne, casse) + posizione lanterne
 - `src/render/`: effetti puramente visivi (non toccano la simulazione)
   - `landingDip.ts`: abbassamento camera all'atterraggio (intensità, recupero)
-  - `atmospheres.ts`: **preset di atmosfera** (High Noon / High Midnight): colori cielo, sole/luna, stelle, nebbia, luce ambientale
+  - `atmospheres.ts`: **preset di atmosfera** (High Noon / High Midnight): colori cielo, sole/luna, stelle, luce del sole, lanterne, nebbia, luce ambientale
   - `sky.ts`: cielo (sfera + shader GLSL)
+  - `sunLight.ts`: luce direzionale dal sole/luna + **ombre** (area coperta, risoluzione, bias)
+  - `lanterns.ts`: lanterne (portata, intensità del tremolio)
   - `materials.ts`: **quale texture usa ogni materiale** (`LOOKS`), densità dei pixel, mesh dei box
 - `public/textures/`: texture PNG (servite così come sono da Vite su `/textures/...`)
 - `CREDITS.md`: autori e licenze degli asset
@@ -69,6 +71,8 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
 - Geometria relativamente dettagliata ma render a **bassa risoluzione** ingrandito con `NearestFilter`.
 - Texture piccole (32–64 px), senza filtro; palette limitata con dithering in post-process.
 - Atmosfera scura: nebbia, luci calde di lanterne/fuoco, cielo infernale rosso-arancio.
+- **L'atmosfera è una priorità del progetto**: luci, nebbia, particelle e cielo devono essere curati
+  e d'impatto (anche a costo di passi dedicati solo alla resa visiva). Due preset: High Noon e High Midnight.
 - Nemici come sprite 2D (stile Doom) per prestazioni e look.
 
 ## Feel del gameplay

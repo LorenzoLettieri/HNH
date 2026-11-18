@@ -59,6 +59,8 @@ export function createBoxMesh(b: Box): THREE.Mesh {
   scaleUVs(geometry, sizeX, sizeY, sizeZ, material.map!);
 
   const mesh = new THREE.Mesh(geometry, material);
+  mesh.castShadow = true; // blocks sunlight
+  mesh.receiveShadow = true; // shows shadows cast by others
   // BoxGeometry is centered on its origin: place the mesh at the box's center.
   mesh.position.set(b.minX + sizeX / 2, b.minY + sizeY / 2, b.minZ + sizeZ / 2);
   return mesh;

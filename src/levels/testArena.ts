@@ -58,4 +58,14 @@ export const testArena: World = {
     box(6.5, 1, -14, 1, 1, 1, 'wood'),
     box(-6, 0, -15, 1.5, 1.5, 1.5, 'wood'),
   ],
+
+  // Lanterns hang just outside a surface (a few cm), never inside a box.
+  lanterns: [
+    { x: -8, y: 2.6, z: 10.7 }, // on the south face of the west pillars
+    { x: 8, y: 2.6, z: 10.7 }, // ... and of the east pillars
+    { x: 0, y: 2.7, z: -2.8 }, // above the step, in front of the platform
+    { x: -14, y: 2.4, z: -2 }, // middle of the corridor
+    { x: 14, y: 4.4, z: -3 }, // on the high walkway
+    { x: 6.5, y: 2.6, z: -13.3 }, // by the crate pile
+  ],
 };

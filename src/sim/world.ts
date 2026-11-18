@@ -18,8 +18,16 @@ export interface Box {
   look: 'dirt' | 'wood' | 'stone';
 }
 
+/** A light source placed in the level. Visual only: the simulation ignores it. */
+export interface Lantern {
+  x: number;
+  y: number;
+  z: number;
+}
+
 export interface World {
   boxes: Box[];
+  lanterns: Lantern[];
   /** Where the player (re)appears, feet position. */
   spawn: { x: number; y: number; z: number };
 }

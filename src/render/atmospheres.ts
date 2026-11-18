@@ -26,6 +26,14 @@ export interface Atmosphere {
   /** 0 = no stars, 1 = full stars. */
   stars: number;
 
+  /** Directional light coming from the sun/moon: color and strength. */
+  sunLightColor: number;
+  sunLightIntensity: number;
+
+  /** Lanterns: color and strength (they matter much more at night). */
+  lanternColor: number;
+  lanternIntensity: number;
+
   /** Fog: no fog before `fogNear` meters, solid fog after `fogFar`. */
   fogNear: number;
   fogFar: number;
@@ -48,11 +56,15 @@ export const HIGH_NOON: Atmosphere = {
   sunGlow: 0.9,
   sunGlowTightness: 6,
   stars: 0,
+  sunLightColor: 0xffa060,
+  sunLightIntensity: 3.2,
+  lanternColor: 0xffa040,
+  lanternIntensity: 6,
   fogNear: 10,
   fogFar: 60,
-  ambientSky: 0xd07040,
-  ambientGround: 0x3a1a10,
-  ambientIntensity: 1.2,
+  ambientSky: 0xc06040,
+  ambientGround: 0x301510,
+  ambientIntensity: 0.7,
 };
 
 export const HIGH_MIDNIGHT: Atmosphere = {
@@ -67,11 +79,15 @@ export const HIGH_MIDNIGHT: Atmosphere = {
   sunGlow: 0.35,
   sunGlowTightness: 12,
   stars: 1,
+  sunLightColor: 0x9080e0,
+  sunLightIntensity: 1.1,
+  lanternColor: 0xff9030,
+  lanternIntensity: 14,
   fogNear: 6,
   fogFar: 45,
-  ambientSky: 0x6050a0,
-  ambientGround: 0x140a20,
-  ambientIntensity: 0.9,
+  ambientSky: 0x5040a0,
+  ambientGround: 0x100818,
+  ambientIntensity: 0.45,
 };
 
 export const ATMOSPHERES = [HIGH_NOON, HIGH_MIDNIGHT];

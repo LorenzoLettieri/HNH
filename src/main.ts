@@ -8,12 +8,18 @@ import { triggerLandingDip, updateLandingDip } from './render/landingDip';
 import { createBoxMesh, loadMaterials } from './render/materials';
 import { ATMOSPHERES, type Atmosphere } from './render/atmospheres';
 import { applySky, createSky } from './render/sky';
+import { applySunLight, createSunLight } from './render/sunLight';
+import { applyLanterns, createLanterns, updateLanterns } from './render/lanterns';
 
 // --- Renderer -------------------------------------------------------------
 const renderer = new THREE.WebGLRenderer({ antialias: false });
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
+// Shadows are off by default (they cost GPU time). BasicShadowMap = hard,
+// unfiltered edges: cheapest, and they match the pixel-art look.
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.BasicShadowMap;
 
 // --- Scene & atmosphere ---------------------------------------------------
 const scene = new THREE.Scene();
@@ -32,16 +38,17 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 const ambient = new THREE.HemisphereLight();
 scene.add(ambient);
 
-// Point light: a warm "lantern" that lights things around it and fades with distance.
-const lantern = new THREE.PointLight(0xffa040, 25, 12); // color, intensity, range (m)
-lantern.position.set(-1.5, 2.5, 1.5);
-scene.add(lantern);
+// Directional light from the sun/moon, with shadows.
+const sunLight = createSunLight();
+scene.add(sunLight, sunLight.target);
 
 // --- Atmosphere -------------------------------------------------------------
 // Applies a preset to sky, fog and ambient light all at once.
 // The fog uses the horizon color: walls far away melt into the sky.
 function applyAtmosphere(a: Atmosphere): void {
   applySky(sky, a);
+  applySunLight(sunLight, a);
+  applyLanterns(a);
   fog.color.set(a.skyHorizon);
   fog.near = a.fogNear;
   fog.far = a.fogFar;
@@ -49,6 +56,14 @@ function applyAtmosphere(a: Atmosphere): void {
   ambient.groundColor.set(a.ambientGround);
   ambient.intensity = a.ambientIntensity;
 }
+
+// --- Level ----------------------------------------------------------------
+// The level is pure data (src/levels/). Here we build one textured mesh per box.
+const world = testArena;
+
+await loadMaterials(); // top-level await: the game starts once textures are ready
+for (const b of world.boxes) scene.add(createBoxMesh(b));
+createLanterns(scene, world.lanterns);
 
 let atmosphereIndex = 0;
 applyAtmosphere(ATMOSPHERES[atmosphereIndex]);
@@ -60,13 +75,6 @@ window.addEventListener('keydown', (e) => {
   atmosphereIndex = (atmosphereIndex + 1) % ATMOSPHERES.length;
   applyAtmosphere(ATMOSPHERES[atmosphereIndex]);
 });
-
-// --- Level ----------------------------------------------------------------
-// The level is pure data (src/levels/). Here we build one textured mesh per box.
-const world = testArena;
-
-await loadMaterials(); // top-level await: the game starts once textures are ready
-for (const b of world.boxes) scene.add(createBoxMesh(b));
 
 // --- Player & camera ------------------------------------------------------
 // Rotation order 'YXZ': yaw (turn left/right) first, then pitch (look up/down).
@@ -134,5 +142,6 @@ renderer.setAnimationLoop((now: number) => {
 
   hud.textContent = `${horizontalSpeed(player).toFixed(1)} m/s  ${player.onGround ? 'GROUND' : 'AIR'}`;
 
+  updateLanterns(now / 1000);
   renderer.render(scene, camera);
 });
