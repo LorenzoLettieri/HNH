@@ -3,10 +3,10 @@
 //
 // Two systems for now:
 // - dust:   ambient specks floating around the camera (sand in the wind by day,
-//           blinking fireflies by night). They glow when near a lantern.
-// - embers: sparks rising from each lantern's flame.
+//           blinking fireflies by night). They glow when near a flame.
+// - embers: sparks rising from the flames (torches more, lanterns less).
 import * as THREE from 'three';
-import type { Lantern } from '../sim/world';
+import type { FireSource } from './fireLights';
 import type { Atmosphere } from './atmospheres';
 
 // --- Tuning -----------------------------------------------------------------
@@ -17,11 +17,9 @@ const DUST_RADIUS = 14;
 const DUST_HEIGHT = 7;
 /** Size of a dust speck, meters. */
 const DUST_SIZE = 0.05;
-/** Specks closer than this to a lantern light up, meters. */
+/** Specks closer than this to a flame light up, meters. */
 const DUST_LIT_RADIUS = 3;
 
-/** Embers spawned per second, per lantern. */
-const EMBER_RATE = 5;
 const EMBER_LIFE = 1.6; // seconds
 const EMBER_SIZE = 0.035;
 /** Ember color multiplier: above 1 = HDR, so they bloom. */
@@ -88,7 +86,9 @@ function createPointsLayer(capacity: number): PointsLayer {
       fadeDistance: { value: 30 },
     },
     blending: THREE.AdditiveBlending,
-    depthWrite: false, // particles don't hide each other
+    // Particles write depth: the god rays treat "no depth" as open sky, and a
+    // bright firefly in front of the moon would otherwise cast its own ray.
+    depthWrite: true,
     transparent: true,
   });
 
@@ -128,10 +128,13 @@ const emberAge = new Float32Array(EMBER_MAX);
 let emberCount = 0;
 let emberSpawnDebt = 0; // fractional particles carried over between frames
 
-let lanterns: Lantern[] = [];
+let fires: FireSource[] = [];
+/** Sum of all the fires' ember rates: embers per second in the whole level. */
+let totalEmberRate = 0;
 
-export function createParticles(scene: THREE.Scene, levelLanterns: Lantern[]): void {
-  lanterns = levelLanterns;
+export function createParticles(scene: THREE.Scene, levelFires: FireSource[]): void {
+  fires = levelFires;
+  totalEmberRate = fires.reduce((sum, f) => sum + f.emberRate, 0);
   scene.add(dust.points, embers.points);
 
   for (let i = 0; i < DUST_MAX; i++) {
@@ -196,26 +199,26 @@ function updateDust(dt: number, time: number, cam: THREE.Vector3): void {
     p[ix + 1] = wrap(p[ix + 1], 0, DUST_HEIGHT);
     p[ix + 2] = wrap(p[ix + 2], cam.z - DUST_RADIUS, cam.z + DUST_RADIUS);
 
-    // Base visibility, optional blinking (fireflies), extra glow near lanterns.
+    // Base visibility, optional blinking (fireflies), extra glow near flames.
     let alpha = dustBaseAlpha;
     if (dustBlink > 0) {
       const blink = Math.max(0, Math.sin(time * 1.5 + dustPhase[i]));
       alpha *= 1 - dustBlink + dustBlink * blink * blink * 3;
     }
-    alpha += nearLanternGlow(p[ix], p[ix + 1], p[ix + 2]);
+    alpha += nearFireGlow(p[ix], p[ix + 1], p[ix + 2]);
     dust.alphas[i] = alpha;
   }
   dust.commit(dustCount);
 }
 
-/** 0 when far from every lantern, up to ~1.5 right next to one. */
-function nearLanternGlow(x: number, y: number, z: number): number {
+/** 0 when far from every flame, up to ~1.5 right next to one. */
+function nearFireGlow(x: number, y: number, z: number): number {
   let glow = 0;
   const r2 = DUST_LIT_RADIUS * DUST_LIT_RADIUS;
-  for (const l of lanterns) {
-    const dx = x - l.x;
-    const dy = y - l.y;
-    const dz = z - l.z;
+  for (const f of fires) {
+    const dx = x - f.position.x;
+    const dy = y - f.position.y;
+    const dz = z - f.position.z;
     const d2 = dx * dx + dy * dy + dz * dz; // squared distance: no sqrt needed
     if (d2 < r2) glow += 1.5 * (1 - d2 / r2);
   }
@@ -247,15 +250,15 @@ function updateEmbers(dt: number, time: number): void {
 
   // 2. Spawn new ones. At 60 fps, 5 per second = 0.083 per frame: we
   //    accumulate the fractions and spawn when they add up to a whole ember.
-  emberSpawnDebt += EMBER_RATE * lanterns.length * dt;
+  emberSpawnDebt += totalEmberRate * dt;
   while (emberSpawnDebt >= 1 && emberCount < EMBER_MAX) {
     emberSpawnDebt -= 1;
-    const l = lanterns[Math.floor(Math.random() * lanterns.length)];
+    const f = pickFireByEmberRate();
     const i = emberCount++;
     const ix = i * 3;
-    p[ix] = l.x + (Math.random() - 0.5) * 0.1;
-    p[ix + 1] = l.y + 0.1;
-    p[ix + 2] = l.z + (Math.random() - 0.5) * 0.1;
+    p[ix] = f.position.x + (Math.random() - 0.5) * 0.1;
+    p[ix + 1] = f.position.y + 0.1;
+    p[ix + 2] = f.position.z + (Math.random() - 0.5) * 0.1;
     emberVel[ix] = (Math.random() - 0.5) * 0.3;
     emberVel[ix + 1] = 0.4 + Math.random() * 0.5;
     emberVel[ix + 2] = (Math.random() - 0.5) * 0.3;
@@ -263,6 +266,20 @@ function updateEmbers(dt: number, time: number): void {
   }
   emberSpawnDebt = Math.min(emberSpawnDebt, 1);
   embers.commit(emberCount);
+}
+
+/**
+ * Weighted random choice: a torch with rate 8 is picked 8× more often than a
+ * lantern with rate 1. Roll a number in [0, total) and walk the list
+ * subtracting each weight until it drops below zero.
+ */
+function pickFireByEmberRate(): FireSource {
+  let roll = Math.random() * totalEmberRate;
+  for (const f of fires) {
+    roll -= f.emberRate;
+    if (roll < 0) return f;
+  }
+  return fires[fires.length - 1];
 }
 
 function copyEmber(from: number, to: number): void {

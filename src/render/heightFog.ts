@@ -17,29 +17,42 @@ const uniforms = {
  * shader: we get the GLSL source as a string and can edit it.
  */
 export function addHeightFog(material: THREE.Material): void {
-  material.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, uniforms);
+  material.onBeforeCompile = (shader) => patchHeightFog(shader);
+}
 
-    // Vertex shader: also pass the vertex position in WORLD space (we need its height).
-    shader.vertexShader = shader.vertexShader
-      .replace('#include <fog_pars_vertex>', '#include <fog_pars_vertex>\nvarying vec3 vHfWorldPos;')
-      .replace(
-        '#include <fog_vertex>',
-        '#include <fog_vertex>\nvHfWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;',
-      );
+/**
+ * The actual edit, usable on its own by materials that also need other
+ * shader patches (e.g. the grass, which sways in the wind).
+ */
+export function patchHeightFog(shader: THREE.WebGLProgramParametersWithUniforms): void {
+  Object.assign(shader.uniforms, uniforms);
 
-    // Fragment shader: replace Three's fog with distance fog + height fog.
-    shader.fragmentShader = shader.fragmentShader
-      .replace(
-        '#include <fog_pars_fragment>',
-        `#include <fog_pars_fragment>
+  // Vertex shader: also pass the vertex position in WORLD space (we need its height).
+  shader.vertexShader = shader.vertexShader
+    .replace('#include <fog_pars_vertex>', '#include <fog_pars_vertex>\nvarying vec3 vHfWorldPos;')
+    .replace(
+      '#include <fog_vertex>',
+      `#include <fog_vertex>
+         #ifdef USE_INSTANCING
+           // Instanced meshes: each copy has its own transform (instanceMatrix).
+           vHfWorldPos = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;
+         #else
+           vHfWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;
+         #endif`,
+    );
+
+  // Fragment shader: replace Three's fog with distance fog + height fog.
+  shader.fragmentShader = shader.fragmentShader
+    .replace(
+      '#include <fog_pars_fragment>',
+      `#include <fog_pars_fragment>
          varying vec3 vHfWorldPos;
          uniform float hfDensity;
          uniform float hfFalloff;`,
-      )
-      .replace(
-        '#include <fog_fragment>',
-        /* glsl */ `
+    )
+    .replace(
+      '#include <fog_fragment>',
+      /* glsl */ `
         #ifdef USE_FOG
           // 1. The usual distance fog: 0 before fogNear, 1 after fogFar.
           float distanceFog = smoothstep(fogNear, fogFar, vFogDepth);
@@ -56,8 +69,7 @@ export function addHeightFog(material: THREE.Material): void {
           float fogFactor = 1.0 - (1.0 - distanceFog) * (1.0 - heightFog);
           gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, fogFactor);
         #endif`,
-      );
-  };
+    );
 }
 
 export function applyHeightFog(a: Atmosphere): void {

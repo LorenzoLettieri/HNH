@@ -14,13 +14,60 @@
 //   │                   spawn                       │
 //   └──────────────────────────────────────────────┘
 //                         S (z = +20)
-import { box, type World } from '../sim/world';
+import { box, type Prop, type World } from '../sim/world';
+import { propColliders } from '../sim/props';
 
 const WALL_HEIGHT = 6;
 
+// --- Decorations -------------------------------------------------------------
+// Rotation in degrees around the vertical axis. For wall lanterns, rotation 0
+// means the bracket sticks out toward +Z (south); 90 = toward +X (east).
+const props: Prop[] = [
+  // Wall lanterns on the south face of the outer pillars, facing the spawn.
+  { type: 'lantern', mount: 'wall', x: -8, y: 2.6, z: 10.5, rotation: 0 },
+  { type: 'lantern', mount: 'wall', x: 8, y: 2.6, z: 10.5, rotation: 0 },
+  // Inside the corridor, on its east wall, sticking out toward the west.
+  { type: 'lantern', mount: 'wall', x: -12.5, y: 2.3, z: -2, rotation: -90 },
+  // On the front of the SALOON sign's post, to light up the board at night.
+  { type: 'lantern', mount: 'wall', x: -6, y: 1.9, z: 14.57, rotation: 0 },
+  // On top of the crate pile.
+  { type: 'lantern', mount: 'ground', x: 6.5, y: 2, z: -14, rotation: 30 },
+
+  // Torches flanking the step to the central platform, and one on the walkway.
+  { type: 'torch', x: -1.7, y: 0, z: -2.3 },
+  { type: 'torch', x: 1.7, y: 0, z: -2.3 },
+  { type: 'torch', x: 14, y: 3, z: -7 },
+  { type: 'torch', x: 9, y: 0, z: -12 },
+
+  // Barrels: a cluster by the crates, a few by the corridor, one near spawn.
+  { type: 'barrel', x: 4.3, y: 0, z: -15.2, rotation: 10 },
+  { type: 'barrel', x: 3.4, y: 0, z: -16.1, rotation: 70 },
+  { type: 'barrel', x: 4.5, y: 0, z: -16.5, rotation: 140 },
+  { type: 'barrel', x: -10.5, y: 0, z: 6.5, rotation: 0 },
+  { type: 'barrel', x: -10.6, y: 0, z: 7.5, rotation: 200 },
+  { type: 'barrel', x: 3, y: 0, z: 17.5, rotation: 45 },
+
+  // Signs facing the spawn (the board hangs toward +X from the post).
+  { type: 'sign', x: -6, y: 0, z: 14.5, rotation: 0, text: 'SALOON' },
+  { type: 'sign', x: 15, y: 0, z: 12, rotation: -30, text: 'HIGH NOON HELL' },
+
+  // Dry grass, mostly along the walls where wind piles it up.
+  { type: 'grass', x: -16, z: 16, radius: 4, count: 40 },
+  { type: 'grass', x: 16, z: 17, radius: 3, count: 25 },
+  { type: 'grass', x: -17, z: -16, radius: 3.5, count: 30 },
+  { type: 'grass', x: 0, z: -18, radius: 3, count: 20 },
+  { type: 'grass', x: -6, z: 4, radius: 2.5, count: 18 },
+  { type: 'grass', x: 9, z: 6, radius: 2, count: 12 },
+  { type: 'grass', x: 0, z: 12, radius: 6, count: 25 },
+];
+
 export const testArena: World = {
   spawn: { x: 0, y: 0, z: 16 },
+  props,
   boxes: [
+    // Invisible collision boxes of the props (barrels, posts, ...).
+    ...props.flatMap(propColliders),
+
     // --- Floor: 40 × 40, top surface at y = 0 ---
     box(0, -1, 0, 40, 1, 40, 'dirt'),
 
@@ -57,15 +104,5 @@ export const testArena: World = {
     box(7, 0, -14, 1, 1, 1, 'wood'),
     box(6.5, 1, -14, 1, 1, 1, 'wood'),
     box(-6, 0, -15, 1.5, 1.5, 1.5, 'wood'),
-  ],
-
-  // Lanterns hang just outside a surface (a few cm), never inside a box.
-  lanterns: [
-    { x: -8, y: 2.6, z: 10.7 }, // on the south face of the west pillars
-    { x: 8, y: 2.6, z: 10.7 }, // ... and of the east pillars
-    { x: 0, y: 2.7, z: -2.8 }, // above the step, in front of the platform
-    { x: -14, y: 2.4, z: -2 }, // middle of the corridor
-    { x: 14, y: 4.4, z: -3 }, // on the high walkway
-    { x: 6.5, y: 2.6, z: -13.3 }, // by the crate pile
   ],
 };

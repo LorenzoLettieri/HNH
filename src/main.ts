@@ -9,7 +9,8 @@ import { triggerLandingDip, updateLandingDip } from './render/landingDip';
 import { createBoxMesh, loadMaterials } from './render/materials';
 import { ATMOSPHERES, type Atmosphere } from './render/atmospheres';
 import { applySunLight, createSunLight } from './render/sunLight';
-import { applyLanterns, createLanterns, updateLanterns } from './render/lanterns';
+import { applyFireLights, createFireLights, updateFireLights } from './render/fireLights';
+import { createProps } from './render/props';
 import { createPostProcess } from './render/postprocess';
 import { applyParticles, createParticles, updateParticles } from './render/particles';
 import { applyHeightFog } from './render/heightFog';
@@ -56,7 +57,7 @@ scene.add(sunLight, sunLight.target);
 function applyAtmosphere(a: Atmosphere): void {
   applySky(sky, a);
   applySunLight(sunLight, a);
-  applyLanterns(a);
+  applyFireLights(a);
   applyParticles(a);
   applyHeightFog(a);
   post.setSun(directionFromAngles(a.sunElevation, a.sunAzimuth), a.godRays);
@@ -73,9 +74,12 @@ function applyAtmosphere(a: Atmosphere): void {
 const world = testArena;
 
 await loadMaterials(); // top-level await: the game starts once textures are ready
-for (const b of world.boxes) scene.add(createBoxMesh(b));
-createLanterns(scene, world.lanterns);
-createParticles(scene, world.lanterns);
+// Boxes without a `look` are invisible colliders (e.g. around props): not drawn.
+for (const b of world.boxes) if (b.look) scene.add(createBoxMesh(b));
+// Props (barrels, signs, torches, lanterns, grass): models + their flames.
+const props = createProps(scene, world);
+createFireLights(scene, props.fires);
+createParticles(scene, props.fires);
 
 let atmosphereIndex = 0;
 applyAtmosphere(ATMOSPHERES[atmosphereIndex]);
@@ -120,6 +124,17 @@ initInput(renderer.domElement, (locked) => {
 // The camera is drawn somewhere in between (interpolation).
 const player = createPlayer(world.spawn.x, world.spawn.y, world.spawn.z);
 const prevPlayer = createPlayer();
+
+// Debug: start from a given spot with ?pos=x,y,z&look=yaw,pitch (degrees)
+// in the URL. Handy to jump straight to the thing you're working on.
+const params = new URLSearchParams(location.search);
+const startPos = params.get('pos')?.split(',').map(Number);
+const startLook = params.get('look')?.split(',').map(Number);
+if (startPos?.length === 3) [player.x, player.y, player.z] = startPos;
+if (startLook?.length === 2) {
+  view.yaw = THREE.MathUtils.degToRad(startLook[0]);
+  view.pitch = THREE.MathUtils.degToRad(startLook[1]);
+}
 copyPlayer(player, prevPlayer);
 
 // --- Resize ---------------------------------------------------------------
@@ -172,7 +187,8 @@ renderer.setAnimationLoop((now: number) => {
 
   hud.textContent = `${horizontalSpeed(player).toFixed(1)} m/s  ${player.onGround ? 'GROUND' : 'AIR'}`;
 
-  updateLanterns(now / 1000);
+  updateFireLights(now / 1000);
+  props.update(now / 1000);
   updateParticles(frameTime, now / 1000, camera, post.sceneSize.y);
   post.render(scene, camera);
 });

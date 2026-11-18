@@ -2,6 +2,9 @@
 // box is made of (its `look`); this file decides how each look is drawn.
 import * as THREE from 'three';
 import type { Box } from '../sim/world';
+
+/** The material names a visible box can have. */
+type Look = NonNullable<Box['look']>;
 import { addHeightFog } from './heightFog';
 
 /**
@@ -10,10 +13,10 @@ import { addHeightFog } from './heightFog';
  * size on screen, a big part of a coherent pixel-art look.
  * With 32 px/m, a 64 × 64 texture covers 2 × 2 m.
  */
-const PIXELS_PER_METER = 32;
+export const PIXELS_PER_METER = 32;
 
 /** Which image each look uses. Swap a file name here to change a material. */
-const LOOKS: Record<Box['look'], string> = {
+const LOOKS: Record<Look, string> = {
   dirt: '/textures/floor_ground_dirt.png',
   wood: '/textures/timber_square_planks_cross.png',
   stone: '/textures/wall_brick_small_sand.png',
@@ -38,11 +41,11 @@ async function loadPixelTexture(url: string): Promise<THREE.Texture> {
   return tex;
 }
 
-const materials = {} as Record<Box['look'], THREE.MeshStandardMaterial>;
+const materials = {} as Record<Look, THREE.MeshStandardMaterial>;
 
 /** Downloads all textures (in parallel) and builds the materials. Call once at startup. */
 export async function loadMaterials(): Promise<void> {
-  const looks = Object.keys(LOOKS) as Box['look'][];
+  const looks = Object.keys(LOOKS) as Look[];
   const textures = await Promise.all(looks.map((look) => loadPixelTexture(LOOKS[look])));
   looks.forEach((look, i) => {
     materials[look] = new THREE.MeshStandardMaterial({ map: textures[i], roughness: 1 });
@@ -56,9 +59,9 @@ export function createBoxMesh(b: Box): THREE.Mesh {
   const sizeX = b.maxX - b.minX;
   const sizeY = b.maxY - b.minY;
   const sizeZ = b.maxZ - b.minZ;
-  const material = materials[b.look];
-  const geometry = new THREE.BoxGeometry(sizeX, sizeY, sizeZ);
-  scaleUVs(geometry, sizeX, sizeY, sizeZ, material.map!);
+  const material = materials[b.look!];
+  const { width, height } = material.map!.image as HTMLImageElement;
+  const geometry = texturedBoxGeometry(sizeX, sizeY, sizeZ, width, height);
 
   const mesh = new THREE.Mesh(geometry, material);
   mesh.castShadow = true; // blocks sunlight
@@ -75,15 +78,14 @@ export function createBoxMesh(b: Box): THREE.Mesh {
  * show one giant stretched image. Here we scale each face's UVs by its size
  * in meters, so the texture repeats every (image size / PIXELS_PER_METER) m.
  */
-function scaleUVs(
-  geometry: THREE.BoxGeometry,
+export function texturedBoxGeometry(
   sizeX: number,
   sizeY: number,
   sizeZ: number,
-  texture: THREE.Texture,
-): void {
-  // Texture size in pixels (the image is already loaded, see loadMaterials).
-  const { width: texW, height: texH } = texture.image as HTMLImageElement;
+  texW: number,
+  texH: number,
+): THREE.BoxGeometry {
+  const geometry = new THREE.BoxGeometry(sizeX, sizeY, sizeZ);
 
   // BoxGeometry has 6 faces × 4 vertices, in this face order: +X, -X, +Y, -Y, +Z, -Z.
   // For each face: which box dimensions run along the texture's U and V axes.
@@ -106,4 +108,5 @@ function scaleUVs(
       uv.setXY(i, uv.getX(i) * repeatU, uv.getY(i) * repeatV);
     }
   }
+  return geometry;
 }

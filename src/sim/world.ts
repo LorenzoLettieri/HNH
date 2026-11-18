@@ -14,20 +14,30 @@ export interface Box {
   maxX: number;
   maxY: number;
   maxZ: number;
-  /** How the renderer should draw it. The simulation ignores this. */
-  look: 'dirt' | 'wood' | 'stone';
+  /**
+   * How the renderer should draw it. The simulation ignores this.
+   * No look = invisible collider (e.g. the collision box of a prop).
+   */
+  look?: 'dirt' | 'wood' | 'stone';
 }
 
-/** A light source placed in the level. Visual only: the simulation ignores it. */
-export interface Lantern {
-  x: number;
-  y: number;
-  z: number;
-}
+/**
+ * A decoration placed in the level. The renderer decides how it looks
+ * (src/render/props/); the simulation only cares about its collision box
+ * (src/sim/props.ts).
+ */
+export type Prop =
+  | { type: 'barrel'; x: number; y: number; z: number; rotation?: number }
+  | { type: 'sign'; x: number; y: number; z: number; rotation?: number; text: string }
+  | { type: 'torch'; x: number; y: number; z: number }
+  /** mount 'wall': (x, y, z) is the point on the wall where the bracket is fixed. */
+  | { type: 'lantern'; x: number; y: number; z: number; rotation?: number; mount: 'wall' | 'ground' }
+  /** A patch of grass tufts scattered in a circle (purely visual). */
+  | { type: 'grass'; x: number; z: number; radius: number; count: number };
 
 export interface World {
   boxes: Box[];
-  lanterns: Lantern[];
+  props: Prop[];
   /** Where the player (re)appears, feet position. */
   spawn: { x: number; y: number; z: number };
 }
@@ -40,7 +50,7 @@ export function box(
   sizeX: number,
   sizeY: number,
   sizeZ: number,
-  look: Box['look'],
+  look?: Box['look'],
 ): Box {
   return {
     minX: x - sizeX / 2,
