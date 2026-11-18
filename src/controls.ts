@@ -27,5 +27,6 @@ export function buildCommand(tick: number): InputCommand {
   if (isKeyDown('KeyS')) forward -= 1;
   if (isKeyDown('KeyD')) strafe += 1;
   if (isKeyDown('KeyA')) strafe -= 1;
-  return { tick, forward, strafe, yaw: view.yaw, pitch: view.pitch };
+  const jump = isKeyDown('Space');
+  return { tick, forward, strafe, jump, yaw: view.yaw, pitch: view.pitch };
 }

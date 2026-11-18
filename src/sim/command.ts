@@ -8,6 +8,8 @@ export interface InputCommand {
   forward: number;
   /** -1 = left, 0 = none, 1 = right. */
   strafe: number;
+  /** Jump button held down during this tick. */
+  jump: boolean;
   /** View angles (radians) at the time the command was built. */
   yaw: number;
   pitch: number;

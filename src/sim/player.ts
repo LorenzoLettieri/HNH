@@ -1,5 +1,15 @@
 import type { InputCommand } from './command';
-import { GROUND_ACCEL, GROUND_FRICTION, MAX_GROUND_SPEED, STOP_SPEED } from './config';
+import {
+  AIR_ACCEL,
+  AIR_SPEED_CAP,
+  AUTO_BHOP,
+  GRAVITY,
+  GROUND_ACCEL,
+  GROUND_FRICTION,
+  JUMP_SPEED,
+  MAX_GROUND_SPEED,
+  STOP_SPEED,
+} from './config';
 
 // Pure data: no Three.js, no DOM. Can be copied, compared, sent over the network.
 export interface PlayerState {
@@ -13,10 +23,14 @@ export interface PlayerState {
   vz: number;
   yaw: number;
   pitch: number;
+  /** Standing on the ground (true) or airborne (false). */
+  onGround: boolean;
+  /** Was jump held during the previous tick? Used to detect a new press. */
+  jumpHeld: boolean;
 }
 
 export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
-  return { x, y, z, vx: 0, vy: 0, vz: 0, yaw: 0, pitch: 0 };
+  return { x, y, z, vx: 0, vy: 0, vz: 0, yaw: 0, pitch: 0, onGround: true, jumpHeld: false };
 }
 
 export function copyPlayer(from: PlayerState, to: PlayerState): void {
@@ -47,14 +61,40 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, dt: number): void 
     wishZ /= len;
   }
 
-  // 2. Friction slows us down, 3. acceleration pushes us toward wishdir.
-  applyFriction(p, GROUND_FRICTION, dt);
-  accelerate(p, wishX, wishZ, MAX_GROUND_SPEED, GROUND_ACCEL, dt);
+  // 2. Jump: only from the ground. With AUTO_BHOP off, it needs a fresh press.
+  const jumpPressed = cmd.jump && (AUTO_BHOP || !p.jumpHeld);
+  p.jumpHeld = cmd.jump;
+  if (p.onGround && jumpPressed) {
+    p.vy = JUMP_SPEED;
+    p.onGround = false;
+    // Note: we skip ground friction on the jump tick. If you jump the instant
+    // you land, friction never touches you and you keep all your speed:
+    // that's what makes bunny hopping work.
+  }
+
+  // 3. Ground: friction + ground acceleration. Air: no friction, air acceleration.
+  if (p.onGround) {
+    applyFriction(p, GROUND_FRICTION, dt);
+    accelerate(p, wishX, wishZ, MAX_GROUND_SPEED, MAX_GROUND_SPEED, GROUND_ACCEL, dt);
+  } else {
+    accelerate(p, wishX, wishZ, MAX_GROUND_SPEED, AIR_SPEED_CAP, AIR_ACCEL, dt);
+    p.vy -= GRAVITY * dt;
+  }
 
   // 4. Integrate: velocity moves the position.
   p.x += p.vx * dt;
   p.y += p.vy * dt;
   p.z += p.vz * dt;
+
+  // 5. Ground check. Temporary: the ground is an infinite plane at y = 0.
+  //    It'll be replaced by real collisions with the level.
+  if (p.y <= 0) {
+    p.y = 0;
+    if (p.vy < 0) p.vy = 0;
+    p.onGround = true;
+  } else {
+    p.onGround = false;
+  }
 }
 
 /** Quake's friction: removes a slice of speed every tick, keeping the direction. */
@@ -75,20 +115,26 @@ function applyFriction(p: PlayerState, friction: number, dt: number): void {
 
 /**
  * Quake's acceleration. Key detail: it limits the speed ALONG wishdir
- * (dot product), not the total speed. This quirk is what will later make
+ * (dot product), not the total speed. This quirk is what makes
  * air-strafing and bunny hopping possible.
+ *
+ * - wishSpeed: how hard we push (scales the acceleration).
+ * - speedCap:  the max speed we may reach ALONG wishdir. On the ground it's
+ *              the run speed; in the air it's tiny (AIR_SPEED_CAP).
  */
 function accelerate(
   p: PlayerState,
   wishX: number,
   wishZ: number,
   wishSpeed: number,
+  speedCap: number,
   accel: number,
   dt: number,
 ): void {
+  if (wishX === 0 && wishZ === 0) return;
   // How fast are we already going in the wished direction?
   const currentSpeed = p.vx * wishX + p.vz * wishZ;
-  const addSpeed = wishSpeed - currentSpeed;
+  const addSpeed = speedCap - currentSpeed;
   if (addSpeed <= 0) return;
 
   const accelSpeed = Math.min(accel * wishSpeed * dt, addSpeed);

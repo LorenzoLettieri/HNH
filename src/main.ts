@@ -115,7 +115,7 @@ renderer.setAnimationLoop((now: number) => {
   // interpolating them would add a tick of delay to aiming.
   camera.rotation.set(view.pitch, view.yaw, 0);
 
-  hud.textContent = `${horizontalSpeed(player).toFixed(1)} m/s`;
+  hud.textContent = `${horizontalSpeed(player).toFixed(1)} m/s  ${player.onGround ? 'GROUND' : 'AIR'}`;
 
   renderer.render(scene, camera);
 });

@@ -23,3 +23,24 @@ export const GROUND_FRICTION = 8;
  * prevents the endless slow "creep" before stopping completely. m/s.
  */
 export const STOP_SPEED = 2.5;
+
+// --- Gravity & jumping -------------------------------------------------------
+/** Downward acceleration, m/s². Real world is 9.8; games use more for snappier jumps. */
+export const GRAVITY = 20;
+/** Upward speed given by a jump, m/s. Jump height = JUMP_SPEED² / (2 × GRAVITY) ≈ 1.2 m. */
+export const JUMP_SPEED = 7;
+/**
+ * true  = holding jump re-jumps automatically on landing (easy bunny hopping).
+ * false = you must release and press again (timing-based, like classic Quake).
+ */
+export const AUTO_BHOP = true;
+
+// --- Air movement (Quake-style) ----------------------------------------------
+/** Air acceleration. Higher = more air control and faster strafe gains. */
+export const AIR_ACCEL = 12;
+/**
+ * Max speed you can ADD along your wished direction while airborne, m/s.
+ * Tiny on purpose: you can't simply fly forward faster, but turning while
+ * strafing keeps finding "new" directions to accelerate in → air-strafing.
+ */
+export const AIR_SPEED_CAP = 0.8;
