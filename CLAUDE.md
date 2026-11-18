@@ -34,7 +34,7 @@ Three.js, netcode, ecc. Il codice prodotto conta meno della sua comprensione.
 
 ## Dove trovare le cose
 Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella rilevante.
-- `src/main.ts`: entry point (renderer, scena, luci, mesh generate dai box del livello e relativi materiali, game loop a passo fisso + interpolazione camera)
+- `src/main.ts`: entry point (renderer, scena, luci, caricamento livello, game loop a passo fisso + interpolazione camera)
 - `src/input.ts`: input grezzo (tasti premuti, movimento mouse, Pointer Lock)
 - `src/controls.ts`: sensibilità mouse, angoli di vista, **mappatura tasti** (WASD, Spazio, R = respawn) → `InputCommand`
 - `src/sim/`: simulazione pura (niente Three.js/DOM)
@@ -47,6 +47,9 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `testArena.ts`: arena di prova 40×40 (piattaforma, scale, corridoio, colonne, casse)
 - `src/render/`: effetti puramente visivi (non toccano la simulazione)
   - `landingDip.ts`: abbassamento camera all'atterraggio (intensità, recupero)
+  - `materials.ts`: **quale texture usa ogni materiale** (`LOOKS`), densità dei pixel, mesh dei box
+- `public/textures/`: texture PNG (servite così come sono da Vite su `/textures/...`)
+- `CREDITS.md`: autori e licenze degli asset
 - `index.html`: pagina con canvas, overlay "Click to play" e HUD (stili CSS inclusi)
 - `vite.config.ts`: config del dev server e della build
 

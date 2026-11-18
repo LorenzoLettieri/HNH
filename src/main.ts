@@ -5,6 +5,7 @@ import { TICK_DT, EYE_HEIGHT } from './sim/config';
 import { copyPlayer, createPlayer, horizontalSpeed, stepPlayer } from './sim/player';
 import { testArena } from './levels/testArena';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
+import { createBoxMesh, loadMaterials } from './render/materials';
 
 // --- Renderer -------------------------------------------------------------
 const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -35,25 +36,11 @@ lantern.position.set(-1.5, 2.5, 1.5);
 scene.add(lantern);
 
 // --- Level ----------------------------------------------------------------
-// The level is pure data (src/levels/). Here we just build one mesh per box.
-// A mesh = geometry (the shape) + material (how its surface reacts to light).
+// The level is pure data (src/levels/). Here we build one textured mesh per box.
 const world = testArena;
 
-const materials = {
-  dirt: new THREE.MeshStandardMaterial({ color: 0x6b4a2e, roughness: 1 }),
-  wood: new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.9 }),
-  stone: new THREE.MeshStandardMaterial({ color: 0x5a4a44, roughness: 1 }),
-};
-
-for (const b of world.boxes) {
-  const sizeX = b.maxX - b.minX;
-  const sizeY = b.maxY - b.minY;
-  const sizeZ = b.maxZ - b.minZ;
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(sizeX, sizeY, sizeZ), materials[b.look]);
-  // BoxGeometry is centered on its origin: place the mesh at the box's center.
-  mesh.position.set(b.minX + sizeX / 2, b.minY + sizeY / 2, b.minZ + sizeZ / 2);
-  scene.add(mesh);
-}
+await loadMaterials(); // top-level await: the game starts once textures are ready
+for (const b of world.boxes) scene.add(createBoxMesh(b));
 
 // --- Player & camera ------------------------------------------------------
 // Rotation order 'YXZ': yaw (turn left/right) first, then pitch (look up/down).
