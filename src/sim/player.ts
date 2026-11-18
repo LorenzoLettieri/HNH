@@ -121,8 +121,8 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
   const { landed } = moveAndCollide(p, PLAYER_RADIUS, PLAYER_HEIGHT, world.boxes, dt);
   p.onGround = landed;
 
-  // 5. Fell off the world: back to the spawn point.
-  if (p.y < KILL_Y) respawn(p, world);
+  // 5. Fell off the world (or asked to): back to the spawn point.
+  if (p.y < KILL_Y || cmd.respawn) respawn(p, world);
 }
 
 export function respawn(p: PlayerState, world: World): void {

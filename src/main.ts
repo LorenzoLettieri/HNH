@@ -3,7 +3,7 @@ import { initInput } from './input';
 import { buildCommand, updateLook, view } from './controls';
 import { TICK_DT, EYE_HEIGHT } from './sim/config';
 import { copyPlayer, createPlayer, horizontalSpeed, stepPlayer } from './sim/player';
-import { createTestWorld } from './sim/world';
+import { testArena } from './levels/testArena';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
 
 // --- Renderer -------------------------------------------------------------
@@ -19,7 +19,7 @@ const scene = new THREE.Scene();
 // so distant objects fade seamlessly into the sky.
 const SKY_COLOR = 0x3a1810;
 scene.background = new THREE.Color(SKY_COLOR);
-scene.fog = new THREE.Fog(SKY_COLOR, 5, 30); // starts at 5m, fully opaque at 30m
+scene.fog = new THREE.Fog(SKY_COLOR, 8, 45); // starts at 8m, fully opaque at 45m
 
 // --- Camera ---------------------------------------------------------------
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -35,13 +35,14 @@ lantern.position.set(-1.5, 2.5, 1.5);
 scene.add(lantern);
 
 // --- Level ----------------------------------------------------------------
-// The level is pure data (src/sim/world.ts). Here we just build one mesh per box.
+// The level is pure data (src/levels/). Here we just build one mesh per box.
 // A mesh = geometry (the shape) + material (how its surface reacts to light).
-const world = createTestWorld();
+const world = testArena;
 
 const materials = {
   dirt: new THREE.MeshStandardMaterial({ color: 0x6b4a2e, roughness: 1 }),
   wood: new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.9 }),
+  stone: new THREE.MeshStandardMaterial({ color: 0x5a4a44, roughness: 1 }),
 };
 
 for (const b of world.boxes) {
