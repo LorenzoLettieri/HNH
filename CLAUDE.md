@@ -34,7 +34,7 @@ Three.js, netcode, ecc. Il codice prodotto conta meno della sua comprensione.
 
 ## Dove trovare le cose
 Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella rilevante.
-- `src/main.ts`: entry point (renderer, scena, camera, render loop)
+- `src/main.ts`: entry point (renderer, scena, atmosfera/nebbia, luci, oggetti di prova, render loop)
 - `index.html`: pagina che ospita il canvas
 - `vite.config.ts`: config del dev server e della build
 
