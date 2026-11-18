@@ -36,7 +36,7 @@ Three.js, netcode, ecc. Il codice prodotto conta meno della sua comprensione.
 Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella rilevante.
 - `src/main.ts`: entry point (renderer, scena, luci, caricamento livello, game loop a passo fisso + interpolazione camera)
 - `src/input.ts`: input grezzo (tasti premuti, movimento mouse, Pointer Lock)
-- `src/controls.ts`: sensibilità mouse, angoli di vista, **mappatura tasti** (WASD, Spazio, R = respawn) → `InputCommand` (T = cambia atmosfera, in `main.ts`)
+- `src/controls.ts`: sensibilità mouse, angoli di vista, **mappatura tasti** (WASD, Spazio, R = respawn) → `InputCommand` (T = cambia atmosfera, P = pixel art on/off, in `main.ts`)
 - `src/sim/`: simulazione pura (niente Three.js/DOM)
   - `config.ts`: **costanti di tuning** (tick rate, altezza occhi, dimensioni giocatore, movimento a terra, gravità/salto/coyote/buffer, movimento in aria)
   - `command.ts`: tipo `InputCommand` (cosa vuole fare il giocatore in un tick)
@@ -51,6 +51,7 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `sky.ts`: cielo (sfera + shader GLSL)
   - `sunLight.ts`: luce direzionale dal sole/luna + **ombre** (area coperta, risoluzione, bias)
   - `lanterns.ts`: lanterne (portata, intensità del tremolio)
+  - `postprocess.ts`: **pipeline di post-processing** (risoluzione pixel, livelli di colore, dithering)
   - `materials.ts`: **quale texture usa ogni materiale** (`LOOKS`), densità dei pixel, mesh dei box
 - `public/textures/`: texture PNG (servite così come sono da Vite su `/textures/...`)
 - `CREDITS.md`: autori e licenze degli asset

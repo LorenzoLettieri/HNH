@@ -10,6 +10,7 @@ import { ATMOSPHERES, type Atmosphere } from './render/atmospheres';
 import { applySky, createSky } from './render/sky';
 import { applySunLight, createSunLight } from './render/sunLight';
 import { applyLanterns, createLanterns, updateLanterns } from './render/lanterns';
+import { createPostProcess } from './render/postprocess';
 
 // --- Renderer -------------------------------------------------------------
 const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -20,6 +21,10 @@ document.body.appendChild(renderer.domElement);
 // unfiltered edges: cheapest, and they match the pixel-art look.
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.BasicShadowMap;
+
+// Post-processing pipeline: low-res render, color reduction, dithering, ...
+const post = createPostProcess(renderer);
+post.setSize(window.innerWidth, window.innerHeight);
 
 // --- Scene & atmosphere ---------------------------------------------------
 const scene = new THREE.Scene();
@@ -70,10 +75,14 @@ applyAtmosphere(ATMOSPHERES[atmosphereIndex]);
 
 // T cycles through the presets. It's a visual setting of this client, not
 // something the player does in the game, so it doesn't go through InputCommand.
+// P toggles the pixel-art look, to compare before/after.
 window.addEventListener('keydown', (e) => {
-  if (e.code !== 'KeyT' || e.repeat) return;
-  atmosphereIndex = (atmosphereIndex + 1) % ATMOSPHERES.length;
-  applyAtmosphere(ATMOSPHERES[atmosphereIndex]);
+  if (e.repeat) return;
+  if (e.code === 'KeyT') {
+    atmosphereIndex = (atmosphereIndex + 1) % ATMOSPHERES.length;
+    applyAtmosphere(ATMOSPHERES[atmosphereIndex]);
+  }
+  if (e.code === 'KeyP') post.togglePixelArt();
 });
 
 // --- Player & camera ------------------------------------------------------
@@ -98,6 +107,7 @@ window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  post.setSize(window.innerWidth, window.innerHeight);
 });
 
 // --- Loop -----------------------------------------------------------------
@@ -143,5 +153,5 @@ renderer.setAnimationLoop((now: number) => {
   hud.textContent = `${horizontalSpeed(player).toFixed(1)} m/s  ${player.onGround ? 'GROUND' : 'AIR'}`;
 
   updateLanterns(now / 1000);
-  renderer.render(scene, camera);
+  post.render(scene, camera);
 });
