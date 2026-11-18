@@ -17,7 +17,7 @@ export const MAX_GROUND_SPEED = 8;
  */
 export const GROUND_ACCEL = 14;
 /** How fast you stop when releasing the keys. Higher = snappier stops. */
-export const GROUND_FRICTION = 8;
+export const GROUND_FRICTION = 10;
 /**
  * Below this speed, friction acts as if you were going this fast:
  * prevents the endless slow "creep" before stopping completely. m/s.
@@ -33,7 +33,7 @@ export const JUMP_SPEED = 7;
  * true  = holding jump re-jumps automatically on landing (easy bunny hopping).
  * false = you must release and press again (timing-based, like classic Quake).
  */
-export const AUTO_BHOP = true;
+export const AUTO_BHOP = false;
 
 // --- Air movement (Quake-style) ----------------------------------------------
 /** Air acceleration. Higher = more air control and faster strafe gains. */
