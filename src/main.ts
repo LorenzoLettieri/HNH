@@ -3,6 +3,7 @@ import { initInput } from './input';
 import { buildCommand, updateLook, view } from './controls';
 import { TICK_DT, EYE_HEIGHT } from './sim/config';
 import { copyPlayer, createPlayer, horizontalSpeed, stepPlayer } from './sim/player';
+import { triggerLandingDip, updateLandingDip } from './render/landingDip';
 
 // --- Renderer -------------------------------------------------------------
 const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -100,6 +101,8 @@ renderer.setAnimationLoop((now: number) => {
   while (accumulator >= TICK_DT) {
     copyPlayer(player, prevPlayer);
     stepPlayer(player, buildCommand(tick), TICK_DT);
+    // The renderer only *reads* the state: "were we in the air, and now we're not?"
+    if (!prevPlayer.onGround && player.onGround) triggerLandingDip(-prevPlayer.vy);
     tick++;
     accumulator -= TICK_DT;
   }
@@ -108,7 +111,7 @@ renderer.setAnimationLoop((now: number) => {
   const alpha = accumulator / TICK_DT;
   camera.position.set(
     prevPlayer.x + (player.x - prevPlayer.x) * alpha,
-    prevPlayer.y + (player.y - prevPlayer.y) * alpha + EYE_HEIGHT,
+    prevPlayer.y + (player.y - prevPlayer.y) * alpha + EYE_HEIGHT - updateLandingDip(frameTime),
     prevPlayer.z + (player.z - prevPlayer.z) * alpha,
   );
   // View angles come straight from the mouse, not from the simulation:

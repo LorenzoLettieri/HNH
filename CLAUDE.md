@@ -38,9 +38,11 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
 - `src/input.ts`: input grezzo (tasti premuti, movimento mouse, Pointer Lock)
 - `src/controls.ts`: sensibilità mouse, angoli di vista, **mappatura tasti** → `InputCommand`
 - `src/sim/`: simulazione pura (niente Three.js/DOM)
-  - `config.ts`: **costanti di tuning** (tick rate, altezza occhi, movimento a terra, gravità/salto, movimento in aria)
+  - `config.ts`: **costanti di tuning** (tick rate, altezza occhi, movimento a terra, gravità/salto/coyote/buffer, movimento in aria)
   - `command.ts`: tipo `InputCommand` (cosa vuole fare il giocatore in un tick)
   - `player.ts`: stato del giocatore e `stepPlayer()` (salto, attrito, accelerazione Quake a terra/in aria, gravità)
+- `src/render/`: effetti puramente visivi (non toccano la simulazione)
+  - `landingDip.ts`: abbassamento camera all'atterraggio (intensità, recupero)
 - `index.html`: pagina con canvas, overlay "Click to play" e HUD (stili CSS inclusi)
 - `vite.config.ts`: config del dev server e della build
 

@@ -3,13 +3,19 @@ import {
   AIR_ACCEL,
   AIR_SPEED_CAP,
   AUTO_BHOP,
+  COYOTE_TIME,
   GRAVITY,
   GROUND_ACCEL,
   GROUND_FRICTION,
+  JUMP_BUFFER_TIME,
   JUMP_SPEED,
   MAX_GROUND_SPEED,
   STOP_SPEED,
+  secondsToTicks,
 } from './config';
+
+const COYOTE_TICKS = secondsToTicks(COYOTE_TIME);
+const JUMP_BUFFER_TICKS = secondsToTicks(JUMP_BUFFER_TIME);
 
 // Pure data: no Three.js, no DOM. Can be copied, compared, sent over the network.
 export interface PlayerState {
@@ -27,10 +33,15 @@ export interface PlayerState {
   onGround: boolean;
   /** Was jump held during the previous tick? Used to detect a new press. */
   jumpHeld: boolean;
+  /** Ticks left in which a jump is still allowed after leaving the ground. */
+  coyoteTicks: number;
+  /** Ticks left in which a recent jump press is still waiting to happen. */
+  jumpBufferTicks: number;
 }
 
 export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
-  return { x, y, z, vx: 0, vy: 0, vz: 0, yaw: 0, pitch: 0, onGround: true, jumpHeld: false };
+  return { x, y, z, vx: 0, vy: 0, vz: 0, yaw: 0, pitch: 0, onGround: true, jumpHeld: false,
+    coyoteTicks: 0, jumpBufferTicks: 0 };
 }
 
 export function copyPlayer(from: PlayerState, to: PlayerState): void {
@@ -61,16 +72,31 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, dt: number): void 
     wishZ /= len;
   }
 
-  // 2. Jump: only from the ground. With AUTO_BHOP off, it needs a fresh press.
+  // 2. Jump.
+  // A "press" is a new press (or every tick while held, with AUTO_BHOP).
+  // Pressing doesn't jump directly: it fills the buffer, which stays "armed"
+  // for a few ticks. So a press slightly before landing isn't lost.
   const jumpPressed = cmd.jump && (AUTO_BHOP || !p.jumpHeld);
   p.jumpHeld = cmd.jump;
-  if (p.onGround && jumpPressed) {
+  if (jumpPressed) p.jumpBufferTicks = JUMP_BUFFER_TICKS;
+
+  // On the ground the coyote timer is kept full; in the air it runs out.
+  if (p.onGround) p.coyoteTicks = COYOTE_TICKS;
+
+  const canJump = p.onGround || p.coyoteTicks > 0;
+  if (p.jumpBufferTicks > 0 && canJump) {
     p.vy = JUMP_SPEED;
     p.onGround = false;
+    p.jumpBufferTicks = 0;
+    p.coyoteTicks = 0; // no double jump through coyote time
     // Note: we skip ground friction on the jump tick. If you jump the instant
     // you land, friction never touches you and you keep all your speed:
     // that's what makes bunny hopping work.
   }
+
+  // Both timers count down by one each tick.
+  if (p.jumpBufferTicks > 0) p.jumpBufferTicks--;
+  if (!p.onGround && p.coyoteTicks > 0) p.coyoteTicks--;
 
   // 3. Ground: friction + ground acceleration. Air: no friction, air acceleration.
   if (p.onGround) {

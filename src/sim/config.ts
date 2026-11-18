@@ -34,6 +34,21 @@ export const JUMP_SPEED = 7;
  * false = you must release and press again (timing-based, like classic Quake).
  */
 export const AUTO_BHOP = false;
+/**
+ * Coyote time: you can still jump for this long after walking off a ledge,
+ * like the cartoon coyote running off a cliff. Seconds.
+ */
+export const COYOTE_TIME = 0.1;
+/**
+ * Jump buffer: a jump pressed up to this long BEFORE landing still counts,
+ * and fires on the landing tick. Seconds.
+ */
+export const JUMP_BUFFER_TIME = 0.1;
+
+/** Converts a duration in seconds to a whole number of ticks. */
+export function secondsToTicks(seconds: number): number {
+  return Math.round(seconds * TICK_RATE);
+}
 
 // --- Air movement (Quake-style) ----------------------------------------------
 /** Air acceleration. Higher = more air control and faster strafe gains. */
