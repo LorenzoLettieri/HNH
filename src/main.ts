@@ -7,11 +7,12 @@ import { testArena } from './levels/testArena';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
 import { createBoxMesh, loadMaterials } from './render/materials';
 import { ATMOSPHERES, type Atmosphere } from './render/atmospheres';
-import { applySky, createSky } from './render/sky';
 import { applySunLight, createSunLight } from './render/sunLight';
 import { applyLanterns, createLanterns, updateLanterns } from './render/lanterns';
 import { createPostProcess } from './render/postprocess';
 import { applyParticles, createParticles, updateParticles } from './render/particles';
+import { applyHeightFog } from './render/heightFog';
+import { applySky, createSky, directionFromAngles } from './render/sky';
 
 // --- Renderer -------------------------------------------------------------
 const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -56,6 +57,8 @@ function applyAtmosphere(a: Atmosphere): void {
   applySunLight(sunLight, a);
   applyLanterns(a);
   applyParticles(a);
+  applyHeightFog(a);
+  post.setSun(directionFromAngles(a.sunElevation, a.sunAzimuth), a.godRays);
   fog.color.set(a.skyHorizon);
   fog.near = a.fogNear;
   fog.far = a.fogFar;

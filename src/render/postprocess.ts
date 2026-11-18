@@ -67,9 +67,56 @@ const blurFragment = /* glsl */ `
   }
 `;
 
+// God rays ("crepuscular rays"): for each pixel, walk in a straight line
+// toward the sun on screen and add up how much bright SKY we cross. Where a
+// wall stands between the pixel and the sun, the walk crosses fewer sky
+// pixels: those are the shadows between the rays.
+const raysFragment = /* glsl */ `
+  uniform sampler2D tScene;
+  uniform sampler2D tDepth;
+  uniform vec2 sunPosition; // sun position on screen, 0..1
+  uniform float strength;
+  uniform float aspect;     // width / height, to measure distances in a round way
+  varying vec2 vUv;
+
+  const int SAMPLES = 48;
+
+  // Brightness that can "shine through": only sky pixels count. The sky
+  // never writes depth, so its depth is still the cleared value (1.0).
+  // And only the sky around the sun: the rest of the sky doesn't emit rays.
+  vec3 skyLight(vec2 uv) {
+    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) return vec3(0.0);
+    if (texture2D(tDepth, uv).r < 0.99999) return vec3(0.0);
+    float nearSun = 1.0 - smoothstep(0.0, 0.25, length((uv - sunPosition) * vec2(aspect, 1.0)));
+    return max(texture2D(tScene, uv).rgb - 0.5, 0.0) * nearSun;
+  }
+
+  // Cheap per-pixel random number in 0..1.
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+  }
+
+  void main() {
+    vec2 step = (vUv - sunPosition) / float(SAMPLES);
+    // Start each pixel's walk at a slightly random offset. With a fixed start,
+    // neighboring pixels sample the same spots and we'd see stair-step bands;
+    // with jitter the bands turn into fine noise, which the eye averages out.
+    vec2 uv = vUv - step * hash(vUv * 1000.0);
+    vec3 sum = vec3(0.0);
+    float weight = 1.0;
+    for (int i = 0; i < SAMPLES; i++) {
+      sum += skyLight(uv) * weight;
+      weight *= 0.97; // samples closer to the sun count a bit less: rays fade
+      uv -= step;
+    }
+    gl_FragColor = vec4(sum / float(SAMPLES) * strength, 1.0);
+  }
+`;
+
 const finalFragment = /* glsl */ `
   uniform sampler2D tScene;
   uniform sampler2D tBloom;
+  uniform sampler2D tRays;
   uniform float bloomStrength;
   uniform vec2 resolution;   // size of the low-res image, in pixels
   uniform float levels;      // 0 = no color reduction
@@ -99,6 +146,7 @@ const finalFragment = /* glsl */ `
     vec3 color = texture2D(tScene, vUv).rgb;
     // Bloom is added in linear light, before anything else: it's "more light".
     color += texture2D(tBloom, vUv).rgb * bloomStrength;
+    color += texture2D(tRays, vUv).rgb;
 
     // Values above 1 can't be shown. Scale the whole color down instead of
     // clipping each channel: a too-bright orange stays orange, not yellow-white.
@@ -128,7 +176,9 @@ function fullscreenMaterial(
 }
 
 export interface PostProcess {
-  render(scene: THREE.Scene, camera: THREE.Camera): void;
+  render(scene: THREE.Scene, camera: THREE.PerspectiveCamera): void;
+  /** Where the sun is (unit direction) and how strong its rays are. */
+  setSun(direction: THREE.Vector3, godRays: number): void;
   setSize(width: number, height: number): void;
   /** Switches between the pixel-art look and full resolution (for comparison). */
   togglePixelArt(): void;
@@ -146,6 +196,9 @@ export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
     magFilter: THREE.NearestFilter,
     depthBuffer: true,
   });
+  // Also keep the depth buffer as a readable texture: the god rays need to
+  // know which pixels are sky (nothing drawn there) and which are geometry.
+  sceneTarget.depthTexture = new THREE.DepthTexture(1, 1);
 
   // Bloom works at half the scene resolution: it's a blurry glow anyway, so
   // fewer pixels = cheaper, and each blur step reaches twice as far.
@@ -158,6 +211,7 @@ export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
   };
   const bloomA = new THREE.WebGLRenderTarget(1, 1, bloomOptions);
   const bloomB = new THREE.WebGLRenderTarget(1, 1, bloomOptions);
+  const raysTarget = new THREE.WebGLRenderTarget(1, 1, bloomOptions);
 
   const brightMaterial = fullscreenMaterial(brightFragment, {
     tInput: { value: sceneTarget.texture },
@@ -167,9 +221,17 @@ export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
     tInput: { value: null },
     direction: { value: new THREE.Vector2() },
   });
+  const raysMaterial = fullscreenMaterial(raysFragment, {
+    tScene: { value: sceneTarget.texture },
+    tDepth: { value: sceneTarget.depthTexture },
+    sunPosition: { value: new THREE.Vector2() },
+    strength: { value: 0 },
+    aspect: { value: 1 },
+  });
   const finalMaterial = fullscreenMaterial(finalFragment, {
     tScene: { value: sceneTarget.texture },
     tBloom: { value: bloomA.texture },
+    tRays: { value: raysTarget.texture },
     bloomStrength: { value: BLOOM_STRENGTH },
     resolution: { value: new THREE.Vector2() },
     levels: { value: COLOR_LEVELS },
@@ -206,12 +268,22 @@ export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
     const bh = Math.max(1, Math.round(sceneSize.y / 2));
     bloomA.setSize(bw, bh);
     bloomB.setSize(bw, bh);
+    raysTarget.setSize(bw, bh);
     finalMaterial.uniforms.resolution.value.copy(sceneSize);
     finalMaterial.uniforms.levels.value = pixelArt ? COLOR_LEVELS : 0;
   }
 
+  const sunDirection = new THREE.Vector3(0, 1, 0);
+  let godRays = 0;
+  const sunOnScreen = new THREE.Vector3();
+  const cameraForward = new THREE.Vector3();
+
   return {
     sceneSize,
+    setSun(direction, strength) {
+      sunDirection.copy(direction);
+      godRays = strength;
+    },
     render(scene, camera) {
       // 1. Scene → low-res image.
       renderer.setRenderTarget(sceneTarget);
@@ -231,7 +303,23 @@ export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
         pass(blurMaterial, bloomA);
       }
 
-      // 3. Scene + bloom → screen, through the final shader.
+      // 3. God rays, only if the sun is in front of us.
+      camera.getWorldDirection(cameraForward);
+      const facing = cameraForward.dot(sunDirection); // 1 = looking straight at it
+      // Project a point far away toward the sun onto the screen (-1..1 → 0..1).
+      sunOnScreen.copy(sunDirection).multiplyScalar(100).add(camera.position).project(camera);
+      const visibility = THREE.MathUtils.smoothstep(facing, 0.1, 0.6);
+      raysMaterial.uniforms.strength.value = godRays * visibility;
+      raysMaterial.uniforms.aspect.value = sceneSize.x / sceneSize.y;
+      raysMaterial.uniforms.sunPosition.value.set((sunOnScreen.x + 1) / 2, (sunOnScreen.y + 1) / 2);
+      if (visibility > 0) {
+        pass(raysMaterial, raysTarget);
+      } else {
+        renderer.setRenderTarget(raysTarget);
+        renderer.clear(); // no sun in view: no rays
+      }
+
+      // 4. Scene + bloom + rays → screen, through the final shader.
       pass(finalMaterial, null);
     },
     setSize(width, height) {

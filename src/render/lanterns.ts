@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import type { Lantern } from '../sim/world';
 import type { Atmosphere } from './atmospheres';
+import { addHeightFog } from './heightFog';
 
 /** How far each lantern's light reaches, meters. Beyond this it's zero. */
 const RANGE = 9;
@@ -50,6 +51,7 @@ export function createLanterns(scene: THREE.Scene, lanterns: Lantern[]): void {
     // The visible "flame": MeshBasicMaterial ignores lighting, so it always
     // looks bright, even in the dark. That's what sells it as a light source.
     const glow = new THREE.MeshBasicMaterial();
+    addHeightFog(glow);
     const mesh = new THREE.Mesh(geometry, glow);
     mesh.position.set(l.x, l.y, l.z);
     scene.add(mesh);

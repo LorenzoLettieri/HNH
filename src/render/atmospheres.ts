@@ -48,6 +48,13 @@ export interface Atmosphere {
   fogNear: number;
   fogFar: number;
 
+  /** Ground mist: thickness (0 = none) and how fast it thins with height. */
+  groundFogDensity: number;
+  groundFogFalloff: number;
+
+  /** Light shafts from the sun/moon (0 = none). */
+  godRays: number;
+
   /** Ambient (hemisphere) light: color from above, color from below, strength. */
   ambientSky: number;
   ambientGround: number;
@@ -80,6 +87,9 @@ export const HIGH_NOON: Atmosphere = {
   dustBlink: 0,
   fogNear: 10,
   fogFar: 60,
+  groundFogDensity: 0.02,
+  groundFogFalloff: 0.5,
+  godRays: 1,
   ambientSky: 0xc06040,
   ambientGround: 0x301510,
   ambientIntensity: 0.7,
@@ -111,6 +121,9 @@ export const HIGH_MIDNIGHT: Atmosphere = {
   dustBlink: 1,
   fogNear: 6,
   fogFar: 45,
+  groundFogDensity: 0.045,
+  groundFogFalloff: 0.8,
+  godRays: 0.7,
   ambientSky: 0x5040a0,
   ambientGround: 0x100818,
   ambientIntensity: 0.45,

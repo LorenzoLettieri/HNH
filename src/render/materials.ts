@@ -2,6 +2,7 @@
 // box is made of (its `look`); this file decides how each look is drawn.
 import * as THREE from 'three';
 import type { Box } from '../sim/world';
+import { addHeightFog } from './heightFog';
 
 /**
  * Texel density: how many texture pixels cover one meter of surface.
@@ -45,6 +46,7 @@ export async function loadMaterials(): Promise<void> {
   const textures = await Promise.all(looks.map((look) => loadPixelTexture(LOOKS[look])));
   looks.forEach((look, i) => {
     materials[look] = new THREE.MeshStandardMaterial({ map: textures[i], roughness: 1 });
+    addHeightFog(materials[look]);
   });
 }
 
