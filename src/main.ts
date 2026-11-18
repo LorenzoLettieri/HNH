@@ -14,6 +14,7 @@ import { applyFireLights, createFireLights, updateFireLights } from './render/fi
 import { createProps } from './render/props';
 import { createPostProcess } from './render/postprocess';
 import { createWeaponFx } from './render/weaponFx';
+import { createViewmodel } from './render/weapons/viewmodel';
 import { stepWeapon } from './sim/weapon';
 import type { SimEvent } from './sim/events';
 import { initAudio } from './audio/sfx';
@@ -66,6 +67,7 @@ function applyAtmosphere(a: Atmosphere): void {
   applyParticles(a);
   applyHeightFog(a);
   post.setSun(directionFromAngles(a.sunElevation, a.sunAzimuth), a.godRays);
+  viewmodel.applyAtmosphere(a);
   fog.color.set(a.skyHorizon);
   fog.near = a.fogNear;
   fog.far = a.fogFar;
@@ -88,6 +90,11 @@ const props = createProps(scene, world);
 createFireLights(scene, props.fires);
 createParticles(scene, props.fires, props.vents);
 const weaponFx = createWeaponFx(scene);
+// The gun in your hand: its own scene and camera, drawn over the world.
+const viewmodel = createViewmodel();
+viewmodel.setAspect(window.innerWidth / window.innerHeight);
+weaponFx.onShot.push(() => viewmodel.onShot());
+weaponFx.onReload.push(() => viewmodel.onReload());
 
 let atmosphereIndex = 0;
 applyAtmosphere(ATMOSPHERES[atmosphereIndex]);
@@ -152,6 +159,7 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
   post.setSize(window.innerWidth, window.innerHeight);
+  viewmodel.setAspect(window.innerWidth / window.innerHeight);
 });
 
 // --- Loop -----------------------------------------------------------------
@@ -161,6 +169,8 @@ window.addEventListener('resize', () => {
 // "leftover" time that isn't enough for a full tick yet.
 let tick = 0;
 let accumulator = 0;
+let lastViewYaw = view.yaw;
+let lastViewPitch = view.pitch;
 let lastTime = performance.now();
 
 renderer.setAnimationLoop((now: number) => {
@@ -189,7 +199,17 @@ renderer.setAnimationLoop((now: number) => {
   // View angles come straight from the mouse, not from the simulation:
   // interpolating them would add a tick of delay to aiming.
   // (rotation.z, the roll, is set by the camera feel below.)
-  camera.rotation.x = view.pitch;
+  // The gun animates first: it also returns the visual "punch" of the shot.
+  const viewKick = viewmodel.update(
+    frameTime,
+    player,
+    camera,
+    view.yaw - lastViewYaw,
+    view.pitch - lastViewPitch,
+  );
+  lastViewYaw = view.yaw;
+  lastViewPitch = view.pitch;
+  camera.rotation.x = view.pitch + viewKick; // the punch is only visual: aim is unaffected
   camera.rotation.y = view.yaw;
   const eyeHeight = updateCameraFeel(camera, player, frameTime);
   camera.position.set(
@@ -213,5 +233,5 @@ renderer.setAnimationLoop((now: number) => {
   updateFireLights(now / 1000);
   props.update(now / 1000);
   updateParticles(frameTime, now / 1000, camera, post.sceneSize.y);
-  post.render(scene, camera);
+  post.render(scene, camera, viewmodel);
 });

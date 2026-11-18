@@ -179,7 +179,15 @@ function fullscreenMaterial(
 }
 
 export interface PostProcess {
-  render(scene: THREE.Scene, camera: THREE.PerspectiveCamera): void;
+  /**
+   * Renders the scene, then (optionally) an overlay scene on top of it with
+   * the depth buffer cleared: used for the gun in your hand.
+   */
+  render(
+    scene: THREE.Scene,
+    camera: THREE.PerspectiveCamera,
+    overlay?: { scene: THREE.Scene; camera: THREE.Camera },
+  ): void;
   /** Where the sun is (unit direction) and how strong its rays are. */
   setSun(direction: THREE.Vector3, godRays: number): void;
   setSize(width: number, height: number): void;
@@ -289,7 +297,7 @@ export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
       sunDirection.copy(direction);
       godRays = strength;
     },
-    render(scene, camera) {
+    render(scene, camera, overlay) {
       // Settings may have changed (debug panel): copy them into the uniforms.
       brightMaterial.uniforms.threshold.value = postSettings.bloomThreshold;
       finalMaterial.uniforms.bloomStrength.value = postSettings.bloomStrength;
@@ -299,6 +307,14 @@ export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
       // 1. Scene → low-res image.
       renderer.setRenderTarget(sceneTarget);
       renderer.render(scene, camera);
+      if (overlay) {
+        // Draw the overlay ON TOP of what's there: don't clear the colors,
+        // only the depth, so the world can't hide the gun.
+        renderer.autoClear = false;
+        renderer.clearDepth();
+        renderer.render(overlay.scene, overlay.camera);
+        renderer.autoClear = true;
+      }
 
       // 2. Bloom: bright pass into A, then blur A→B (horizontal), B→A (vertical),
       //    a few times, spreading further each time.

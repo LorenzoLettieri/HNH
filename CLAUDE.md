@@ -43,7 +43,7 @@ per chi sta fermo); nemici che attaccano lo spazio (anche volanti e a distanza);
 Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella rilevante.
 - `src/main.ts`: entry point (renderer, scena, luci, caricamento livello, game loop a passo fisso + interpolazione camera).
   Debug: `?pos=x,y,z&look=yaw,pitch` nell'URL per partire da un punto preciso; `?level=arena` per l'arena di prova
-- `src/input.ts`: input grezzo (tasti premuti, movimento mouse, Pointer Lock)
+- `src/input.ts`: input grezzo (tasti e tasti del mouse premuti, pressioni brevi "memorizzate", movimento mouse, Pointer Lock)
 - `src/controls.ts`: sensibilità mouse (`controlSettings`), angoli di vista, **mappatura tasti** (WASD, Spazio, Shift/C = accovacciati/slide, click = spara, R = ricarica, K = respawn) → `InputCommand` (T = cambia atmosfera, P = pixel art on/off, tasto sotto Esc = pannello debug, in `main.ts`)
 - `src/sim/`: simulazione pura (niente Three.js/DOM)
   - `config.ts`: **valori di tuning** (oggetto `tuning`, modificabile dal pannello debug) (tick rate, altezza occhi, dimensioni giocatore, movimento a terra, gravità/salto/coyote/buffer, movimento e controllo in aria, aiuti al bhop, accovacciata, slide, wall jump, **revolver**)
@@ -79,6 +79,9 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `postprocess.ts`: **pipeline di post-processing** (`postSettings`: risoluzione pixel, livelli di colore, dithering, bloom, god rays)
   - `particles.ts`: **particelle** (polvere/lucciole, braci, vapore, scintille degli impatti)
   - `heightFog.ts`: nebbia al suolo (patch dello shader della nebbia di Three.js)
+  - `weapons/`: **l'arma in mano (viewmodel)**
+    - `viewmodel.ts`: scena/camera dell'arma, **posa, rinculo, ondeggiamento, bob, ricarica, lampo** (`viewmodelSettings`)
+    - `revolverModel.ts`: modello procedurale del revolver (canna, tamburo, cane, calcio)
   - `weaponFx.ts`: effetti degli spari (lampo di luce, fori, scintille, suoni)
   - `impacts.ts`: fori di proiettile sulle superfici (decal, dimensione, quanti ne restano)
   - `materials.ts`: **quale texture usa ogni materiale** (`LOOKS`), densità dei pixel, mesh dei box

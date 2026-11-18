@@ -5,12 +5,26 @@
 /** Keys currently held down, by physical position (KeyboardEvent.code, e.g. "KeyW"). */
 const keysDown = new Set<string>();
 
+/**
+ * Keys pressed since the last time someone asked (see wasPressed). Needed
+ * because the game only LOOKS at the keys once per tick: a click shorter
+ * than a frame (pressed and released in between) would otherwise be lost.
+ */
+const pressedSinceCheck = new Set<string>();
+
 /** Mouse movement accumulated since the last call to consumeMouseDelta(). */
 let mouseDx = 0;
 let mouseDy = 0;
 
 export function isKeyDown(code: string): boolean {
   return keysDown.has(code);
+}
+
+/** True if `code` was pressed since the last call (even if already released). */
+export function wasPressed(code: string): boolean {
+  const pressed = pressedSinceCheck.has(code);
+  pressedSinceCheck.delete(code);
+  return pressed;
 }
 
 /** Returns the mouse movement since the last call, then resets it to zero. */
@@ -35,6 +49,7 @@ export function initInput(target: HTMLElement, onLockChange: (locked: boolean) =
   window.addEventListener('keydown', (e) => {
     // Typing in a text field (e.g. the debug panel) must not move the player.
     if (isTypingInField(e)) return;
+    if (!e.repeat) pressedSinceCheck.add(e.code);
     keysDown.add(e.code);
   });
   window.addEventListener('keyup', (e) => {
@@ -56,6 +71,7 @@ export function initInput(target: HTMLElement, onLockChange: (locked: boolean) =
 
   document.addEventListener('pointerlockchange', () => {
     keysDown.clear();
+    pressedSinceCheck.clear();
     // Back in the game: take keyboard focus away from any panel control,
     // otherwise keys would keep going to the last slider you touched.
     if (isPointerLocked() && document.activeElement instanceof HTMLElement) {
@@ -67,7 +83,9 @@ export function initInput(target: HTMLElement, onLockChange: (locked: boolean) =
   // Mouse buttons go in the same Set as keys, with names like "Mouse0"
   // (left) and "Mouse2" (right), so the rest of the code treats them alike.
   document.addEventListener('mousedown', (e) => {
-    if (isPointerLocked()) keysDown.add(`Mouse${e.button}`);
+    if (!isPointerLocked()) return;
+    keysDown.add(`Mouse${e.button}`);
+    pressedSinceCheck.add(`Mouse${e.button}`);
   });
   document.addEventListener('mouseup', (e) => {
     keysDown.delete(`Mouse${e.button}`);

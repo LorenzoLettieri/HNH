@@ -1,7 +1,7 @@
 // Turns raw input (input.ts) into what the game understands:
 // - view angles, updated every rendered frame for the most responsive aim;
 // - an InputCommand, built once per simulation tick.
-import { consumeMouseDelta, isKeyDown, isPointerLocked } from './input';
+import { consumeMouseDelta, isKeyDown, isPointerLocked, wasPressed } from './input';
 import type { InputCommand } from './sim/command';
 
 /** Client settings, mutable so the debug panel can change them. */
@@ -31,11 +31,12 @@ export function buildCommand(tick: number): InputCommand {
   if (isKeyDown('KeyS')) forward -= 1;
   if (isKeyDown('KeyD')) strafe += 1;
   if (isKeyDown('KeyA')) strafe -= 1;
-  const jump = isKeyDown('Space');
+  // "held OR pressed since the last tick": a quick tap between two frames still counts.
+  const jump = isKeyDown('Space') || wasPressed('Space');
   // Shift or C. Not Ctrl: Ctrl+W would close the browser tab!
   const crouch = isKeyDown('ShiftLeft') || isKeyDown('KeyC');
-  const fire = isKeyDown('Mouse0');
-  const reload = isKeyDown('KeyR');
+  const fire = isKeyDown('Mouse0') || wasPressed('Mouse0');
+  const reload = isKeyDown('KeyR') || wasPressed('KeyR');
   const respawn = isKeyDown('KeyK'); // K = "kill yourself" (debug)
   return { tick, forward, strafe, jump, crouch, fire, reload, respawn, yaw: view.yaw, pitch: view.pitch };
 }

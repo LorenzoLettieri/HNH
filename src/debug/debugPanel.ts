@@ -4,6 +4,8 @@ import { tuning } from '../sim/config';
 import { controlSettings } from '../controls';
 import { postSettings } from '../render/postprocess';
 import { cameraFeelSettings } from '../render/cameraFeel';
+import { viewmodelSettings } from '../render/weapons/viewmodel';
+import { sfxSettings } from '../audio/sfx';
 import type { Atmosphere } from '../render/atmospheres';
 import { copyToClipboard, createPanel, toSource, type Folder } from './panel';
 
@@ -65,6 +67,24 @@ export function createDebugPanel(options: {
   move.number(tuning, 'wallJumpsMax', 0, 10, 1);
   move.number(tuning, 'wallJumpCooldown', 0, 1, 0.05);
   move.button('Copy values', () => copyToClipboard(toSource(tuning)));
+
+  // --- Weapon ---
+  const gun = panel.folder('Revolver (src/sim/config.ts + render/weapons/viewmodel.ts)');
+  gun.number(tuning, 'revolverFireInterval', 0.05, 1, 0.01);
+  gun.number(tuning, 'revolverFireBuffer', 0, 0.3, 0.01);
+  gun.number(tuning, 'revolverReloadTime', 0.2, 3, 0.05);
+  gun.number(tuning, 'revolverAmmo', 1, 12, 1);
+  gun.number(viewmodelSettings, 'fov', 30, 100, 1);
+  gun.number(viewmodelSettings, 'x', -0.3, 0.3, 0.005);
+  gun.number(viewmodelSettings, 'y', -0.3, 0.1, 0.005);
+  gun.number(viewmodelSettings, 'z', -0.6, -0.1, 0.005);
+  gun.number(viewmodelSettings, 'recoil', 0, 1.5, 0.05);
+  gun.number(viewmodelSettings, 'recoilRecovery', 2, 30, 0.5);
+  gun.number(viewmodelSettings, 'viewKick', 0, 0.1, 0.005);
+  gun.number(viewmodelSettings, 'sway', 0, 2, 0.05);
+  gun.number(viewmodelSettings, 'bob', 0, 0.04, 0.001);
+  gun.number(sfxSettings, 'volume', 0, 1, 0.05);
+  gun.button('Copy viewmodel values', () => copyToClipboard(toSource(viewmodelSettings)));
 
   // --- Camera feel ---
   const feel = panel.folder('Camera feel (src/render/cameraFeel.ts)');

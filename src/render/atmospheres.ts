@@ -89,7 +89,7 @@ export const HIGH_NOON: Atmosphere = {
   fogFar: 85,
   groundFogDensity: 0.02,
   groundFogFalloff: 0.5,
-  godRays: 1,
+  godRays: 0.7,
   ambientSky: 0xc06040,
   ambientGround: 0x301510,
   ambientIntensity: 0.7,
