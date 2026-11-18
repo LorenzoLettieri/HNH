@@ -22,6 +22,8 @@ export interface Atmosphere {
   /** Halo around the sun: strength and how tight it is (higher = tighter). */
   sunGlow: number;
   sunGlowTightness: number;
+  /** Disk brightness: above 1 it's "brighter than white" and blooms. */
+  sunBrightness: number;
 
   /** 0 = no stars, 1 = full stars. */
   stars: number;
@@ -55,6 +57,7 @@ export const HIGH_NOON: Atmosphere = {
   sunAzimuth: 15,
   sunGlow: 0.9,
   sunGlowTightness: 6,
+  sunBrightness: 3,
   stars: 0,
   sunLightColor: 0xffa060,
   sunLightIntensity: 3.2,
@@ -78,6 +81,7 @@ export const HIGH_MIDNIGHT: Atmosphere = {
   sunAzimuth: -30,
   sunGlow: 0.35,
   sunGlowTightness: 12,
+  sunBrightness: 2,
   stars: 1,
   sunLightColor: 0x9080e0,
   sunLightIntensity: 1.1,

@@ -50,8 +50,8 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `atmospheres.ts`: **preset di atmosfera** (High Noon / High Midnight): colori cielo, sole/luna, stelle, luce del sole, lanterne, nebbia, luce ambientale
   - `sky.ts`: cielo (sfera + shader GLSL)
   - `sunLight.ts`: luce direzionale dal sole/luna + **ombre** (area coperta, risoluzione, bias)
-  - `lanterns.ts`: lanterne (portata, intensità del tremolio)
-  - `postprocess.ts`: **pipeline di post-processing** (risoluzione pixel, livelli di colore, dithering)
+  - `lanterns.ts`: lanterne (portata, tremolio, luminosità fiamma, aloni)
+  - `postprocess.ts`: **pipeline di post-processing** (risoluzione pixel, livelli di colore, dithering, bloom)
   - `materials.ts`: **quale texture usa ogni materiale** (`LOOKS`), densità dei pixel, mesh dei box
 - `public/textures/`: texture PNG (servite così come sono da Vite su `/textures/...`)
 - `CREDITS.md`: autori e licenze degli asset

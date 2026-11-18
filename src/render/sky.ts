@@ -31,6 +31,7 @@ const fragmentShader = /* glsl */ `
   uniform float sunGlow;
   uniform float sunGlowTightness;
   uniform float stars;
+  uniform float sunBrightness;
 
   varying vec3 vDirection;
 
@@ -54,7 +55,8 @@ const fragmentShader = /* glsl */ `
     float disk = step(sunCos, d);                      // hard edge, pixel-art friendly
     float glow = pow(max(d, 0.0), sunGlowTightness * 10.0) * sunGlow;
     color += sunColor * glow;
-    color = mix(color, sunColor, disk);
+    // The disk is brighter than "white" (HDR): the bloom picks it up.
+    color = mix(color, sunColor * sunBrightness, disk);
 
     // 3. Stars: split the sky into tiny cells, light up a few random ones.
     vec3 cell = floor(dir * 250.0);
@@ -80,6 +82,7 @@ export function createSky(): THREE.Mesh {
       sunGlow: { value: 0 },
       sunGlowTightness: { value: 1 },
       stars: { value: 0 },
+      sunBrightness: { value: 1 },
     },
     side: THREE.BackSide, // we're INSIDE the sphere: draw its inner faces
     depthWrite: false, // never hides anything: it's infinitely far away
@@ -102,6 +105,7 @@ export function applySky(sky: THREE.Mesh, a: Atmosphere): void {
   u.sunGlow.value = a.sunGlow;
   u.sunGlowTightness.value = a.sunGlowTightness;
   u.stars.value = a.stars;
+  u.sunBrightness.value = a.sunBrightness;
 }
 
 /** Unit vector pointing at (elevation, azimuth). Azimuth 0 = north = -Z. */

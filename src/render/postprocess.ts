@@ -14,6 +14,14 @@ const COLOR_LEVELS = 20;
 /** Dithering strength: 0 = hard color bands, 1 = bands broken by a pixel pattern. */
 const DITHER = 1;
 
+// --- Bloom: bright things bleed light around them ---
+/** Only light brighter than this blooms (1 = "white"; HDR lights go above). */
+const BLOOM_THRESHOLD = 0.9;
+/** How much glow is added back on top of the image. */
+const BLOOM_STRENGTH = 0.8;
+/** Blur passes: more = wider, softer glow (and more GPU work). */
+const BLOOM_PASSES = 3;
+
 // A full-screen pass: a rectangle covering the whole screen, seen by a camera
 // that does nothing. Its fragment shader runs once per screen pixel.
 const fullscreenVertex = /* glsl */ `
@@ -24,8 +32,45 @@ const fullscreenVertex = /* glsl */ `
   }
 `;
 
+// Keeps only what's brighter than the threshold (the "bright pass").
+const brightFragment = /* glsl */ `
+  uniform sampler2D tInput;
+  uniform float threshold;
+  varying vec2 vUv;
+  void main() {
+    vec3 c = texture2D(tInput, vUv).rgb;
+    float brightness = max(c.r, max(c.g, c.b));
+    // Smoothly fade in above the threshold, instead of an on/off cut.
+    float amount = smoothstep(threshold, threshold + 0.5, brightness);
+    gl_FragColor = vec4(c * amount, 1.0);
+  }
+`;
+
+// Gaussian blur along ONE direction. Doing horizontal then vertical gives the
+// same result as a 2D blur, with 9 + 9 samples per pixel instead of 9 × 9.
+const blurFragment = /* glsl */ `
+  uniform sampler2D tInput;
+  uniform vec2 direction;   // (1/width, 0) or (0, 1/height), times a spread
+  varying vec2 vUv;
+  void main() {
+    // Weights of a bell curve: the center counts most, neighbors less and less.
+    vec3 sum = texture2D(tInput, vUv).rgb * 0.227027;
+    sum += texture2D(tInput, vUv + direction * 1.0).rgb * 0.1945946;
+    sum += texture2D(tInput, vUv - direction * 1.0).rgb * 0.1945946;
+    sum += texture2D(tInput, vUv + direction * 2.0).rgb * 0.1216216;
+    sum += texture2D(tInput, vUv - direction * 2.0).rgb * 0.1216216;
+    sum += texture2D(tInput, vUv + direction * 3.0).rgb * 0.054054;
+    sum += texture2D(tInput, vUv - direction * 3.0).rgb * 0.054054;
+    sum += texture2D(tInput, vUv + direction * 4.0).rgb * 0.016216;
+    sum += texture2D(tInput, vUv - direction * 4.0).rgb * 0.016216;
+    gl_FragColor = vec4(sum, 1.0);
+  }
+`;
+
 const finalFragment = /* glsl */ `
   uniform sampler2D tScene;
+  uniform sampler2D tBloom;
+  uniform float bloomStrength;
   uniform vec2 resolution;   // size of the low-res image, in pixels
   uniform float levels;      // 0 = no color reduction
   uniform float dither;
@@ -52,6 +97,8 @@ const finalFragment = /* glsl */ `
 
   void main() {
     vec3 color = texture2D(tScene, vUv).rgb;
+    // Bloom is added in linear light, before anything else: it's "more light".
+    color += texture2D(tBloom, vUv).rgb * bloomStrength;
 
     // Values above 1 can't be shown. Scale the whole color down instead of
     // clipping each channel: a too-bright orange stays orange, not yellow-white.
@@ -66,6 +113,19 @@ const finalFragment = /* glsl */ `
     gl_FragColor = vec4(color, 1.0);
   }
 `;
+
+function fullscreenMaterial(
+  fragmentShader: string,
+  uniforms: Record<string, THREE.IUniform>,
+): THREE.ShaderMaterial {
+  return new THREE.ShaderMaterial({
+    vertexShader: fullscreenVertex,
+    fragmentShader,
+    uniforms,
+    depthTest: false,
+    depthWrite: false,
+  });
+}
 
 export interface PostProcess {
   render(scene: THREE.Scene, camera: THREE.Camera): void;
@@ -87,22 +147,47 @@ export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
     depthBuffer: true,
   });
 
-  const finalMaterial = new THREE.ShaderMaterial({
-    vertexShader: fullscreenVertex,
-    fragmentShader: finalFragment,
-    uniforms: {
-      tScene: { value: sceneTarget.texture },
-      resolution: { value: new THREE.Vector2() },
-      levels: { value: COLOR_LEVELS },
-      dither: { value: DITHER },
-    },
-    depthTest: false,
-    depthWrite: false,
+  // Bloom works at half the scene resolution: it's a blurry glow anyway, so
+  // fewer pixels = cheaper, and each blur step reaches twice as far.
+  // Two targets, used in turn ("ping-pong"): read from one, write to the other.
+  const bloomOptions = {
+    type: THREE.HalfFloatType,
+    minFilter: THREE.LinearFilter, // smooth: the glow should be soft
+    magFilter: THREE.LinearFilter,
+    depthBuffer: false,
+  };
+  const bloomA = new THREE.WebGLRenderTarget(1, 1, bloomOptions);
+  const bloomB = new THREE.WebGLRenderTarget(1, 1, bloomOptions);
+
+  const brightMaterial = fullscreenMaterial(brightFragment, {
+    tInput: { value: sceneTarget.texture },
+    threshold: { value: BLOOM_THRESHOLD },
   });
+  const blurMaterial = fullscreenMaterial(blurFragment, {
+    tInput: { value: null },
+    direction: { value: new THREE.Vector2() },
+  });
+  const finalMaterial = fullscreenMaterial(finalFragment, {
+    tScene: { value: sceneTarget.texture },
+    tBloom: { value: bloomA.texture },
+    bloomStrength: { value: BLOOM_STRENGTH },
+    resolution: { value: new THREE.Vector2() },
+    levels: { value: COLOR_LEVELS },
+    dither: { value: DITHER },
+  });
+
+  // One full-screen rectangle; we swap its material for each pass.
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), finalMaterial);
   const postScene = new THREE.Scene();
   postScene.add(quad);
   const postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+  /** Runs one full-screen pass with `material`, writing into `target` (null = screen). */
+  function pass(material: THREE.ShaderMaterial, target: THREE.WebGLRenderTarget | null): void {
+    quad.material = material;
+    renderer.setRenderTarget(target);
+    renderer.render(postScene, postCamera);
+  }
 
   let pixelArt = true;
   let screenW = 1;
@@ -117,6 +202,10 @@ export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
       sceneSize.set(screenW, screenH).multiplyScalar(renderer.getPixelRatio()).round();
     }
     sceneTarget.setSize(sceneSize.x, sceneSize.y);
+    const bw = Math.max(1, Math.round(sceneSize.x / 2));
+    const bh = Math.max(1, Math.round(sceneSize.y / 2));
+    bloomA.setSize(bw, bh);
+    bloomB.setSize(bw, bh);
     finalMaterial.uniforms.resolution.value.copy(sceneSize);
     finalMaterial.uniforms.levels.value = pixelArt ? COLOR_LEVELS : 0;
   }
@@ -127,9 +216,23 @@ export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
       // 1. Scene → low-res image.
       renderer.setRenderTarget(sceneTarget);
       renderer.render(scene, camera);
-      // 2. Image → screen, through the final shader.
-      renderer.setRenderTarget(null);
-      renderer.render(postScene, postCamera);
+
+      // 2. Bloom: bright pass into A, then blur A→B (horizontal), B→A (vertical),
+      //    a few times, spreading further each time.
+      pass(brightMaterial, bloomA);
+      const texel = new THREE.Vector2(1 / bloomA.width, 1 / bloomA.height);
+      for (let i = 0; i < BLOOM_PASSES; i++) {
+        const spread = i + 1;
+        blurMaterial.uniforms.tInput.value = bloomA.texture;
+        blurMaterial.uniforms.direction.value.set(texel.x * spread, 0);
+        pass(blurMaterial, bloomB);
+        blurMaterial.uniforms.tInput.value = bloomB.texture;
+        blurMaterial.uniforms.direction.value.set(0, texel.y * spread);
+        pass(blurMaterial, bloomA);
+      }
+
+      // 3. Scene + bloom → screen, through the final shader.
+      pass(finalMaterial, null);
     },
     setSize(width, height) {
       screenW = width;
