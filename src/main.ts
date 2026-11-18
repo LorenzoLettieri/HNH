@@ -11,6 +11,7 @@ import { applySky, createSky } from './render/sky';
 import { applySunLight, createSunLight } from './render/sunLight';
 import { applyLanterns, createLanterns, updateLanterns } from './render/lanterns';
 import { createPostProcess } from './render/postprocess';
+import { applyParticles, createParticles, updateParticles } from './render/particles';
 
 // --- Renderer -------------------------------------------------------------
 const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -54,6 +55,7 @@ function applyAtmosphere(a: Atmosphere): void {
   applySky(sky, a);
   applySunLight(sunLight, a);
   applyLanterns(a);
+  applyParticles(a);
   fog.color.set(a.skyHorizon);
   fog.near = a.fogNear;
   fog.far = a.fogFar;
@@ -69,6 +71,7 @@ const world = testArena;
 await loadMaterials(); // top-level await: the game starts once textures are ready
 for (const b of world.boxes) scene.add(createBoxMesh(b));
 createLanterns(scene, world.lanterns);
+createParticles(scene, world.lanterns);
 
 let atmosphereIndex = 0;
 applyAtmosphere(ATMOSPHERES[atmosphereIndex]);
@@ -153,5 +156,6 @@ renderer.setAnimationLoop((now: number) => {
   hud.textContent = `${horizontalSpeed(player).toFixed(1)} m/s  ${player.onGround ? 'GROUND' : 'AIR'}`;
 
   updateLanterns(now / 1000);
+  updateParticles(frameTime, now / 1000, camera, post.sceneSize.y);
   post.render(scene, camera);
 });

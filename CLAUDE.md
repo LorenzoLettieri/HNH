@@ -47,11 +47,12 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `testArena.ts`: arena di prova 40×40 (piattaforma, scale, corridoio, colonne, casse) + posizione lanterne
 - `src/render/`: effetti puramente visivi (non toccano la simulazione)
   - `landingDip.ts`: abbassamento camera all'atterraggio (intensità, recupero)
-  - `atmospheres.ts`: **preset di atmosfera** (High Noon / High Midnight): colori cielo, sole/luna, stelle, luce del sole, lanterne, nebbia, luce ambientale
+  - `atmospheres.ts`: **preset di atmosfera** (High Noon / High Midnight): colori cielo, sole/luna, stelle, luce del sole, lanterne, particelle, nebbia, luce ambientale
   - `sky.ts`: cielo (sfera + shader GLSL)
   - `sunLight.ts`: luce direzionale dal sole/luna + **ombre** (area coperta, risoluzione, bias)
   - `lanterns.ts`: lanterne (portata, tremolio, luminosità fiamma, aloni)
   - `postprocess.ts`: **pipeline di post-processing** (risoluzione pixel, livelli di colore, dithering, bloom)
+  - `particles.ts`: **particelle** (polvere/lucciole attorno alla camera, braci dalle lanterne)
   - `materials.ts`: **quale texture usa ogni materiale** (`LOOKS`), densità dei pixel, mesh dei box
 - `public/textures/`: texture PNG (servite così come sono da Vite su `/textures/...`)
 - `CREDITS.md`: autori e licenze degli asset

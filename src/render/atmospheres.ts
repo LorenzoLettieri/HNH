@@ -36,6 +36,14 @@ export interface Atmosphere {
   lanternColor: number;
   lanternIntensity: number;
 
+  /** Floating specks: color, how many (0..1), base visibility, wind (m/s), blinking (0..1). */
+  dustColor: number;
+  dustAmount: number;
+  dustAlpha: number;
+  dustWindX: number;
+  dustWindZ: number;
+  dustBlink: number;
+
   /** Fog: no fog before `fogNear` meters, solid fog after `fogFar`. */
   fogNear: number;
   fogFar: number;
@@ -63,6 +71,13 @@ export const HIGH_NOON: Atmosphere = {
   sunLightIntensity: 3.2,
   lanternColor: 0xffa040,
   lanternIntensity: 6,
+  // Sand blown by a hot wind from the west.
+  dustColor: 0xffb070,
+  dustAmount: 1,
+  dustAlpha: 0.35,
+  dustWindX: 2.2,
+  dustWindZ: 0.4,
+  dustBlink: 0,
   fogNear: 10,
   fogFar: 60,
   ambientSky: 0xc06040,
@@ -87,6 +102,13 @@ export const HIGH_MIDNIGHT: Atmosphere = {
   sunLightIntensity: 1.1,
   lanternColor: 0xff9030,
   lanternIntensity: 14,
+  // Fireflies / will-o'-the-wisps: few, slow, blinking, bright (they bloom).
+  dustColor: 0xb8ff70,
+  dustAmount: 0.35,
+  dustAlpha: 0.9,
+  dustWindX: 0.15,
+  dustWindZ: 0,
+  dustBlink: 1,
   fogNear: 6,
   fogFar: 45,
   ambientSky: 0x5040a0,
