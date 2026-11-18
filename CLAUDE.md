@@ -34,13 +34,15 @@ Three.js, netcode, ecc. Il codice prodotto conta meno della sua comprensione.
 
 ## Dove trovare le cose
 Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella rilevante.
-- `src/main.ts`: entry point (renderer, scena, luci, oggetti di prova, game loop a passo fisso + interpolazione camera)
+- `src/main.ts`: entry point (renderer, scena, luci, mesh generate dai box del livello e relativi materiali, game loop a passo fisso + interpolazione camera)
 - `src/input.ts`: input grezzo (tasti premuti, movimento mouse, Pointer Lock)
 - `src/controls.ts`: sensibilità mouse, angoli di vista, **mappatura tasti** → `InputCommand`
 - `src/sim/`: simulazione pura (niente Three.js/DOM)
-  - `config.ts`: **costanti di tuning** (tick rate, altezza occhi, movimento a terra, gravità/salto/coyote/buffer, movimento in aria)
+  - `config.ts`: **costanti di tuning** (tick rate, altezza occhi, dimensioni giocatore, movimento a terra, gravità/salto/coyote/buffer, movimento in aria)
   - `command.ts`: tipo `InputCommand` (cosa vuole fare il giocatore in un tick)
-  - `player.ts`: stato del giocatore e `stepPlayer()` (salto, attrito, accelerazione Quake a terra/in aria, gravità)
+  - `world.ts`: livello come dati (lista di box AABB + punto di spawn); per ora contiene il livello di prova
+  - `collision.ts`: movimento con collisioni asse per asse contro i box
+  - `player.ts`: stato del giocatore e `stepPlayer()` (salto, attrito, accelerazione Quake a terra/in aria, gravità, respawn)
 - `src/render/`: effetti puramente visivi (non toccano la simulazione)
   - `landingDip.ts`: abbassamento camera all'atterraggio (intensità, recupero)
 - `index.html`: pagina con canvas, overlay "Click to play" e HUD (stili CSS inclusi)

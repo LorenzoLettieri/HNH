@@ -3,6 +3,7 @@ import { initInput } from './input';
 import { buildCommand, updateLook, view } from './controls';
 import { TICK_DT, EYE_HEIGHT } from './sim/config';
 import { copyPlayer, createPlayer, horizontalSpeed, stepPlayer } from './sim/player';
+import { createTestWorld } from './sim/world';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
 
 // --- Renderer -------------------------------------------------------------
@@ -33,27 +34,24 @@ const lantern = new THREE.PointLight(0xffa040, 25, 12); // color, intensity, ran
 lantern.position.set(-1.5, 2.5, 1.5);
 scene.add(lantern);
 
-// --- Objects --------------------------------------------------------------
+// --- Level ----------------------------------------------------------------
+// The level is pure data (src/sim/world.ts). Here we just build one mesh per box.
 // A mesh = geometry (the shape) + material (how its surface reacts to light).
-const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(60, 60),
-  new THREE.MeshStandardMaterial({ color: 0x6b4a2e, roughness: 1 }), // dry dirt
-);
-floor.rotation.x = -Math.PI / 2; // planes are created vertical: lay it flat
-scene.add(floor);
+const world = createTestWorld();
 
-const crate = new THREE.Mesh(
-  new THREE.BoxGeometry(1, 1, 1),
-  new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.9 }), // wood
-);
-crate.position.set(0, 0.5, 0); // box is centered on its origin: lift it by half its height
-scene.add(crate);
+const materials = {
+  dirt: new THREE.MeshStandardMaterial({ color: 0x6b4a2e, roughness: 1 }),
+  wood: new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.9 }),
+};
 
-// A few more crates as landmarks, so you can tell you're moving.
-for (const [x, z] of [[-6, -4], [5, -8], [8, 3], [-4, 7]]) {
-  const extra = crate.clone(); // shares geometry and material with the original
-  extra.position.set(x, 0.5, z);
-  scene.add(extra);
+for (const b of world.boxes) {
+  const sizeX = b.maxX - b.minX;
+  const sizeY = b.maxY - b.minY;
+  const sizeZ = b.maxZ - b.minZ;
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(sizeX, sizeY, sizeZ), materials[b.look]);
+  // BoxGeometry is centered on its origin: place the mesh at the box's center.
+  mesh.position.set(b.minX + sizeX / 2, b.minY + sizeY / 2, b.minZ + sizeZ / 2);
+  scene.add(mesh);
 }
 
 // --- Player & camera ------------------------------------------------------
@@ -69,7 +67,7 @@ initInput(renderer.domElement, (locked) => {
 
 // Two copies of the player state: the previous tick and the current one.
 // The camera is drawn somewhere in between (interpolation).
-const player = createPlayer(0, 0, 5);
+const player = createPlayer(world.spawn.x, world.spawn.y, world.spawn.z);
 const prevPlayer = createPlayer();
 copyPlayer(player, prevPlayer);
 
@@ -100,7 +98,7 @@ renderer.setAnimationLoop((now: number) => {
   accumulator += frameTime;
   while (accumulator >= TICK_DT) {
     copyPlayer(player, prevPlayer);
-    stepPlayer(player, buildCommand(tick), TICK_DT);
+    stepPlayer(player, buildCommand(tick), world, TICK_DT);
     // The renderer only *reads* the state: "were we in the air, and now we're not?"
     if (!prevPlayer.onGround && player.onGround) triggerLandingDip(-prevPlayer.vy);
     tick++;

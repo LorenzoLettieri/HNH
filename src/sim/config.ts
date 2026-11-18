@@ -8,6 +8,14 @@ export const TICK_DT = 1 / TICK_RATE;
 /** Camera height above the player's feet, meters. */
 export const EYE_HEIGHT = 1.7;
 
+// --- Player collision box ------------------------------------------------------
+/** Half the width of the player's box, meters (the box is 0.8 × 0.8 m). */
+export const PLAYER_RADIUS = 0.4;
+/** Height of the player's box, meters. */
+export const PLAYER_HEIGHT = 1.8;
+/** Falling below this height means you left the level: respawn. */
+export const KILL_Y = -30;
+
 // --- Ground movement (Quake-style) ------------------------------------------
 /** Target speed when holding a direction on the ground, m/s. */
 export const MAX_GROUND_SPEED = 8;

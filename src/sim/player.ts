@@ -1,4 +1,6 @@
 import type { InputCommand } from './command';
+import { moveAndCollide } from './collision';
+import type { World } from './world';
 import {
   AIR_ACCEL,
   AIR_SPEED_CAP,
@@ -9,7 +11,10 @@ import {
   GROUND_FRICTION,
   JUMP_BUFFER_TIME,
   JUMP_SPEED,
+  KILL_Y,
   MAX_GROUND_SPEED,
+  PLAYER_HEIGHT,
+  PLAYER_RADIUS,
   STOP_SPEED,
   secondsToTicks,
 } from './config';
@@ -54,7 +59,7 @@ export function horizontalSpeed(p: PlayerState): number {
 }
 
 /** Advances the player by exactly one tick of `dt` seconds. */
-export function stepPlayer(p: PlayerState, cmd: InputCommand, dt: number): void {
+export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: number): void {
   p.yaw = cmd.yaw;
   p.pitch = cmd.pitch;
 
@@ -104,23 +109,27 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, dt: number): void 
     accelerate(p, wishX, wishZ, MAX_GROUND_SPEED, MAX_GROUND_SPEED, GROUND_ACCEL, dt);
   } else {
     accelerate(p, wishX, wishZ, MAX_GROUND_SPEED, AIR_SPEED_CAP, AIR_ACCEL, dt);
-    p.vy -= GRAVITY * dt;
   }
 
-  // 4. Integrate: velocity moves the position.
-  p.x += p.vx * dt;
-  p.y += p.vy * dt;
-  p.z += p.vz * dt;
+  // Gravity applies ALWAYS, even on the ground: every tick it pushes us a tiny
+  // bit into the floor, the collision pushes us back up and says "landed".
+  // That's how we know we're still standing on something (and not on air,
+  // e.g. after walking off a ledge).
+  p.vy -= GRAVITY * dt;
 
-  // 5. Ground check. Temporary: the ground is an infinite plane at y = 0.
-  //    It'll be replaced by real collisions with the level.
-  if (p.y <= 0) {
-    p.y = 0;
-    if (p.vy < 0) p.vy = 0;
-    p.onGround = true;
-  } else {
-    p.onGround = false;
-  }
+  // 4. Move, colliding with the level.
+  const { landed } = moveAndCollide(p, PLAYER_RADIUS, PLAYER_HEIGHT, world.boxes, dt);
+  p.onGround = landed;
+
+  // 5. Fell off the world: back to the spawn point.
+  if (p.y < KILL_Y) respawn(p, world);
+}
+
+export function respawn(p: PlayerState, world: World): void {
+  p.x = world.spawn.x;
+  p.y = world.spawn.y;
+  p.z = world.spawn.z;
+  p.vx = p.vy = p.vz = 0;
 }
 
 /** Quake's friction: removes a slice of speed every tick, keeping the direction. */
