@@ -13,7 +13,10 @@ Three.js, netcode, ecc. Il codice prodotto conta meno della sua comprensione.
 - Dopo ogni passo **fermati** e lascia che l'utente provi, faccia domande o lo scriva lui.
   Proponi il passo successivo, non implementarlo di tua iniziativa.
 - Se un passo richiederebbe molto codice, scomponilo e proponi l'ordine.
-- Quando ha senso, lascia all'utente piccole parti da implementare da solo (con indicazioni).
+- **Le implementazioni le fa Claude**: niente esercizi o parti lasciate da scrivere all'utente.
+- Indica invece **dove mettere le mani**: in quale file stanno i parametri di tuning e le config,
+  in quale cartella vanno texture/modelli/suoni, cosa modificare per cambiare un comportamento.
+  Tieni aggiornata la sezione "Dove trovare le cose" qui sotto.
 - Niente codice "magico" o librerie che nascondono ciò che si vuole imparare, salvo accordo esplicito.
 
 ## Obiettivi
@@ -28,6 +31,12 @@ Three.js, netcode, ecc. Il codice prodotto conta meno della sua comprensione.
 ## Comandi
 - `npm run dev`: server di sviluppo
 - `npm run build`: typecheck + build di produzione (deve passare prima di ogni commit)
+
+## Dove trovare le cose
+Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella rilevante.
+- `src/main.ts`: entry point (renderer, scena, camera, render loop)
+- `index.html`: pagina che ospita il canvas
+- `vite.config.ts`: config del dev server e della build
 
 ## Architettura (regole)
 - **Simulazione separata dal rendering**: la logica di gioco (giocatore, nemici, proiettili,
