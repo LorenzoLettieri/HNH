@@ -3,6 +3,19 @@
 Boomer shooter per browser, ambientazione **dark western / dark fantasy con tocchi steampunk**.
 Armi: revolver, canne mozze, lazo/rampino. Progetto personale tra amici: semplicità prima di tutto.
 
+## ⚠️ Regola principale: sviluppiamo insieme, l'obiettivo è imparare
+L'utente è un web developer (Laravel/JS) che usa questo progetto per **imparare** game dev,
+Three.js, netcode, ecc. Il codice prodotto conta meno della sua comprensione.
+- **Passi piccoli**: un pezzo alla volta (una funzione, un sistema minimo), mai feature intere in un colpo solo.
+- **Spiega sempre il lato tecnico** di ciò che scrivi: cosa fa, perché è fatto così,
+  quali concetti c'entrano (es. game loop, matrici, collisioni, predizione), alternative scartate.
+- Collega i concetti nuovi a ciò che l'utente conosce già dal web development, quando possibile.
+- Dopo ogni passo **fermati** e lascia che l'utente provi, faccia domande o lo scriva lui.
+  Proponi il passo successivo, non implementarlo di tua iniziativa.
+- Se un passo richiederebbe molto codice, scomponilo e proponi l'ordine.
+- Quando ha senso, lascia all'utente piccole parti da implementare da solo (con indicazioni).
+- Niente codice "magico" o librerie che nascondono ciò che si vuole imparare, salvo accordo esplicito.
+
 ## Obiettivi
 - **v1**: modalità a orde singleplayer (stile Megabonk), giocabile come sito statico.
 - **Poi**: arena multiplayer con server autoritativo Node.js (TypeScript) e WebSocket.
