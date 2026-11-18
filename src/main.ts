@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { initInput } from './input';
 import { buildCommand, updateLook, view } from './controls';
 import { TICK_DT, EYE_HEIGHT } from './sim/config';
-import { copyPlayer, createPlayer, stepPlayer } from './sim/player';
+import { copyPlayer, createPlayer, horizontalSpeed, stepPlayer } from './sim/player';
 
 // --- Renderer -------------------------------------------------------------
 const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -61,6 +61,7 @@ for (const [x, z] of [[-6, -4], [5, -8], [8, 3], [-4, 7]]) {
 camera.rotation.order = 'YXZ';
 
 const overlay = document.getElementById('overlay')!;
+const hud = document.getElementById('hud')!;
 initInput(renderer.domElement, (locked) => {
   overlay.style.display = locked ? 'none' : 'flex';
 });
@@ -113,6 +114,8 @@ renderer.setAnimationLoop((now: number) => {
   // View angles come straight from the mouse, not from the simulation:
   // interpolating them would add a tick of delay to aiming.
   camera.rotation.set(view.pitch, view.yaw, 0);
+
+  hud.textContent = `${horizontalSpeed(player).toFixed(1)} m/s`;
 
   renderer.render(scene, camera);
 });

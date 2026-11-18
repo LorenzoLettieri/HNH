@@ -12,10 +12,15 @@
         background: rgba(0, 0, 0, 0.5); color: #f0c080; font: bold 28px monospace;
         pointer-events: none; /* clicks go through to the canvas below */
       }
+      #hud {
+        position: fixed; left: 12px; bottom: 10px; color: #f0c080;
+        font: bold 18px monospace; pointer-events: none;
+      }
     </style>
   </head>
   <body>
     <div id="overlay">Click to play</div>
+    <div id="hud"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
