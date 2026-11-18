@@ -15,11 +15,17 @@ import { addHeightFog } from './heightFog';
  */
 export const PIXELS_PER_METER = 32;
 
+/**
+ * Where `public/` files are served from. Locally it's the site root, on GitHub Pages
+ * it's a sub-folder (/HNH/): Vite fills this in from `base` in vite.config.ts.
+ */
+const BASE = import.meta.env.BASE_URL;
+
 /** Which image each look uses. Swap a file name here to change a material. */
 const LOOKS: Record<Look, string> = {
-  dirt: '/textures/floor_ground_dirt.png',
-  wood: '/textures/timber_square_planks_cross.png',
-  stone: '/textures/wall_brick_small_sand.png',
+  dirt: `${BASE}textures/floor_ground_dirt.png`,
+  wood: `${BASE}textures/timber_square_planks_cross.png`,
+  stone: `${BASE}textures/wall_brick_small_sand.png`,
 };
 
 const loader = new THREE.TextureLoader();

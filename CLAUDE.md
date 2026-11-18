@@ -71,7 +71,9 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
 - `public/textures/`: texture PNG (servite così come sono da Vite su `/textures/...`)
 - `CREDITS.md`: autori e licenze degli asset
 - `index.html`: pagina con canvas, overlay "Click to play" e HUD (stili CSS inclusi)
-- `vite.config.ts`: config del dev server e della build
+- `vite.config.ts`: config del dev server e della build (`base: './'` per funzionare in sottocartella su GitHub Pages)
+- `.github/workflows/deploy.yml`: **deploy automatico su GitHub Pages** a ogni push su `main`.
+  Gli asset in `public/` vanno referenziati con `import.meta.env.BASE_URL` (mai `/...` assoluto)
 
 ## Architettura (regole)
 - **Simulazione separata dal rendering**: la logica di gioco (giocatore, nemici, proiettili,
