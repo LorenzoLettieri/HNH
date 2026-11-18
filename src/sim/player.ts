@@ -36,6 +36,18 @@ export interface PlayerState {
   wallJumpCooldownTicks: number;
   /** Ticks spent on the ground since the last landing (big number = "long ago"). */
   groundTicks: number;
+
+  // --- Weapon (see weapon.ts) ---
+  /** Rounds left in the cylinder. */
+  ammo: number;
+  /** Ticks left before the next shot is allowed. */
+  fireCooldownTicks: number;
+  /** Ticks left in which a recent click is still waiting to fire. */
+  fireBufferTicks: number;
+  /** Was fire held during the previous tick? (semi-auto: one click = one shot) */
+  fireHeld: boolean;
+  /** Ticks left until the reload finishes (0 = not reloading). */
+  reloadTicks: number;
 }
 
 export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
@@ -58,6 +70,11 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     wallJumpsLeft: tuning.wallJumpsMax,
     wallJumpCooldownTicks: 0,
     groundTicks: 999,
+    ammo: tuning.revolverAmmo,
+    fireCooldownTicks: 0,
+    fireBufferTicks: 0,
+    fireHeld: false,
+    reloadTicks: 0,
   };
 }
 
@@ -68,6 +85,11 @@ export function copyPlayer(from: PlayerState, to: PlayerState): void {
 /** Height of the player's collision box right now (shorter when crouched). */
 export function currentHeight(p: PlayerState): number {
   return p.crouched ? tuning.crouchHeight : tuning.playerHeight;
+}
+
+/** Height of the eyes above the feet (lower when crouched). Bullets start here. */
+export function currentEyeHeight(p: PlayerState): number {
+  return p.crouched ? tuning.crouchEyeHeight : tuning.eyeHeight;
 }
 
 /** Horizontal speed (ignores vertical velocity), m/s. */

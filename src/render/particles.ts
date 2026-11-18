@@ -26,6 +26,13 @@ const EMBER_SIZE = 0.035;
 const EMBER_BRIGHTNESS = 5;
 const EMBER_MAX = 300;
 
+/** Sparks from bullet impacts. */
+const SPARK_MAX = 300;
+const SPARK_LIFE = 0.35; // seconds
+const SPARK_SIZE = 0.03;
+const SPARK_SPEED = 5; // m/s
+const SPARK_BRIGHTNESS = 6; // HDR: they bloom
+
 /** Steam puffs per second, per vent. */
 const STEAM_RATE = 14;
 const STEAM_LIFE = 1.4; // seconds
@@ -148,13 +155,66 @@ let steamCount = 0;
 let steamSpawnDebt = 0;
 let vents: THREE.Vector3[] = [];
 
+// --- Sparks ----------------------------------------------------------------------
+const sparks = createPointsLayer(SPARK_MAX);
+const sparkVel = new Float32Array(SPARK_MAX * 3);
+const sparkAge = new Float32Array(SPARK_MAX);
+let sparkCount = 0;
+
+/**
+ * Bursts of sparks at a bullet impact. They fly out around the surface
+ * normal (a "cone" of random directions bouncing off the wall), then fall.
+ */
+export function spawnSparks(point: THREE.Vector3, normal: THREE.Vector3, count = 10): void {
+  for (let n = 0; n < count && sparkCount < SPARK_MAX; n++) {
+    const i = sparkCount++;
+    const ix = i * 3;
+    sparks.positions[ix] = point.x;
+    sparks.positions[ix + 1] = point.y;
+    sparks.positions[ix + 2] = point.z;
+    // Normal + random vector = a random direction biased away from the surface.
+    const speed = SPARK_SPEED * (0.4 + Math.random());
+    sparkVel[ix] = (normal.x + (Math.random() - 0.5) * 1.6) * speed;
+    sparkVel[ix + 1] = (normal.y + (Math.random() - 0.5) * 1.6 + 0.4) * speed;
+    sparkVel[ix + 2] = (normal.z + (Math.random() - 0.5) * 1.6) * speed;
+    sparkAge[i] = Math.random() * 0.1;
+    sparks.sizes[i] = SPARK_SIZE;
+  }
+}
+
+function updateSparks(dt: number): void {
+  const p = sparks.positions;
+  for (let i = 0; i < sparkCount; i++) {
+    sparkAge[i] += dt;
+    if (sparkAge[i] >= SPARK_LIFE) {
+      sparkCount--;
+      const last = sparkCount;
+      for (let k = 0; k < 3; k++) {
+        p[i * 3 + k] = p[last * 3 + k];
+        sparkVel[i * 3 + k] = sparkVel[last * 3 + k];
+      }
+      sparkAge[i] = sparkAge[last];
+      i--;
+      continue;
+    }
+    const ix = i * 3;
+    sparkVel[ix + 1] -= 15 * dt; // gravity
+    p[ix] += sparkVel[ix] * dt;
+    p[ix + 1] += sparkVel[ix + 1] * dt;
+    p[ix + 2] += sparkVel[ix + 2] * dt;
+    sparks.alphas[i] = 1 - sparkAge[i] / SPARK_LIFE;
+  }
+  sparks.commit(sparkCount);
+}
+
 export function createParticles(
   scene: THREE.Scene,
   levelFires: FireSource[],
   levelVents: THREE.Vector3[] = [],
 ): void {
   vents = levelVents;
-  scene.add(steam.points);
+  scene.add(steam.points, sparks.points);
+  sparks.material.uniforms.color.value.set(0xffb040).multiplyScalar(SPARK_BRIGHTNESS);
   steam.material.uniforms.color.value.set(0xe8dccc);
   fires = levelFires;
   totalEmberRate = fires.reduce((sum, f) => sum + f.emberRate, 0);
@@ -200,10 +260,12 @@ export function updateParticles(
   dust.material.uniforms.pixelsPerMeterAt1m.value = ppm;
   embers.material.uniforms.pixelsPerMeterAt1m.value = ppm;
   steam.material.uniforms.pixelsPerMeterAt1m.value = ppm;
+  sparks.material.uniforms.pixelsPerMeterAt1m.value = ppm;
 
   updateDust(dt, time, camera.position);
   updateEmbers(dt, time);
   updateSteam(dt);
+  updateSparks(dt);
 }
 
 function updateDust(dt: number, time: number, cam: THREE.Vector3): void {

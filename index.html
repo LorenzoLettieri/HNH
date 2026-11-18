@@ -28,6 +28,17 @@
       #debug-panel input[type='number'] { width: 56px; background: #2a1810; color: inherit; border: 1px solid #5a3a20; }
       #debug-panel button { margin: 6px 0 10px; background: #5a3a20; color: inherit; border: 0; padding: 4px 8px; cursor: pointer; }
 
+      /* Crosshair: a dot and four short ticks, drawn with CSS only. */
+      #crosshair {
+        position: fixed; left: 50%; top: 50%; width: 2px; height: 2px; margin: -1px 0 0 -1px;
+        background: #ffe0a0; pointer-events: none;
+        box-shadow: -8px 0 0 #ffe0a0, 8px 0 0 #ffe0a0, 0 -8px 0 #ffe0a0, 0 8px 0 #ffe0a0;
+      }
+      #ammo {
+        position: fixed; right: 16px; bottom: 10px; color: #f0c080;
+        font: bold 26px monospace; letter-spacing: 4px; pointer-events: none;
+      }
+
       #hud {
         position: fixed; left: 12px; bottom: 10px; color: #f0c080;
         font: bold 18px monospace; pointer-events: none;
@@ -35,8 +46,10 @@
     </style>
   </head>
   <body>
-    <div id="overlay">Click to play<small>WASD · Spazio · R respawn · T atmosfera · P pixel · \ (tasto sotto Esc) debug</small></div>
+    <div id="overlay">Click to play<small>WASD · Spazio · Click spara · R ricarica · K respawn · T atmosfera · P pixel · \ (tasto sotto Esc) debug</small></div>
     <div id="hud"></div>
+    <div id="crosshair"></div>
+    <div id="ammo"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

@@ -12,6 +12,10 @@ export interface InputCommand {
   jump: boolean;
   /** Crouch button held (crouch, or slide if running fast enough). */
   crouch: boolean;
+  /** Fire button held (left mouse). */
+  fire: boolean;
+  /** Reload button held. */
+  reload: boolean;
   /** Go back to the spawn point (debug/testing). */
   respawn: boolean;
   /** View angles (radians) at the time the command was built. */

@@ -64,6 +64,19 @@ export function initInput(target: HTMLElement, onLockChange: (locked: boolean) =
     onLockChange(isPointerLocked());
   });
 
+  // Mouse buttons go in the same Set as keys, with names like "Mouse0"
+  // (left) and "Mouse2" (right), so the rest of the code treats them alike.
+  document.addEventListener('mousedown', (e) => {
+    if (isPointerLocked()) keysDown.add(`Mouse${e.button}`);
+  });
+  document.addEventListener('mouseup', (e) => {
+    keysDown.delete(`Mouse${e.button}`);
+  });
+  // No browser context menu on right click while playing.
+  document.addEventListener('contextmenu', (e) => {
+    if (isPointerLocked()) e.preventDefault();
+  });
+
   document.addEventListener('mousemove', (e) => {
     if (!isPointerLocked()) return;
     // movementX/Y = how far the mouse moved since the previous event, in pixels.

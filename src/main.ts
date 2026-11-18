@@ -13,6 +13,10 @@ import { applySunLight, createSunLight } from './render/sunLight';
 import { applyFireLights, createFireLights, updateFireLights } from './render/fireLights';
 import { createProps } from './render/props';
 import { createPostProcess } from './render/postprocess';
+import { createWeaponFx } from './render/weaponFx';
+import { stepWeapon } from './sim/weapon';
+import type { SimEvent } from './sim/events';
+import { initAudio } from './audio/sfx';
 import { applyParticles, createParticles, updateParticles } from './render/particles';
 import { applyHeightFog } from './render/heightFog';
 import { applySky, createSky, directionFromAngles } from './render/sky';
@@ -83,6 +87,7 @@ for (const b of world.boxes) if (b.look) scene.add(createBoxMesh(b));
 const props = createProps(scene, world);
 createFireLights(scene, props.fires);
 createParticles(scene, props.fires, props.vents);
+const weaponFx = createWeaponFx(scene);
 
 let atmosphereIndex = 0;
 applyAtmosphere(ATMOSPHERES[atmosphereIndex]);
@@ -121,7 +126,9 @@ const overlay = document.getElementById('overlay')!;
 const hud = document.getElementById('hud')!;
 initInput(renderer.domElement, (locked) => {
   overlay.style.display = locked ? 'none' : 'flex';
+  if (locked) initAudio(); // audio is allowed only after a user gesture
 });
+const ammoHud = document.getElementById('ammo')!;
 
 // Two copies of the player state: the previous tick and the current one.
 // The camera is drawn somewhere in between (interpolation).
@@ -165,9 +172,12 @@ renderer.setAnimationLoop((now: number) => {
   updateLook(); // mouse look every frame, for the snappiest aim
 
   accumulator += frameTime;
+  const events: SimEvent[] = [];
   while (accumulator >= TICK_DT) {
     copyPlayer(player, prevPlayer);
-    stepPlayer(player, buildCommand(tick), world, TICK_DT);
+    const cmd = buildCommand(tick);
+    stepPlayer(player, cmd, world, TICK_DT);
+    stepWeapon(player, cmd, world, events);
     // The renderer only *reads* the state: "were we in the air, and now we're not?"
     if (!prevPlayer.onGround && player.onGround) triggerLandingDip(-prevPlayer.vy);
     tick++;
@@ -192,6 +202,13 @@ renderer.setAnimationLoop((now: number) => {
 
   const state = player.sliding ? 'SLIDE' : player.onGround ? (player.crouched ? 'CROUCH' : 'GROUND') : 'AIR';
   hud.textContent = `${horizontalSpeed(player).toFixed(1)} m/s  ${state}  walljumps ${player.wallJumpsLeft}`;
+
+  // Weapon events of this frame → effects and sounds.
+  weaponFx.handle(events, camera);
+  weaponFx.update(frameTime);
+  ammoHud.textContent = player.reloadTicks > 0
+    ? 'RELOADING'
+    : '●'.repeat(player.ammo) + '○'.repeat(Math.max(0, 6 - player.ammo));
 
   updateFireLights(now / 1000);
   props.update(now / 1000);

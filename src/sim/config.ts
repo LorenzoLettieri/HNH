@@ -127,6 +127,20 @@ export const tuning = {
   wallJumpsMax: 3,
   /** Minimum seconds between two wall jumps (else holding jump would burn them all at once). */
   wallJumpCooldown: 0.2,
+
+  // --- Revolver ---
+  /** Shots in the cylinder. */
+  revolverAmmo: 6,
+  /** Minimum seconds between two shots (it's semi-automatic: one click = one shot). */
+  revolverFireInterval: 0.22,
+  /** A click slightly before the gun is ready still fires as soon as it is, seconds. */
+  revolverFireBuffer: 0.12,
+  /** Seconds to reload all 6 rounds. */
+  revolverReloadTime: 1.1,
+  /** Damage per bullet (no enemies yet). */
+  revolverDamage: 34,
+  /** Max shooting distance, meters. */
+  weaponRange: 200,
 };
 
 /** Converts a duration in seconds to a whole number of ticks. */

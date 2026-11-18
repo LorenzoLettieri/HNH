@@ -44,12 +44,15 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
 - `src/main.ts`: entry point (renderer, scena, luci, caricamento livello, game loop a passo fisso + interpolazione camera).
   Debug: `?pos=x,y,z&look=yaw,pitch` nell'URL per partire da un punto preciso; `?level=arena` per l'arena di prova
 - `src/input.ts`: input grezzo (tasti premuti, movimento mouse, Pointer Lock)
-- `src/controls.ts`: sensibilità mouse (`controlSettings`), angoli di vista, **mappatura tasti** (WASD, Spazio, Shift/C = accovacciati/slide, R = respawn) → `InputCommand` (T = cambia atmosfera, P = pixel art on/off, tasto sotto Esc = pannello debug, in `main.ts`)
+- `src/controls.ts`: sensibilità mouse (`controlSettings`), angoli di vista, **mappatura tasti** (WASD, Spazio, Shift/C = accovacciati/slide, click = spara, R = ricarica, K = respawn) → `InputCommand` (T = cambia atmosfera, P = pixel art on/off, tasto sotto Esc = pannello debug, in `main.ts`)
 - `src/sim/`: simulazione pura (niente Three.js/DOM)
-  - `config.ts`: **valori di tuning** (oggetto `tuning`, modificabile dal pannello debug) (tick rate, altezza occhi, dimensioni giocatore, movimento a terra, gravità/salto/coyote/buffer, movimento e controllo in aria, aiuti al bhop, accovacciata, slide, wall jump)
+  - `config.ts`: **valori di tuning** (oggetto `tuning`, modificabile dal pannello debug) (tick rate, altezza occhi, dimensioni giocatore, movimento a terra, gravità/salto/coyote/buffer, movimento e controllo in aria, aiuti al bhop, accovacciata, slide, wall jump, **revolver**)
   - `command.ts`: tipo `InputCommand` (cosa vuole fare il giocatore in un tick)
   - `world.ts`: tipi del livello (`Box` AABB, `Prop` decorazioni, `World`) e helper `box()`
   - `props.ts`: **box di collisione invisibili dei props** (barile, palo del cartello, torcia) e zona di lancio degli sfiatatoi
+  - `weapon.ts`: revolver (sparo semi-automatico, munizioni, ricarica, hitscan)
+  - `raycast.ts`: raggio contro i box (metodo degli "slab"): cosa colpisce un proiettile
+  - `events.ts`: eventi della simulazione (sparo, colpo a vuoto, ricarica) per effetti e suoni
   - `collision.ts`: movimento con collisioni asse per asse contro i box, `overlapsAny` (c'è spazio?), `findWall` (muro vicino?)
   - `player.ts`: stato del giocatore e `stepPlayer()` (salto e bhop facilitato, slide/accovacciata, wall jump stile Apex, attrito, accelerazione Quake + air control, gravità, sfiatatoi, respawn)
 - `src/debug/`: pannello di debug
@@ -74,13 +77,16 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
     - `common.ts`: mattoncini comuni (materiale, box texturizzati, fiamma animata)
     - `index.ts`: costruisce tutti i props di un livello
   - `postprocess.ts`: **pipeline di post-processing** (`postSettings`: risoluzione pixel, livelli di colore, dithering, bloom, god rays)
-  - `particles.ts`: **particelle** (polvere/lucciole attorno alla camera, braci dalle fiamme, vapore dagli sfiatatoi)
+  - `particles.ts`: **particelle** (polvere/lucciole, braci, vapore, scintille degli impatti)
   - `heightFog.ts`: nebbia al suolo (patch dello shader della nebbia di Three.js)
+  - `weaponFx.ts`: effetti degli spari (lampo di luce, fori, scintille, suoni)
+  - `impacts.ts`: fori di proiettile sulle superfici (decal, dimensione, quanti ne restano)
   - `materials.ts`: **quale texture usa ogni materiale** (`LOOKS`), densità dei pixel, mesh dei box
+- `src/audio/sfx.ts`: **effetti sonori sintetizzati** con Web Audio (sparo, colpo a vuoto, ricarica, volume)
 - `public/textures/`: texture PNG (servite così come sono da Vite su `/textures/...`)
 - `docs/DESIGN.md`: **documento di design** (decisioni di gameplay e domande aperte)
 - `CREDITS.md`: autori e licenze degli asset
-- `index.html`: pagina con canvas, overlay "Click to play" e HUD (stili CSS inclusi)
+- `index.html`: pagina con canvas, overlay "Click to play", HUD, mirino e munizioni (stili CSS inclusi)
 - `vite.config.ts`: config del dev server e della build (`base: './'` per funzionare in sottocartella su GitHub Pages)
 - `.github/workflows/deploy.yml`: **deploy automatico su GitHub Pages** a ogni push su `main`.
   Gli asset in `public/` vanno referenziati con `import.meta.env.BASE_URL` (mai `/...` assoluto)
