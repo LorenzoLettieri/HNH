@@ -2,10 +2,11 @@ import * as THREE from 'three';
 import { initInput, isTypingInField } from './input';
 import { createDebugPanel } from './debug/debugPanel';
 import { buildCommand, updateLook, view } from './controls';
-import { TICK_DT, tuning } from './sim/config';
+import { TICK_DT } from './sim/config';
 import { copyPlayer, createPlayer, horizontalSpeed, stepPlayer } from './sim/player';
 import { testArena } from './levels/testArena';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
+import { updateCameraFeel } from './render/cameraFeel';
 import { createBoxMesh, loadMaterials } from './render/materials';
 import { ATMOSPHERES, type Atmosphere } from './render/atmospheres';
 import { applySunLight, createSunLight } from './render/sunLight';
@@ -174,14 +175,17 @@ renderer.setAnimationLoop((now: number) => {
 
   // How far we are between the previous tick (0) and the current one (1).
   const alpha = accumulator / TICK_DT;
-  camera.position.set(
-    prevPlayer.x + (player.x - prevPlayer.x) * alpha,
-    prevPlayer.y + (player.y - prevPlayer.y) * alpha + (player.crouched ? tuning.crouchEyeHeight : tuning.eyeHeight) - updateLandingDip(frameTime),
-    prevPlayer.z + (player.z - prevPlayer.z) * alpha,
-  );
   // View angles come straight from the mouse, not from the simulation:
   // interpolating them would add a tick of delay to aiming.
-  camera.rotation.set(view.pitch, view.yaw, 0);
+  // (rotation.z, the roll, is set by the camera feel below.)
+  camera.rotation.x = view.pitch;
+  camera.rotation.y = view.yaw;
+  const eyeHeight = updateCameraFeel(camera, player, frameTime);
+  camera.position.set(
+    prevPlayer.x + (player.x - prevPlayer.x) * alpha,
+    prevPlayer.y + (player.y - prevPlayer.y) * alpha + eyeHeight - updateLandingDip(frameTime),
+    prevPlayer.z + (player.z - prevPlayer.z) * alpha,
+  );
   // The sky follows the camera: you can never get closer to it.
   sky.position.copy(camera.position);
 

@@ -3,6 +3,7 @@
 import { tuning } from '../sim/config';
 import { controlSettings } from '../controls';
 import { postSettings } from '../render/postprocess';
+import { cameraFeelSettings } from '../render/cameraFeel';
 import type { Atmosphere } from '../render/atmospheres';
 import { copyToClipboard, createPanel, toSource, type Folder } from './panel';
 
@@ -59,6 +60,19 @@ export function createDebugPanel(options: {
   move.number(tuning, 'wallJumpsMax', 0, 10, 1);
   move.number(tuning, 'wallJumpCooldown', 0, 1, 0.05);
   move.button('Copy values', () => copyToClipboard(toSource(tuning)));
+
+  // --- Camera feel ---
+  const feel = panel.folder('Camera feel (src/render/cameraFeel.ts)');
+  feel.number(cameraFeelSettings, 'baseFov', 50, 110, 1);
+  feel.number(cameraFeelSettings, 'speedFovExtra', 0, 40, 1);
+  feel.number(cameraFeelSettings, 'speedFovStart', 0, 20, 0.5);
+  feel.number(cameraFeelSettings, 'speedFovFull', 1, 40, 0.5);
+  feel.number(cameraFeelSettings, 'strafeRoll', 0, 6, 0.1);
+  feel.number(cameraFeelSettings, 'slideRoll', 0, 10, 0.1);
+  feel.number(cameraFeelSettings, 'fovRate', 1, 30, 0.5);
+  feel.number(cameraFeelSettings, 'rollRate', 1, 30, 0.5);
+  feel.number(cameraFeelSettings, 'eyeRate', 1, 40, 0.5);
+  feel.button('Copy values', () => copyToClipboard(toSource(cameraFeelSettings)));
 
   // --- Post-processing ---
   const post = panel.folder('Post-processing (src/render/postprocess.ts)');
