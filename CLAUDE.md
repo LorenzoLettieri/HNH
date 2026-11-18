@@ -61,5 +61,6 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
 
 ## Convenzioni
 - Codice, nomi e commenti in inglese; comunicazione con l'utente in italiano.
-- Lavorare su un branch per feature; non fare push su `main` senza richiesta esplicita.
+- Commit e push **direttamente su `main`**, un commit per passo: l'utente fa solo `git pull`.
+  Branch solo per esperimenti grossi o se richiesto esplicitamente.
 - Asset generati via codice o con licenza libera; niente asset di altri giochi.
