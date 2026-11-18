@@ -3,13 +3,13 @@ import * as THREE from 'three';
 import type { Atmosphere } from './atmospheres';
 import { directionFromAngles } from './sky';
 
-/** Half-size of the area covered by shadows, meters (the arena is 40 × 40). */
-const SHADOW_AREA = 30;
+/** Half-size of the area covered by shadows, meters (the town is 92 × 92). */
+const SHADOW_AREA = 50;
 /**
- * Shadow map resolution (pixels per side). Covering 60 m with 1024 px gives
- * ~6 cm shadow pixels: blocky edges that match the pixel-art style.
+ * Shadow map resolution (pixels per side). Covering 100 m with 2048 px gives
+ * ~5 cm shadow pixels: blocky edges that match the pixel-art style.
  */
-const SHADOW_MAP_SIZE = 1024;
+const SHADOW_MAP_SIZE = 2048;
 
 export function createSunLight(): THREE.DirectionalLight {
   // A DirectionalLight has parallel rays, like a light source infinitely far away.
@@ -28,7 +28,7 @@ export function createSunLight(): THREE.DirectionalLight {
   cam.top = SHADOW_AREA;
   cam.bottom = -SHADOW_AREA;
   cam.near = 1;
-  cam.far = 150;
+  cam.far = 200;
   light.shadow.mapSize.set(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
 
   // Bias: tiny offsets that prevent "shadow acne", a striped pattern caused by
@@ -42,7 +42,7 @@ export function createSunLight(): THREE.DirectionalLight {
 export function applySunLight(light: THREE.DirectionalLight, a: Atmosphere): void {
   const dir = directionFromAngles(a.sunElevation, a.sunAzimuth);
   light.target.position.set(0, 0, 0); // arena center
-  light.position.copy(dir).multiplyScalar(60); // 60 m away, toward the sun
+  light.position.copy(dir).multiplyScalar(80); // 80 m away, toward the sun
   light.color.set(a.sunLightColor);
   light.intensity = a.sunLightIntensity;
 }

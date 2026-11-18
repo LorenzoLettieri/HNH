@@ -1,6 +1,7 @@
 import type { InputCommand } from './command';
 import { findWall, moveAndCollide, overlapsAny } from './collision';
 import type { World } from './world';
+import { ventUnder } from './props';
 import { secondsToTicks, tuning } from './config';
 
 // Pure data: no Three.js, no DOM. Can be copied, compared, sent over the network.
@@ -93,7 +94,20 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
   // 2. Crouch and slide (see the function for the rules).
   updateCrouchAndSlide(p, cmd.crouch, world);
 
-  // 3. Jump.
+  // 3. Steam vents: standing on one launches you (keeping your horizontal speed).
+  if (p.onGround) {
+    const vent = ventUnder(world.props, p.x, p.y, p.z);
+    if (vent) {
+      p.vy = vent.up;
+      p.vx += vent.pushX ?? 0;
+      p.vz += vent.pushZ ?? 0;
+      p.onGround = false;
+      p.sliding = false;
+      p.coyoteTicks = 0; // a jump press this tick must not override the launch
+    }
+  }
+
+  // 4. Jump.
   // A "press" is a new press (or every tick while held, with tuning.autoBhop).
   // Pressing doesn't jump directly: it fills the buffer, which stays "armed"
   // for a few ticks. So a press slightly before landing isn't lost.
@@ -129,7 +143,7 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
   if (p.slideCooldownTicks > 0) p.slideCooldownTicks--;
   if (p.wallJumpCooldownTicks > 0) p.wallJumpCooldownTicks--;
 
-  // 4. Movement, depending on the state we're in.
+  // 5. Movement, depending on the state we're in.
   if (p.sliding) {
     // Sliding: very little friction, and only a bit of steering (like in the air).
     applyFriction(p, tuning.slideFriction, dt);
@@ -150,13 +164,13 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
   // e.g. after walking off a ledge).
   p.vy -= tuning.gravity * dt;
 
-  // 5. Move, colliding with the level.
+  // 6. Move, colliding with the level.
   const { landed } = moveAndCollide(p, tuning.playerRadius, currentHeight(p), world.boxes, dt);
   p.onGround = landed;
   if (landed) p.wallJumpsLeft = tuning.wallJumpsMax; // touching ground recharges wall jumps
   if (!landed) p.sliding = false; // slid off a ledge: now we're just falling
 
-  // 6. Fell off the world (or asked to): back to the spawn point.
+  // 7. Fell off the world (or asked to): back to the spawn point.
   if (p.y < tuning.killY || cmd.respawn) respawn(p, world);
 }
 

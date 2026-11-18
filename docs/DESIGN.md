@@ -108,6 +108,18 @@ torre dell'acqua, ingresso di una miniera, binari con vagone, cimitero, forca.
 3. **Punti alti** (campanile, torri, ponti sospesi) — raggiungibili con catene di wall jump
    (e in futuro con il lazo). Contengono **ricompense temporanee**: si visitano, non si abitano.
 
+### Stato attuale: greybox (`src/levels/town.ts`)
+Cittadina 92 × 92 m chiusa da un canyon. Saloon (tetto 7,3 m, balconata a 3 m), chiesa (9,3 m)
+con campanile (22 m), sceriffo (5,3 m), banca (8,3 m), torre dell'acqua (8 m), torri gemelle
+(14 m) unite da un ponte sopra Main Street, piattaforme sospese tra i tetti, forca, cimitero,
+vagoni. 4 sfiatatoi di vapore. Tutti i percorsi sono stati verificati in simulazione.
+
+### Regole pratiche emerse (vincoli del movimento attuale)
+- **Salto massimo ≈ 1,17 m**: gradini e scalini al massimo **1 m**.
+- **Salto in corsa ≈ 5,6 m** di distanza: gap tra piattaforme ≤ 3–4 m per stare comodi.
+- **I wall jump spingono VIA dal muro**: non servono a scalare una parete singola. Funzionano
+  come spinta extra (+≈1 m) o tra **due muri vicini**. Per salire molto: sfiatatoi (o lazo).
+
 ### Principi
 - **Niente vicoli ciechi**: ogni percorso è un anello.
 - **Linee di flusso**: percorsi che permettono di concatenare slide, salti e wall jump senza fermarsi.

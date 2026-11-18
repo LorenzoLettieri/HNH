@@ -9,16 +9,20 @@ import { createGrass } from './grass';
 import { createLantern } from './lantern';
 import { createSign } from './sign';
 import { createTorch } from './torch';
+import { createVent } from './vent';
 
 export interface LevelProps {
   /** Every flame in the level, in world coordinates. */
   fires: FireSource[];
+  /** Positions of the steam vents (for the steam particles). */
+  vents: THREE.Vector3[];
   /** Call every frame. */
   update(time: number): void;
 }
 
 export function createProps(scene: THREE.Scene, world: World): LevelProps {
   const fires: FireSource[] = [];
+  const vents: THREE.Vector3[] = [];
   const updates: ((time: number) => void)[] = [];
 
   for (const p of world.props) {
@@ -37,6 +41,10 @@ export function createProps(scene: THREE.Scene, world: World): LevelProps {
         break;
       case 'lantern':
         model = createLantern(p.mount);
+        break;
+      case 'vent':
+        model = createVent();
+        vents.push(new THREE.Vector3(p.x, p.y, p.z));
         break;
     }
 
@@ -65,6 +73,7 @@ export function createProps(scene: THREE.Scene, world: World): LevelProps {
 
   return {
     fires,
+    vents,
     update(time) {
       for (const u of updates) u(time);
     },

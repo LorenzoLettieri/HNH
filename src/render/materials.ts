@@ -26,6 +26,11 @@ const LOOKS: Record<Look, string> = {
   dirt: `${BASE}textures/floor_ground_dirt.png`,
   wood: `${BASE}textures/timber_square_planks_cross.png`,
   stone: `${BASE}textures/wall_brick_small_sand.png`,
+  planks: `${BASE}textures/floor_wood_planks.png`,
+  roof: `${BASE}textures/roof_clay_red_center.png`,
+  metal: `${BASE}textures/Metal_Plate.png`,
+  rock: `${BASE}textures/wall_rock.png`,
+  brick: `${BASE}textures/Brick_1.png`,
 };
 
 const loader = new THREE.TextureLoader();

@@ -18,7 +18,7 @@ export interface Box {
    * How the renderer should draw it. The simulation ignores this.
    * No look = invisible collider (e.g. the collision box of a prop).
    */
-  look?: 'dirt' | 'wood' | 'stone';
+  look?: 'dirt' | 'wood' | 'stone' | 'planks' | 'roof' | 'metal' | 'rock' | 'brick';
 }
 
 /**
@@ -32,6 +32,12 @@ export type Prop =
   | { type: 'torch'; x: number; y: number; z: number }
   /** mount 'wall': (x, y, z) is the point on the wall where the bracket is fixed. */
   | { type: 'lantern'; x: number; y: number; z: number; rotation?: number; mount: 'wall' | 'ground' }
+  /**
+   * Steam vent (jump pad): stepping on it launches you up at `up` m/s, plus an
+   * optional horizontal push (pushX, pushZ m/s) to aim you at a ledge.
+   * Flush with the ground: no collision box, only a launch zone.
+   */
+  | { type: 'vent'; x: number; y: number; z: number; up: number; pushX?: number; pushZ?: number }
   /** A patch of grass tufts scattered in a circle (purely visual). */
   | { type: 'grass'; x: number; z: number; radius: number; count: number };
 

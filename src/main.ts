@@ -4,7 +4,7 @@ import { createDebugPanel } from './debug/debugPanel';
 import { buildCommand, updateLook, view } from './controls';
 import { TICK_DT } from './sim/config';
 import { copyPlayer, createPlayer, horizontalSpeed, stepPlayer } from './sim/player';
-import { testArena } from './levels/testArena';
+import { DEFAULT_LEVEL, LEVELS } from './levels';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
 import { updateCameraFeel } from './render/cameraFeel';
 import { createBoxMesh, loadMaterials } from './render/materials';
@@ -72,7 +72,9 @@ function applyAtmosphere(a: Atmosphere): void {
 
 // --- Level ----------------------------------------------------------------
 // The level is pure data (src/levels/). Here we build one textured mesh per box.
-const world = testArena;
+// ?level=arena in the URL picks another level (see src/levels/index.ts).
+const params = new URLSearchParams(location.search);
+const world = LEVELS[params.get('level') ?? DEFAULT_LEVEL] ?? LEVELS[DEFAULT_LEVEL];
 
 await loadMaterials(); // top-level await: the game starts once textures are ready
 // Boxes without a `look` are invisible colliders (e.g. around props): not drawn.
@@ -80,7 +82,7 @@ for (const b of world.boxes) if (b.look) scene.add(createBoxMesh(b));
 // Props (barrels, signs, torches, lanterns, grass): models + their flames.
 const props = createProps(scene, world);
 createFireLights(scene, props.fires);
-createParticles(scene, props.fires);
+createParticles(scene, props.fires, props.vents);
 
 let atmosphereIndex = 0;
 applyAtmosphere(ATMOSPHERES[atmosphereIndex]);
@@ -128,7 +130,6 @@ const prevPlayer = createPlayer();
 
 // Debug: start from a given spot with ?pos=x,y,z&look=yaw,pitch (degrees)
 // in the URL. Handy to jump straight to the thing you're working on.
-const params = new URLSearchParams(location.search);
 const startPos = params.get('pos')?.split(',').map(Number);
 const startLook = params.get('look')?.split(',').map(Number);
 if (startPos?.length === 3) [player.x, player.y, player.z] = startPos;

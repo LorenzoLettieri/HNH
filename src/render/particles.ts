@@ -26,6 +26,14 @@ const EMBER_SIZE = 0.035;
 const EMBER_BRIGHTNESS = 5;
 const EMBER_MAX = 300;
 
+/** Steam puffs per second, per vent. */
+const STEAM_RATE = 14;
+const STEAM_LIFE = 1.4; // seconds
+const STEAM_SIZE = 0.22; // meters, at birth (puffs grow as they rise)
+const STEAM_MAX = 400;
+/** Steam is faint: additive white would otherwise glow too much. */
+const STEAM_ALPHA = 0.1;
+
 // --- Shared GPU side ------------------------------------------------------------
 // Each point is drawn as a square of gl_PointSize screen pixels. Squares are
 // exactly what we want for pixel art: no texture needed.
@@ -132,7 +140,22 @@ let fires: FireSource[] = [];
 /** Sum of all the fires' ember rates: embers per second in the whole level. */
 let totalEmberRate = 0;
 
-export function createParticles(scene: THREE.Scene, levelFires: FireSource[]): void {
+// --- Steam -------------------------------------------------------------------------
+const steam = createPointsLayer(STEAM_MAX);
+const steamVel = new Float32Array(STEAM_MAX * 3);
+const steamAge = new Float32Array(STEAM_MAX);
+let steamCount = 0;
+let steamSpawnDebt = 0;
+let vents: THREE.Vector3[] = [];
+
+export function createParticles(
+  scene: THREE.Scene,
+  levelFires: FireSource[],
+  levelVents: THREE.Vector3[] = [],
+): void {
+  vents = levelVents;
+  scene.add(steam.points);
+  steam.material.uniforms.color.value.set(0xe8dccc);
   fires = levelFires;
   totalEmberRate = fires.reduce((sum, f) => sum + f.emberRate, 0);
   scene.add(dust.points, embers.points);
@@ -176,9 +199,11 @@ export function updateParticles(
   const ppm = renderHeight / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
   dust.material.uniforms.pixelsPerMeterAt1m.value = ppm;
   embers.material.uniforms.pixelsPerMeterAt1m.value = ppm;
+  steam.material.uniforms.pixelsPerMeterAt1m.value = ppm;
 
   updateDust(dt, time, camera.position);
   updateEmbers(dt, time);
+  updateSteam(dt);
 }
 
 function updateDust(dt: number, time: number, cam: THREE.Vector3): void {
@@ -223,6 +248,58 @@ function nearFireGlow(x: number, y: number, z: number): number {
     if (d2 < r2) glow += 1.5 * (1 - d2 / r2);
   }
   return glow;
+}
+
+/**
+ * Steam: same pattern as the embers (age, move, swap-remove the dead, spawn
+ * new ones), with puffs that rise fast, slow down, spread out and grow.
+ */
+function updateSteam(dt: number): void {
+  const p = steam.positions;
+  for (let i = 0; i < steamCount; i++) {
+    steamAge[i] += dt;
+    if (steamAge[i] >= STEAM_LIFE) {
+      steamCount--;
+      const last = steamCount;
+      for (let k = 0; k < 3; k++) {
+        p[i * 3 + k] = p[last * 3 + k];
+        steamVel[i * 3 + k] = steamVel[last * 3 + k];
+      }
+      steamAge[i] = steamAge[last];
+      i--;
+      continue;
+    }
+    const ix = i * 3;
+    const drag = Math.exp(-1.5 * dt); // air resistance: the jet loses speed
+    steamVel[ix] *= drag;
+    steamVel[ix + 1] *= drag;
+    steamVel[ix + 2] *= drag;
+    p[ix] += steamVel[ix] * dt;
+    p[ix + 1] += steamVel[ix + 1] * dt;
+    p[ix + 2] += steamVel[ix + 2] * dt;
+    const t = steamAge[i] / STEAM_LIFE;
+    steam.sizes[i] = STEAM_SIZE * (1 + t * 3); // puffs expand
+    steam.alphas[i] = STEAM_ALPHA * (1 - t) * Math.min(1, t * 8); // fade in, then out
+  }
+
+  steamSpawnDebt += STEAM_RATE * vents.length * dt;
+  while (steamSpawnDebt >= 1 && steamCount < STEAM_MAX) {
+    steamSpawnDebt -= 1;
+    const v = vents[Math.floor(Math.random() * vents.length)];
+    const i = steamCount++;
+    const ix = i * 3;
+    const a = Math.random() * Math.PI * 2;
+    const r = Math.random() * 0.5;
+    p[ix] = v.x + Math.cos(a) * r;
+    p[ix + 1] = v.y + 0.05;
+    p[ix + 2] = v.z + Math.sin(a) * r;
+    steamVel[ix] = (Math.random() - 0.5) * 0.6;
+    steamVel[ix + 1] = 3 + Math.random() * 2.5;
+    steamVel[ix + 2] = (Math.random() - 0.5) * 0.6;
+    steamAge[i] = 0;
+  }
+  steamSpawnDebt = Math.min(steamSpawnDebt, 1);
+  steam.commit(steamCount);
 }
 
 function updateEmbers(dt: number, time: number): void {

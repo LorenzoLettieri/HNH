@@ -292,3 +292,36 @@ export function grassTexture(): THREE.Texture {
     return c.toTexture();
   });
 }
+
+/**
+ * Steam vent grate, seen from above: a round iron plate with slots.
+ * Returns two textures: the color, and a "glow" mask where only the slots
+ * are white (used as emissive map: the slots glow with hellish heat).
+ */
+export function ventTextures(): { color: THREE.Texture; glow: THREE.Texture } {
+  const color = cached('ventColor', () => paintVent(false));
+  const glow = cached('ventGlow', () => paintVent(true));
+  return { color, glow };
+}
+
+function paintVent(glowMask: boolean): THREE.Texture {
+  const S = 32;
+  const c = new PixelCanvas(S, S);
+  const rand = seededRandom(11);
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const r = Math.hypot(x - S / 2 + 0.5, y - S / 2 + 0.5);
+      // Slots: horizontal bars of 2 px, every 4 px, inside the inner circle.
+      const slot = r < S / 2 - 4 && y % 4 < 2 && Math.abs(x - S / 2) < S / 2 - 6;
+      if (glowMask) {
+        c.set(x, y, slot ? 0xffffff : 0x000000);
+      } else {
+        let col = slot ? 0x1a0804 : shade(PALETTE.iron, 0.9 + rand() * 0.2);
+        if (r > S / 2 - 3) col = shade(PALETTE.ironDark, 1.1); // outer rim
+        if (!slot && rand() < 0.08) col = mixColor(PALETTE.rust, col, 0.4);
+        c.set(x, y, col);
+      }
+    }
+  }
+  return c.toTexture();
+}

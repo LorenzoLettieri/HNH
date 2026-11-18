@@ -13,7 +13,26 @@ export function propColliders(p: Prop): Box[] {
     case 'torch':
       return [box(p.x, p.y, p.z, 0.2, 1.6, 0.2)];
     case 'lantern':
+    case 'vent':
     case 'grass':
       return []; // too small or too soft to block anyone
   }
+}
+
+/** Radius of a steam vent's launch zone, meters. */
+export const VENT_RADIUS = 0.8;
+
+/** The vent the player is standing on, if any. */
+export function ventUnder(
+  props: Prop[],
+  x: number,
+  y: number,
+  z: number,
+): Extract<Prop, { type: 'vent' }> | null {
+  for (const p of props) {
+    if (p.type !== 'vent') continue;
+    const onTop = Math.abs(y - p.y) < 0.1;
+    if (onTop && Math.hypot(x - p.x, z - p.z) < VENT_RADIUS) return p;
+  }
+  return null;
 }
