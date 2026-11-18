@@ -32,6 +32,8 @@ export function buildCommand(tick: number): InputCommand {
   if (isKeyDown('KeyD')) strafe += 1;
   if (isKeyDown('KeyA')) strafe -= 1;
   const jump = isKeyDown('Space');
+  // Shift or C. Not Ctrl: Ctrl+W would close the browser tab!
+  const crouch = isKeyDown('ShiftLeft') || isKeyDown('KeyC');
   const respawn = isKeyDown('KeyR');
-  return { tick, forward, strafe, jump, respawn, yaw: view.yaw, pitch: view.pitch };
+  return { tick, forward, strafe, jump, crouch, respawn, yaw: view.yaw, pitch: view.pitch };
 }

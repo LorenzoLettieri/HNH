@@ -44,6 +44,20 @@ export function createDebugPanel(options: {
   move.number(tuning, 'airAccel', 0, 50, 0.5);
   move.number(tuning, 'airSpeedCap', 0, 10, 0.1);
   move.number(tuning, 'eyeHeight', 1, 1.8, 0.05);
+  move.number(tuning, 'crouchEyeHeight', 0.4, 1.2, 0.05);
+  move.number(tuning, 'crouchSpeed', 1, 8, 0.1);
+  move.number(tuning, 'slideStartSpeed', 1, 12, 0.1);
+  move.number(tuning, 'slideBoost', 0, 10, 0.1);
+  move.number(tuning, 'slideBoostMaxSpeed', 5, 30, 0.5);
+  move.number(tuning, 'slideBoostCooldown', 0, 2, 0.05);
+  move.number(tuning, 'slideFriction', 0, 5, 0.05);
+  move.number(tuning, 'slideStopSpeed', 0, 8, 0.1);
+  move.number(tuning, 'slideSteer', 0, 30, 0.5);
+  move.number(tuning, 'wallJumpReach', 0.05, 1, 0.05);
+  move.number(tuning, 'wallJumpUp', 0, 15, 0.1);
+  move.number(tuning, 'wallJumpPush', 0, 15, 0.1);
+  move.number(tuning, 'wallJumpsMax', 0, 10, 1);
+  move.number(tuning, 'wallJumpCooldown', 0, 1, 0.05);
   move.button('Copy values', () => copyToClipboard(toSource(tuning)));
 
   // --- Post-processing ---

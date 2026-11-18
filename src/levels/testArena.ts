@@ -93,7 +93,13 @@ export const testArena: World = {
     box(-12, 0, -2, 1, 3, 16, 'stone'),
     box(-16, 0, -2, 1, 3, 16, 'stone'),
 
-    // --- South: pillars (future wall jump practice) ---
+    // --- East-center: a low gate (beam at 1.1 m). Standing (1.8 m) you
+    //     can't pass: crouch or slide under it. ---
+    box(8.25, 0, 0, 0.5, 1.7, 0.5, 'wood'),
+    box(11.75, 0, 0, 0.5, 1.7, 0.5, 'wood'),
+    box(10, 1.1, 0, 4, 0.6, 0.5, 'wood'),
+
+    // --- South: pillars (wall jump practice: jump between them) ---
     box(-8, 0, 10, 1, 5, 1, 'stone'),
     box(-4, 0, 10, 1, 5, 1, 'stone'),
     box(4, 0, 10, 1, 5, 1, 'stone'),

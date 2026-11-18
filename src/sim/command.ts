@@ -10,6 +10,8 @@ export interface InputCommand {
   strafe: number;
   /** Jump button held down during this tick. */
   jump: boolean;
+  /** Crouch button held (crouch, or slide if running fast enough). */
+  crouch: boolean;
   /** Go back to the spawn point (debug/testing). */
   respawn: boolean;
   /** View angles (radians) at the time the command was built. */

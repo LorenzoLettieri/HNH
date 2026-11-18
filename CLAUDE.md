@@ -37,19 +37,19 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
 - `src/main.ts`: entry point (renderer, scena, luci, caricamento livello, game loop a passo fisso + interpolazione camera).
   Debug: `?pos=x,y,z&look=yaw,pitch` nell'URL per partire da un punto preciso
 - `src/input.ts`: input grezzo (tasti premuti, movimento mouse, Pointer Lock)
-- `src/controls.ts`: sensibilità mouse (`controlSettings`), angoli di vista, **mappatura tasti** (WASD, Spazio, R = respawn) → `InputCommand` (T = cambia atmosfera, P = pixel art on/off, tasto sotto Esc = pannello debug, in `main.ts`)
+- `src/controls.ts`: sensibilità mouse (`controlSettings`), angoli di vista, **mappatura tasti** (WASD, Spazio, Shift/C = accovacciati/slide, R = respawn) → `InputCommand` (T = cambia atmosfera, P = pixel art on/off, tasto sotto Esc = pannello debug, in `main.ts`)
 - `src/sim/`: simulazione pura (niente Three.js/DOM)
-  - `config.ts`: **valori di tuning** (oggetto `tuning`, modificabile dal pannello debug) (tick rate, altezza occhi, dimensioni giocatore, movimento a terra, gravità/salto/coyote/buffer, movimento in aria)
+  - `config.ts`: **valori di tuning** (oggetto `tuning`, modificabile dal pannello debug) (tick rate, altezza occhi, dimensioni giocatore, movimento a terra, gravità/salto/coyote/buffer, movimento in aria, accovacciata, slide, wall jump)
   - `command.ts`: tipo `InputCommand` (cosa vuole fare il giocatore in un tick)
   - `world.ts`: tipi del livello (`Box` AABB, `Prop` decorazioni, `World`) e helper `box()`
   - `props.ts`: **box di collisione invisibili dei props** (barile, palo del cartello, torcia)
-  - `collision.ts`: movimento con collisioni asse per asse contro i box
-  - `player.ts`: stato del giocatore e `stepPlayer()` (salto, attrito, accelerazione Quake a terra/in aria, gravità, respawn)
+  - `collision.ts`: movimento con collisioni asse per asse contro i box, `overlapsAny` (c'è spazio?), `findWall` (muro vicino?)
+  - `player.ts`: stato del giocatore e `stepPlayer()` (salto, slide/accovacciata, wall jump, attrito, accelerazione Quake a terra/in aria, gravità, respawn)
 - `src/debug/`: pannello di debug
   - `panel.ts`: mini-libreria DOM per i controlli (slider, checkbox, colori, "Copy values")
   - `debugPanel.ts`: **quali valori sono esposti nel pannello** e i loro range
 - `src/levels/`: **i livelli** (dati puri)
-  - `testArena.ts`: arena di prova 40×40 (piattaforma, scale, corridoio, colonne, casse) + **props** (lista `props` in cima al file)
+  - `testArena.ts`: arena di prova 40×40 (piattaforma, scale, corridoio, colonne, casse, trave bassa per lo slide) + **props** (lista `props` in cima al file)
 - `src/render/`: effetti puramente visivi (non toccano la simulazione)
   - `landingDip.ts`: abbassamento camera all'atterraggio (intensità, recupero)
   - `atmospheres.ts`: **preset di atmosfera** (High Noon / High Midnight): colori cielo, sole/luna, stelle, luce del sole, lanterne, particelle, nebbia (distanza + al suolo), god rays, luce ambientale

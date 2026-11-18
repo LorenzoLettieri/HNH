@@ -85,3 +85,51 @@ function overlaps(b: Body, radius: number, height: number, w: Box): boolean {
     b.z + radius > w.minZ + EPSILON
   );
 }
+
+/**
+ * Would a body of this size, standing at (x, y, z), overlap any box?
+ * Used e.g. to check if there's room to stand up after crouching.
+ */
+export function overlapsAny(
+  x: number,
+  y: number,
+  z: number,
+  radius: number,
+  height: number,
+  boxes: Box[],
+): boolean {
+  const probe = { x, y, z, vx: 0, vy: 0, vz: 0 };
+  return boxes.some((w) => overlaps(probe, radius, height, w));
+}
+
+/**
+ * Looks for a wall within `reach` meters of the body's sides (only the 4
+ * horizontal directions: our boxes are axis-aligned, so walls face ±X or ±Z).
+ * Returns the wall's normal (the direction pointing AWAY from the wall,
+ * toward the body), or null if there's none.
+ */
+export function findWall(
+  b: Body,
+  radius: number,
+  height: number,
+  reach: number,
+  boxes: Box[],
+): { nx: number; nz: number } | null {
+  const directions = [
+    { dx: 1, dz: 0 },
+    { dx: -1, dz: 0 },
+    { dx: 0, dz: 1 },
+    { dx: 0, dz: -1 },
+  ];
+  for (const { dx, dz } of directions) {
+    // Slide a copy of the body `reach` meters that way: if it now overlaps
+    // something it didn't before, there's a wall on that side.
+    const probe = { ...b, x: b.x + dx * reach, z: b.z + dz * reach };
+    // Ignore the bottom 10 cm, so the floor or a tiny step doesn't count as a wall.
+    const lifted = { ...probe, y: probe.y + 0.1 };
+    if (boxes.some((w) => overlaps(lifted, radius, height - 0.1, w))) {
+      return { nx: -dx, nz: -dz };
+    }
+  }
+  return null;
+}

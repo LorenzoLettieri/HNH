@@ -176,7 +176,7 @@ renderer.setAnimationLoop((now: number) => {
   const alpha = accumulator / TICK_DT;
   camera.position.set(
     prevPlayer.x + (player.x - prevPlayer.x) * alpha,
-    prevPlayer.y + (player.y - prevPlayer.y) * alpha + tuning.eyeHeight - updateLandingDip(frameTime),
+    prevPlayer.y + (player.y - prevPlayer.y) * alpha + (player.crouched ? tuning.crouchEyeHeight : tuning.eyeHeight) - updateLandingDip(frameTime),
     prevPlayer.z + (player.z - prevPlayer.z) * alpha,
   );
   // View angles come straight from the mouse, not from the simulation:
@@ -185,7 +185,8 @@ renderer.setAnimationLoop((now: number) => {
   // The sky follows the camera: you can never get closer to it.
   sky.position.copy(camera.position);
 
-  hud.textContent = `${horizontalSpeed(player).toFixed(1)} m/s  ${player.onGround ? 'GROUND' : 'AIR'}`;
+  const state = player.sliding ? 'SLIDE' : player.onGround ? (player.crouched ? 'CROUCH' : 'GROUND') : 'AIR';
+  hud.textContent = `${horizontalSpeed(player).toFixed(1)} m/s  ${state}  walljumps ${player.wallJumpsLeft}`;
 
   updateFireLights(now / 1000);
   props.update(now / 1000);

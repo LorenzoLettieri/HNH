@@ -67,6 +67,42 @@ export const tuning = {
    * strafing keeps finding "new" directions to accelerate in → air-strafing.
    */
   airSpeedCap: 0.8,
+
+  // --- Crouch ---
+  /** Height of the collision box while crouched/sliding, meters (fits under 1.1 m). */
+  crouchHeight: 1.0,
+  /** Camera height while crouched/sliding, meters. */
+  crouchEyeHeight: 0.85,
+  /** Max walking speed while crouched (and too slow to slide), m/s. */
+  crouchSpeed: 3.5,
+
+  // --- Slide ---
+  /** Minimum speed to start a slide instead of a plain crouch, m/s. */
+  slideStartSpeed: 5,
+  /** Speed added when a slide starts, m/s. */
+  slideBoost: 3,
+  /** The boost only applies below this speed: no infinite acceleration by spamming. m/s. */
+  slideBoostMaxSpeed: 13,
+  /** Seconds before another slide can give a boost again. */
+  slideBoostCooldown: 0.6,
+  /** Friction while sliding: much lower than on foot, so you keep your speed. */
+  slideFriction: 0.7,
+  /** Below this speed the slide ends and you're just crouching, m/s. */
+  slideStopSpeed: 3,
+  /** How much you can steer during a slide (like air control). */
+  slideSteer: 6,
+
+  // --- Wall jump ---
+  /** How close a wall must be to jump off it, meters (beyond your body). */
+  wallJumpReach: 0.35,
+  /** Upward speed of a wall jump, m/s. */
+  wallJumpUp: 6.5,
+  /** Speed pushing you away from the wall, m/s. */
+  wallJumpPush: 6,
+  /** Wall jumps allowed before touching the ground again. */
+  wallJumpsMax: 3,
+  /** Minimum seconds between two wall jumps (else holding jump would burn them all at once). */
+  wallJumpCooldown: 0.2,
 };
 
 /** Converts a duration in seconds to a whole number of ticks. */
