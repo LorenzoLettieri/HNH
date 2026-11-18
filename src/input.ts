@@ -21,6 +21,11 @@ export function consumeMouseDelta(): { dx: number; dy: number } {
   return delta;
 }
 
+/** True when the key event comes from an input field (slider, number box, ...). */
+export function isTypingInField(e: KeyboardEvent): boolean {
+  return e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
+}
+
 export function isPointerLocked(): boolean {
   return document.pointerLockElement !== null;
 }
@@ -28,6 +33,8 @@ export function isPointerLocked(): boolean {
 /** Wires up the browser events. `target` is the element that grabs the mouse on click. */
 export function initInput(target: HTMLElement, onLockChange: (locked: boolean) => void): void {
   window.addEventListener('keydown', (e) => {
+    // Typing in a text field (e.g. the debug panel) must not move the player.
+    if (isTypingInField(e)) return;
     keysDown.add(e.code);
   });
   window.addEventListener('keyup', (e) => {
@@ -49,6 +56,11 @@ export function initInput(target: HTMLElement, onLockChange: (locked: boolean) =
 
   document.addEventListener('pointerlockchange', () => {
     keysDown.clear();
+    // Back in the game: take keyboard focus away from any panel control,
+    // otherwise keys would keep going to the last slider you touched.
+    if (isPointerLocked() && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     onLockChange(isPointerLocked());
   });
 

@@ -12,6 +12,22 @@
         background: rgba(0, 0, 0, 0.5); color: #f0c080; font: bold 28px monospace;
         pointer-events: none; /* clicks go through to the canvas below */
       }
+      #overlay small { display: block; margin-top: 12px; font-size: 14px; opacity: 0.8; }
+      #overlay { flex-direction: column; text-align: center; }
+
+      /* --- Debug panel --- */
+      #debug-panel {
+        position: fixed; top: 0; right: 0; width: 340px; max-height: 100vh; overflow-y: auto;
+        background: rgba(20, 10, 8, 0.92); color: #f0c080; font: 12px monospace;
+        padding: 6px; box-sizing: border-box; z-index: 10;
+      }
+      #debug-panel[hidden] { display: none; }
+      #debug-panel summary { cursor: pointer; font-weight: bold; padding: 6px 0; }
+      #debug-panel .row { display: grid; grid-template-columns: 130px 1fr 60px; gap: 4px; align-items: center; margin: 2px 0; }
+      #debug-panel .row input[type='checkbox'], #debug-panel .row input[type='color'] { grid-column: 2; justify-self: start; }
+      #debug-panel input[type='number'] { width: 56px; background: #2a1810; color: inherit; border: 1px solid #5a3a20; }
+      #debug-panel button { margin: 6px 0 10px; background: #5a3a20; color: inherit; border: 0; padding: 4px 8px; cursor: pointer; }
+
       #hud {
         position: fixed; left: 12px; bottom: 10px; color: #f0c080;
         font: bold 18px monospace; pointer-events: none;
@@ -19,7 +35,7 @@
     </style>
   </head>
   <body>
-    <div id="overlay">Click to play</div>
+    <div id="overlay">Click to play<small>WASD · Spazio · R respawn · T atmosfera · P pixel · \ (tasto sotto Esc) debug</small></div>
     <div id="hud"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

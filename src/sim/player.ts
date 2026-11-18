@@ -1,26 +1,7 @@
 import type { InputCommand } from './command';
 import { moveAndCollide } from './collision';
 import type { World } from './world';
-import {
-  AIR_ACCEL,
-  AIR_SPEED_CAP,
-  AUTO_BHOP,
-  COYOTE_TIME,
-  GRAVITY,
-  GROUND_ACCEL,
-  GROUND_FRICTION,
-  JUMP_BUFFER_TIME,
-  JUMP_SPEED,
-  KILL_Y,
-  MAX_GROUND_SPEED,
-  PLAYER_HEIGHT,
-  PLAYER_RADIUS,
-  STOP_SPEED,
-  secondsToTicks,
-} from './config';
-
-const COYOTE_TICKS = secondsToTicks(COYOTE_TIME);
-const JUMP_BUFFER_TICKS = secondsToTicks(JUMP_BUFFER_TIME);
+import { secondsToTicks, tuning } from './config';
 
 // Pure data: no Three.js, no DOM. Can be copied, compared, sent over the network.
 export interface PlayerState {
@@ -78,19 +59,19 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
   }
 
   // 2. Jump.
-  // A "press" is a new press (or every tick while held, with AUTO_BHOP).
+  // A "press" is a new press (or every tick while held, with tuning.autoBhop).
   // Pressing doesn't jump directly: it fills the buffer, which stays "armed"
   // for a few ticks. So a press slightly before landing isn't lost.
-  const jumpPressed = cmd.jump && (AUTO_BHOP || !p.jumpHeld);
+  const jumpPressed = cmd.jump && (tuning.autoBhop || !p.jumpHeld);
   p.jumpHeld = cmd.jump;
-  if (jumpPressed) p.jumpBufferTicks = JUMP_BUFFER_TICKS;
+  if (jumpPressed) p.jumpBufferTicks = secondsToTicks(tuning.jumpBufferTime);
 
   // On the ground the coyote timer is kept full; in the air it runs out.
-  if (p.onGround) p.coyoteTicks = COYOTE_TICKS;
+  if (p.onGround) p.coyoteTicks = secondsToTicks(tuning.coyoteTime);
 
   const canJump = p.onGround || p.coyoteTicks > 0;
   if (p.jumpBufferTicks > 0 && canJump) {
-    p.vy = JUMP_SPEED;
+    p.vy = tuning.jumpSpeed;
     p.onGround = false;
     p.jumpBufferTicks = 0;
     p.coyoteTicks = 0; // no double jump through coyote time
@@ -105,24 +86,24 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
 
   // 3. Ground: friction + ground acceleration. Air: no friction, air acceleration.
   if (p.onGround) {
-    applyFriction(p, GROUND_FRICTION, dt);
-    accelerate(p, wishX, wishZ, MAX_GROUND_SPEED, MAX_GROUND_SPEED, GROUND_ACCEL, dt);
+    applyFriction(p, tuning.groundFriction, dt);
+    accelerate(p, wishX, wishZ, tuning.maxGroundSpeed, tuning.maxGroundSpeed, tuning.groundAccel, dt);
   } else {
-    accelerate(p, wishX, wishZ, MAX_GROUND_SPEED, AIR_SPEED_CAP, AIR_ACCEL, dt);
+    accelerate(p, wishX, wishZ, tuning.maxGroundSpeed, tuning.airSpeedCap, tuning.airAccel, dt);
   }
 
   // Gravity applies ALWAYS, even on the ground: every tick it pushes us a tiny
   // bit into the floor, the collision pushes us back up and says "landed".
   // That's how we know we're still standing on something (and not on air,
   // e.g. after walking off a ledge).
-  p.vy -= GRAVITY * dt;
+  p.vy -= tuning.gravity * dt;
 
   // 4. Move, colliding with the level.
-  const { landed } = moveAndCollide(p, PLAYER_RADIUS, PLAYER_HEIGHT, world.boxes, dt);
+  const { landed } = moveAndCollide(p, tuning.playerRadius, tuning.playerHeight, world.boxes, dt);
   p.onGround = landed;
 
   // 5. Fell off the world (or asked to): back to the spawn point.
-  if (p.y < KILL_Y || cmd.respawn) respawn(p, world);
+  if (p.y < tuning.killY || cmd.respawn) respawn(p, world);
 }
 
 export function respawn(p: PlayerState, world: World): void {
@@ -140,7 +121,7 @@ function applyFriction(p: PlayerState, friction: number, dt: number): void {
     p.vz = 0;
     return;
   }
-  const control = Math.max(speed, STOP_SPEED);
+  const control = Math.max(speed, tuning.stopSpeed);
   const drop = control * friction * dt;
   const newSpeed = Math.max(speed - drop, 0);
   const scale = newSpeed / speed;
@@ -155,7 +136,7 @@ function applyFriction(p: PlayerState, friction: number, dt: number): void {
  *
  * - wishSpeed: how hard we push (scales the acceleration).
  * - speedCap:  the max speed we may reach ALONG wishdir. On the ground it's
- *              the run speed; in the air it's tiny (AIR_SPEED_CAP).
+ *              the run speed; in the air it's tiny (tuning.airSpeedCap).
  */
 function accelerate(
   p: PlayerState,

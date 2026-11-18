@@ -4,7 +4,11 @@
 import { consumeMouseDelta, isKeyDown, isPointerLocked } from './input';
 import type { InputCommand } from './sim/command';
 
-const MOUSE_SENSITIVITY = 0.002; // radians per pixel of mouse movement
+/** Client settings, mutable so the debug panel can change them. */
+export const controlSettings = {
+  /** Radians of rotation per pixel of mouse movement. */
+  mouseSensitivity: 0.002,
+};
 const MAX_PITCH = Math.PI / 2 - 0.01; // just under 90°, so you can't flip over
 
 /** Current view angles. Owned by the client, sampled into each command. */
@@ -14,8 +18,8 @@ export const view = { yaw: 0, pitch: 0 };
 export function updateLook(): void {
   const { dx, dy } = consumeMouseDelta();
   if (!isPointerLocked()) return;
-  view.yaw -= dx * MOUSE_SENSITIVITY;
-  view.pitch -= dy * MOUSE_SENSITIVITY;
+  view.yaw -= dx * controlSettings.mouseSensitivity;
+  view.pitch -= dy * controlSettings.mouseSensitivity;
   view.pitch = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, view.pitch));
 }
 

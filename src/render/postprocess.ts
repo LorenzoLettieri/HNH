@@ -7,20 +7,23 @@
 //                                       limit colors, dither)
 import * as THREE from 'three';
 
-/** Vertical resolution of the low-res image. Lower = bigger pixels. */
-const PIXEL_HEIGHT = 270;
-/** Shades per color channel (red, green, blue). Lower = more "retro" banding. */
-const COLOR_LEVELS = 20;
-/** Dithering strength: 0 = hard color bands, 1 = bands broken by a pixel pattern. */
-const DITHER = 1;
+/** Post-processing settings. A mutable object so the debug panel can change them live. */
+export const postSettings = {
+  /** Vertical resolution of the low-res image. Lower = bigger pixels. */
+  pixelHeight: 270,
+  /** Shades per color channel (red, green, blue). Lower = more "retro" banding. */
+  colorLevels: 20,
+  /** Dithering strength: 0 = hard color bands, 1 = bands broken by a pixel pattern. */
+  dither: 1,
 
-// --- Bloom: bright things bleed light around them ---
-/** Only light brighter than this blooms (1 = "white"; HDR lights go above). */
-const BLOOM_THRESHOLD = 0.9;
-/** How much glow is added back on top of the image. */
-const BLOOM_STRENGTH = 0.8;
-/** Blur passes: more = wider, softer glow (and more GPU work). */
-const BLOOM_PASSES = 3;
+  // --- Bloom: bright things bleed light around them ---
+  /** Only light brighter than this blooms (1 = "white"; HDR lights go above). */
+  bloomThreshold: 0.9,
+  /** How much glow is added back on top of the image. */
+  bloomStrength: 0.8,
+  /** Blur passes: more = wider, softer glow (and more GPU work). */
+  bloomPasses: 3,
+};
 
 // A full-screen pass: a rectangle covering the whole screen, seen by a camera
 // that does nothing. Its fragment shader runs once per screen pixel.
@@ -182,6 +185,8 @@ export interface PostProcess {
   setSize(width: number, height: number): void;
   /** Switches between the pixel-art look and full resolution (for comparison). */
   togglePixelArt(): void;
+  /** Re-applies size-related settings (e.g. after changing pixelHeight). */
+  refresh(): void;
   /** Size in pixels of the image the scene is rendered into. */
   readonly sceneSize: THREE.Vector2;
 }
@@ -215,7 +220,7 @@ export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
 
   const brightMaterial = fullscreenMaterial(brightFragment, {
     tInput: { value: sceneTarget.texture },
-    threshold: { value: BLOOM_THRESHOLD },
+    threshold: { value: 0 },
   });
   const blurMaterial = fullscreenMaterial(blurFragment, {
     tInput: { value: null },
@@ -232,10 +237,10 @@ export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
     tScene: { value: sceneTarget.texture },
     tBloom: { value: bloomA.texture },
     tRays: { value: raysTarget.texture },
-    bloomStrength: { value: BLOOM_STRENGTH },
+    bloomStrength: { value: 0 },
     resolution: { value: new THREE.Vector2() },
-    levels: { value: COLOR_LEVELS },
-    dither: { value: DITHER },
+    levels: { value: 0 },
+    dither: { value: 0 },
   });
 
   // One full-screen rectangle; we swap its material for each pass.
@@ -259,7 +264,8 @@ export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
   function resizeTargets(): void {
     if (pixelArt) {
       // Keep the screen's aspect ratio, with a fixed number of rows.
-      sceneSize.set(Math.round((PIXEL_HEIGHT * screenW) / screenH), PIXEL_HEIGHT);
+      const h = Math.round(postSettings.pixelHeight);
+      sceneSize.set(Math.round((h * screenW) / screenH), h);
     } else {
       sceneSize.set(screenW, screenH).multiplyScalar(renderer.getPixelRatio()).round();
     }
@@ -270,7 +276,6 @@ export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
     bloomB.setSize(bw, bh);
     raysTarget.setSize(bw, bh);
     finalMaterial.uniforms.resolution.value.copy(sceneSize);
-    finalMaterial.uniforms.levels.value = pixelArt ? COLOR_LEVELS : 0;
   }
 
   const sunDirection = new THREE.Vector3(0, 1, 0);
@@ -285,6 +290,12 @@ export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
       godRays = strength;
     },
     render(scene, camera) {
+      // Settings may have changed (debug panel): copy them into the uniforms.
+      brightMaterial.uniforms.threshold.value = postSettings.bloomThreshold;
+      finalMaterial.uniforms.bloomStrength.value = postSettings.bloomStrength;
+      finalMaterial.uniforms.levels.value = pixelArt ? postSettings.colorLevels : 0;
+      finalMaterial.uniforms.dither.value = postSettings.dither;
+
       // 1. Scene → low-res image.
       renderer.setRenderTarget(sceneTarget);
       renderer.render(scene, camera);
@@ -293,7 +304,7 @@ export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
       //    a few times, spreading further each time.
       pass(brightMaterial, bloomA);
       const texel = new THREE.Vector2(1 / bloomA.width, 1 / bloomA.height);
-      for (let i = 0; i < BLOOM_PASSES; i++) {
+      for (let i = 0; i < postSettings.bloomPasses; i++) {
         const spread = i + 1;
         blurMaterial.uniforms.tInput.value = bloomA.texture;
         blurMaterial.uniforms.direction.value.set(texel.x * spread, 0);
@@ -329,6 +340,9 @@ export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
     },
     togglePixelArt() {
       pixelArt = !pixelArt;
+      resizeTargets();
+    },
+    refresh() {
       resizeTargets();
     },
   };

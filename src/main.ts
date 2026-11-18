@@ -1,7 +1,8 @@
 import * as THREE from 'three';
-import { initInput } from './input';
+import { initInput, isTypingInField } from './input';
+import { createDebugPanel } from './debug/debugPanel';
 import { buildCommand, updateLook, view } from './controls';
-import { TICK_DT, EYE_HEIGHT } from './sim/config';
+import { TICK_DT, tuning } from './sim/config';
 import { copyPlayer, createPlayer, horizontalSpeed, stepPlayer } from './sim/player';
 import { testArena } from './levels/testArena';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
@@ -79,16 +80,29 @@ createParticles(scene, world.lanterns);
 let atmosphereIndex = 0;
 applyAtmosphere(ATMOSPHERES[atmosphereIndex]);
 
+// --- Debug panel (key below Esc) -------------------------------------------
+const debugPanel = createDebugPanel({
+  onAtmosphereChange: () => applyAtmosphere(ATMOSPHERES[atmosphereIndex]),
+  onPostSizeChange: () => post.refresh(),
+});
+debugPanel.showAtmosphere(ATMOSPHERES[atmosphereIndex]);
+
 // T cycles through the presets. It's a visual setting of this client, not
 // something the player does in the game, so it doesn't go through InputCommand.
 // P toggles the pixel-art look, to compare before/after.
+// Backquote (the key below Esc: ` or \ depending on the keyboard) opens the debug panel and frees the mouse to use it.
 window.addEventListener('keydown', (e) => {
-  if (e.repeat) return;
+  if (e.repeat || isTypingInField(e)) return;
   if (e.code === 'KeyT') {
     atmosphereIndex = (atmosphereIndex + 1) % ATMOSPHERES.length;
     applyAtmosphere(ATMOSPHERES[atmosphereIndex]);
+    debugPanel.showAtmosphere(ATMOSPHERES[atmosphereIndex]);
   }
   if (e.code === 'KeyP') post.togglePixelArt();
+  if (e.code === 'Backquote') {
+    debugPanel.toggle();
+    document.exitPointerLock();
+  }
 });
 
 // --- Player & camera ------------------------------------------------------
@@ -147,7 +161,7 @@ renderer.setAnimationLoop((now: number) => {
   const alpha = accumulator / TICK_DT;
   camera.position.set(
     prevPlayer.x + (player.x - prevPlayer.x) * alpha,
-    prevPlayer.y + (player.y - prevPlayer.y) * alpha + EYE_HEIGHT - updateLandingDip(frameTime),
+    prevPlayer.y + (player.y - prevPlayer.y) * alpha + tuning.eyeHeight - updateLandingDip(frameTime),
     prevPlayer.z + (player.z - prevPlayer.z) * alpha,
   );
   // View angles come straight from the mouse, not from the simulation:
