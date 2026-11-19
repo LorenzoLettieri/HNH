@@ -9,6 +9,7 @@ const LINK_COLORS: Record<LinkKind, number> = {
   jump: 0x40a0ff, // blue
   drop: 0xffd040, // yellow
   climb: 0xff4040, // red
+  vent: 0xff40ff, // magenta
 };
 
 export interface NavDebug {

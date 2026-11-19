@@ -51,7 +51,7 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `game.ts`: **stato di gioco unico** (`GameState`: giocatore + entità) e `stepGame()` (un tick di tutto il gioco)
   - `entities.ts`: **entità colpibili** (bersagli, ghoul): dati, salute, danno, hitbox
   - `ghoul.ts`: **IA del ghoul** (segue il flow field: cammina, salta con traiettoria balistica, si lascia cadere, **si arrampica**; da vicino inseguimento diretto con salto/aggiramento; separazione; artigliata con finestra per schivare)
-  - `nav.ts`: **grafo di navigazione** generato dai box (nodi ogni 1,5 m, link cammina/salta/cadi/arrampicati, limiti di salto/caduta/arrampicata) e **flow field** (Dijkstra dal giocatore)
+  - `nav.ts`: **grafo di navigazione** generato dai box (nodi ogni 1,5 m, link cammina/salta/cadi/arrampicati/**sfiatatoio** (lancio simulato in anticipo), limiti di salto/caduta/arrampicata) e **flow field** (Dijkstra dal giocatore)
   - `spawner.ts`: generatore di ghoul (quanti vivi, ogni quanto, punti di spawn lontani dal giocatore)
   - `command.ts`: tipo `InputCommand` (cosa vuole fare il giocatore in un tick)
   - `world.ts`: tipi del livello (`Box` AABB, `Prop` decorazioni, `TargetSpawn` bersagli, `World`) e helper `box()`

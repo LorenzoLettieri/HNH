@@ -162,6 +162,9 @@ export function createGhoulRenderer(scene: THREE.Scene): GhoulRenderer {
     } else if (e.climbTo >= 0) {
       // Climbing: claws up, alternating with a walk frame, like pulling itself up.
       showFrame(v, Math.floor(e.climbTicks / 8) % 2 === 0 ? FRAMES.windup : FRAMES.walk[1]);
+    } else if (!e.onGround && e.vy > 4) {
+      // Shooting up (a vent, a big jump): arms up, enjoying the ride.
+      showFrame(v, FRAMES.windup);
     } else if (e.state === 'attack') {
       const progress = e.stateTicks / (tuning.ghoulAttackTime * 60);
       showFrame(v, progress < 0.55 ? FRAMES.windup : FRAMES.swipe);

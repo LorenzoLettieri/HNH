@@ -10,7 +10,8 @@ import { moveAndCollide, overlapsAny } from './collision';
 import { secondsToTicks, tuning } from './config';
 import type { GhoulEntity, Entity } from './entities';
 import type { SimEvent } from './events';
-import { nearestNode, type FlowField, type NavGraph, type NavLink, type NavNode } from './nav';
+import { launchFromVent, nearestNode, type FlowField, type NavGraph, type NavLink, type NavNode } from './nav';
+import { ventUnder } from './props';
 import { hurtPlayer, type PlayerState } from './player';
 import type { World } from './world';
 
@@ -57,7 +58,8 @@ export function stepGhoul(
   let targetZ = player.z;
   if (!direct && g.navNode >= 0 && flow.next[g.navNode]) {
     link = flow.next[g.navNode];
-    const t = graph.nodes[link!.to];
+    // For a vent, first walk onto the vent itself (the launch does the rest).
+    const t = link!.via ?? graph.nodes[link!.to];
     targetX = t.x;
     targetZ = t.z;
   }
@@ -117,6 +119,20 @@ export function stepGhoul(
       g.climbTo = link.to;
       g.climbTicks = 0;
       return;
+    }
+    // VENT: walk onto it; once on the grate, it launches you (from standing
+    // still, exactly as the graph simulated). Vents only launch ghouls that
+    // CHOSE to ride them: one just crossing the street would otherwise end up
+    // stranded on top of a tower.
+    // It waits until it's at the CENTER of the grate: that's where the graph
+    // simulated the launch, so the prediction matches what really happens.
+    // (Launched from the edge, the trajectory shifts and may hit a roof's eave.)
+    if (link.kind === 'vent' && link.via && Math.hypot(link.via.x - g.x, link.via.z - g.z) < 0.25) {
+      const vent = ventUnder(world.props, g.x, g.y, g.z);
+      if (vent) {
+        launchFromVent(g, vent);
+        g.onGround = false;
+      }
     }
     // 'walk' and 'drop' need nothing special: walking off the edge IS dropping.
   }

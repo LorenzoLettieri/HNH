@@ -87,7 +87,8 @@ Stile: **sprite 2D** (tipo Doom), coerenti con il resto.
 ### Navigazione [FATTO]
 - **Grafo di navigazione** generato automaticamente dai box del livello (`src/sim/nav.ts`):
   nodi ogni 1,5 m su ogni superficie + link "cammina / salta / cadi / arrampicati".
-  I ghoul **si arrampicano sui muri fino a 15 m**: nessun tetto è sicuro (campanile compreso).
+  I ghoul **si arrampicano sui muri fino a 15 m** e **usano gli sfiatatoi** (solo quando lo scelgono):
+  nessun tetto è sicuro (campanile compreso).
 - **Flow field**: una sola ricerca (Dijkstra) dal giocatore, condivisa da tutti i ghoul.
 - Tasto **N** in gioco: mostra il grafo.
 - I volanti usano uno steering 3D semplice che evita gli ostacoli.

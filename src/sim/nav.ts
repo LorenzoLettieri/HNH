@@ -9,11 +9,11 @@
 // Then a FLOW FIELD: one search from the player outward (Dijkstra) tells
 // every node which neighbor is the next step toward the player. All the
 // ghouls share it: each one just follows the arrows from where it stands.
-import { overlapsAny } from './collision';
-import { tuning } from './config';
-import type { Box } from './world';
+import { moveAndCollide, overlapsAny } from './collision';
+import { TICK_DT, tuning } from './config';
+import type { Box, Prop } from './world';
 
-export type LinkKind = 'walk' | 'jump' | 'drop' | 'climb';
+export type LinkKind = 'walk' | 'jump' | 'drop' | 'climb' | 'vent';
 
 export interface NavNode {
   x: number;
@@ -26,6 +26,8 @@ export interface NavLink {
   kind: LinkKind;
   /** "Price" of using this link, in meters-equivalent: climbing is slow, so it costs more. */
   cost: number;
+  /** Vent links: the vent's center, where to step to get launched. */
+  via?: { x: number; z: number };
 }
 
 export interface NavGraph {
@@ -49,7 +51,7 @@ const CLIMB_COST = 2.5;
 const cellKey = (ix: number, iz: number) => `${ix},${iz}`;
 const cellOf = (v: number) => Math.floor(v / NODE_SPACING);
 
-export function buildNavGraph(boxes: Box[]): NavGraph {
+export function buildNavGraph(boxes: Box[], props: Prop[] = []): NavGraph {
   const r = tuning.ghoulRadius;
   const h = tuning.ghoulHeight;
   const fits = (x: number, y: number, z: number, height = h) => !overlapsAny(x, y + 0.02, z, r, height, boxes);
@@ -154,6 +156,26 @@ export function buildNavGraph(boxes: Box[]): NavGraph {
       }
     }
   });
+
+  // VENT: ride a steam vent. Where does it throw you? Instead of guessing,
+  // we SIMULATE it: a virtual ghoul launched from the vent, same physics as
+  // the game, tick by tick until it lands. The node there is the destination.
+  const graph = { nodes, links, cells };
+  for (const p of props) {
+    if (p.type !== 'vent') continue;
+    const from = nearestNode(graph, p.x, p.y, p.z);
+    const landing = simulateVentLaunch(p, boxes);
+    const to = landing ? nearestNode(graph, landing.x, landing.y, landing.z) : -1;
+    if (from >= 0 && to >= 0 && to !== from) {
+      // Cheap: it's the fastest way up. (Cost ≈ the horizontal distance.)
+      links[from].push({
+        to,
+        kind: 'vent',
+        cost: Math.hypot(nodes[to].x - p.x, nodes[to].z - p.z) + 1,
+        via: { x: p.x, z: p.z },
+      });
+    }
+  }
 
   return { nodes, links, cells };
 }
@@ -277,10 +299,10 @@ class MinHeap {
 // (computed once, reused) instead of inside GameState.
 const graphs = new WeakMap<object, NavGraph>();
 
-export function getNavGraph(world: { boxes: Box[] }): NavGraph {
+export function getNavGraph(world: { boxes: Box[]; props?: Prop[] }): NavGraph {
   let g = graphs.get(world);
   if (!g) {
-    g = buildNavGraph(world.boxes);
+    g = buildNavGraph(world.boxes, world.props);
     graphs.set(world, g);
   }
   return g;
@@ -295,4 +317,30 @@ export function getFlowField(g: NavGraph, goal: number): FlowField {
   const field = computeFlowField(g, goal);
   lastFlow.set(g, { goal, field });
   return field;
+}
+
+/**
+ * Launches a ghoul-sized body from a vent (standing still on it, like the
+ * ghouls do) and returns where it lands, or null if it never does.
+ * The SAME function the ghoul uses to launch, so prediction = reality.
+ */
+function simulateVentLaunch(vent: Extract<Prop, { type: 'vent' }>, boxes: Box[]): { x: number; y: number; z: number } | null {
+  const body = { x: vent.x, y: vent.y, z: vent.z, vx: 0, vy: 0, vz: 0 };
+  launchFromVent(body, vent);
+  for (let t = 0; t < 600; t++) {
+    body.vy -= tuning.gravity * TICK_DT;
+    const { landed } = moveAndCollide(body, tuning.ghoulRadius, tuning.ghoulHeight, boxes, TICK_DT);
+    if (landed) return { x: body.x, y: body.y, z: body.z };
+  }
+  return null;
+}
+
+/** Sets the velocity of a body launched by a vent, starting from standing still. */
+export function launchFromVent(
+  body: { vx: number; vy: number; vz: number },
+  vent: Extract<Prop, { type: 'vent' }>,
+): void {
+  body.vx = vent.pushX ?? 0;
+  body.vz = vent.pushZ ?? 0;
+  body.vy = vent.up;
 }
