@@ -301,7 +301,7 @@ renderer.setAnimationLoop((now: number) => {
   hounds.update(game.entities, events, camera, alpha, dt);
   bulls.update(game.entities, events, camera, alpha, dt);
   projectiles.update(game.projectiles, events, camera, alpha, dt);
-  pickups.update(game.pickups, camera, now / 1000);
+  pickups.update(game.pickups, camera, alpha, now / 1000);
   vendors.update(camera, now / 1000);
   updateHud(game, events, dt);
   updateThreats(game.entities, player, camera, dt);

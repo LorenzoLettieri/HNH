@@ -183,6 +183,19 @@ export const tuning = {
   dropWeightMedkit: 3,
   /** Seconds a drop stays on the ground before vanishing. */
   dropLifetime: 10,
+  /**
+   * The BURST: drops fly out of the body (see burst in pickups.ts). Outward
+   * speed, a random value between min and max, m/s: with the upward kick
+   * below they land ~1-2 m from the body.
+   */
+  dropBurstSpeedMin: 2,
+  dropBurstSpeedMax: 4,
+  /** Upward speed of the burst, m/s (higher = longer, higher arc). */
+  dropBurstUp: 5,
+  /** Fraction of the falling speed it bounces back up with (0 = no bounce). */
+  dropBounce: 0.35,
+  /** Below this falling speed it doesn't bounce anymore: it settles, m/s. */
+  dropBounceMinSpeed: 2.5,
   /** How close (horizontally) you must pass to collect it, meters. */
   pickupRadius: 1.0,
   /** Health a medkit gives back. */
@@ -196,8 +209,6 @@ export const tuning = {
   coinsPerWeight: 1,
   /** Vildenaro one coin is worth. */
   coinValue: 10,
-  /** How far from the body the coins scatter, meters (several coins don't stack on one spot). */
-  coinScatter: 0.9,
   /** Seconds a coin stays on the ground (a bit longer than the other drops: it's never "not needed"). */
   coinLifetime: 15,
   /** Pellets per shot (a fixed pattern: center + inner ring + outer ring). */

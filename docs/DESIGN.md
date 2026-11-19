@@ -114,6 +114,10 @@ stilosa riavvia la catena e il lampeggio si ferma. Niente barra del tempo: la ba
   (Alzati dopo il playtest: le munizioni finivano troppo in fretta. Prima: 20% per punto di peso, 4/3/3, +12 e +4.)
   Munizioni **separate apposta**: se per un po' non cadono cartucce sei costretto a cambiare stile. Si raccolgono passandoci
   sopra; se non ti servono restano a terra. **Spariscono dopo 10 s** (lampeggiano negli ultimi 3).
+- **I drop esplodono fuori dal corpo** [FATTO, da tarare]: monete e oggetti di un'uccisione schizzano
+  a ventaglio (angoli equidistanti, un po' di casualità), fanno un arco, rimbalzano una volta e si posano
+  a **1–3 m** dal corpo. Così non si sovrappongono mai, e la pioggia di bottino è più soddisfacente.
+  Si possono raccogliere anche mentre volano: corri dentro l'esplosione.
   Aspetto: sprite pixel art che galleggiano sopra una pozza di luce del loro colore (ottone =
   proiettili, rosso = cartucce, verde = tonico/medikit), visibili anche di notte; suono diverso per tipo.
 
@@ -424,8 +428,8 @@ Punteggio e moneta sono **separati**:
   **sempre** (non c'è un massimo) e spariscono anche loro dopo un po'.
 - **Quante** [DECISO, da tarare]: ogni nemico lascia **sempre** monete (non è un tiro di dado come
   munizioni e medikit), **tante quanto il suo peso**: ghoul 1, Malocchio 2, cane 3, toro 5. Ogni moneta
-  vale **10**. Sparpagliate attorno al corpo (ognuna cerca il suo pavimento: un toro che muore sul bordo
-  di un tetto ne lascia un po' sul tetto e un po' in strada). Restano a terra **15 s** (le altre cose 10).
+  vale **10**. Schizzano fuori dal corpo insieme agli altri drop (ognuna cade dove capita: un toro che muore
+  sul bordo di un tetto ne lascia un po' sul tetto e un po' in strada). Restano a terra **15 s** (le altre cose 10).
 - **Lo Stile moltiplica il valore al momento dell'uccisione** [DECISO] (il valore è già scritto sulla
   moneta quando cade): conta quanto eri stiloso quando hai ucciso, non quando raccogli. Se la catena si
   spezza prima che tu la raccolga, la moneta vale lo stesso.
