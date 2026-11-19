@@ -384,7 +384,7 @@ def key_hip(rig, frame, pos):
 # sole toward the enemy. Not too far left, or the leg crosses the screen
 # sideways and it stops looking like a front kick. Anatomically absurd, but the camera can't
 # see your hip, only the boot: every FPS viewmodel cheats like this.
-KICK_HIP = (-0.36, -0.2, -0.6)
+KICK_HIP = (-0.36, -0.05, -0.72)
 
 
 def animate(rig):
@@ -396,10 +396,13 @@ def animate(rig):
                        (RECHAMBER_FRAME, half), (END_FRAME, HIP)):
         key_hip(rig, frame, hip)
     key_foot(rig, 0, ANKLE, (0, 0, 0))                                 # standing (below the screen)
-    key_foot(rig, CHAMBER_FRAME, (-0.26, 0.14, -0.9), (25, 0, -10))    # knee up, foot pulled in
-    key_foot(rig, IMPACT_FRAME, (-0.06, 0.63, -0.26), (65, 0, -15))   # BOOM: leg out, toe up, sole forward
-    key_foot(rig, HOLD_FRAME, (-0.05, 0.68, -0.25), (68, 0, -15))     # pushing through
-    key_foot(rig, RECHAMBER_FRAME, (-0.25, 0.16, -0.88), (30, 0, -10)) # knee back in
+    # A RISING kick: at the chamber the foot is already forward but LOW (still
+    # below the screen), then it snaps UP and forward into view, and keeps
+    # rising a little during the hold (follow-through). Left → center as before.
+    key_foot(rig, CHAMBER_FRAME, (-0.24, 0.45, -0.88), (40, 0, -10))   # foot low and forward, out of view
+    key_foot(rig, IMPACT_FRAME, (-0.06, 0.75, -0.22), (68, 0, -15))   # BOOM: up into view, toe up, sole forward
+    key_foot(rig, HOLD_FRAME, (-0.05, 0.78, -0.16), (72, 0, -15))     # still rising a little
+    key_foot(rig, RECHAMBER_FRAME, (-0.22, 0.48, -0.86), (40, 0, -10)) # drops back down
     key_foot(rig, END_FRAME, ANKLE, (0, 0, 0))                         # foot back down
 
     # Bake: turn IK + constraints into plain per-frame rotations of the real bones.
