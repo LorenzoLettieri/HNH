@@ -6,8 +6,7 @@
 //   0: bullets — a cardboard box with three revolver cartridges sticking out
 //   1: shells  — two red shotgun shells with brass bases
 //   2: medkit  — a bottle of glowing green "tonic" with a red-cross label
-//   3: coin    — a gold coin of vildenaro with a skull stamped on it (seen
-//                face-on: the renderer makes it spin by squashing it)
+//   3: coin    — a pile of gold coins (vildenaro): two messy stacks
 // Coordinates: x right, y DOWN (like a canvas), row 15 = the floor.
 import * as THREE from 'three';
 import type { PickupKind } from '../sim/pickups';
@@ -127,41 +126,33 @@ function paintMedkit(): PixelFrame {
 }
 
 /**
- * A coin, 10 px wide, standing on the floor (rows 6..15). Painted with the
- * distance from the center, like a compass: inside the radius = coin. The
- * distance also gives the shading: the outer pixels are the rim (dark, or
- * light on the upper-left where the light comes from), then a dark ring that
- * frames the stamp. The center is at x = 7.5, BETWEEN two pixels, exactly on
- * the sprite's middle: it spins around that axis, so it must be symmetric.
+ * One stack of `n` coins, `w` px wide, standing on the floor. Seen from the
+ * side and a bit from above: every coin is 2 px thick (a row of gold edge,
+ * shaded like a cylinder, and a dark line that separates it from the next),
+ * and on top the face of the last coin (2 rows, the upper one narrower: a
+ * flattened ellipse, the cheapest way to say "round" from this angle).
+ * `shifts` moves single coins 1 px left/right: a messy pile, not a machined column.
  */
+function coinStack(f: PixelFrame, x: number, w: number, n: number, shifts: number[]): void {
+  const top = 16 - 2 * n; // first row of the edges
+  for (let i = 0; i < n; i++) {
+    const cx = x + (shifts[i] ?? 0);
+    const y = top + 2 * i;
+    column(f, cx, y, w, 1, C.goldLight, C.gold, C.goldDark, true);
+    f.rect(cx, y + 1, w, 1, C.goldDark);
+  }
+  const fx = x + (shifts[0] ?? 0);
+  for (let i = 1; i < w - 1; i++) f.set(fx + i, top - 2, C.goldLight, true);
+  for (let i = 0; i < w; i++) f.set(fx + i, top - 1, C.gold, true);
+  f.set(fx + 2, top - 1, C.goldLight, true); // a glint on the face
+  f.set(fx + w - 2, top - 1, C.goldDark); // the stamp, just a hint
+}
+
+/** A pile of vildenaro: a tall stack behind, a short one in front. */
 function paintCoin(): PixelFrame {
   const f = new PixelFrame(PICKUP_FRAME, PICKUP_FRAME);
-  const cx = 7.5;
-  const cy = 10.5;
-  const r = 5;
-  for (let y = 0; y < PICKUP_FRAME; y++) {
-    for (let x = 0; x < PICKUP_FRAME; x++) {
-      const dx = x - cx;
-      const dy = y - cy;
-      const d = Math.hypot(dx, dy);
-      if (d > r) continue;
-      if (d > r - 1) {
-        // The rim: lit on the upper-left half, in shadow on the other.
-        const lit = dx + dy < 0;
-        f.set(x, y, lit ? C.goldLight : C.goldDark, lit);
-      } else if (d > r - 1.9) {
-        f.set(x, y, C.goldDark); // the ring around the stamp
-      } else {
-        f.set(x, y, C.gold, true); // the face shines (glow mask)
-      }
-    }
-  }
-  // The stamp: a little skull (two eyes and a row of teeth).
-  f.set(6, 9, C.goldStamp);
-  f.set(9, 9, C.goldStamp);
-  f.rect(6, 12, 4, 1, C.goldStamp);
-  f.set(7, 12, C.gold, true); // a gap between the teeth
-  f.set(5, 8, C.goldLight, true); // a glint on the face
+  coinStack(f, 1, 8, 5, [0, 1, 0, 0, -1]);
+  coinStack(f, 8, 7, 3, [0, -1, 0]); // drawn after: it covers the tall one
   f.outline(C.outline);
   return f;
 }

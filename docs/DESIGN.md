@@ -411,7 +411,7 @@ Punteggio e moneta sono **separati**:
 - [PROPOSTO] Lo Stile moltiplica il valore **al momento dell'uccisione** (il valore è già scritto
   sulla moneta quando cade): conta quanto eri stiloso quando hai ucciso, non quando raccogli.
 - **Passo 1** [FATTO]: monete nella simulazione (`player.money`, si azzera alla morte), sprite di una
-  moneta d'oro col teschio che **gira** (trucco arcade: lo sprite schiacciato in orizzontale), pozza di
+  **piletta di monete d'oro** (due pile disordinate, niente moneta che gira alla Mario), pozza di
   luce dorata, "ka-ching", contatore provvisorio sotto le uccisioni.
 
 [DA DECIDERE]
