@@ -91,7 +91,7 @@ con un chiaro preavviso.
 | **Fuoco fatuo** | Volante a distanza, proiettili lenti (forse superato dal Malocchio) | Il movimento diventa difesa |
 | **Pistolero scheletro** | A distanza, colpo istantaneo **annunciato** (luccichio + click) | Punisce chi sta fermo in vista, premia chi rompe la linea di tiro |
 | **Dinamitardo** | Lancia dinamite ad arco, lascia fiamme | Nega zone: ti costringe a spostarti |
-| **Toro** [FATTO, prima versione greybox; da tarare] | Grosso e resistente: ti punta (preavviso), poi **carica dritto** senza sterzare (dettagli sotto). Pesa **5** nelle ondate, dall'ondata 7 | Prima si schiva (cambio di direzione o salto), poi si uccide: meglio con un muro alle spalle |
+| **Toro** [FATTO, da tarare; suoni provvisori] | Grosso e resistente: ti punta (preavviso), poi **carica dritto** senza sterzare (dettagli sotto). Pesa **5** nelle ondate, dall'ondata 7 | Prima si schiva (cambio di direzione o salto), poi si uccide: meglio con un muro alle spalle |
 | **Boss** | Pattern complessi, ogni tot ondate | Picco di intensità |
 
 Stile: **sprite 2D** (tipo Doom), coerenti con il resto.
@@ -200,6 +200,11 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
   - Bot di prova in campo aperto (bersaglio a 8–20 m): **fermo, che corre dritto di lato, che scappa
     o che gli va incontro: preso**. **Cambia direzione** dopo il blocco (inverte, si ferma, scarta da
     fermo): **mancato**. **Salto**: funziona se parte quando il toro è a 5–7 m (finestra di ~0,15 s).
+  - **Aspetto**: toro enorme color carbone con una **gobba** gigantesca sulle spalle, corna a lira, **anello
+    d'ottone** al naso, narici e crepe di brace; sulla schiena una **piastra d'ottone rivettata con due tubi di
+    scarico** che brillano (il tocco steampunk). Sprite a **tre viste** come il cane; la mira si legge dalla
+    posa: raspa il terreno → testa giù e occhi accesi (bloccato) → galoppo; da stordito testa ciondoloni,
+    lingua fuori e stelline.
   - **Grafo tutto suo** (vedi Navigazione): col grafo dei ghoul s'incastrava nei passaggi stretti.
 - **Calcio (melee)** [FATTO, da tarare]: F o tasto destro. Colpisce **tutto** in un cono davanti
   (1,6 m, ±45°), 25 danni (mezzo ghoul base: è uno strumento, non l'arma principale), e **spinge via**

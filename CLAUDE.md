@@ -117,7 +117,8 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
     - `ghoulSprite.ts`: **sprite del ghoul** disegnato pixel per pixel (palette, pose dei fotogrammi)
     - `houndSprite.ts`: **sprite del cane infernale** (palette, zampe anteriori/posteriori, galoppo in 4 fotogrammi; **tre viste**: lato, fronte, retro, più il cadavere)
     - `hounds.ts`: disegno dei cani (billboard con **scelta della vista dall'angolo** tra dove corre e la camera, lato specchiato via texture; basso e con le crepe spente quando pedina, accese quando carica; ululato)
-    - `bulls.ts`: **toro greybox** (scatole: corpo, gobba, testa con corna e anello d'ottone al naso, zampe con perno all'anca; pose per stato: raspa e abbassa la testa in mira, occhi accesi al blocco, inclinato in carica, testa che ciondola da stordito; suoni)
+    - `bullSprite.ts`: **sprite del toro** (palette, sagoma con la gobba come profilo a punti di controllo, **testa disegnata una volta e ruotata** con una matrice di rotazione per le pose su/abbassata/giù/stordita, piastra d'ottone con tubi di scarico; **tre viste**: lato (camminata 4, galoppo 2, raspata 2, bloccato, sbandata, stordito), fronte (camminata, carica, stordito), retro, più il cadavere)
+    - `bulls.ts`: disegno dei tori (billboard con **vista scelta dall'angolo** tra dove guarda (`dirX/dirZ` della simulazione) e la camera; fotogramma per stato; bagliore che si scalda durante la mira; lampo rosso quando colpito; suoni)
     - `ghouls.ts`: disegno dei ghoul (billboard verso la camera, fotogramma per stato, caduta da morti)
   - `navDebug.ts`: vista del grafo di navigazione (tasto N; seconda pressione = grafo dei tori): link colorati per tipo, nodi colorati per distanza dal giocatore
   - `hitboxDebug.ts`: vista delle **hitbox** dei nemici (tasto H): verde = corpo, giallo = zona critica (testa / pupilla / toro stordito)
