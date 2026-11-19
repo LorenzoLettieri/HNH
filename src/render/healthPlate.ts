@@ -1,5 +1,6 @@
-// The health plate, bottom-left: a wooden plate with a brass rim holding a
-// pixel-art heart, the health number and a gauge.
+// Health, bottom-left: the number in dried-blood red and a thin gauge under
+// it, no frame (look "blood and ash"). At low health the number throbs like
+// a heartbeat, faster as you get closer to death.
 // Markup and CSS in index.html (#health-plate); from here we only change
 // text, CSS variables and transforms, every frame.
 //
@@ -18,55 +19,20 @@ const GHOST_HOLD = 0.45;
 const GHOST_DRAIN = 0.8;
 /** How fast the red fill catches up with the real value (higher = snappier). */
 const FILL_SPEED = 20;
-/** Below this fraction of health the number turns red and the heart beats fast. */
-const LOW_HEALTH = 0.3;
-/** Heartbeats per second: at full health and at (almost) zero health. */
-const BEAT_HZ_CALM = 0.9;
-const BEAT_HZ_PANIC = 3;
-/** Size of the "bump" of each beat (0.15 = 15% bigger). */
-const BEAT_SCALE = 0.15;
+/** Below this fraction of health the number starts throbbing. */
+const LOW_HEALTH = 0.35;
+/** Heartbeats per second: when it starts (at LOW_HEALTH) and at (almost) zero health. */
+const BEAT_HZ_CALM = 1.1;
+const BEAT_HZ_PANIC = 2.8;
+/** Size of the "bump" of each beat (0.08 = 8% bigger); the red also lights up. */
+const BEAT_SCALE = 0.08;
 /** Seconds and size of the number's jolt when you get hit. */
 const HIT_TIME = 0.25;
-const HIT_SCALE = 0.35;
+const HIT_SCALE = 0.15;
 
-// --- The heart, pixel by pixel ---
-// One character = one pixel: '#' outline, 'r' red, 'h' highlight, 'd' shadow,
-// '.' transparent. 11 × 10 px, scaled up by CSS with image-rendering: pixelated
-// (= no smoothing: the same NearestFilter the 3D picture uses).
-const HEART = [
-  '.###...###.',
-  '#hhr#.#rrr#',
-  '#hrrr#rrrr#',
-  '#rrrrrrrrd#',
-  '#rrrrrrrrd#',
-  '.#rrrrrrd#.',
-  '..#rrrrd#..',
-  '...#rrd#...',
-  '....#d#....',
-  '.....#.....',
-];
-const HEART_COLORS: Record<string, string> = { '#': '#120604', r: '#c81c10', h: '#ff8a6a', d: '#6e0a06' };
-
-function drawHeart(canvas: HTMLCanvasElement): void {
-  canvas.width = HEART[0].length;
-  canvas.height = HEART.length;
-  const ctx = canvas.getContext('2d')!;
-  HEART.forEach((row, y) => {
-    [...row].forEach((ch, x) => {
-      const color = HEART_COLORS[ch];
-      if (!color) return; // '.' = transparent
-      ctx.fillStyle = color;
-      ctx.fillRect(x, y, 1, 1);
-    });
-  });
-}
-
-const plate = document.getElementById('health-plate')!;
-const heart = document.getElementById('health-heart') as HTMLCanvasElement;
 const number = document.getElementById('health-number')!;
 const fill = document.getElementById('health-fill')!;
 const ghost = document.getElementById('health-ghost')!;
-drawHeart(heart);
 
 let shown = 1; // red fill, 0..1 (eases towards the real value)
 let ghostValue = 1; // ghost, 0..1
@@ -102,21 +68,25 @@ export function updateHealthPlate(health: number, dt: number): void {
   ghost.style.transform = `scaleX(${ghostValue})`;
 
   number.textContent = String(Math.ceil(health));
-  const low = frac < LOW_HEALTH;
-  plate.classList.toggle('low', low);
 
-  // Number jolt: starts big and shrinks back (the square makes it ease out).
+  // Heartbeat, only at low health: the rate grows as health drops. We advance
+  // a phase instead of computing sin(time * rate): with a changing rate that
+  // would jump around (the same trick as the style letter's blinking).
+  let beat = 0;
+  if (frac < LOW_HEALTH) {
+    const panic = 1 - frac / LOW_HEALTH; // 0 at the threshold, 1 at zero health
+    beatPhase = (beatPhase + (BEAT_HZ_CALM + (BEAT_HZ_PANIC - BEAT_HZ_CALM) * panic) * dt) % 1;
+    // "Lub-dub": two short bumps close together, the second one smaller, then rest.
+    beat = pulse(beatPhase, 0, 1) + pulse(beatPhase, 0.18, 0.6);
+  } else beatPhase = 0;
+  // The CSS mixes the dark red with a bright one by this amount (color-mix).
+  number.style.setProperty('--lit', String(Math.min(1, beat)));
+
+  // Hit jolt: starts big and shrinks back (the square makes it ease out).
+  // One transform for both effects: setting it twice would keep only the last.
   hitTime = Math.max(0, hitTime - dt);
   const t = hitTime / HIT_TIME;
-  number.style.transform = `scale(${1 + HIT_SCALE * t * t})`;
-
-  // Heartbeat: the rate grows as health drops. We advance a phase instead of
-  // computing sin(time * rate): with a changing rate that would jump around
-  // (the same trick as the style letter's blinking).
-  const hz = BEAT_HZ_CALM + (BEAT_HZ_PANIC - BEAT_HZ_CALM) * (1 - frac);
-  beatPhase = (beatPhase + hz * dt) % 1;
-  // "Lub-dub": two short bumps close together, the second one smaller, then rest.
-  heart.style.transform = `scale(${1 + BEAT_SCALE * (pulse(beatPhase, 0, 1) + pulse(beatPhase, 0.18, 0.6))})`;
+  number.style.transform = `scale(${1 + HIT_SCALE * t * t + BEAT_SCALE * beat})`;
 }
 
 /** A half sine wave lasting 1/8 of the beat, starting at `start`, as tall as `height`. */
