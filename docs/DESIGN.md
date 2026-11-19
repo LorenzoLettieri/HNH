@@ -165,6 +165,25 @@ con campanile (22 m), sceriffo (5,3 m), banca (8,3 m), torre dell'acqua (8 m), t
 (14 m) unite da un ponte sopra Main Street, piattaforme sospese tra i tetti, forca, cimitero,
 vagoni. 4 sfiatatoi di vapore. Tutti i percorsi sono stati verificati in simulazione.
 
+### Passata "corpo a corpo" (dopo il playtest dell'ondata 50) [FATTO]
+Il playtest ha mostrato che la mappa era **troppo vuota**: interi quadranti di 20×20 m di terra
+nuda e strade larghe 20 m, quindi bastava correre in tondo. Ora:
+- **Edifici nuovi nei quadranti vuoti**: hotel (con scala di casse, tetto 5,3 m), impresario,
+  stalla, deposito ferroviario, casa, bagni pubblici, ufficio del telegrafo, armeria, magazzino (scala
+  di casse, tetto 6,3 m), ingresso della miniera. La cittadina diventa una **griglia di strade e
+  vicoli** (2,5–10 m) invece di una pista.
+- **Linea del treno**: 4 vagoni in fila lungo x = 30, un muro con tre passaggi stretti (5–7 m).
+- **Tettoie aperte** (forgia, segheria) e **portici** davanti a sceriffo e banca: ti nascondono
+  dai Malocchi (serve la linea libera per sparare), ma non dai ghoul.
+- **Ostacoli bassi in strada** (abbeveratoi, casse, diligenza, pozzo, carro, staccionata del
+  cimitero): sotto 1 m li scavalcano tutti. Chi salta passa sopra mantenendo la velocità, chi corre
+  a terra ci sbatte. Col bot di prova: girando in tondo **senza saltare** ci si incastra (velocità
+  media 5,8 m/s invece di 8) e i ghoul ti raggiungono; **saltando** si subisce circa 4 volte meno danno.
+- Tutti i vecchi percorsi verso l'alto restano invariati; i punti di spawn sono stati ricontrollati.
+- Costo: da ~700 a ~840 draw call nella vista più pesante (+21%). Se pesa: static batching (§9).
+
+![Pianta prima e dopo la passata corpo a corpo](map-close-quarters.png)
+
 ### Regole pratiche emerse (vincoli del movimento attuale)
 - **Salto massimo ≈ 1,17 m**: gradini e scalini al massimo **1 m**.
 - **Salto in corsa ≈ 5,6 m** di distanza: gap tra piattaforme ≤ 3–4 m per stare comodi.

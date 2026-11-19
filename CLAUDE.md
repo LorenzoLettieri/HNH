@@ -71,7 +71,7 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `debugPanel.ts`: **quali valori sono esposti nel pannello** e i loro range; in cima **"Waves"**: scegli un'ondata e "Go to this wave" per provarla subito (`jumpToWave` in `src/sim/waves.ts`)
 - `src/levels/`: **i livelli** (dati puri)
   - `index.ts`: elenco dei livelli e livello di default
-  - `town.ts`: **la cittadina** (mappa principale, greybox): edifici, torri, ponte, piattaforme sospese, sfiatatoi, **bersagli** (`targets`), **punti di spawn dei nemici** (`enemySpawns`, sparsi per tutta la mappa); percorsi descritti in cima al file
+  - `town.ts`: **la cittadina** (mappa principale, greybox): edifici, torri, ponte, piattaforme sospese, sfiatatoi, **vicoli e ostacoli bassi** (helper `porch`, `shed`, `fence`, `crateSteps` in cima al file), **bersagli** (`targets`), **punti di spawn dei nemici** (`enemySpawns`, sparsi per tutta la mappa); percorsi descritti in cima al file
   - `testArena.ts`: arena di prova 40×40 (piattaforma, scale, corridoio, colonne, casse, trave bassa per lo slide) + **props** (lista `props` in cima al file)
 - `src/render/`: effetti puramente visivi (non toccano la simulazione)
   - `landingDip.ts`: abbassamento camera all'atterraggio (intensità, recupero)

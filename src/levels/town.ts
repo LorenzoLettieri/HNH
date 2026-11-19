@@ -6,16 +6,18 @@
 //
 //                               N (z = -46)
 //   ┌───────────────── canyon cliffs all around ─────────────────┐
-//   │                     ▓ bell tower (22 m)                     │
-//   │   ◘ water   ┌SALOON┐  ▫ ▫ ▫  ┌CHURCH┐          ▭ wagon     │
-//   │     tower   └──────┘ floating └──────┘                      │
-//   │  gallows ═══════════ Cross Street ═══════════   ▭ wagon     │
-//   │             ┌SHERIFF┐  ▫ ▫ ▫  ┌BANK┐                         │
-//   │   † cemetery └──────┘ floating └────┘                        │
-//   │              ■ tower ═══ bridge (14 m) ═══ ■ tower          │
-//   │                         spawn ↑                             │
+//   │ UNDERTAKER   HOTEL  trough  STABLE                 DEPOT    │
+//   │                     ▓ bell tower (22 m)          ▭ wagon    │
+//   │ forge▤ ◘ water ┌SALOON┐ ▫ ▫ ▫ ┌CHURCH┐  crates     ▤sawmill │
+//   │        tower   └──────┘coach └──────┘             ▭ wagon   │
+//   │ BATH gallows ═══ wagon ═ Cross Street ⊙well ═══      TELEGR.│
+//   │             ┌SHERIFF┐╎ ▫ ▫ ▫ ╎┌BANK┐                ▭ wagon  │
+//   │ HOUSE        └──────┘╎porches╎└────┘                ▭ wagon  │
+//   │ ┌┄┄┄┄┄┄┐      ■ tower ═══ bridge (14 m) ═══ ■ tower  GUNSMITH│
+//   │ ┊† † † ┊ HOUSE          spawn ↑               WAREHOUSE  MINE│
 //   └─────────────────────────────────────────────────────────────┘
 //                               S (z = +46)
+// (▤ = open shed: a roof on posts. ┄ = low fence, everyone hops it.)
 //
 // Routes up (with the current movement values: jump ≈ 1.2 m, each wall
 // jump ≈ +1.05 m, running jump ≈ 5.6 m long):
@@ -26,6 +28,14 @@
 // - Twin towers (14 m): steam vents on Main Street launch you on top;
 //   a bridge connects them over the street.
 // - Water tower (8 m): running jump from the saloon roof.
+// - Hotel (5.3 m): crate steps on its east side. Warehouse (6.3 m): crate
+//   steps on its west side. Both checked with a scripted player in the sim.
+//
+// Close-quarters pass (docs/DESIGN.md, "La mappa"): the quarters that were
+// empty ground are now filled with smaller buildings, so the town is a
+// grid of streets and alleys (2.5-10 m wide) instead of a racetrack, and
+// the streets have low obstacles (troughs, crates, a stagecoach, a well)
+// that you either hop over (keeping your speed) or crash into.
 // Note: wall jumps push you AWAY from the wall, so you can't climb a single
 // wall with them; they work between two close walls, or as one extra boost.
 import { box, type Box, type Prop, type World } from '../sim/world';
@@ -73,6 +83,69 @@ function building(
     box(x, 0, z, sizeX, height, sizeZ, look),
     box(x, height, z, sizeX + 0.6, 0.3, sizeZ + 0.6, 'roof'),
   ];
+}
+
+// --- Close-quarters dressing: small pieces that turn open ground into choices -----
+// The rule (docs/DESIGN.md, "La mappa"): the streets should never be a wide
+// empty racetrack. Low things (≤ 1 m) are hopped over by you AND the ghouls;
+// posts and tall things block bullets, lines of sight and the eye-bats' aim.
+
+/**
+ * A porch in front of a building: a row of posts and a plank awning on top.
+ * The posts are cover to circle around; the awning hides you from the
+ * eye-bats (they need a clear line to shoot). Along Z, posts at x.
+ */
+function porch(x: number, z1: number, z2: number, awningX: number, height: number): Box[] {
+  const out: Box[] = [];
+  for (let z = z1; z <= z2 + 0.01; z += (z2 - z1) / 3) out.push(box(x, 0, z, 0.25, height, 0.25, 'wood'));
+  out.push(box(awningX, height, (z1 + z2) / 2, Math.abs(awningX - x) * 2 + 0.5, 0.2, z2 - z1 + 1, 'planks'));
+  return out;
+}
+
+/** An open shed: four posts and a roof. Shade from the eye-bats, but the ghouls walk right in. */
+function shed(x: number, z: number, sizeX: number, sizeZ: number, height: number): Box[] {
+  const hx = sizeX / 2 - 0.2;
+  const hz = sizeZ / 2 - 0.2;
+  return [
+    box(x - hx, 0, z - hz, 0.4, height, 0.4, 'wood'),
+    box(x + hx, 0, z - hz, 0.4, height, 0.4, 'wood'),
+    box(x - hx, 0, z + hz, 0.4, height, 0.4, 'wood'),
+    box(x + hx, 0, z + hz, 0.4, height, 0.4, 'wood'),
+    box(x, height, z, sizeX + 0.4, 0.3, sizeZ + 0.4, 'roof'),
+  ];
+}
+
+/**
+ * A low fence (0.9 m: everyone hops it) around a rectangle, with a gap in
+ * the middle of every side. It doesn't stop anyone, it slows them down:
+ * a hop costs a ghoul a moment, and costs you a bit of aim.
+ */
+function fence(minX: number, minZ: number, maxX: number, maxZ: number, gap: number): Box[] {
+  const h = 0.9;
+  const t = 0.15;
+  const halfX = (maxX - minX - gap) / 2; // length of each half of a north/south side
+  const halfZ = (maxZ - minZ - gap) / 2;
+  return [
+    box(minX + halfX / 2, 0, minZ, halfX, h, t, 'wood'),
+    box(maxX - halfX / 2, 0, minZ, halfX, h, t, 'wood'),
+    box(minX + halfX / 2, 0, maxZ, halfX, h, t, 'wood'),
+    box(maxX - halfX / 2, 0, maxZ, halfX, h, t, 'wood'),
+    box(minX, 0, minZ + halfZ / 2, t, h, halfZ, 'wood'),
+    box(minX, 0, maxZ - halfZ / 2, t, h, halfZ, 'wood'),
+    box(maxX, 0, minZ + halfZ / 2, t, h, halfZ, 'wood'),
+    box(maxX, 0, maxZ - halfZ / 2, t, h, halfZ, 'wood'),
+  ];
+}
+
+/**
+ * Steps of crates against a wall, `count` crates `step` m apart in height,
+ * going from (x, z) in the direction (dx, dz). The last one lets you jump
+ * onto a roof. Steps ≤ 1 m: the max jump is ~1.17 m.
+ */
+function crateSteps(x: number, z: number, dx: number, dz: number, count: number, step: number): Box[] {
+  const out: Box[] = [];
+  for (let i = 0; i < count; i++) out.push(box(x + dx * i * 1.2, 0, z + dz * i * 1.2, 1.2, step * (i + 1), 1.2, 'wood'));
+  return out;
 }
 
 // --- Cemetery: rows of tombstones and crosses ----------------------------------------
@@ -156,25 +229,25 @@ export const town: World = {
     // Corners and sides of the canyon.
     { x: -36, y: 0, z: -36 },
     { x: 36, y: 0, z: -36 },
-    { x: -36, y: 0, z: 36 },
+    { x: -39, y: 0, z: 39 },
     { x: 36, y: 0, z: 36 },
     { x: 0, y: 0, z: -38 },
     { x: -38, y: 0, z: 8 },
     { x: 38, y: 0, z: 18 },
-    { x: 8, y: 0, z: -36 },
+    { x: 16, y: 0, z: -36 },
     { x: 0, y: 0, z: 38 },
     { x: -38, y: 0, z: -20 },
     { x: -38, y: 0, z: 22 },
     { x: 40, y: 0, z: -2 },
     // Behind the buildings (north side).
     { x: -20, y: 0, z: -30 },
-    { x: -14, y: 0, z: -30 },
+    { x: -14, y: 0, z: -24 },
     { x: 0, y: 0, z: -25 },
-    { x: 30, y: 0, z: -26 },
+    { x: 25, y: 0, z: -28 },
     // Behind the buildings (south side), near the towers and the cemetery.
     { x: -18, y: 0, z: 26 },
     { x: 14, y: 0, z: 34 },
-    { x: 24, y: 0, z: 30 },
+    { x: 25, y: 0, z: 28 },
     // Cross Street (both ends), between the wagons, Main Street.
     { x: -22, y: 0, z: 2 },
     { x: 24, y: 0, z: 4 },
@@ -273,5 +346,71 @@ export const town: World = {
     box(30, 0, -8, 3, 3.2, 9, 'planks'),
     box(30, 0, 8, 3, 3.2, 9, 'planks'),
     box(27.6, 0, -3, 1.2, 1.2, 1.2, 'wood'), // crate to climb on the wagons
+    // A longer train: the rail line becomes a wall with three narrow
+    // crossings (5-7 m) between the wagons. Chokepoints for the horde.
+    box(30, 0, -22, 3, 3.2, 9, 'planks'),
+    box(30, 0, 22, 3, 3.2, 9, 'planks'),
+    box(27.6, 0, 20, 1.2, 1.2, 1.2, 'wood'), // crate to climb on the south wagon
+
+    // ===== CLOSE-QUARTERS PASS: filling the empty quarters with alleys =====
+    // --- North: HOTEL (roof 5.3, crate steps on its east side) and UNDERTAKER ---
+    ...building(-14, -33, 10, 5, 8, 'brick'), // x -19..-9, z -37..-29
+    ...crateSteps(-8, -29.8, 0, -1, 5, 1), // tops 1-5 m, going north → jump west onto the roof (5.3)
+    ...building(-33, -29, 8, 4, 7, 'planks'), // x -37..-29, z -32.5..-25.5
+    // --- North: STABLE across Main Street from the hotel (Main Street north is 13 m wide) ---
+    ...building(8, -35, 8, 6, 8, 'wood'), // x 4..12, z -39..-31
+    box(-1, 0, -33, 4, 0.8, 1, 'wood'), // water trough in the middle of the street
+    // --- North-east: railway DEPOT against the cliff ---
+    ...building(38.5, -30, 7, 5, 10, 'planks'), // x 35..42, z -35..-25
+
+    // --- West: BLACKSMITH's open shed (forge + anvil) and a HOUSE ---
+    ...shed(-36.5, -15, 7, 6, 3.5),
+    box(-37.5, 0, -15, 2, 1.1, 2, 'stone'), // forge
+    box(-34.5, 0, -14, 1, 0.8, 0.6, 'metal'), // anvil
+    ...building(-36, 16, 7, 4, 8, 'wood'), // x -39.5..-32.5, z 12..20
+    // --- Cross Street west: an abandoned covered wagon in the middle ---
+    box(-16, 0, 3, 4.5, 2.4, 2, 'planks'),
+
+    // --- South: a HOUSE west of the towers, a WAREHOUSE east of them ---
+    ...building(-16, 34, 7, 4, 6, 'planks'), // x -19.5..-12.5, z 31..37
+    ...building(25, 34, 10, 6, 8, 'brick'), // x 20..30, z 30..38
+    ...crateSteps(19, 30.4, 0, 1, 6, 1), // tops 1-6 m, going south → jump east onto the roof (6.3)
+    // --- South-east: GUNSMITH between the east tower and the warehouse (3 m alley to the tower) ---
+    ...building(17, 26, 6, 4, 5, 'stone'), // x 14..20, z 23.5..28.5
+    // --- South-east corner: MINE ENTRANCE dug into the canyon wall (a rock outcrop + timber frame) ---
+    box(37, 0, 39.5, 9, 5, 5, 'rock'),
+    box(34.5, 0, 36.8, 0.4, 3.2, 0.4, 'wood'),
+    box(38.5, 0, 36.8, 0.4, 3.2, 0.4, 'wood'),
+    box(36.5, 3.2, 36.8, 4.4, 0.4, 0.4, 'wood'),
+    // --- East: TELEGRAPH OFFICE and the SAWMILL's open shed, east of the rail line ---
+    ...building(38.5, 5, 7, 4, 6, 'planks'), // x 35..42, z 2..8
+    ...shed(38.5, -17, 7, 6, 3.5),
+    box(38.5, 0, -17, 4, 0.9, 1.2, 'wood'), // log on the saw bench
+    // --- West: BATHHOUSE next to the gallows (2.5 m alley between them) ---
+    ...building(-38.5, 1, 7, 5, 8, 'stone'), // x -42..-35, z -3..5
+    // --- Cemetery fence (gaps in the middle of each side) ---
+    ...fence(-36, 24, -24, 36, 3),
+
+    // --- Main Street: porches in front of the sheriff and the bank ---
+    ...porch(-6.4, 10, 18, -7.2, 2.6),
+    ...porch(8.4, 10, 18, 9.2, 2.6),
+    // A broken stagecoach in the north half (under the floating platforms)
+    box(1.5, 0, -19, 2.2, 2.2, 4.5, 'wood'),
+    // The town WELL in the square: a stone ring, two posts and a little roof
+    box(2, 0, 0, 2, 1, 2, 'stone'),
+    box(1.2, 1, 0, 0.2, 1.6, 0.2, 'wood'),
+    box(2.8, 1, 0, 0.2, 1.6, 0.2, 'wood'),
+    box(2, 2.6, 0, 2.4, 0.2, 2.4, 'roof'),
+    // Troughs and crates: low cover along Main Street
+    box(-5, 0, -3, 3, 0.8, 1, 'wood'),
+    box(8.5, 0, 4, 1, 0.8, 3, 'wood'),
+    box(-6.5, 0, 28, 1.2, 1.2, 1.2, 'wood'),
+    box(-6.8, 0, 29.3, 1, 1, 1, 'wood'),
+    box(6, 0, 31, 1.2, 1.2, 1.2, 'wood'),
+    // East side, between the church and the rail line: crate piles
+    box(25, 0, -16, 1.2, 1.2, 1.2, 'wood'),
+    box(25, 0, -17.2, 1.2, 2.2, 1.2, 'wood'),
+    box(36, 0, 12, 2, 1, 2, 'wood'),
+    box(37, 0, -10, 1.2, 1.2, 1.2, 'wood'),
   ],
 };
