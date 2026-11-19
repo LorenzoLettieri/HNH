@@ -133,17 +133,19 @@ export function enemyCost(e: Enemy): number {
   if (e.type === 'ghoul') return tuning.ghoulCost;
   if (e.type === 'eyebat') return tuning.eyebatCost;
   if (e.type === 'hound') return tuning.houndCost;
+  if (e.type === 'sharpshooter') return tuning.sharpshooterCost;
   return tuning.bullCost;
 }
 
 export function stepWaves(game: GameState, world: World, events: SimEvent[]): void {
   // Dead enemies lie on the ground for a while, then are removed from the list.
-  // (Eye-bats, hounds and bulls count their own stateTicks: they keep falling while dead.)
+  // (Eye-bats, hounds, bulls and sharpshooters count their own stateTicks: they keep falling while dead.)
   const corpseTicks = {
     ghoul: secondsToTicks(tuning.ghoulCorpseTime),
     eyebat: secondsToTicks(tuning.eyebatCorpseTime),
     hound: secondsToTicks(tuning.houndCorpseTime),
     bull: secondsToTicks(tuning.bullCorpseTime),
+    sharpshooter: secondsToTicks(tuning.sharpshooterCorpseTime),
   };
   game.entities = game.entities.filter(
     (e) => !(isEnemy(e) && e.state === 'dead' && e.stateTicks > corpseTicks[e.type]),

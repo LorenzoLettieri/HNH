@@ -206,12 +206,14 @@ function trace(
   //   height of the impact point is enough: no second hitbox.
   // - eye-bat: the bullet passed through the pupil (see pupilHit).
   // - hound: same as the ghoul, above houndHeadHeight (head and ears).
+  // - sharpshooter: same, above sharpshooterHeadHeight (skull and hat).
   // - bull: no weak spot while it's up. Stunned against a wall, EVERY hit is
   //   critical: the reward for making it crash.
   const headshot =
     target !== null &&
     ((target.type === 'ghoul' && hit!.y - target.y > tuning.ghoulHeadHeight) ||
       (target.type === 'hound' && hit!.y - target.y > tuning.houndHeadHeight) ||
+      (target.type === 'sharpshooter' && hit!.y - target.y > tuning.sharpshooterHeadHeight) ||
       (target.type === 'bull' && target.state === 'stunned') ||
       (target.type === 'eyebat' && pupilHit(target, ox, oy, oz, dx, dy, dz)));
 
@@ -234,7 +236,7 @@ function trace(
 /** Deals damage to an entity hit by a gun and reports it (hitmarker, score, sounds). */
 function applyGunDamage(target: Entity, amount: number, headshot: boolean, events: SimEvent[]): void {
   const killed = damage(target, amount);
-  if (killed && headshot && target.type === 'ghoul') target.headless = true;
+  if (killed && headshot && (target.type === 'ghoul' || target.type === 'sharpshooter')) target.headless = true;
   if (killed && headshot && target.type === 'eyebat') target.popped = true;
   events.push({
     type: 'hit',

@@ -16,6 +16,10 @@ function bodyOf(e: Entity): { radius: number; height: number } | null {
       ? { radius: tuning.ghoulRadius, height: tuning.ghoulHeight }
       : { radius: tuning.houndRadius, height: tuning.houndHeight };
   }
+  if (e.type === 'sharpshooter') {
+    if (e.state === 'dead') return null;
+    return { radius: tuning.sharpshooterRadius, height: tuning.sharpshooterHeight };
+  }
   if (e.type === 'bull') {
     if (e.state === 'dead') return null;
     return { radius: tuning.bullRadius, height: tuning.bullHeight };

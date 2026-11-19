@@ -142,9 +142,36 @@ export interface BullEntity extends EntityBase {
   navNode: number;
 }
 
-export type Entity = TargetEntity | GhoulEntity | EyebatEntity | HoundEntity | BullEntity;
+/** The sharpshooter: a skeleton with a Winchester that shoots from afar. Position = feet. */
+export interface SharpshooterEntity extends EntityBase {
+  type: 'sharpshooter';
+  vx: number;
+  vy: number;
+  vz: number;
+  onGround: boolean;
+  /**
+   * The shot cycle (see sharpshooter.ts): waiting (laser off), aiming (the
+   * laser follows you), locked (the laser stops and blinks, the shot is
+   * coming), dead.
+   */
+  state: 'idle' | 'aim' | 'lock' | 'dead';
+  /** Ticks spent in the current state. */
+  stateTicks: number;
+  /** Where the rifle points: a unit vector in 3D (the laser goes this way). */
+  aimX: number;
+  aimY: number;
+  aimZ: number;
+  /** Ticks before it can start aiming again. */
+  shootCooldownTicks: number;
+  /** Ticks in a row it couldn't see you while aiming. */
+  lostSightTicks: number;
+  /** Killed by a headshot: the skull is gone (for the death animation). */
+  headless: boolean;
+}
+
+export type Entity = TargetEntity | GhoulEntity | EyebatEntity | HoundEntity | BullEntity | SharpshooterEntity;
 /** Everything that fights you (not the practice targets). */
-export type Enemy = GhoulEntity | EyebatEntity | HoundEntity | BullEntity;
+export type Enemy = GhoulEntity | EyebatEntity | HoundEntity | BullEntity | SharpshooterEntity;
 
 export function isEnemy(e: Entity): e is Enemy {
   return e.type !== 'target';
@@ -291,6 +318,40 @@ export function createBull(id: number, x: number, y: number, z: number, health =
   };
 }
 
+export function createSharpshooter(
+  id: number,
+  x: number,
+  y: number,
+  z: number,
+  health = tuning.sharpshooterHealth,
+): SharpshooterEntity {
+  return {
+    id,
+    type: 'sharpshooter',
+    x,
+    y,
+    z,
+    px: x,
+    py: y,
+    pz: z,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    health,
+    onGround: false,
+    state: 'idle',
+    stateTicks: 0,
+    aimX: 0,
+    aimY: 0,
+    aimZ: 1,
+    // First aim 1-2.2 s after spawning, staggered by id (deterministic):
+    // a group doesn't light up all its lasers at once.
+    shootCooldownTicks: secondsToTicks(1 + (id % 5) * 0.3),
+    lostSightTicks: 0,
+    headless: false,
+  };
+}
+
 export function isAlive(e: Entity): boolean {
   return e.health > 0;
 }
@@ -311,6 +372,9 @@ export function hitBox(e: Entity): Box {
   }
   if (e.type === 'hound') {
     return box(e.x, e.y, e.z, tuning.houndHitWidth, tuning.houndHitHeight, tuning.houndHitWidth);
+  }
+  if (e.type === 'sharpshooter') {
+    return box(e.x, e.y, e.z, tuning.sharpshooterHitWidth, tuning.sharpshooterHitHeight, tuning.sharpshooterHitWidth);
   }
   if (e.type === 'bull') {
     // A box, the same from every side (our raycast only knows axis-aligned

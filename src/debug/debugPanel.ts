@@ -291,6 +291,22 @@ export function createDebugPanel(options: {
   bull.number(tuning, 'bullHitHeight', 0.5, 4, 0.05);
   bull.button('Copy values', () => copyToClipboard(toSource(tuning)));
 
+  // --- Sharpshooter ---
+  const sharp = panel.folder('Sharpshooter (src/sim/config.ts) — L to spawn');
+  sharp.number(tuning, 'sharpshooterHealth', 10, 500, 5);
+  sharp.number(tuning, 'sharpshooterRange', 10, 100, 1);
+  sharp.number(tuning, 'sharpshooterAimTime', 0.2, 4, 0.05);
+  sharp.number(tuning, 'sharpshooterLockTime', 0, 1.5, 0.05);
+  sharp.number(tuning, 'sharpshooterTurnRate', 10, 720, 10);
+  sharp.number(tuning, 'sharpshooterLeadFactor', 0, 1.5, 0.05);
+  sharp.number(tuning, 'sharpshooterShootInterval', 0.2, 8, 0.1);
+  sharp.number(tuning, 'sharpshooterBulletSpeed', 10, 300, 5);
+  sharp.number(tuning, 'sharpshooterBulletDamage', 1, 100, 1);
+  sharp.number(tuning, 'sharpshooterHitWidth', 0.3, 2, 0.05);
+  sharp.number(tuning, 'sharpshooterHitHeight', 0.5, 3, 0.05);
+  sharp.number(tuning, 'sharpshooterHeadHeight', 0.5, 2.5, 0.05);
+  sharp.button('Copy values', () => copyToClipboard(toSource(tuning)));
+
   // --- Camera feel ---
   const feel = panel.folder('Camera feel (src/render/cameraFeel.ts)');
   feel.number(cameraFeelSettings, 'baseFov', 50, 110, 1);

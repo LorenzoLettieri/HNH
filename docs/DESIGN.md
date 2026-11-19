@@ -136,7 +136,7 @@ con un chiaro preavviso.
 | **Avvoltoio** | Volante, gira in cerchio e picchia in picchiata | Raggiunge ogni tetto, obbliga a guardare in alto |
 | **Malocchio** [FATTO] | Occhio-pipistrello volante: orbita attorno a te a distanza (10 m, 5 m più in alto) e spara proiettili lenti. **Pupilla = punto critico** (×3, come la testa del ghoul) | Il movimento diventa difesa; obbliga a guardare in alto e a mirare con precisione |
 | **Fuoco fatuo** | Volante a distanza, proiettili lenti (forse superato dal Malocchio) | Il movimento diventa difesa |
-| **Pistolero scheletro** | A distanza, colpo istantaneo **annunciato** (luccichio + click) | Punisce chi sta fermo in vista, premia chi rompe la linea di tiro |
+| **Tiratore scelto** (sharpshooter) [IN CORSO: passo 1] | Scheletro col cappello da cowboy e una **Winchester** (la prossima arma del giocatore). Spara **da lontano** con un colpo velocissimo annunciato da un **laser rosso**; cerca di appostarsi sulle **alture**, arrampicandosi (dettagli sotto) | Punisce chi sta fermo o corre dritto in vista, premia chi rompe la linea di tiro o cambia direzione al momento giusto |
 | **Dinamitardo** | Lancia dinamite ad arco, lascia fiamme | Nega zone: ti costringe a spostarti |
 | **Toro** [FATTO, da tarare; suoni provvisori] | Grosso e resistente: ti punta (preavviso), poi **carica dritto** senza sterzare (dettagli sotto). Pesa **5** nelle ondate, dall'ondata 7 | Prima si schiva (cambio di direzione o salto), poi si uccide: meglio con un muro alle spalle |
 | **Boss** | Pattern complessi, ogni tot ondate | Picco di intensità |
@@ -267,6 +267,26 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
     colonna di fiamme dai tubi, nuvola di terra e il toro si **gonfia** per un istante. In carica lascia una
     scia di terra e fiamme.
   - **Grafo tutto suo** (vedi Navigazione): col grafo dei ghoul s'incastrava nei passaggi stretti.
+- **Tiratore scelto: il laser.** Sostituisce il vecchio "pistolero scheletro". Salute 50 come il ghoul
+  (fragile: pericoloso da lontano, facile una volta raggiunto o colpito). Critico sopra **1,55 m** (teschio e cappello).
+  Ciclo **attesa → mira → blocco → sparo**:
+  - **Mira** (1,3 s), quando ti vede entro **55 m**: si accende un **laser rosso** dalla canna, sempre più
+    luminoso, che **ti segue** puntando **dove sarai** quando arriva il colpo (anticipo, come Malocchio e toro).
+    Il fucile gira al massimo di **120°/s**: chi si muove regolare viene seguito esatto, uno scatto lo lascia
+    indietro per un attimo, e correndogli di traverso **vicino e veloce** lo semini. Se ti nascondi per 0,4 s rinuncia.
+  - **Blocco** (0,4 s): il laser **si ferma e lampeggia**. Il colpo andrà esattamente lì: è il momento di
+    cambiare direzione (salto, slide, inversione).
+  - **Sparo**: proiettile a **90 m/s** (la palla di fuoco va a 12), 30 danni. Non istantaneo (40 m in ~0,45 s) ma
+    quasi: la difesa vera è il preavviso. Si vede come una **scia luminosa** (tracer).
+  - Bot di prova in campo aperto, a 10 e 18 m: **fermo e in linea retta: preso sempre**; **cambio di
+    direzione al blocco: mancato sempre**; correre in tondo: preso ~1 volta su 4.
+  - Il laser e la scia **ignorano la nebbia**: un avviso deve leggersi anche a 50 m.
+  - **Passo 1** [FATTO]: simulazione, laser, scia, segnaposto fatto di scatole (tasto **L** per farlo apparire).
+    Per ora sta fermo dove nasce. **Da fare**: sprite pixel art e suoni (leva della Winchester al blocco,
+    sparo), appostamento sulle alture con arrampicata, ondate.
+  - **Proiettili più veloci, collisione "a spazzata"**: a 90 m/s il proiettile fa 1,5 m per tick, quindi non
+    basta controllare dov'è arrivato (ti passerebbe attraverso): si controlla tutto il segmento percorso
+    nel tick contro la scatola del giocatore **ingrandita del raggio del proiettile** (somma di Minkowski).
 - **Calcio (melee)** [FATTO, da tarare]: F o tasto destro. Colpisce **tutto** in un cono davanti
   (1,6 m, ±45°), 25 danni (mezzo ghoul base: è uno strumento, non l'arma principale), e **spinge via**
   (13 m/s in avanti, 5 m/s in alto): il ghoul vola via, interrompe artigliata e balzo, e resta a terra

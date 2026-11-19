@@ -61,8 +61,14 @@ export type SimEvent =
   | { type: 'eyebatCharge'; entityId: number }
   /** An eye-bat fires: a projectile leaves its eye. */
   | { type: 'eyebatShot'; entityId: number; projectileId: number }
+  /** A sharpshooter starts aiming: the red laser lights up (the warning). */
+  | { type: 'sharpshooterAim'; entityId: number }
+  /** The laser stops following you: the shot comes in sharpshooterLockTime seconds. */
+  | { type: 'sharpshooterLock'; entityId: number }
+  /** A sharpshooter fires: a bullet leaves the rifle. */
+  | { type: 'sharpshooterShot'; entityId: number; projectileId: number }
   /** A projectile hit the level or the player (where, and the surface normal). */
-  | { type: 'projectileHit'; x: number; y: number; z: number; nx: number; ny: number; nz: number; player: boolean }
+  | { type: 'projectileHit'; kind: 'fireball' | 'bullet'; x: number; y: number; z: number; nx: number; ny: number; nz: number; player: boolean }
   /** The kick starts (the leg swings: whoosh). */
   | { type: 'kickStart' }
   /** The foot lands: how many things it hit (0 = kicked the air). */

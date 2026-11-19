@@ -577,6 +577,61 @@ export const tuning = {
   /** Push given to the player by a fireball, m/s. */
   eyebatProjectileKnockback: 3,
 
+  // --- Sharpshooter (skeleton rifleman; AI in src/sim/sharpshooter.ts) ---
+  /**
+   * Health: the same as the ghoul (1 revolver shot in waves 1-9). A glass
+   * cannon: dangerous from afar, fragile once you reach it or hit it.
+   */
+  sharpshooterHealth: 50,
+  /** It only aims at you from closer than this (and with a clear line), meters. A long rifle. */
+  sharpshooterRange: 55,
+  /**
+   * AIM, the warning: the red laser is on and FOLLOWS you (where you'll be)
+   * for this long, seconds. It gets brighter as the shot gets closer.
+   */
+  sharpshooterAimTime: 1.3,
+  /**
+   * LOCK: the laser stops following you and blinks, seconds; then the shot.
+   * Your cue to change direction: the bullet goes where the laser points.
+   */
+  sharpshooterLockTime: 0.4,
+  /**
+   * How fast the rifle can turn while aiming, degrees/s. Moving steadily it
+   * follows you exactly; a sudden cut leaves the laser behind for a moment.
+   * Running across it fast and CLOSE (bunny hop at 5 m ≈ 150°/s) outruns it.
+   */
+  sharpshooterTurnRate: 120,
+  /**
+   * How much it leads you (0 = where you are, 1 = where you'll be if you keep
+   * going straight), like eyebatLeadFactor. It accounts for the lock time too.
+   */
+  sharpshooterLeadFactor: 0.9,
+  /** Seconds between the end of a shot and the next aim (plus up to 1 s of variation). */
+  sharpshooterShootInterval: 2.5,
+  /** Lost sight of you while aiming for this long, seconds: it gives up and aims again later. */
+  sharpshooterLoseSightTime: 0.4,
+  /** Speed of its bullet, m/s: much faster than a fireball (12). Across 40 m in under half a second. */
+  sharpshooterBulletSpeed: 90,
+  sharpshooterBulletDamage: 30,
+  /** Push given to the player by its bullet, m/s. */
+  sharpshooterBulletKnockback: 5,
+  /** Radius of its bullet, meters (for hitting the player): small, it's a bullet. */
+  sharpshooterBulletRadius: 0.12,
+  /** Height of the rifle's muzzle above its feet, meters (where the laser and the bullet start). */
+  sharpshooterMuzzleHeight: 1.45,
+  /** Half the width of its collider, and its height, meters (like the ghoul: thin, a skeleton). */
+  sharpshooterRadius: 0.35,
+  sharpshooterHeight: 1.85,
+  /** HITBOX width and height (what bullets hit), meters: the hat included. */
+  sharpshooterHitWidth: 0.9,
+  sharpshooterHitHeight: 2.15,
+  /** Hits above this height (above the feet) hit the skull or the hat: critical, meters. */
+  sharpshooterHeadHeight: 1.55,
+  /** How long a dead sharpshooter lies on the ground before disappearing, seconds. */
+  sharpshooterCorpseTime: 3,
+  /** Weight in the waves' budget (src/sim/waves.ts), and for the drop chance. */
+  sharpshooterCost: 3,
+
   // --- Enemy projectiles (src/sim/projectiles.ts) ---
   /** Radius of an enemy projectile, meters (for hitting the player). */
   projectileRadius: 0.25,

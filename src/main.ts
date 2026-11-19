@@ -6,7 +6,7 @@ import { createDebugPanel } from './debug/debugPanel';
 import { buildCommand, updateLook, view } from './controls';
 import { TICK_DT } from './sim/config';
 import { copyPlayer, createPlayer } from './sim/player';
-import { createGame, spawnBullInFront, spawnEyebatInFront, spawnHoundInFront, dropPickupsInFront, stepGame } from './sim/game';
+import { createGame, spawnBullInFront, spawnSharpshooterInFront, spawnEyebatInFront, spawnHoundInFront, dropPickupsInFront, stepGame } from './sim/game';
 import { jumpToWave } from './sim/waves';
 import { DEFAULT_LEVEL, LEVELS } from './levels';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
@@ -23,6 +23,7 @@ import { createGhoulRenderer } from './render/enemies/ghouls';
 import { createEyebatRenderer } from './render/enemies/eyebats';
 import { createHoundRenderer } from './render/enemies/hounds';
 import { createBullRenderer } from './render/enemies/bulls';
+import { createSharpshooterRenderer } from './render/enemies/sharpshooters';
 import { createProjectileRenderer } from './render/projectiles';
 import { createPickupRenderer } from './render/pickups';
 import { createVendorRenderer } from './render/vendors';
@@ -122,6 +123,7 @@ const ghouls = createGhoulRenderer(scene);
 const eyebats = createEyebatRenderer(scene);
 const hounds = createHoundRenderer(scene);
 const bulls = createBullRenderer(scene);
+const sharpshooters = createSharpshooterRenderer(scene, world);
 const projectiles = createProjectileRenderer(scene);
 const pickups = createPickupRenderer(scene);
 const vendors = createVendorRenderer(scene, world);
@@ -173,6 +175,8 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyG') spawnHoundInFront(game);
   // V: a bull.
   if (e.code === 'KeyV') spawnBullInFront(game);
+  // L: a sharpshooter (20 m away: it shoots from afar).
+  if (e.code === 'KeyL') spawnSharpshooterInFront(game);
   // J: one pickup of each kind (bullets, shells, medkit).
   if (e.code === 'KeyJ') dropPickupsInFront(game);
   // E: open/close the shop, if a vendor is within reach (src/sim/shop.ts).
@@ -351,6 +355,7 @@ renderer.setAnimationLoop((now: number) => {
   eyebats.update(game.entities, events, camera, alpha, dt);
   hounds.update(game.entities, events, camera, alpha, dt);
   bulls.update(game.entities, events, camera, alpha, dt);
+  sharpshooters.update(game.entities, camera, alpha, dt);
   projectiles.update(game.projectiles, events, camera, alpha, dt);
   pickups.update(game.pickups, camera, alpha, now / 1000);
   vendors.update(camera, now / 1000);

@@ -181,6 +181,10 @@ function fire(b: EyebatEntity, game: GameState, events: SimEvent[]): void {
   const id = game.nextEntityId++; // same counter as the entities: ids are unique game-wide
   game.projectiles.push({
     id,
+    kind: 'fireball',
+    damage: tuning.eyebatProjectileDamage,
+    knockback: tuning.eyebatProjectileKnockback,
+    radius: tuning.projectileRadius,
     x: sx,
     y: sy,
     z: sz,

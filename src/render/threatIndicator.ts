@@ -10,6 +10,7 @@
 //   eyebat   'charge'          charging a fireball
 //   hound    'charge'          running at you after the howl
 //   bull     'aim' / 'charge'  pawing the ground and aiming, then charging
+//   sharpshooter 'aim' / 'lock'  the red laser is on you
 //
 // Markup: .threat elements created here; CSS in index.html.
 import * as THREE from 'three';
@@ -39,6 +40,8 @@ function isThreat(e: Entity): boolean {
       return e.state === 'charge';
     case 'bull':
       return e.state === 'aim' || (e.state === 'charge' && !e.chargeHit);
+    case 'sharpshooter':
+      return e.state === 'aim' || e.state === 'lock';
     default:
       return false;
   }

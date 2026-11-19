@@ -1,6 +1,8 @@
-// Draws the enemy projectiles (the eye-bat's fireballs): a small pixel-art
+// Draws the enemy projectiles. The eye-bat's fireballs: a small pixel-art
 // fireball sprite, extra bright so the bloom makes it glow, leaving a trail
-// of embers. Plus the burst of sparks and the sound when it hits something.
+// of embers. The sharpshooter's bullets: a TRACER, a short bright streak
+// behind the bullet (at 90 m/s a dot would be invisible: what the eye
+// catches is the line it draws). Plus sparks (and a sound) when they hit.
 //
 // No real light (PointLight) on purpose: in Three.js changing the NUMBER of
 // lights in the scene forces every material to recompile its shader, a
@@ -19,11 +21,18 @@ const SIZE = 0.7;
 const BRIGHTNESS = 4;
 /** Embers per second left behind. */
 const EMBERS_PER_SECOND = 40;
+/** Length of a bullet's tracer streak, meters, and its brightness (HDR). */
+const TRACER_LENGTH = 4;
+const TRACER_BRIGHTNESS = 6;
 
 interface ProjectileView {
   sprite: THREE.Sprite;
   material: THREE.SpriteMaterial;
   emberDebt: number;
+}
+
+interface TracerView {
+  line: THREE.Line;
 }
 
 export interface ProjectileRenderer {
@@ -57,6 +66,15 @@ function fireballTexture(): THREE.CanvasTexture {
 export function createProjectileRenderer(scene: THREE.Scene): ProjectileRenderer {
   const texture = fireballTexture();
   const views = new Map<number, ProjectileView>();
+  const tracers = new Map<number, TracerView>();
+  // One material for every tracer: they all look the same.
+  const tracerMaterial = new THREE.LineBasicMaterial({
+    blending: THREE.AdditiveBlending,
+    transparent: true,
+    depthWrite: false,
+    fog: false, // a streak of light: visible through the haze
+  });
+  tracerMaterial.color.setRGB(1, 0.75, 0.35).multiplyScalar(TRACER_BRIGHTNESS);
   const point = new THREE.Vector3();
   const normal = new THREE.Vector3();
 
@@ -66,13 +84,21 @@ export function createProjectileRenderer(scene: THREE.Scene): ProjectileRenderer
         if (e.type !== 'projectileHit') continue;
         point.set(e.x, e.y, e.z);
         normal.set(e.nx, e.ny, e.nz);
-        spawnSparks(point, normal, 25);
-        playFireballHit(soundAt(camera, e.x, e.y, e.z));
+        if (e.kind === 'bullet') {
+          spawnSparks(point, normal, 8);
+        } else {
+          spawnSparks(point, normal, 25);
+          playFireballHit(soundAt(camera, e.x, e.y, e.z));
+        }
       }
 
       const seen = new Set<number>();
       for (const p of projectiles) {
         seen.add(p.id);
+        if (p.kind === 'bullet') {
+          updateTracer(p, alpha);
+          continue;
+        }
         let v = views.get(p.id);
         if (!v) {
           // A sprite is a quad that always faces the camera (Three.js does the
@@ -105,6 +131,38 @@ export function createProjectileRenderer(scene: THREE.Scene): ProjectileRenderer
         v.material.dispose();
         views.delete(id);
       }
+      for (const [id, t] of tracers) {
+        if (seen.has(id)) continue;
+        scene.remove(t.line);
+        t.line.geometry.dispose();
+        tracers.delete(id);
+      }
     },
   };
+
+  /** A streak from the bullet backward, never longer than the path it has flown (no streak out of the rifle's back). */
+  function updateTracer(p: Projectile, alpha: number): void {
+    let t = tracers.get(p.id);
+    if (!t) {
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
+      const line = new THREE.Line(geometry, tracerMaterial);
+      line.frustumCulled = false;
+      scene.add(line);
+      t = { line };
+      tracers.set(p.id, t);
+      // Where it started: the streak doesn't reach behind this point.
+      line.userData.start = [p.px, p.py, p.pz];
+    }
+    const x = p.px + (p.x - p.px) * alpha;
+    const y = p.py + (p.y - p.py) * alpha;
+    const z = p.pz + (p.z - p.pz) * alpha;
+    const speed = Math.hypot(p.vx, p.vy, p.vz) || 1;
+    const [sx, sy, sz] = t.line.userData.start as number[];
+    const len = Math.min(TRACER_LENGTH, Math.hypot(x - sx, y - sy, z - sz));
+    const pos = t.line.geometry.attributes.position as THREE.BufferAttribute;
+    pos.setXYZ(0, x - (p.vx / speed) * len, y - (p.vy / speed) * len, z - (p.vz / speed) * len);
+    pos.setXYZ(1, x, y, z);
+    pos.needsUpdate = true;
+  }
 }

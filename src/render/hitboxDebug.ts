@@ -70,6 +70,8 @@ export function createHitboxDebug(scene: THREE.Scene): HitboxDebug {
           addBox({ ...b, minY: e.y + tuning.ghoulHeadHeight }, CRIT);
         } else if (e.type === 'hound') {
           addBox({ ...b, minY: e.y + tuning.houndHeadHeight }, CRIT);
+        } else if (e.type === 'sharpshooter') {
+          addBox({ ...b, minY: e.y + tuning.sharpshooterHeadHeight }, CRIT);
         } else if (e.type === 'bull' && e.state === 'stunned') {
           addBox(b, CRIT); // stunned: the whole bull is a critical spot
         } else if (e.type === 'eyebat') {
