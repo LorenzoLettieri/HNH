@@ -597,9 +597,9 @@ export const tuning = {
    * Seconds you have to do something stylish again before the chain BREAKS
    * and the style drops to zero at once. Short = harsh, long = forgiving.
    */
-  styleChainTime: 3,
+  styleChainTime: 5,
   /** Style points to climb one rank: D → C → B → A → S → SS → HIGH NOON (6 steps = 1200). */
-  styleRankPoints: 200,
+  styleRankPoints: 180,
   /** Style points for every hit on an enemy (a shotgun blast counts once per enemy). */
   styleHit: 5,
   /** Extra style points for a kill (a one-shot kill = styleHit + styleKill). */
