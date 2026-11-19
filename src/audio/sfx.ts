@@ -269,7 +269,8 @@ export function playGhoulDeath(where: Where): void {
 /** The leg swings: a short, low whoosh of air (lower and shorter than the claws). */
 export function playKickSwing(): void {
   if (!ctx) return;
-  noiseBurst({ duration: 0.16, volume: 0.35, filter: 'bandpass', frequency: 300, frequencyEnd: 1100, q: 1.5 });
+  noiseBurst({ duration: 0.18, volume: 0.8, filter: 'bandpass', frequency: 350, frequencyEnd: 1600, q: 1.2 });
+  thump({ duration: 0.08, volume: 0.25, from: 90, to: 60 }); // the body's weight shifting
 }
 
 /**

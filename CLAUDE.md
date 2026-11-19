@@ -92,8 +92,9 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `particles.ts`: **particelle** (polvere/lucciole, braci, vapore, scintille e sangue degli impatti)
   - `heightFog.ts`: nebbia al suolo (patch dello shader della nebbia di Three.js)
   - `weapons/`: **l'arma in mano (viewmodel)**
-    - `viewmodel.ts`: scena/camera dell'arma, **posa, rinculo, ondeggiamento, bob, ricarica, lampo** (`viewmodelSettings`)
+    - `viewmodel.ts`: scena/camera dell'arma, **posa, rinculo, ondeggiamento, bob, ricarica, lampo, calcio** (`viewmodelSettings`)
     - `revolverModel.ts`: modello procedurale del revolver (canna, tamburo, cane, calcio)
+    - `boot.ts`: **stivale del calcio** (gamba a blocchi con sperone, texture, **pose dell'animazione**: `HIDDEN`/`OUT`, tempi di tenuta e ritorno)
     - `hands.ts`: **mani a blocchi** (guanti, maniche) e **keyframe del fanning** della mano sinistra
   - `hud.ts`: barra della salute, vignetta rossa, **numero dell'ondata, punteggio, scritte di inizio/fine ondata e conto alla rovescia**, riepilogo alla morte
   - `projectiles.ts`: **palle di fuoco nemiche** (sprite pixel art luminoso, scia di braci, scintille e suono all'impatto)

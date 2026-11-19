@@ -26,6 +26,7 @@ export interface WeaponFx {
   /** Listeners for other modules (e.g. the viewmodel recoil). */
   onShot: (() => void)[];
   onReload: (() => void)[];
+  onKick: (() => void)[];
 }
 
 /**
@@ -60,6 +61,7 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
   const fx: WeaponFx = {
     onShot: [],
     onReload: [],
+    onKick: [],
     handle(events, camera) {
       for (const e of events) {
         switch (e.type) {
@@ -83,6 +85,7 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
             break;
           case 'kickStart':
             playKickSwing();
+            for (const f of fx.onKick) f();
             break;
           case 'kickLand':
             if (e.hits > 0) playKickImpact(e.hits);

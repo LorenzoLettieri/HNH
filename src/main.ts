@@ -115,6 +115,7 @@ const viewmodel = createViewmodel();
 viewmodel.setAspect(window.innerWidth / window.innerHeight);
 weaponFx.onShot.push(() => viewmodel.onShot());
 weaponFx.onReload.push(() => viewmodel.onReload());
+weaponFx.onKick.push(() => viewmodel.onKick());
 
 let atmosphereIndex = 0;
 applyAtmosphere(ATMOSPHERES[atmosphereIndex]);

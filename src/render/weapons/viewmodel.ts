@@ -13,6 +13,7 @@ import { directionFromAngles } from '../sky';
 import { PixelCanvas } from '../props/pixelCanvas';
 import { createRevolverModel } from './revolverModel';
 import { createHands, poseLeftHand } from './hands';
+import { createBoot, poseBoot } from './boot';
 
 /** Mutable so the debug panel can change them. */
 export const viewmodelSettings = {
@@ -34,6 +35,8 @@ export const viewmodelSettings = {
   bob: 0.012,
   /** Duration of the left-hand fanning swipe, seconds (if longer than the fire interval, fast shooting restarts it midway). */
   fanDuration: 0.4,
+  /** Camera dip when the boot lands, radians (visual only). */
+  kickViewPunch: 0.03,
 };
 
 /** Smoothly moves `current` toward `target` (same exponential easing as cameraFeel). */
@@ -66,6 +69,8 @@ export interface Viewmodel {
   camera: THREE.PerspectiveCamera;
   onShot(): void;
   onReload(): void;
+  /** The kick started: swing the boot (see boot.ts). */
+  onKick(): void;
   applyAtmosphere(a: Atmosphere): void;
   setAspect(aspect: number): void;
   /**
@@ -105,6 +110,13 @@ export function createViewmodel(): Viewmodel {
   holder.add(hands.left);
   let fanTime = 1; // 0..1 progress of the fanning swipe (≥ 1 = idle)
   scene.add(holder);
+
+  // The kicking leg: directly in the scene (not in the holder), so the gun's
+  // sway and bob don't shake it.
+  const boot = createBoot();
+  scene.add(boot);
+  let kickTime = Infinity; // seconds since the kick started (Infinity = none)
+  let kickPunched = true; // the camera dip of this kick already happened
 
   const flash = new THREE.Sprite(
     new THREE.SpriteMaterial({
@@ -151,6 +163,10 @@ export function createViewmodel(): Viewmodel {
     },
     onReload() {
       reloadTime = 0;
+    },
+    onKick() {
+      kickTime = 0;
+      kickPunched = false;
     },
     applyAtmosphere(a) {
       ambient.color.set(a.ambientSky);
@@ -210,6 +226,16 @@ export function createViewmodel(): Viewmodel {
       poseLeftHand(hands.left, fanTime);
       hands.left.position.y -= reload * 0.15; // tucked away during the reload
 
+      // --- Kick: the boot swings out; the gun is pulled aside to make room ---
+      // (the body twists when you kick). At the moment of contact, a small
+      // camera dip: the "weight" of the impact.
+      kickTime += dt;
+      const legOut = poseBoot(boot, kickTime);
+      if (!kickPunched && kickTime >= tuning.kickWindup) {
+        kickPunched = true;
+        viewKick -= s.kickViewPunch;
+      }
+
       // --- Sway: the gun lags behind when you turn the mouse ---
       swayX = approach(swayX, THREE.MathUtils.clamp(dYaw * s.sway, -0.04, 0.04), 12, dt);
       swayY = approach(swayY, THREE.MathUtils.clamp(-dPitch * s.sway, -0.04, 0.04), 12, dt);
@@ -230,14 +256,14 @@ export function createViewmodel(): Viewmodel {
 
       // --- Compose the final pose ---
       holder.position.set(
-        s.x + swayX + bobX - reload * 0.04 - slideTilt * 0.02,
-        s.y + swayY + bobY + fallOffset - reload * 0.07 - slideTilt * 0.03,
+        s.x + swayX + bobX - reload * 0.04 - slideTilt * 0.02 + legOut * 0.04,
+        s.y + swayY + bobY + fallOffset - reload * 0.07 - slideTilt * 0.03 - legOut * 0.05,
         s.z + kick * 0.05,
       );
       holder.rotation.set(
         kick * s.recoil + reload * 0.4 - swayY * 2,
         -0.04 + swayX * 2,
-        reload * 1.1 + slideTilt * 0.35,
+        reload * 1.1 + slideTilt * 0.35 - legOut * 0.25,
       );
       return viewKick;
     },
