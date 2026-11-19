@@ -11,6 +11,8 @@
 // Shooting is a tiny state machine:
 //   fly ──(cooldown over, you're in range and in sight)──▶ charge
 //   charge ──(after eyebatChargeTime)──▶ fires a fireball ──▶ fly
+// The fireball is aimed where you WILL be (see fire()): moving is not
+// enough, you must change direction.
 // The charge is the WARNING (docs/DESIGN.md, "leggibilità"): you see the eye
 // blaze and hear the whine before the shot, so getting hit is your fault.
 import { moveAndCollide, overlapsAny } from './collision';
@@ -150,31 +152,69 @@ function canSee(b: EyebatEntity, game: GameState, world: World): boolean {
 }
 
 /**
- * Fires a fireball at where you ARE now (your chest), without leading the
- * shot. On purpose: if you keep moving it flies behind you. Standing still
- * is what gets you hit, which is exactly the pressure we want (movement as defense).
+ * Fires a fireball where you WILL be ("leading the shot", like a hunter
+ * aiming ahead of a flying duck). Keep going straight at the same speed and
+ * it gets you; change direction after the warning and it misses.
+ * How far ahead it aims is tuning.eyebatLeadFactor (0 = where you are now).
  */
 function fire(b: EyebatEntity, game: GameState, events: SimEvent[]): void {
   const p = game.player;
-  const ty = p.y + currentHeight(p) * 0.6;
-  const dx = p.x - b.x;
-  const dy = ty - eyeY(b);
-  const dz = p.z - b.z;
-  const d = Math.hypot(dx, dy, dz) || 1;
+  const sx = b.x;
+  const sy = eyeY(b);
+  const sz = b.z;
   const v = tuning.eyebatProjectileSpeed;
+  // Where you are now (your chest)...
+  const px = p.x;
+  const py = p.y + currentHeight(p) * 0.6;
+  const pz = p.z;
+  // ...and when the ball would reach you if you kept your current velocity.
+  // Only the horizontal velocity: a jump is a curve, not a straight line,
+  // and leading it would make the ball fly over your head.
+  const t = interceptTime(px - sx, py - sy, pz - sz, p.vx, 0, p.vz, v) * tuning.eyebatLeadFactor;
+  const dx = px + p.vx * t - sx;
+  const dy = py - sy;
+  const dz = pz + p.vz * t - sz;
+  const d = Math.hypot(dx, dy, dz) || 1;
   const id = game.nextEntityId++; // same counter as the entities: ids are unique game-wide
   game.projectiles.push({
     id,
-    x: b.x,
-    y: eyeY(b),
-    z: b.z,
-    px: b.x,
-    py: eyeY(b),
-    pz: b.z,
+    x: sx,
+    y: sy,
+    z: sz,
+    px: sx,
+    py: sy,
+    pz: sz,
     vx: (dx / d) * v,
     vy: (dy / d) * v,
     vz: (dz / d) * v,
     ticksLeft: secondsToTicks(tuning.projectileLifetime),
   });
   events.push({ type: 'eyebatShot', entityId: b.id, projectileId: id });
+}
+
+/**
+ * Intercept: after how many seconds can a ball fired at `speed` meet a target
+ * that is now at offset (rx, ry, rz) and moves with velocity (vx, vy, vz)?
+ * The target at time t is at r + v·t; the ball covers speed·t. They meet when
+ *     |r + v·t| = speed·t
+ * Squaring both sides gives a quadratic equation  a·t² + b·t + c = 0  with
+ *     a = v·v − speed²,   b = 2·(r·v),   c = r·r
+ * (the "·" between vectors is the dot product). We want the smallest
+ * positive solution. No solution (target faster than the ball, running
+ * away): we fall back to the time it takes to cover the current distance.
+ */
+function interceptTime(rx: number, ry: number, rz: number, vx: number, vy: number, vz: number, speed: number): number {
+  const a = vx * vx + vy * vy + vz * vz - speed * speed;
+  const b = 2 * (rx * vx + ry * vy + rz * vz);
+  const c = rx * rx + ry * ry + rz * rz;
+  const fallback = Math.sqrt(c) / speed;
+  if (Math.abs(a) < 1e-6) return b < 0 ? -c / b : fallback; // target as fast as the ball: linear
+  const disc = b * b - 4 * a * c;
+  if (disc < 0) return fallback;
+  const sq = Math.sqrt(disc);
+  const t1 = (-b - sq) / (2 * a);
+  const t2 = (-b + sq) / (2 * a);
+  const t = Math.min(t1 > 0 ? t1 : Infinity, t2 > 0 ? t2 : Infinity);
+  // Capped: never aim absurdly far ahead (projectileLifetime would expire anyway).
+  return Number.isFinite(t) ? Math.min(t, 3) : fallback;
 }

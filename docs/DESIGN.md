@@ -119,7 +119,10 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
 - **Sparo del Malocchio**: ogni ~2,5–3,5 s, solo se ti vede (entro 30 m). **Preavviso di 0,7 s**
   (pupilla dilatata, iride sempre più accesa, sibilo crescente; intanto rallenta: è il momento
   migliore per colpirgli la pupilla). Palla di fuoco a **12 m/s** (tu corri a 8+), 15 danni,
-  mirata dove sei **adesso**, senza anticipo: se ti muovi ti passa dietro, se stai fermo ti prende.
+  **mirata dove sarai** (tiro d'anticipo, `eyebatLeadFactor` 0,9): se continui dritto o in tondo
+  alla stessa velocità ti prende. Per schivarla devi **cambiare direzione** dopo il preavviso
+  (salto, slide, inversione). Prima mirava dove eri: bastava muoversi, e al playtest girare in
+  tondo rendeva immortali (0 colpi su 190 col bot di prova).
 - **Niente rigenerazione della salute.** [DA DECIDERE] drop casuali dei nemici (medikit o simili).
 
 ## 4. La mappa [DECISO: cittadina all'aperto]

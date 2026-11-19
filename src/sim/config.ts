@@ -235,8 +235,16 @@ export const tuning = {
    * a whine rises. It slows down while charging: the best moment to hit the pupil.
    */
   eyebatChargeTime: 0.7,
-  /** Speed of its fireball, m/s. Slower than you (8 m/s): strafe and it misses. */
+  /** Speed of its fireball, m/s. Slower than you (8 m/s): you can't outrun it, but you can dodge it. */
   eyebatProjectileSpeed: 12,
+  /**
+   * How much it LEADS the shot: 0 = aims where you are now (only hits you if
+   * you stand still), 1 = aims exactly where you'll be if you keep going
+   * straight at the same speed. In between, it aims part of the way.
+   * High = running in circles or in a straight line gets you hit: to dodge
+   * you must CHANGE direction (jump, slide, cut back) after the warning.
+   */
+  eyebatLeadFactor: 0.9,
   eyebatProjectileDamage: 15,
   /** Push given to the player by a fireball, m/s. */
   eyebatProjectileKnockback: 3,

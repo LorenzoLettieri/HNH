@@ -127,6 +127,11 @@ export function createDebugPanel(options: {
   eyebat.number(tuning, 'eyebatHoverHeight', 0, 15, 0.5);
   eyebat.number(tuning, 'eyebatOrbitSpeed', 0, 2, 0.05);
   eyebat.number(tuning, 'eyebatSeparation', 0, 6, 0.1);
+  eyebat.number(tuning, 'eyebatLeadFactor', 0, 1.2, 0.05);
+  eyebat.number(tuning, 'eyebatShootInterval', 0.5, 6, 0.1);
+  eyebat.number(tuning, 'eyebatChargeTime', 0.1, 2, 0.05);
+  eyebat.number(tuning, 'eyebatProjectileSpeed', 4, 40, 0.5);
+  eyebat.number(tuning, 'eyebatProjectileDamage', 1, 100, 1);
   eyebat.button('Copy values', () => copyToClipboard(toSource(tuning)));
 
   // --- Camera feel ---
