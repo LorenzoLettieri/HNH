@@ -212,6 +212,7 @@ export function createDebugPanel(options: {
   hound.number(tuning, 'houndRetreatTime', 0, 4, 0.1);
   hound.number(tuning, 'houndHitWidth', 0.3, 2.5, 0.05);
   hound.number(tuning, 'houndHitHeight', 0.3, 2.5, 0.05);
+  hound.number(tuning, 'houndHeadHeight', 0.2, 1.2, 0.05);
   hound.number(tuning, 'houndJumpHeight', 0, 2, 0.05);
   hound.number(tuning, 'houndBiteRange', 0.5, 3, 0.05);
   hound.number(tuning, 'houndBiteDamage', 1, 100, 1);

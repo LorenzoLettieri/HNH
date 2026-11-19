@@ -337,8 +337,14 @@ export const tuning = {
   /** Collider height, meters: a big dog, about half your height. */
   houndHeight: 1.0,
   /** HITBOX width and height (what bullets hit), meters: generous, like the ghoul's. */
-  houndHitWidth: 1.2,
-  houndHitHeight: 1.2,
+  houndHitWidth: 1.3,
+  houndHitHeight: 1.1,
+  /**
+   * A hit above this height (from the paws) is a headshot ×3. From the side
+   * the head and ears stick up above the back (~0.7 m); from the front the
+   * head is the top of the sprite. One number works for every view.
+   */
+  houndHeadHeight: 0.7,
   /** Max height of an obstacle it hops over, meters (a bit more than the ghoul: it's a jumper). */
   houndJumpHeight: 1.2,
   /** Bites when you're closer than this, meters. */

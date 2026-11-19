@@ -74,7 +74,7 @@ con un chiaro preavviso.
 | Nemico (provvisorio) | Ruolo | Pressione |
 |---|---|---|
 | **Ghoul** | Carne da cannone (ispirato agli zombie di CoD Zombies): cammina verso di te, **scavalca gli ostacoli bassi e aggira quelli alti**; in futuro si arrampicherà | A terra non sei mai al sicuro; un muretto non basta |
-| **Cane infernale** [IN CORSO: manca lo sprite] | **Agguato**: ti pedina a distanza e scatta quando non lo guardi (dettagli sotto). Pesa **3** nelle ondate, dall'ondata 5 | Devi guardarti alle spalle: nessun angolo morto è sicuro |
+| **Cane infernale** [FATTO, da tarare; suoni provvisori] | **Agguato**: ti pedina a distanza e scatta quando non lo guardi (dettagli sotto). Pesa **3** nelle ondate, dall'ondata 5 | Devi guardarti alle spalle: nessun angolo morto è sicuro |
 | **Avvoltoio** | Volante, gira in cerchio e picchia in picchiata | Raggiunge ogni tetto, obbliga a guardare in alto |
 | **Malocchio** [FATTO] | Occhio-pipistrello volante: orbita attorno a te a distanza (10 m, 5 m più in alto) e spara proiettili lenti. **Pupilla = punto critico** (×3, come la testa del ghoul) | Il movimento diventa difesa; obbliga a guardare in alto e a mirare con precisione |
 | **Fuoco fatuo** | Volante a distanza, proiettili lenti (forse superato dal Malocchio) | Il movimento diventa difesa |
@@ -155,6 +155,10 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
     da più di 7 s (fissarlo non basta a tenerlo lontano per sempre).
   - **Morso** (15 danni, preavviso 0,25 s), poi **scappa** per 1,2 s e ricomincia.
   - Non si arrampica: se sei su un tetto raggiungibile solo arrampicandosi, ti aspetta sotto.
+  - **Aspetto**: segugio scheletrico color carbone, costole e spina dorsale scoperte, cornetti, collare
+    d'ottone chiodato, crepe di brace che si accendono quando carica. Sprite con **tre viste** (lato,
+    fronte, retro) scelte dall'angolo, perché ti gira attorno e va visto di profilo.
+  - **Critico**: colpi sopra **0,7 m** (testa e orecchie) = ×3, come la testa del ghoul.
   - Bot di prova (non spara mai), 3 cani: ululato in media a ~90° da dove guardi (di lato o alle
     spalle), a 10–20 m; tra ululato e morso **~0,8–1,3 s**: il tempo per girarsi e sparare.
     Fermo: 525 danni in 40 s; correndo in tondo: 150.

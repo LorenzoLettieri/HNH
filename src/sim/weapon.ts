@@ -159,9 +159,11 @@ function trace(
   // - ghoul: the bullet hit the top of it (head and hat). Checking the
   //   height of the impact point is enough: no second hitbox.
   // - eye-bat: the bullet passed through the pupil (see pupilHit).
+  // - hound: same as the ghoul, above houndHeadHeight (head and ears).
   const headshot =
     target !== null &&
     ((target.type === 'ghoul' && hit!.y - target.y > tuning.ghoulHeadHeight) ||
+      (target.type === 'hound' && hit!.y - target.y > tuning.houndHeadHeight) ||
       (target.type === 'eyebat' && pupilHit(target, ox, oy, oz, dx, dy, dz)));
 
   const to = hit
