@@ -14,10 +14,10 @@ import { createPlayer, respawn, stepPlayer, type PlayerState } from './player';
 import { stepWeapon } from './weapon';
 import { stepKick } from './kick';
 import { blockPlayerWithBodies } from './bodyBlock';
-import { dropFromKills, stepPickups, type Pickup } from './pickups';
+import { createPickup, dropFromKills, stepPickups, type Pickup } from './pickups';
 import { createStyle, isHighNoon, stepStyle, styleMultiplier, type StyleState } from './style';
 import type { World } from './world';
-import { secondsToTicks, tuning } from './config';
+import { tuning } from './config';
 
 export interface GameState {
   tick: number;
@@ -96,7 +96,7 @@ export function stepGame(
   // tick): a kill counts with the rank you had when you pulled the trigger,
   // not with the rank that same kill is about to give you.
   scoreHits(game.stats, playerHits, styleMultiplier(game.style));
-  dropFromKills(game, world, playerHits);
+  dropFromKills(game, playerHits);
 
   // Navigation: where's the player on the graph? (Only while standing:
   // in mid-jump we keep the last known node.) Checked 4 times a second;
@@ -126,7 +126,7 @@ export function stepGame(
   blockPlayerWithBodies(game.player, game.entities, world, dt);
   game.projectiles = stepProjectiles(game.projectiles, game.player, world, dt, events);
   stepWaves(game, world, events);
-  stepPickups(game, events);
+  stepPickups(game, world, dt, events);
   // Last: it needs the whole tick (your hits come first, the enemies' hits on you later).
   stepStyle(game.style, events, tickEvents);
 
@@ -180,14 +180,8 @@ export function dropPickupsInFront(game: GameState): void {
   const kinds = ['coin', 'bullets', 'shells', 'medkit'] as const; // the coin on the left: the gun doesn't hide it
   kinds.forEach((kind, i) => {
     const side = i - 1.5; // -1.5 .. +1.5: from left to right
-    game.pickups.push({
-      id: game.nextEntityId++,
-      kind,
-      x: p.x + fx * 4 - fz * side * 1.2,
-      y: p.y,
-      z: p.z + fz * 4 + fx * side * 1.2,
-      ticksLeft: secondsToTicks(kind === 'coin' ? tuning.coinLifetime : tuning.dropLifetime),
-      value: kind === 'coin' ? tuning.coinValue : 0,
-    });
+    const x = p.x + fx * 4 - fz * side * 1.2;
+    const z = p.z + fz * 4 + fx * side * 1.2;
+    game.pickups.push(createPickup(game, kind, x, p.y + 0.5, z, kind === 'coin' ? tuning.coinValue : 0));
   });
 }
