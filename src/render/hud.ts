@@ -1,6 +1,6 @@
 // HUD: health plate (healthPlate.ts), red flash, direction arc (damageIndicator.ts)
 // and head snap (cameraFeel.ts) when you get hit, low health (lowHealth.ts),
-// wave number, score, wave banners, the style meter (styleMeter.ts)
+// wave number, enemies left, fps, speed, score, wave banners, the style meter (styleMeter.ts)
 // and the death summary.
 // Plain HTML/CSS elements (see index.html), updated from here.
 import { tuning } from '../sim/config';
@@ -8,6 +8,8 @@ import type { SimEvent } from '../sim/events';
 import type { PlayerState } from '../sim/player';
 import { playBell, playPickup, playPlayerHurt } from '../audio/sfx';
 import type { GameState } from '../sim/game';
+import { horizontalSpeed } from '../sim/player';
+import { isEnemy } from '../sim/entities';
 import { updateStyleMeter } from './styleMeter';
 import { updateHighNoon } from './highNoon';
 import { updateHealthPlate } from './healthPlate';
@@ -25,6 +27,10 @@ const waveHud = document.getElementById('wave')!;
 const waveBox = document.getElementById('wave-box')!;
 const scoreHud = document.getElementById('score')!;
 const killsHud = document.getElementById('kills')!;
+const enemiesHud = document.getElementById('enemies-left')!;
+const fpsHud = document.getElementById('fps')!;
+const speedHud = document.getElementById('speed')!;
+let fps = 60; // smoothed
 const banner = document.getElementById('banner')!;
 const bannerTitle = document.getElementById('banner-title')!;
 const bannerSub = document.getElementById('banner-sub')!;
@@ -127,6 +133,17 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
   waveHud.textContent = String(w.number);
   scoreHud.textContent = String(game.stats.score);
   killsHud.textContent = `${game.stats.kills} UCCISIONI`;
+  // Enemies alive right now (corpses still on the ground don't count). A "+"
+  // while the wave is still spawning: more are coming than you can see here.
+  let alive = 0;
+  for (const e of game.entities) if (isEnemy(e) && e.state !== 'dead') alive++;
+  enemiesHud.textContent = `${alive}${w.phase === 'active' && w.budgetLeft > 0 ? '+' : ''} NEMICI`;
+  // Frames per second, averaged (exponential average: each frame moves it 5%
+  // of the way), otherwise the number jitters too fast to read. dt = 0 while paused.
+  if (dt > 0) fps += (1 / dt - fps) * 0.05;
+  fpsHud.textContent = `${Math.round(fps)} FPS`;
+  // Speed on the ground (m/s), the number to watch when bunny hopping.
+  speedHud.textContent = `${horizontalSpeed(player).toFixed(1)} m/s`;
   if (w.phase === 'break' && w.number > 0 && w.breakTicks < 60 * 5 && bannerTime <= 0 && deathTime <= 0) {
     // A new stamp only when the digit changes, not every frame.
     const n = Math.ceil(w.breakTicks / 60);

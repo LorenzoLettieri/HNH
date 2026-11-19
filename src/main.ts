@@ -5,10 +5,9 @@ import { createMenu } from './menu';
 import { createDebugPanel } from './debug/debugPanel';
 import { buildCommand, updateLook, view } from './controls';
 import { TICK_DT } from './sim/config';
-import { copyPlayer, createPlayer, horizontalSpeed } from './sim/player';
+import { copyPlayer, createPlayer } from './sim/player';
 import { createGame, spawnBullInFront, spawnEyebatInFront, spawnHoundInFront, dropPickupsInFront, stepGame } from './sim/game';
 import { jumpToWave } from './sim/waves';
-import { STYLE_RANKS, styleRank } from './sim/style';
 import { DEFAULT_LEVEL, LEVELS } from './levels';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
 import { updateCameraFeel } from './render/cameraFeel';
@@ -33,7 +32,6 @@ import { createHitboxDebug } from './render/hitboxDebug';
 import { BIG_BODY, getFlowField, getNavGraph } from './sim/nav';
 import { createViewmodel } from './render/weapons/viewmodel';
 import type { SimEvent } from './sim/events';
-import { isEnemy } from './sim/entities';
 import { initAudio, setAudioPaused } from './audio/sfx';
 import { applyParticles, createParticles, updateParticles } from './render/particles';
 import { applyHeightFog } from './render/heightFog';
@@ -185,7 +183,6 @@ camera.rotation.order = 'YXZ';
 // Saved settings first, so the menu shows (and the game uses) the right values.
 loadSettings();
 const menu = createMenu({ onPlay: () => requestLock(renderer.domElement) });
-const hud = document.getElementById('hud')!;
 
 // --- Pause ------------------------------------------------------------------
 // Esc already makes the browser release the mouse (pointer lock): we use that
@@ -241,23 +238,6 @@ let lastViewYaw = view.yaw;
 let lastViewPitch = view.pitch;
 let lastTime = performance.now();
 
-// --- Performance readout ---------------------------------------------------------
-// "Measure first, optimize later": these numbers tell where the time goes.
-// - sim: milliseconds spent in the simulation ticks this frame;
-// - render: milliseconds of JavaScript to SEND the frame to the GPU (the GPU's
-//   own work isn't measurable from here, but fps drops when it's too much);
-// - calls: draw calls, how many separate "draw this" requests went to the GPU.
-renderer.info.autoReset = false;
-const perf = { sim: 0, render: 0, calls: 0, fps: 60 };
-function perfText(frameTime: number, enemies: number): string {
-  // Smoothed fps (exponential average), otherwise the number jitters unreadably.
-  if (frameTime > 0) perf.fps += (1 / frameTime - perf.fps) * 0.05;
-  return (
-    `${perf.fps.toFixed(0)} fps  sim ${perf.sim.toFixed(2)} ms  render ${perf.render.toFixed(2)} ms  ` +
-    `${perf.calls} draw calls  ${enemies} enemies`
-  );
-}
-
 renderer.setAnimationLoop((now: number) => {
   // Seconds since the previous frame, capped so a hiccup (e.g. switching tab)
   // doesn't trigger hundreds of ticks in a row ("spiral of death").
@@ -270,7 +250,6 @@ renderer.setAnimationLoop((now: number) => {
   // accumulator) and everything animated by the game gets dt = 0: the scene
   // freezes like a photo, but keeps being drawn (the overlay sits on top).
   const dt = paused ? 0 : frameTime;
-  const simStart = performance.now();
   accumulator += dt;
   const events: SimEvent[] = [];
   while (accumulator >= TICK_DT) {
@@ -284,7 +263,6 @@ renderer.setAnimationLoop((now: number) => {
 
   // How far we are between the previous tick (0) and the current one (1).
   const alpha = accumulator / TICK_DT;
-  perf.sim = performance.now() - simStart;
   // View angles come straight from the mouse, not from the simulation:
   // interpolating them would add a tick of delay to aiming.
   // (rotation.z, the roll, is set by the camera feel below.)
@@ -309,20 +287,6 @@ renderer.setAnimationLoop((now: number) => {
   // The sky follows the camera: you can never get closer to it.
   sky.position.copy(camera.position);
 
-  const state = player.sliding ? 'SLIDE' : player.onGround ? (player.crouched ? 'CROUCH' : 'GROUND') : 'AIR';
-  // Style meter, raw numbers for tuning (the real meter is drawn by render/styleMeter.ts).
-  const style = game.style;
-  const styleText =
-    style.highNoonTicks > 0
-      ? `style HIGH NOON  ${(style.highNoonTicks * TICK_DT).toFixed(1)} s left`
-      : style.chainTicks > 0
-      ? `style ${STYLE_RANKS[styleRank(style.points)].letter}  ${style.points} pts  chain ${(style.chainTicks * TICK_DT).toFixed(1)} s`
-      : 'style -';
-  hud.textContent =
-    `${horizontalSpeed(player).toFixed(1)} m/s  ${state}  walljumps ${player.wallJumpsLeft}\n` +
-    `${styleText}\n` +
-    perfText(frameTime, game.entities.filter(isEnemy).length);
-
   // Weapon events of this frame → effects and sounds.
   weaponFx.handle(events, camera);
   weaponFx.update(dt);
@@ -343,12 +307,5 @@ renderer.setAnimationLoop((now: number) => {
   updateFireLights(now / 1000);
   props.update(now / 1000);
   updateParticles(dt, now / 1000, camera, post.sceneSize.y);
-  // renderer.info counts draw calls; it normally resets at every render()
-  // call, but a frame here is many renders (scene, gun, post passes): we
-  // reset it ourselves once per frame to get the total.
-  renderer.info.reset();
-  const renderStart = performance.now();
   post.render(scene, camera, viewmodel);
-  perf.render = performance.now() - renderStart;
-  perf.calls = renderer.info.render.calls;
 });

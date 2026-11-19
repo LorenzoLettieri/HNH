@@ -191,8 +191,10 @@
          A dark smudge behind each top corner, like the bottom ones. */
       #hud-smudge-top-left { left: -120px; top: -80px; bottom: auto; }
       #hud-smudge-top-right { right: -120px; top: -80px; bottom: auto; }
-      #wave-box { position: fixed; left: 28px; top: 16px; pointer-events: none; font-family: 'Rye', Georgia, serif; }
+      #hud-top-left { position: fixed; left: 28px; top: 16px; pointer-events: none; font-family: 'Rye', Georgia, serif; }
       #wave-box[hidden] { display: none; } /* before the first wave */
+      #enemies-left { margin-top: 2px; }
+      #fps { margin-top: 6px; font-size: 11px; opacity: 0.7; }
       .hud-label { font-size: 13px; letter-spacing: 3px; color: #8a7a62; text-shadow: 2px 2px 0 #000, 0 0 8px #000; }
       /* Wave number: the round tally of CoD Zombies, in dried-blood red. */
       #wave {
@@ -285,12 +287,6 @@
         background: linear-gradient(to bottom, var(--top), var(--mid) 50%, var(--bottom));
       }
 
-      /* Debug readout (speed, style numbers, performance), top-center, small. */
-      #hud {
-        white-space: pre; /* the readout has several lines */
-        position: fixed; left: 50%; top: 8px; transform: translateX(-50%); color: #f0c080; opacity: 0.8;
-        font: bold 12px monospace; pointer-events: none; text-shadow: 1px 1px 0 #000;
-      }
     </style>
   </head>
   <body>
@@ -371,13 +367,13 @@
     <div id="hud-smudge-right" class="hud-smudge"></div>
     <div id="hud-smudge-top-left" class="hud-smudge"></div>
     <div id="hud-smudge-top-right" class="hud-smudge"></div>
-    <div id="hud"></div>
     <div id="crosshair"></div>
     <div id="hitmarker"></div>
     <div id="ammo-box"><div id="ammo-rounds"></div><div id="ammo-reserve"></div></div>
     <div id="hurt-arcs"></div>
     <div id="pickup-flash"></div>
     <div id="health-plate">
+      <div id="speed" class="hud-label"></div>
       <div id="health-number"></div>
       <div id="health-gauge"><div id="health-ghost"></div><div id="health-fill"></div></div>
     </div>
@@ -389,7 +385,10 @@
         <div class="death-stat"><div class="hud-label">PUNTI</div><div id="death-score"></div></div>
       </div>
     </div>
-    <div id="wave-box" hidden><div class="hud-label">ONDATA</div><div id="wave"></div></div>
+    <div id="hud-top-left">
+      <div id="wave-box" hidden><div class="hud-label">ONDATA</div><div id="wave"></div><div id="enemies-left" class="hud-label"></div></div>
+      <div id="fps" class="hud-label"></div>
+    </div>
     <div id="score-box"><div class="hud-label">PUNTI</div><div id="score"></div><div id="kills" class="hud-label"></div></div>
     <div id="banner"><div id="banner-title"></div><div id="banner-sub"></div></div>
     <div id="style-meter">
