@@ -26,6 +26,8 @@ import { createBullRenderer } from './render/enemies/bulls';
 import { createProjectileRenderer } from './render/projectiles';
 import { createPickupRenderer } from './render/pickups';
 import { createVendorRenderer } from './render/vendors';
+import { createShopMenu } from './render/shopMenu';
+import { shopInReach } from './sim/shop';
 import { updateHud } from './render/hud';
 import { updateAmmoHud } from './render/ammoHud';
 import { updateMoneyHud } from './render/moneyHud';
@@ -171,6 +173,28 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyV') spawnBullInFront(game);
   // J: one pickup of each kind (bullets, shells, medkit).
   if (e.code === 'KeyJ') dropPickupsInFront(game);
+  // E: open/close the shop, if a vendor is within reach (src/sim/shop.ts).
+  // Opening frees the mouse (to click in the panel); closing grabs it back.
+  // A key press counts as a "user gesture", so the browser allows the lock.
+  if (e.code === 'KeyE') {
+    if (shopMenu.isOpen) {
+      shopMenu.close();
+      requestLock(renderer.domElement);
+    } else {
+      const shop = paused ? null : shopInReach(player, world);
+      if (shop) {
+        shopMenu.open(shop.kind); // first: when the lock is released, updatePause must know
+        document.exitPointerLock();
+      }
+    }
+  }
+  // Esc with the shop open: the mouse is already free, so the browser doesn't
+  // use Esc for itself and we get it. It closes the shop and pauses (Esc = pause,
+  // as always). It can't grab the mouse back: Esc doesn't count as a gesture.
+  if (e.code === 'Escape' && shopMenu.isOpen) {
+    shopMenu.close();
+    updatePause();
+  }
   if (e.code === 'Backquote') {
     debugPanel.toggle();
     document.exitPointerLock();
@@ -187,14 +211,22 @@ camera.rotation.order = 'YXZ';
 // Saved settings first, so the menu shows (and the game uses) the right values.
 loadSettings();
 const menu = createMenu({ onPlay: () => requestLock(renderer.domElement) });
+// The shop's panel. Clicking "Chiudi" is a gesture: it can grab the mouse back.
+const shopMenu = createShopMenu({
+  onCloseClick: () => {
+    shopMenu.close();
+    requestLock(renderer.domElement);
+  },
+});
 
 // --- Pause ------------------------------------------------------------------
 // Esc already makes the browser release the mouse (pointer lock): we use that
-// as the pause signal. No mouse = no game. Exception: with the debug panel
-// open the game keeps running, so you can tweak values and watch the result.
+// as the pause signal. No mouse = no game. Exceptions: with the debug panel
+// open the game keeps running, so you can tweak values and watch the result;
+// and with the SHOP open (docs/DESIGN.md: buying is a race against the horde).
 let paused = true; // until the first click
 function updatePause(): void {
-  paused = !isPointerLocked() && !debugPanel.visible;
+  paused = !isPointerLocked() && !debugPanel.visible && !shopMenu.isOpen;
   setAudioPaused(paused);
   menu.setOpen(paused);
 }
@@ -202,6 +234,8 @@ initInput(renderer.domElement, (locked) => {
   if (locked) {
     initAudio(); // audio is allowed only after a user gesture
     menu.markStarted(); // from now on, the menu means "paused"
+    // Got the mouse back while the shop was open (a click on the game): close it.
+    if (shopMenu.isOpen) shopMenu.close();
   }
   updatePause();
 });
@@ -303,6 +337,7 @@ renderer.setAnimationLoop((now: number) => {
   projectiles.update(game.projectiles, events, camera, alpha, dt);
   pickups.update(game.pickups, camera, alpha, now / 1000);
   vendors.update(camera, now / 1000);
+  shopMenu.update(player.money, shopInReach(player, world), paused);
   updateHud(game, events, dt);
   updateThreats(game.entities, player, camera, dt);
   navDebug.update(getFlowField(getNavGraph(world), game.navGoal));

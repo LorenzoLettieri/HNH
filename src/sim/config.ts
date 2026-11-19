@@ -204,6 +204,13 @@ export const tuning = {
   ammoPickupBullets: 18,
   /** Shotgun shells in a 'shells' drop. */
   ammoPickupShells: 5,
+  // --- Shops (see shop.ts) ---
+  /** How close to a vendor you must be to trade (horizontal distance, meters). The counter is ~1.6 m from him. */
+  shopReach: 3,
+  /** ...and how far above/below him you can be: same floor only. */
+  shopReachHeight: 1.5,
+  /** Price of the shotgun at the armory, in vildenaro (a ghoul drops 10, × the style multiplier). */
+  shotgunPrice: 400,
   // --- Vildenaro: the coins every enemy drops (see dropCoins in pickups.ts) ---
   /** Coins dropped per point of enemy weight: ghoul 1 coin, eye-bat 2, hound 3, bull 5. ALWAYS, not a chance. */
   coinsPerWeight: 1,

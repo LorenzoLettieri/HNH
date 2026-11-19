@@ -421,9 +421,14 @@ Punteggio e moneta sono **separati**:
   in playtest.)
 - [PROPOSTO] **Emporio** per i potenziamenti (ci si entra già, e c'è un bancone con la lanterna).
   Lo shop non è un rifugio: i ghoul ti seguono dentro.
-- **Menu col mouse libero** [DECISO], come il buy menu di CS:GO: premendo E il cursore si libera e si
-  clicca; intanto non miri. Tecnico: oggi il gioco va in pausa quando il mouse non è catturato
-  (Pointer Lock), quindi il menu dello shop sarà un'eccezione a quella regola.
+- **Menu col mouse libero** [FATTO], come il buy menu di CS:GO: vicino al venditore compare
+  "E · COMMERCIA"; premendo E il cursore si libera e il pannello si apre a destra, **sopra il gioco
+  che continua** (niente velo scuro: vedi l'orda arrivare). Intanto non miri e non spari, ma **ti muovi
+  con WASD**. E (o "Chiudi") richiude e riprende il mouse; Esc chiude e mette in pausa, come sempre.
+  Se ti allontani col pannello aperto resta lì, grigio, con "Sei troppo lontano dal venditore" (chiuderlo
+  da solo metterebbe in pausa: il browser non ridà il mouse senza un click o un tasto).
+  Dentro: saluto del venditore, il tuo vildenaro, gli articoli col prezzo (rosso se non basta).
+  **Prezzo della doppietta: 400** [PROPOSTO, da tarare] (un ghoul ne lascia 10, × lo Stile).
 
 **Vildenaro come drop** [DECISO]
 - **Monete lasciate dai nemici**, raccolte passandoci sopra (prendono il posto delle vecchie "anime"):
@@ -514,7 +519,7 @@ futuro **poligono di tiro / tutorial**.
 5. **Vildenaro**: monete lasciate dai nemici + contatore nell'HUD; lo Stile moltiplica punti e vildenaro.
    [FATTO: monete, contatore, moltiplicatore]
 6. **Shop**: venditore (sprite), tasto E, menu che non mette in pausa, primo acquisto: la doppietta.
-   [IN CORSO: armeria e venditore fatti; poi tasto E e menu, poi l'acquisto della doppietta]
+   [IN CORSO: armeria, venditore, tasto E e menu fatti; poi l'acquisto della doppietta]
 7. Potenziamenti all'emporio.
 8. Lazo / rampino.
 

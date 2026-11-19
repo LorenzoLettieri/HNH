@@ -111,6 +111,8 @@ export function createDebugPanel(options: {
   drops.number(tuning, 'ammoPickupShells', 0, 12, 1);
   drops.number(tuning, 'coinsPerWeight', 0, 5, 1);
   drops.number(tuning, 'coinValue', 1, 100, 1);
+  drops.number(tuning, 'shopReach', 1, 6, 0.1);
+  drops.number(tuning, 'shotgunPrice', 0, 3000, 50);
   drops.number(tuning, 'dropBurstSpeedMin', 0, 10, 0.5);
   drops.number(tuning, 'dropBurstSpeedMax', 0, 10, 0.5);
   drops.number(tuning, 'dropBurstUp', 0, 15, 0.5);
