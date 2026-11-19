@@ -118,11 +118,13 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
 | 30+ | 200 | 4 colpi | 2 colpi |
 
   La salute **si ferma a ×4** (`waveHealthMaxMultiplier`): prima continuava a salire (all'ondata 50
-  un ghoul aveva 300 HP e un Malocchio 600, cioè spugne). Malocchio: 100 / 200 / 300 / **400**.
+  un ghoul aveva 300 HP e un Malocchio 600, cioè spugne). Il Malocchio ha la stessa tabella del ghoul.
 
 - La difficoltà delle prime ondate viene da **quantità, velocità, direzioni, tipi di nemico**;
   la salute alta arriva solo molto tardi. Nemici resistenti = **miniboss** (eventi, non la norma).
-- **Malocchio**: 100 di salute = **2 colpi al corpo, 1 nella pupilla**. Il critico si calcola
+- **Malocchio**: **stessa salute del ghoul** (50, stessi gradini), quindi stessi colpi per uccidere:
+  1 colpo nelle ondate 1–9, dalla 30 4 al corpo o 2 nella pupilla. La sua difficoltà è colpirlo
+  (piccolo, in alto, in movimento), non la resistenza. Il critico si calcola
   come distanza tra la traiettoria del proiettile e il centro dell'occhio (lo sprite guarda
   sempre verso di te, quindi il centro visto da te è la pupilla): raggio 0,15 m.
 - **Sparo del Malocchio**: ogni ~2,5–3,5 s, solo se ti vede (entro 30 m). **Preavviso di 0,7 s**
@@ -197,12 +199,14 @@ partita. Il ghoul pesa **1**, il Malocchio **2** e compare **dall'ondata 3** (`e
 le prime due ondate sono di soli ghoul, per scaldarsi. Un futuro bruto potrebbe pesare 5.
 Il caso usa un generatore con **seed** (deterministico: stesso seed = stessa partita).
 
-| Ondata | Budget (nemici) | Corridori (tra i ghoul) | Salute ghoul / Malocchio |
+| Ondata | Budget (peso) | Corridori (tra i ghoul) | Salute (ghoul = Malocchio) |
 |---|---|---|---|
-| 1 | 6 | 0 | 50 / 100 |
-| 4 | 13 | ~10% | 50 / 100 |
-| 8 | 27 | ~50% | 50 / 100 |
-| 10 | 36 | 60% | 100 / 200 |
+| 1 | 6 | 0 | 50 |
+| 4 | 13 | ~10% | 50 |
+| 8 | 27 | ~50% | 50 |
+| 10 | 36 | 60% | 100 |
+| 20 | 98 | ~73% | 150 |
+| 35+ | 247+ | 90% | 200 |
 
 - Peso vivo insieme: 6 + 2·ondata (**max 40**, raggiunto all'ondata 17; prima era 24, raggiunto
   all'ondata 9, e da lì la pressione non cresceva più). La salute di tutti i nemici sale a gradini

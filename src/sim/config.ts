@@ -235,10 +235,11 @@ export const tuning = {
 
   // --- Malocchio (flying eye-bat; AI in src/sim/eyebat.ts) ---
   /**
-   * Health: 2 body shots, 1 in the pupil (50 × 3 = 150). Breakpoints, see
-   * docs/DESIGN.md: it's a "hit the pupil" enemy, not a sponge.
+   * Health: the SAME as the ghoul, so it follows the same breakpoints (see
+   * docs/DESIGN.md): 1 shot in waves 1-9; from wave 30, 4 body shots or 2 in
+   * the pupil. Its difficulty is hitting it (small, high, moving), not soaking bullets.
    */
-  eyebatHealth: 100,
+  eyebatHealth: 50,
   /** Radius of the round body (the eye), meters. Its hitbox is a cube this wide ×2. */
   eyebatRadius: 0.4,
   /**
