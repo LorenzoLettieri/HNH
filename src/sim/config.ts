@@ -608,6 +608,11 @@ export const tuning = {
   styleHeadshotKill: 30,
   /** Style points lost per point of damage taken (ghoul claw 20 → 60 points). */
   styleHurtPerDamage: 3,
+  /**
+   * HIGH NOON, the climax: when you reach the top rank, for this many seconds
+   * the guns never run dry (no reloading, just shoot). Then the style starts over from zero.
+   */
+  styleHighNoonTime: 5,
 };
 
 /** Converts a duration in seconds to a whole number of ticks. */

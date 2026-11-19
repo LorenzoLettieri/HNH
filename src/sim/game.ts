@@ -14,7 +14,7 @@ import { createPlayer, respawn, stepPlayer, type PlayerState } from './player';
 import { stepWeapon } from './weapon';
 import { stepKick } from './kick';
 import { dropFromKills, stepPickups, type Pickup } from './pickups';
-import { createStyle, stepStyle, type StyleState } from './style';
+import { createStyle, isHighNoon, stepStyle, type StyleState } from './style';
 import type { World } from './world';
 import { secondsToTicks, tuning } from './config';
 
@@ -87,7 +87,8 @@ export function stepGame(
   }
   stepPlayer(game.player, cmd, world, dt);
   const firstNewEvent = events.length;
-  stepWeapon(game.player, cmd, world, game.entities, events);
+  // During HIGH NOON the guns are bottomless (the weapon doesn't know why: it only gets the flag).
+  stepWeapon(game.player, cmd, world, game.entities, events, isHighNoon(game.style));
   stepKick(game.player, cmd, world, game.entities, events);
   const playerHits = events.slice(firstNewEvent);
   scoreHits(game.stats, playerHits);

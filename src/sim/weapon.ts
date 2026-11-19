@@ -12,6 +12,9 @@
 // barrels) and the spare ones in your pockets (`p.reserve`). Firing uses the
 // first, reloading moves the second into the first. The pockets are refilled
 // only by pickups: whoever stands still runs dry.
+//
+// BOTTOMLESS (the HIGH NOON climax, see style.ts): the gun in your hands is
+// always full and firing doesn't use rounds. No reloading: you just shoot.
 import type { InputCommand } from './command';
 import { secondsToTicks, tuning } from './config';
 import type { SimEvent } from './events';
@@ -50,11 +53,21 @@ export function stepWeapon(
   world: World,
   entities: Entity[],
   events: SimEvent[],
+  /** HIGH NOON: the magazine never empties. */
+  bottomless = false,
 ): void {
   // Timers.
   if (p.fireCooldownTicks > 0) p.fireCooldownTicks--;
   if (p.fireBufferTicks > 0) p.fireBufferTicks--;
   if (p.switchTicks > 0) p.switchTicks--;
+
+  // Bottomless: the gun in your hands is topped up for free (also when the
+  // climax starts with an empty cylinder, or you switch to an empty gun), and
+  // a reload in progress is pointless: dropped (like when you switch weapon).
+  if (bottomless) {
+    setCurrentAmmo(p, magazineSize(p.weapon));
+    p.reloadTicks = 0;
+  }
 
   // Switching: the new weapon is in your hands at once, but it needs
   // weaponSwitchTime to come up before it can fire. A reload in progress is
@@ -120,7 +133,7 @@ export function stepWeapon(
       events.push({ type: 'fire', weapon: 'revolver', barrel: 0 });
       fireRevolver(p, world, entities, events);
     }
-    setCurrentAmmo(p, ammo - 1);
+    if (!bottomless) setCurrentAmmo(p, ammo - 1);
     p.fireCooldownTicks = secondsToTicks(fireInterval(p.weapon));
     p.fireBufferTicks = 0;
   }

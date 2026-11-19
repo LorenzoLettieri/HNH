@@ -81,6 +81,14 @@ stilosa riavvia la catena e il lampeggio si ferma. Niente barra del tempo: la ba
   i colpi del caricatore (niente ricarica: spari e basta). Va annunciato forte (scritta, suono, tinta
   dello schermo, magari la campana della chiesa). **Finito il climax lo stile si azzera**: si riparte
   da D, quindi HIGH NOON è un evento da inseguire, non uno stato in cui restare.
+  **Passo 1** [FATTO]: la meccanica. Arrivato in cima parte il conto alla rovescia (`styleHighNoonTime`);
+  l'arma in mano è **sempre piena** (riempita gratis, anche se il climax ti coglie a tamburo vuoto o passi
+  all'altra arma; una ricarica in corso viene annullata) e sparare non consuma colpi, né nell'arma né in
+  tasca. Finito il climax l'arma resta piena: un piccolo regalo. Durante il climax lo stile è **congelato**
+  (né guadagni né perdite, la catena non scade). Sul meter la barra diventa la **miccia** che si consuma e
+  la lettera lampeggia nell'ultimo secondo e mezzo. Annuncio **provvisorio**: scritta "HIGH NOON" e tre
+  rintocchi rapidi di campana.
+  [PROSSIMO] L'annuncio forte: tinta dello schermo, suono dedicato, la fine del climax.
 - [DA DECIDERE] Bonus di danno ai rank alti (forse superato dal climax).
 - [DA DECIDERE] Eventuale bonus di drop della salute ai rank alti.
 
@@ -429,9 +437,9 @@ futuro **poligono di tiro / tutorial**.
 
 ### Prossimi passi [PROPOSTO, novembre 2026]
 1. **Stile**: punti e catena nella simulazione (numeri nella riga di debug). [FATTO]
-2. Barra e rank dello stile nell'HUD.
+2. Barra e rank dello stile nell'HUD. [FATTO, col timer della catena]
 3. Fonti dal movimento (velocità, tempo in aria, wall jump) + premio calante per le azioni ripetute.
-4. **Climax HIGH NOON** (5 s di caricatore infinito).
+4. **Climax HIGH NOON** (5 s di caricatore infinito). [FATTO la meccanica; manca l'annuncio forte]
 5. **Vildenaro**: monete lasciate dai nemici + contatore nell'HUD; lo Stile moltiplica punti e vildenaro.
 6. **Shop**: venditore (sprite), tasto E, menu che non mette in pausa, primo acquisto: la doppietta.
 7. Potenziamenti all'emporio.

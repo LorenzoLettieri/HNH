@@ -4,7 +4,7 @@
 // faster. Markup and CSS are in index.html; from here we only change CSS
 // variables (the colors of the rank), text, opacity and transforms.
 import { TICK_DT, tuning } from '../sim/config';
-import { STYLE_RANKS, styleRank, type StyleState } from '../sim/style';
+import { isHighNoon, STYLE_RANKS, styleRank, type StyleState } from '../sim/style';
 import './fonts'; // the letters are written in Rye
 
 interface RankLook {
@@ -94,10 +94,11 @@ function showRank(rank: number): void {
 export function updateStyleMeter(style: StyleState, dt: number): void {
   clock += dt;
   const lastRank = STYLE_RANKS.length - 1;
-  const active = style.chainTicks > 0;
+  const highNoon = isHighNoon(style);
+  const active = style.chainTicks > 0 || highNoon;
 
   if (active) {
-    const rank = styleRank(style.points);
+    const rank = highNoon ? lastRank : styleRank(style.points);
     if (!wasActive || rank > shownRank) {
       // A new chain, or a new rank: stamp it on screen, the bar starts from empty.
       stamp = 1;
@@ -109,8 +110,11 @@ export function updateStyleMeter(style: StyleState, dt: number): void {
       progress = 1;
       showRank(rank);
     }
-    // Progress inside the current rank: 0 = just reached, 1 = next rank. Full at the top rank.
-    const target = rank === lastRank ? 1 : style.points / tuning.styleRankPoints - rank;
+    // Progress inside the current rank: 0 = just reached, 1 = next rank.
+    // During HIGH NOON the bar is the fuse of the climax: it fills up, then burns down.
+    const target = highNoon
+      ? (style.highNoonTicks * TICK_DT) / tuning.styleHighNoonTime
+      : style.points / tuning.styleRankPoints - rank;
     // Exponential smoothing: every frame cover a fraction of the remaining distance.
     progress += (target - progress) * Math.min(1, dt * BAR_SPEED);
   }
@@ -133,10 +137,12 @@ export function updateStyleMeter(style: StyleState, dt: number): void {
     `scale(${(1 + STAMP_SCALE * slam).toFixed(3)}) rotate(${(STAMP_TILT * slam).toFixed(1)}deg)`;
   barFill.style.transform = `scaleX(${progress.toFixed(3)})`;
 
-  // Chain timer: the chain is about to break, the letter blinks faster and faster.
-  // Every stylish action restarts the chain, and the blinking stops.
-  const timeLeft = style.chainTicks * TICK_DT;
-  const warnTime = Math.min(CHAIN_WARN_TIME, tuning.styleChainTime / 2);
+  // Chain timer: the chain is about to break (or the climax to end), the
+  // letter blinks faster and faster. Every stylish action restarts the chain,
+  // and the blinking stops; the end of HIGH NOON can't be put off.
+  const timeLeft = (highNoon ? style.highNoonTicks : style.chainTicks) * TICK_DT;
+  const total = highNoon ? tuning.styleHighNoonTime : tuning.styleChainTime;
+  const warnTime = Math.min(CHAIN_WARN_TIME, total / 2);
   let letterOpacity = 1;
   if (active && timeLeft < warnTime) {
     const urgency = 1 - timeLeft / warnTime; // 0 = warning just started, 1 = about to break

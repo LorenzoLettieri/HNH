@@ -314,7 +314,9 @@ renderer.setAnimationLoop((now: number) => {
   // Style meter, raw numbers for tuning (the real meter is drawn by render/styleMeter.ts).
   const style = game.style;
   const styleText =
-    style.chainTicks > 0
+    style.highNoonTicks > 0
+      ? `style HIGH NOON  ${(style.highNoonTicks * TICK_DT).toFixed(1)} s left`
+      : style.chainTicks > 0
       ? `style ${STYLE_RANKS[styleRank(style.points)].letter}  ${style.points} pts  chain ${(style.chainTicks * TICK_DT).toFixed(1)} s`
       : 'style -';
   hud.textContent =

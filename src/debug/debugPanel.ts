@@ -48,6 +48,7 @@ export function createDebugPanel(options: {
   style.number(tuning, 'styleKill', 0, 200, 5);
   style.number(tuning, 'styleHeadshotKill', 0, 200, 5);
   style.number(tuning, 'styleHurtPerDamage', 0, 20, 0.5);
+  style.number(tuning, 'styleHighNoonTime', 1, 20, 0.5);
   style.button('Copy values', () => copyToClipboard(toSource(tuning)));
 
   // --- Movement ---

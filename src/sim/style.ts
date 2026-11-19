@@ -8,8 +8,14 @@
 // - taking damage costs points (more for a bigger hit), but doesn't break the chain.
 // The points decide the rank: one rank every `styleRankPoints`, up to HIGH NOON.
 //
-// Step 1: only hits and kills give style. Movement (speed, air time, wall
-// jumps), variety and the HIGH NOON climax come in the next steps.
+// HIGH NOON, the top rank, is a CLIMAX, not a place to stay: reaching it starts
+// a countdown (styleHighNoonTime) during which the guns never run dry
+// (weapon.ts, "bottomless"). Meanwhile the style is frozen at the top: no
+// gains, no losses, the chain doesn't run out. When the countdown ends, the
+// style starts over from zero: HIGH NOON is something to chase again.
+//
+// For now only hits and kills give style. Movement (speed, air time, wall
+// jumps) and variety come in the next steps.
 import type { SimEvent } from './events';
 import { secondsToTicks, tuning } from './config';
 
@@ -18,6 +24,8 @@ export interface StyleState {
   points: number;
   /** Ticks left before the chain breaks, if nothing stylish happens. 0 = no chain. */
   chainTicks: number;
+  /** Ticks left of the HIGH NOON climax. 0 = not in progress. */
+  highNoonTicks: number;
 }
 
 /** The ranks, lowest first (western names: proposals, see DESIGN.md). */
@@ -32,7 +40,7 @@ export const STYLE_RANKS = [
 ] as const;
 
 export function createStyle(): StyleState {
-  return { points: 0, chainTicks: 0 };
+  return { points: 0, chainTicks: 0, highNoonTicks: 0 };
 }
 
 /** Index in STYLE_RANKS for these points: 0 = D, the last one = HIGH NOON. */
@@ -40,11 +48,29 @@ export function styleRank(points: number): number {
   return Math.min(STYLE_RANKS.length - 1, Math.floor(points / tuning.styleRankPoints));
 }
 
+/** Is the HIGH NOON climax in progress? (The guns never run dry.) */
+export function isHighNoon(style: StyleState): boolean {
+  return style.highNoonTicks > 0;
+}
+
 /**
  * Updates the style with what happened in this tick: `events` from index `from`
  * on (the array may also hold the events of earlier ticks of the same frame).
+ * Appends 'highNoon' / 'highNoonEnd' when the climax starts / ends.
  */
-export function stepStyle(style: StyleState, events: readonly SimEvent[], from: number): void {
+export function stepStyle(style: StyleState, events: SimEvent[], from: number): void {
+  // HIGH NOON in progress: everything else is frozen, only the climax runs out.
+  if (style.highNoonTicks > 0) {
+    style.highNoonTicks--;
+    if (style.highNoonTicks === 0) {
+      // Over: back to zero, with no chain (the meter fades out, the next hit starts from D).
+      style.points = 0;
+      style.chainTicks = 0;
+      events.push({ type: 'highNoonEnd' });
+    }
+    return;
+  }
+
   let gained = 0;
   let lost = 0;
   for (let i = from; i < events.length; i++) {
@@ -70,5 +96,12 @@ export function stepStyle(style: StyleState, events: readonly SimEvent[], from: 
   if (style.chainTicks > 0) {
     style.chainTicks--;
     if (style.chainTicks === 0) style.points = 0;
+  }
+
+  // Reached the top rank: HIGH NOON! (Points above zero mean the chain is
+  // still going: when it breaks they drop to zero, right above.)
+  if (styleRank(style.points) === STYLE_RANKS.length - 1) {
+    style.highNoonTicks = secondsToTicks(tuning.styleHighNoonTime);
+    events.push({ type: 'highNoon' });
   }
 }

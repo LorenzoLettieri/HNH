@@ -37,6 +37,10 @@ export type SimEvent =
       headshot: boolean;
     }
   | { type: 'playerHurt'; damage: number; fromX: number; fromZ: number }
+  /** You reached the top style rank: the HIGH NOON climax starts (bottomless guns for a few seconds). */
+  | { type: 'highNoon' }
+  /** The HIGH NOON climax is over: the style starts over from zero. */
+  | { type: 'highNoonEnd' }
   | { type: 'playerDied'; wave: number; kills: number; score: number }
   | { type: 'waveStart'; wave: number }
   | { type: 'waveEnd'; wave: number }
