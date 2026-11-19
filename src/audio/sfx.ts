@@ -299,6 +299,46 @@ export function playLungeScreech(where: Where): void {
   noiseBurst({ out, duration: dur, volume: 0.15, filter: 'highpass', frequency: 2500 }); // hiss
 }
 
+/**
+ * Hellhound starts its ambush: a short HOWL that rises, holds with a wobble,
+ * then falls. It's the warning that something is charging you from where
+ * you aren't looking: panned like every enemy sound, so you know where to
+ * turn. Never skipped (it's a warning).
+ */
+export function playHowl(where: Where): void {
+  const out = placeSound(where);
+  if (!ctx || !out) return;
+  const t0 = ctx.currentTime;
+  const dur = 0.7;
+  const voice = ctx.createOscillator();
+  voice.type = 'sawtooth';
+  voice.frequency.setValueAtTime(220, t0);
+  voice.frequency.exponentialRampToValueAtTime(440, t0 + 0.15); // rises...
+  voice.frequency.setValueAtTime(440, t0 + 0.45); // ...holds...
+  voice.frequency.exponentialRampToValueAtTime(300, t0 + dur); // ...falls
+  const vibrato = ctx.createOscillator();
+  vibrato.frequency.value = 7;
+  const vibratoDepth = ctx.createGain();
+  vibratoDepth.gain.value = 18;
+  vibrato.connect(vibratoDepth).connect(voice.frequency);
+  // A "formant" (mouth resonance) makes the sawtooth sound like a throat.
+  const throat = ctx.createBiquadFilter();
+  throat.type = 'bandpass';
+  throat.frequency.value = 900;
+  throat.Q.value = 3;
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0.001, t0);
+  env.gain.exponentialRampToValueAtTime(0.7, t0 + 0.08);
+  env.gain.setValueAtTime(0.7, t0 + 0.45);
+  env.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+  voice.connect(throat).connect(env).connect(out);
+  voice.start(t0);
+  vibrato.start(t0);
+  voice.stop(t0 + dur);
+  vibrato.stop(t0 + dur);
+  noiseBurst({ out, duration: 0.4, volume: 0.15, filter: 'bandpass', frequency: 1800, q: 1 }); // breath
+}
+
 /** Ghoul dies: a lower, sinking groan and a wet splat. */
 export function playGhoulDeath(where: Where): void {
   const out = placeSound(where);

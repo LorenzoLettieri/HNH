@@ -91,14 +91,24 @@ export interface HoundEntity extends EntityBase {
   vy: number;
   vz: number;
   onGround: boolean;
-  /** Running to you, biting, thrown by a kick/blast (flying, then down for a moment), or dead. */
-  state: 'chase' | 'bite' | 'staggered' | 'dead';
+  /**
+   * The ambush cycle (see hound.ts): stalking you out of sight, charging
+   * (after the howl), biting, running away after the bite. Plus thrown by
+   * a kick/blast (flying, then down for a moment), and dead.
+   */
+  state: 'stalk' | 'charge' | 'bite' | 'retreat' | 'staggered' | 'dead';
   /** Ticks spent in the current state. */
   stateTicks: number;
   /** Ticks before it can bite again. */
   biteCooldownTicks: number;
   /** Navigation: the graph node it's standing on (-1 = unknown). */
   navNode: number;
+  /** You were looking at it at the last check (in your view cone, nothing in between). */
+  seen: boolean;
+  /** Ticks since you last looked at it. */
+  unseenTicks: number;
+  /** When it's right in front of you, which way it goes around you (+1 / -1). */
+  stalkSide: number;
 }
 
 export type Entity = TargetEntity | GhoulEntity | EyebatEntity | HoundEntity;
@@ -213,10 +223,13 @@ export function createHound(id: number, x: number, y: number, z: number, health 
     vz: 0,
     health,
     onGround: false,
-    state: 'chase',
+    state: 'stalk',
     stateTicks: 0,
     biteCooldownTicks: 0,
     navNode: -1,
+    seen: false,
+    unseenTicks: 0,
+    stalkSide: id % 2 === 0 ? 1 : -1, // deterministic, like the ghoul's detour side
   };
 }
 

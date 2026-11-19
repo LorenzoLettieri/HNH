@@ -74,7 +74,7 @@ con un chiaro preavviso.
 | Nemico (provvisorio) | Ruolo | Pressione |
 |---|---|---|
 | **Ghoul** | Carne da cannone (ispirato agli zombie di CoD Zombies): cammina verso di te, **scavalca gli ostacoli bassi e aggira quelli alti**; in futuro si arrampicherà | A terra non sei mai al sicuro; un muretto non basta |
-| **Cane infernale** [IN CORSO] | Velocissimo (9,5 m/s: a piedi non lo semini, col bhop sì), cerca di **prenderti di sorpresa**. Pesa **3** nelle ondate, dall'ondata 5. Per ora: corre, salta, morde (15 danni, preavviso 0,25 s); non si arrampica | Devi muoverti continuamente e guardarti alle spalle |
+| **Cane infernale** [IN CORSO: manca lo sprite] | **Agguato**: ti pedina a distanza e scatta quando non lo guardi (dettagli sotto). Pesa **3** nelle ondate, dall'ondata 5 | Devi guardarti alle spalle: nessun angolo morto è sicuro |
 | **Avvoltoio** | Volante, gira in cerchio e picchia in picchiata | Raggiunge ogni tetto, obbliga a guardare in alto |
 | **Malocchio** [FATTO] | Occhio-pipistrello volante: orbita attorno a te a distanza (10 m, 5 m più in alto) e spara proiettili lenti. **Pupilla = punto critico** (×3, come la testa del ghoul) | Il movimento diventa difesa; obbliga a guardare in alto e a mirare con precisione |
 | **Fuoco fatuo** | Volante a distanza, proiettili lenti (forse superato dal Malocchio) | Il movimento diventa difesa |
@@ -146,6 +146,18 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
   all'atterraggio. Ti ferisce se ti tocca in volo (20 danni). Atterrato resta **a terra 0,6 s**:
   è il momento di punirlo. Ricarica di 3–4,5 s. Resta un nemico che punisce le distrazioni:
   per chi lo vede arrivare è schivabile (salto, slide di lato).
+- **Cane infernale: l'agguato.** Salute 50 come il ghoul (la difficoltà è la sorpresa, non la
+  resistenza). Ciclo **pedina → carica → morso → fuga**:
+  - **Pedina** a ~12 m girandoti attorno **verso le spalle** (9,5 m/s: a piedi non lo semini).
+  - Quando resta **fuori dalla tua vista** per 0,5 s (oltre 55° da dove guardi, cioè fuori dallo
+    schermo, o dietro un muro) **ulula** e **carica** a 13 m/s. L'ululato è il preavviso, con il
+    panning stereo: ti dice da dove arriva. Carica comunque se gli lasci arrivare a 5 m o se ti pedina
+    da più di 7 s (fissarlo non basta a tenerlo lontano per sempre).
+  - **Morso** (15 danni, preavviso 0,25 s), poi **scappa** per 1,2 s e ricomincia.
+  - Non si arrampica: se sei su un tetto raggiungibile solo arrampicandosi, ti aspetta sotto.
+  - Bot di prova (non spara mai), 3 cani: ululato in media a ~90° da dove guardi (di lato o alle
+    spalle), a 10–20 m; tra ululato e morso **~0,8–1,3 s**: il tempo per girarsi e sparare.
+    Fermo: 525 danni in 40 s; correndo in tondo: 150.
 - **Calcio (melee)** [FATTO, da tarare]: F o tasto destro. Colpisce **tutto** in un cono davanti
   (1,6 m, ±45°), 25 danni (mezzo ghoul base: è uno strumento, non l'arma principale), e **spinge via**
   (13 m/s in avanti, 5 m/s in alto): il ghoul vola via, interrompe artigliata e balzo, e resta a terra

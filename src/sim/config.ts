@@ -304,10 +304,32 @@ export const tuning = {
   /** Health: the same as the ghoul (same breakpoints). Its danger is speed, not toughness. */
   houndHealth: 50,
   /**
-   * Running speed, m/s. FASTER than you on foot (maxGroundSpeed 8): on the
-   * ground you can't outrun it, with bunny hops / slides (10-13) you can.
+   * Running speed while stalking / retreating, m/s. Faster than you on foot
+   * (maxGroundSpeed 8): it can always keep up and get behind you.
    */
   houndSpeed: 9.5,
+  /** Sprint speed of the ambush, m/s: as fast as a good bunny hop. */
+  houndChargeSpeed: 13,
+  /** While stalking it keeps about this far from you, meters. */
+  houndStalkDistance: 12,
+  /** It only launches an ambush from closer than this, meters. */
+  houndChargeRange: 20,
+  /**
+   * "You're looking at it": it's within this angle of where you're looking
+   * (degrees, horizontal) and nothing is in between. 55° ≈ the edge of the
+   * screen with the default field of view.
+   */
+  houndSeenAngle: 55,
+  /** It charges after staying out of your sight this long, seconds. */
+  houndUnseenTime: 0.5,
+  /** Closer than this it charges even if you're looking at it (cornered), meters. */
+  houndCloseCharge: 5,
+  /** After stalking this long it charges anyway (staring at it forever doesn't keep it away), seconds. */
+  houndStalkMaxTime: 7,
+  /** A charge that hasn't reached you in this time gives up (back to stalking), seconds. */
+  houndChargeMaxTime: 3,
+  /** After a bite it runs away for this long, then stalks again, seconds. */
+  houndRetreatTime: 1.2,
   /** How quickly it reaches that speed (1/s, like ghoulAccel): a dog turns fast. */
   houndAccel: 10,
   /** Half the width of its COLLIDER, meters (slim: it fits through alleys). */
