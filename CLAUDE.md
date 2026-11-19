@@ -38,6 +38,7 @@ per chi sta fermo); nemici che attaccano lo spazio (anche volanti e a distanza);
 ## Comandi
 - `npm run dev`: server di sviluppo
 - `npm run build`: typecheck + build di produzione (deve passare prima di ogni commit)
+- `npm run models`: rigenera i modelli 3D con Blender (serve una volta `tools/blender/setup.sh`)
 
 ## Dove trovare le cose
 Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella rilevante.
@@ -113,6 +114,12 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `impacts.ts`: fori di proiettile sulle superfici (decal, dimensione, quanti ne restano)
   - `materials.ts`: **quale texture usa ogni materiale** (`LOOKS`), densità dei pixel, mesh dei box
 - `src/audio/sfx.ts`: **effetti sonori sintetizzati** con Web Audio (sparo, ricarica, **calcio** (fruscio e tonfo), "ding" dei bersagli, versi/artigliate/morte dei ghoul con panning stereo, **carica, sparo e impatto delle palle di fuoco del Malocchio**, giocatore ferito, **campana delle ondate**, volume, pausa dell'audio)
+- `tools/blender/`: **modelli 3D generati con script Python per Blender** (`bpy`, Blender senza interfaccia)
+  - `setup.sh`: installazione una tantum (venv con `bpy` in `tools/blender/.venv`)
+  - `lib.py`: mini-libreria di modellazione: **loft** (anelli di sezione uniti in un tubo), anelli ellittici, box/cilindri/stelle, **texture pixel art** (`Pixels`), materiali con filtro "Closest"
+  - `leg.py`: **gamba sinistra con stivale da cowboy** (jeans, gambale con cuciture, punta, tacco cubano, sperone, borchia), **scheletro** (anca → coscia → stinco → piede), **animazione del calcio** con IK poi "bakata", render di anteprima, export. Tabelle delle forme (`FOOT`, `SOLE_TOP`), pose del calcio (`key_foot`, `KICK_HIP`) e fotogrammi (`IMPACT_FRAME` ecc.) in cima
+  - `previews/`: render di anteprima (non nel repo)
+- `public/models/`: **modelli glTF (.glb) generati** da `tools/blender/` (nel repo, così il sito non ha bisogno di Blender)
 - `public/textures/`: texture PNG (servite così come sono da Vite su `/textures/...`)
 - `docs/DESIGN.md`: **documento di design** (decisioni di gameplay e domande aperte)
 - `CREDITS.md`: autori e licenze degli asset

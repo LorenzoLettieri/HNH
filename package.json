@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "models": "tools/blender/.venv/bin/python tools/blender/leg.py"
   },
   "dependencies": {
     "three": "0.187.0"
