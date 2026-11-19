@@ -16,7 +16,9 @@ const pickupFlash = document.getElementById('pickup-flash')!;
 const death = document.getElementById('death')!;
 const deathStats = document.getElementById('death-stats')!;
 const waveHud = document.getElementById('wave')!;
+const waveBox = document.getElementById('wave-box')!;
 const scoreHud = document.getElementById('score')!;
+const killsHud = document.getElementById('kills')!;
 const banner = document.getElementById('banner')!;
 let bannerTime = 0;
 
@@ -65,8 +67,10 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
 
   // Wave number and score, always visible. During the break: a countdown.
   const w = game.wave;
-  waveHud.textContent = w.number > 0 ? String(w.number) : '';
-  scoreHud.textContent = `${game.stats.score} pt · ${game.stats.kills} ☠`;
+  waveBox.hidden = w.number === 0; // nothing to show before the first wave
+  waveHud.textContent = String(w.number);
+  scoreHud.textContent = String(game.stats.score);
+  killsHud.textContent = `${game.stats.kills} UCCISIONI`;
   if (w.phase === 'break' && w.number > 0 && w.breakTicks < 60 * 5 && bannerTime <= 0) {
     banner.textContent = `ondata ${w.number + 1} tra ${Math.ceil(w.breakTicks / 60)}`;
     banner.style.opacity = '0.8';

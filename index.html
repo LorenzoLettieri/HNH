@@ -149,15 +149,20 @@
         position: fixed; left: 0; right: 0; top: 60%; text-align: center; pointer-events: none; opacity: 0;
         color: #f0c080; font: bold 22px monospace; text-shadow: 2px 2px 0 #000;
       }
-      /* Wave number: big, red, old-western serif, like CoD's tally of rounds. */
+      /* --- Top corners: wave (left) and score (right), same "blood and ash" look ---
+         A dark smudge behind each top corner, like the bottom ones. */
+      #hud-smudge-top-left { left: -120px; top: -80px; bottom: auto; }
+      #hud-smudge-top-right { right: -120px; top: -80px; bottom: auto; }
+      #wave-box { position: fixed; left: 28px; top: 16px; pointer-events: none; font-family: 'Rye', Georgia, serif; }
+      #wave-box[hidden] { display: none; } /* before the first wave */
+      .hud-label { font-size: 13px; letter-spacing: 3px; color: #8a7a62; text-shadow: 2px 2px 0 #000, 0 0 8px #000; }
+      /* Wave number: the round tally of CoD Zombies, in dried-blood red. */
       #wave {
-        position: fixed; left: 16px; bottom: 80px; pointer-events: none;
-        color: #b01808; font: bold 72px Georgia, 'Times New Roman', serif; text-shadow: 3px 3px 0 #000;
+        font-size: 44px; line-height: 1; color: #9a1c10;
+        text-shadow: 0 0 2px #000, 2px 2px 0 #000, 0 0 14px rgba(0, 0, 0, 0.9);
       }
-      #score {
-        position: fixed; right: 16px; bottom: 44px; pointer-events: none;
-        color: #f0c080; font: bold 18px monospace; text-shadow: 2px 2px 0 #000;
-      }
+      #score-box { position: fixed; right: 28px; top: 16px; text-align: right; pointer-events: none; font-family: 'Rye', Georgia, serif; }
+      #score { font-size: 28px; line-height: 1.1; color: #c8b8a0; text-shadow: 0 0 2px #000, 2px 2px 0 #000, 0 0 12px rgba(0, 0, 0, 0.9); }
       /* Center banner: "ONDATA 3", "ONDATA SUPERATA", countdown. */
       #banner {
         position: fixed; left: 0; right: 0; top: 22%; text-align: center; pointer-events: none; opacity: 0;
@@ -207,10 +212,10 @@
         background: linear-gradient(to bottom, var(--top), var(--mid) 50%, var(--bottom));
       }
 
-      /* Debug readout (speed, style numbers, performance), top-left, small. */
+      /* Debug readout (speed, style numbers, performance), top-center, small. */
       #hud {
         white-space: pre; /* the readout has several lines */
-        position: fixed; left: 12px; top: 10px; color: #f0c080;
+        position: fixed; left: 50%; top: 8px; transform: translateX(-50%); color: #f0c080; opacity: 0.8;
         font: bold 12px monospace; pointer-events: none; text-shadow: 1px 1px 0 #000;
       }
     </style>
@@ -272,6 +277,8 @@
     <div id="high-noon" hidden></div>
     <div id="hud-smudge-left" class="hud-smudge"></div>
     <div id="hud-smudge-right" class="hud-smudge"></div>
+    <div id="hud-smudge-top-left" class="hud-smudge"></div>
+    <div id="hud-smudge-top-right" class="hud-smudge"></div>
     <div id="hud"></div>
     <div id="crosshair"></div>
     <div id="hitmarker"></div>
@@ -284,8 +291,8 @@
     </div>
     <div id="death">SEI MORTO</div>
     <div id="death-stats"></div>
-    <div id="wave"></div>
-    <div id="score"></div>
+    <div id="wave-box" hidden><div class="hud-label">ONDATA</div><div id="wave"></div></div>
+    <div id="score-box"><div class="hud-label">PUNTI</div><div id="score"></div><div id="kills" class="hud-label"></div></div>
     <div id="banner"></div>
     <div id="style-meter">
       <div id="style-letter"></div>

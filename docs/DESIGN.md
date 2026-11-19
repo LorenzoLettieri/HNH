@@ -436,6 +436,17 @@ futuro **poligono di tiro / tutorial**.
 
 ---
 
+## 6b. HUD [IN CORSO]
+- **Stile "sangue e cenere"**: niente cornici né targhe (risultavano comiche), elementi appoggiati
+  sullo schermo come in Prodeus, colori presi dalla scena (rosso sangue secco, ottone opaco, cenere),
+  leggibili grazie a una macchia scura sfumata negli angoli e a ombre sfocate, non a contorni da fumetto.
+- **Basso a sinistra**: numero della salute (pulsa come un battito quando è bassa) e barra con la
+  fascia "fantasma" del colpo subito. [FATTO]
+- **In alto**: a sinistra l'**ondata** (numero rosso, come il conteggio dei round di CoD Zombies),
+  a destra **punti e uccisioni**. [FATTO]
+- **Basso a destra**: munizioni, colpi disegnati con forma diversa per arma + riserva. [IN CORSO]
+- **Vita bassa**: effetto rosso intorno allo schermo stile CoD (sostituirà la vignetta attuale). [DA FARE]
+
 ## 7. Ordine di sviluppo
 
 1. **Mappa in greybox** — la cittadina fatta di box, per provare percorsi e verticalità col movimento attuale.
