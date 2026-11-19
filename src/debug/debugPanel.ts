@@ -40,6 +40,16 @@ export function createDebugPanel(options: {
   waves.number(jump, 'wave', 1, 60, 1);
   waves.button('Go to this wave', () => options.onJumpToWave(jump.wave));
 
+  // --- Style meter ---
+  const style = panel.folder('Style (src/sim/config.ts, src/sim/style.ts)');
+  style.number(tuning, 'styleChainTime', 0.5, 10, 0.1);
+  style.number(tuning, 'styleRankPoints', 20, 1000, 10);
+  style.number(tuning, 'styleHit', 0, 50, 1);
+  style.number(tuning, 'styleKill', 0, 200, 5);
+  style.number(tuning, 'styleHeadshotKill', 0, 200, 5);
+  style.number(tuning, 'styleHurtPerDamage', 0, 20, 0.5);
+  style.button('Copy values', () => copyToClipboard(toSource(tuning)));
+
   // --- Movement ---
   const move = panel.folder('Movement (src/sim/config.ts)');
   move.number(tuning, 'maxGroundSpeed', 2, 25, 0.1);

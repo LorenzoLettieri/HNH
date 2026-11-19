@@ -49,10 +49,20 @@ finale unico, "HIGH NOON". [DA DECIDERE: nomi definitivi]
 - **Varietà**: armi diverse, nemici diversi, modi diversi. Ripetere la stessa azione rende sempre meno.
 - Schivate ravvicinate di proiettili (bonus "near miss").
 
-### Cosa lo fa scendere
-- Il tempo (decadimento costante, più veloce ai rank alti).
-- Stare fermi o lenti: il decadimento accelera.
-- Subire danni: perdi punti di stile.
+### Cosa lo fa scendere [DECISO: la catena si spezza]
+- Lo stile è una **catena**, come le combo di Tony Hawk: ogni azione che dà stile aggiunge punti e
+  **riavvia un timer** di pochi secondi (`styleChainTime`, 3 s). Se scade senza che tu abbia fatto
+  niente di stiloso, la catena **si spezza** e lo stile **torna a zero di colpo**. Niente calo graduale
+  (scartato: il modello DMC/ULTRAKILL, in cui la barra cala piano un rank alla volta).
+- Stare fermi o lenti, quando arriverà lo stile dal movimento, vuol dire non alimentare la catena.
+- Subire danni: perdi punti in proporzione al danno (`styleHurtPerDamage`), ma la catena non si spezza.
+- [DA DECIDERE] Timer più corto ai rank alti?
+
+### Stato [FATTO: passo 1]
+`src/sim/style.ts`: punti, catena e rank nella simulazione; per ora danno stile solo i colpi (5) e le
+uccisioni (+40, +30 se alla testa). Un rank ogni **200 punti** (HIGH NOON a 1200). Numeri grezzi nella
+riga di debug in alto a sinistra; valori nel pannello debug (cartella "Style").
+Prova: 25 uccisioni di fila, una al secondo = SS (1185 punti), a un passo da HIGH NOON.
 
 ### A cosa serve
 - **Moltiplicatore** sul **punteggio** e sul **vildenaro** guadagnato (la moneta: vedi §5, Economia).
@@ -352,9 +362,9 @@ Punteggio e moneta sono **separati**:
   durante il round deve farlo in fretta. Funziona uguale in multiplayer (lì il tempo non si può fermare).
 - [PROPOSTO] Usare edifici che esistono già: **armeria** (armi) ed **emporio** (potenziamenti: ci si
   entra già, e c'è un bancone con la lanterna). Lo shop non è un rifugio: i ghoul ti seguono dentro.
-- [DA DECIDERE, tecnico] Oggi il gioco va in pausa quando il mouse non è catturato (Pointer Lock): il
-  menu dello shop dovrà essere un'eccezione. Si sceglie col mouse (puntatore libero, intanto non miri)
-  o coi tasti numerici (il mouse resta catturato, più rapido)?
+- **Menu col mouse libero** [DECISO], come il buy menu di CS:GO: premendo E il cursore si libera e si
+  clicca; intanto non miri. Tecnico: oggi il gioco va in pausa quando il mouse non è catturato
+  (Pointer Lock), quindi il menu dello shop sarà un'eccezione a quella regola.
 
 **Vildenaro come drop** [DECISO]
 - **Monete lasciate dai nemici**, raccolte passandoci sopra (prendono il posto delle vecchie "anime"):
@@ -402,7 +412,7 @@ futuro **poligono di tiro / tutorial**.
 5. Altri nemici, potenziamenti, lazo, boss.
 
 ### Prossimi passi [PROPOSTO, novembre 2026]
-1. **Stile**: punti e decadimento nella simulazione (visibili nel pannello debug).
+1. **Stile**: punti e catena nella simulazione (numeri nella riga di debug). [FATTO]
 2. Barra e rank dello stile nell'HUD.
 3. Fonti dal movimento (velocità, tempo in aria, wall jump) + premio calante per le azioni ripetute.
 4. **Climax HIGH NOON** (5 s di caricatore infinito).
