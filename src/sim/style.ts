@@ -14,6 +14,10 @@
 // gains, no losses, the chain doesn't run out. When the countdown ends, the
 // style starts over from zero: HIGH NOON is something to chase again.
 //
+// The style also MULTIPLIES what you earn (styleMultiplier): score and
+// vildenaro. Who moves well gets richer, and stronger, sooner: a snowball
+// effect, on purpose (DESIGN.md, "movement as power").
+//
 // For now only hits and kills give style. Movement (speed, air time, wall
 // jumps) and variety come in the next steps.
 import type { SimEvent } from './events';
@@ -46,6 +50,20 @@ export function createStyle(): StyleState {
 /** Index in STYLE_RANKS for these points: 0 = D, the last one = HIGH NOON. */
 export function styleRank(points: number): number {
   return Math.min(STYLE_RANKS.length - 1, Math.floor(points / tuning.styleRankPoints));
+}
+
+/** The multiplier of a rank: ×1 at D, then + styleMultiplierPerRank for every rank up. */
+export function rankMultiplier(rank: number): number {
+  return 1 + rank * tuning.styleMultiplierPerRank;
+}
+
+/**
+ * How much the style multiplies score and vildenaro RIGHT NOW. No chain = ×1
+ * (the points are 0, so the rank is D anyway). During HIGH NOON the points
+ * are frozen at the top: the maximum multiplier for the whole climax.
+ */
+export function styleMultiplier(style: StyleState): number {
+  return rankMultiplier(isHighNoon(style) ? STYLE_RANKS.length - 1 : styleRank(style.points));
 }
 
 /** Is the HIGH NOON climax in progress? (The guns never run dry.) */

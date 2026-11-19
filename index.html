@@ -217,6 +217,19 @@
         text-shadow: 0 0 2px #000, 2px 2px 0 #000, 0 0 14px rgba(0, 0, 0, 0.9);
       }
       #score-box { position: fixed; right: 28px; top: 16px; text-align: right; pointer-events: none; font-family: 'Rye', Georgia, serif; }
+      /* Vildenaro (src/render/moneyHud.ts): the coin pile (a 16 px canvas scaled up
+         without blur) and the number in tarnished gold, with a warm glow. The "+N"
+         under it adds up while you collect, then fades. */
+      #money-box { position: relative; margin-top: 10px; display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+      #money-icon { width: 32px; height: 32px; image-rendering: pixelated; filter: drop-shadow(2px 2px 0 #000) drop-shadow(0 0 6px rgba(255, 170, 40, 0.35)); }
+      #money {
+        font-size: 26px; line-height: 1; color: #d8a838; transform-origin: right center;
+        text-shadow: 0 0 2px #000, 2px 2px 0 #000, 0 0 12px rgba(255, 150, 30, 0.35);
+      }
+      #money-gain {
+        position: absolute; right: 0; top: 100%; margin-top: 2px; font-size: 16px; letter-spacing: 1px; color: #f0c860;
+        text-shadow: 0 0 2px #000, 2px 2px 0 #000, 0 0 8px #000; white-space: nowrap;
+      }
       #score { font-size: 28px; line-height: 1.1; color: #c8b8a0; text-shadow: 0 0 2px #000, 2px 2px 0 #000, 0 0 12px rgba(0, 0, 0, 0.9); }
       /* --- Center banner (src/render/hud.ts): "ONDATA 3", "ONDATA SUPERATA", HIGH NOON,
          the countdown. A big title in dried-blood red and a small line in ash. The title
@@ -312,14 +325,65 @@
         margin: 6px auto 0; width: 170px; height: 8px; background: #1a0a04;
         border: 2px solid #9a7434; box-shadow: 0 0 0 2px #120604, 2px 3px 0 2px #000;
       }
+      /* The multiplier on score and vildenaro, under the bar, in the rank's color. */
+      #style-mult { margin-top: 6px; font-size: 22px; letter-spacing: 1px; color: var(--top); text-shadow: 2px 2px 0 #000, 0 0 8px #000; }
       #style-bar-fill {
         height: 100%; transform-origin: left; transform: scaleX(0);
         background: linear-gradient(to bottom, var(--top), var(--mid) 50%, var(--bottom));
       }
 
+      /* --- Shop (src/render/shopMenu.ts) ---
+         The prompt under the crosshair, and the panel on the right: the game keeps
+         running behind it (no dark overlay), so you see the horde coming. */
+      #shop-prompt {
+        position: fixed; left: 0; right: 0; top: 62%; text-align: center; pointer-events: none;
+        font-family: 'Rye', Georgia, serif; font-size: 18px; letter-spacing: 3px; color: #e0c890;
+        text-shadow: 2px 2px 0 #000, 0 0 10px #000;
+      }
+      #shop-prompt kbd, #shop kbd {
+        display: inline-block; min-width: 1.2em; padding: 0 6px; margin-right: 6px; border: 2px solid #c89a40;
+        color: #f0d878; background: rgba(20, 8, 4, 0.8); font: bold 16px monospace;
+      }
+      #shop {
+        position: fixed; right: 4vw; top: 50%; transform: translateY(-50%); width: 400px; max-width: 92vw;
+        box-sizing: border-box; padding: 18px 22px; z-index: 4; color: #e0c890; font: 15px Georgia, serif;
+        background: rgba(28, 12, 6, 0.93); border: 3px solid #9a7434; box-shadow: 0 0 0 3px #120604, 6px 8px 0 3px #000;
+      }
+      #shop[hidden], #shop-prompt[hidden], #shop-away[hidden] { display: none; }
+      #shop h2 { margin: 0; font: 34px 'Rye', Georgia, serif; letter-spacing: 3px; color: #d8a838; text-shadow: 2px 2px 0 #000; }
+      #shop-greeting { margin: 4px 0 12px; font-style: italic; color: #a89070; }
+      #shop-wallet { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0; border-top: 1px solid #5a3a20; border-bottom: 1px solid #5a3a20; }
+      #shop-money { font: 22px 'Rye', Georgia, serif; color: #d8a838; }
+      .shop-item { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid #3a2414; }
+      .shop-item-text { flex: 1; }
+      .shop-item-name { font: 17px 'Rye', Georgia, serif; color: #f0d8a0; }
+      .shop-item-desc { margin-top: 2px; font-size: 13px; color: #a89070; }
+      .shop-buy {
+        min-width: 86px; padding: 8px 10px; cursor: pointer; font: 18px 'Rye', Georgia, serif;
+        background: #5a3a20; color: #f0d878; border: 2px solid #c89a40; box-shadow: 0 0 0 2px #120604;
+      }
+      .shop-buy:hover:not(:disabled) { background: #7a4a24; }
+      .shop-buy:disabled { cursor: default; opacity: 0.85; }
+      .shop-item.poor .shop-price { color: #c03020; } /* not enough vildenaro */
+      #shop-away { margin-top: 10px; color: #c03020; font-style: italic; }
+      #shop.far .shop-item { opacity: 0.4; }
+      #shop-close {
+        display: block; width: 100%; margin-top: 14px; padding: 8px; cursor: pointer; font: bold 15px monospace;
+        background: #3a2414; color: #e0c890; border: 2px solid #120604;
+      }
+      #shop-close:hover { background: #5a3a20; }
     </style>
   </head>
   <body>
+    <div id="shop-prompt" hidden><kbd>E</kbd>COMMERCIA</div>
+    <div id="shop" hidden>
+      <h2>ARMERIA</h2>
+      <div id="shop-greeting"></div>
+      <div id="shop-wallet"><span>Il tuo vildenaro</span><span id="shop-money">0</span></div>
+      <div id="shop-items"></div>
+      <div id="shop-away" hidden>Sei troppo lontano dal venditore.</div>
+      <button id="shop-close"><kbd>E</kbd>Chiudi</button>
+    </div>
     <div id="overlay">
       <div id="menu">
         <h1 id="overlay-title">HIGH NOON HELL</h1>
@@ -371,6 +435,7 @@
             <tr><td><kbd>Q</kbd> / <kbd>Rotellina</kbd></td><td>Cambia arma</td></tr>
             <tr><td><kbd>F</kbd> / <kbd>Click destro</kbd></td><td>Calcio</td></tr>
             <tr><th colspan="2">Gioco</th></tr>
+            <tr><td><kbd>E</kbd></td><td>Vicino a un venditore: apri/chiudi lo shop (il gioco non si ferma)</td></tr>
             <tr><td><kbd>Esc</kbd></td><td>Pausa</td></tr>
             <tr><th colspan="2">Debug</th></tr>
             <tr><td><kbd>K</kbd></td><td>Respawn</td></tr>
@@ -421,12 +486,14 @@
       <div id="wave-box" hidden><div class="hud-label">ONDATA</div><div id="wave"></div><div id="enemies-left" class="hud-label"></div></div>
       <div id="fps" class="hud-label"></div>
     </div>
-    <div id="score-box"><div class="hud-label">PUNTI</div><div id="score"></div><div id="kills" class="hud-label"></div></div>
+    <div id="score-box"><div class="hud-label">PUNTI</div><div id="score"></div><div id="kills" class="hud-label"></div>
+      <div id="money-box"><span id="money">0</span><div id="money-gain"></div></div></div>
     <div id="banner"><div id="banner-title"></div><div id="banner-sub"></div></div>
     <div id="style-meter">
       <div id="style-letter"></div>
       <div id="style-name"></div>
       <div id="style-bar"><div id="style-bar-fill"></div></div>
+      <div id="style-mult"></div>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

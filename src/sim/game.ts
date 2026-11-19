@@ -13,10 +13,11 @@ import type { SimEvent } from './events';
 import { createPlayer, respawn, stepPlayer, type PlayerState } from './player';
 import { stepWeapon } from './weapon';
 import { stepKick } from './kick';
-import { dropFromKills, stepPickups, type Pickup } from './pickups';
-import { createStyle, isHighNoon, stepStyle, type StyleState } from './style';
+import { blockPlayerWithBodies } from './bodyBlock';
+import { createPickup, dropFromKills, stepPickups, type Pickup } from './pickups';
+import { createStyle, isHighNoon, stepStyle, styleMultiplier, type StyleState } from './style';
 import type { World } from './world';
-import { secondsToTicks, tuning } from './config';
+import { tuning } from './config';
 
 export interface GameState {
   tick: number;
@@ -65,7 +66,7 @@ export function createGame(world: World, seed = 1): GameState {
 /**
  * One tick of the whole game, always in the same order:
  * 1. the player moves; 2. the player's weapon fires (and hits), the boot kicks;
- * 3. targets and enemies update; 4. enemy projectiles fly (and hit);
+ * 3. targets and enemies update, their bodies block the player; 4. enemy projectiles fly (and hit);
  * 5. the wave system spawns enemies; 6. pickups age and get collected;
  * 7. the style meter reads everything that happened in the tick.
  * Things that happened go into `events`.
@@ -91,8 +92,11 @@ export function stepGame(
   stepWeapon(game.player, cmd, world, game.entities, events, isHighNoon(game.style));
   stepKick(game.player, cmd, world, game.entities, events);
   const playerHits = events.slice(firstNewEvent);
-  scoreHits(game.stats, playerHits);
-  dropFromKills(game, world, playerHits);
+  // The style multiplies what you earn. Read BEFORE stepStyle (end of the
+  // tick): a kill counts with the rank you had when you pulled the trigger,
+  // not with the rank that same kill is about to give you.
+  scoreHits(game.stats, playerHits, styleMultiplier(game.style));
+  dropFromKills(game, playerHits);
 
   // Navigation: where's the player on the graph? (Only while standing:
   // in mid-jump we keep the last known node.) Checked 4 times a second;
@@ -118,9 +122,11 @@ export function stepGame(
     }
     else if (e.state !== 'dead') stepGhoul(e, game.player, game.entities, world, graph, flow, dt, events, pressure);
   }
+  // Enemies are solid: push the player out of their bodies (after they moved, see bodyBlock.ts).
+  blockPlayerWithBodies(game.player, game.entities, world, dt);
   game.projectiles = stepProjectiles(game.projectiles, game.player, world, dt, events);
   stepWaves(game, world, events);
-  stepPickups(game, events);
+  stepPickups(game, world, dt, events);
   // Last: it needs the whole tick (your hits come first, the enemies' hits on you later).
   stepStyle(game.style, events, tickEvents);
 
@@ -166,21 +172,16 @@ export function spawnBullInFront(game: GameState): void {
   game.entities.push(createBull(game.nextEntityId++, x, p.y + 0.5, z));
 }
 
-/** Debug: drops one pickup of each kind in a row 4 m in front of the player (J key). */
+/** Debug: drops one pickup of each kind in a row 4 m in front of the player (J key), coin included. */
 export function dropPickupsInFront(game: GameState): void {
   const p = game.player;
   const fx = -Math.sin(p.yaw);
   const fz = -Math.cos(p.yaw);
-  const kinds = ['bullets', 'shells', 'medkit'] as const;
+  const kinds = ['coin', 'bullets', 'shells', 'medkit'] as const; // the coin on the left: the gun doesn't hide it
   kinds.forEach((kind, i) => {
-    const side = i - 1; // -1, 0, +1: left, center, right
-    game.pickups.push({
-      id: game.nextEntityId++,
-      kind,
-      x: p.x + fx * 4 - fz * side * 1.2,
-      y: p.y,
-      z: p.z + fz * 4 + fx * side * 1.2,
-      ticksLeft: secondsToTicks(tuning.dropLifetime),
-    });
+    const side = i - 1.5; // -1.5 .. +1.5: from left to right
+    const x = p.x + fx * 4 - fz * side * 1.2;
+    const z = p.z + fz * 4 + fx * side * 1.2;
+    game.pickups.push(createPickup(game, kind, x, p.y + 0.5, z, kind === 'coin' ? tuning.coinValue : 0));
   });
 }

@@ -114,6 +114,10 @@ stilosa riavvia la catena e il lampeggio si ferma. Niente barra del tempo: la ba
   (Alzati dopo il playtest: le munizioni finivano troppo in fretta. Prima: 20% per punto di peso, 4/3/3, +12 e +4.)
   Munizioni **separate apposta**: se per un po' non cadono cartucce sei costretto a cambiare stile. Si raccolgono passandoci
   sopra; se non ti servono restano a terra. **Spariscono dopo 10 s** (lampeggiano negli ultimi 3).
+- **I drop esplodono fuori dal corpo** [FATTO, da tarare]: monete e oggetti di un'uccisione schizzano
+  a ventaglio (angoli equidistanti, un po' di casualità), fanno un arco, rimbalzano una volta e si posano
+  a **1–3 m** dal corpo. Così non si sovrappongono mai, e la pioggia di bottino è più soddisfacente.
+  Si possono raccogliere anche mentre volano: corri dentro l'esplosione.
   Aspetto: sprite pixel art che galleggiano sopra una pozza di luce del loro colore (ottone =
   proiettili, rosso = cartucce, verde = tonico/medikit), visibili anche di notte; suono diverso per tipo.
 
@@ -138,6 +142,15 @@ con un chiaro preavviso.
 | **Boss** | Pattern complessi, ogni tot ondate | Picco di intensità |
 
 Stile: **sprite 2D** (tipo Doom), coerenti con il resto.
+
+### I nemici sono solidi (body block) [FATTO: passo 1]
+Come in CoD Zombies, **non si passa attraverso l'orda correndo**: da una brutta situazione si
+esce col **movimento** (aggirare, saltare sopra le teste, wall jump) o **aprendosi un varco**
+(calcio e doppietta buttano a terra, e un nemico a terra non blocca). Ghoul, cani e tori sono
+cilindri solidi per il giocatore; i Malocchi (volano) no. Solo il giocatore viene spinto:
+i nemici sono "pesanti", e l'orda che preme ti sposta (mai dentro un muro).
+Da valutare dopo il playtest: atterrare sulle teste (oggi scivoli giù), nemici che si fermano
+al contatto invece di spingerti.
 
 ### Navigazione [FATTO]
 - **Grafo di navigazione** generato automaticamente dai box del livello (`src/sim/nav.ts`):
@@ -390,22 +403,55 @@ Punteggio e moneta sono **separati**:
 - Uno o più, in una parte della mappa. Si comprano le **armi** (si parte col solo revolver; la
   doppietta si compra) e i **potenziamenti**.
 - **Venditore**: un **NPC disegnato come sprite** (stile Doom, come i nemici), a tema. I nemici lo
-  ignorano. [DA DECIDERE] aspetto (idea: mercante infernale col cilindro e un braccio meccanico d'ottone).
+  ignorano. **Aspetto** [FATTO]: mercante infernale pallido col cilindro, finanziera rosso sangue, panciotto
+  senape con la catena d'oro, occhi accesi, ghigno coi denti d'oro e un **braccio meccanico d'ottone**
+  (ingranaggio al gomito, pistone, artiglio a tre dita che tamburella spazientito sul bancone).
 - **Menu che NON mette in pausa**: ti avvicini al venditore, premi **E** e il menu si apre sopra il
   gioco mentre l'orda continua ad arrivare. **Sempre aperto, anche a metà ondata**: chi vuole comprare
   durante il round deve farlo in fretta. Funziona uguale in multiplayer (lì il tempo non si può fermare).
-- [PROPOSTO] Usare edifici che esistono già: **armeria** (armi) ed **emporio** (potenziamenti: ci si
-  entra già, e c'è un bancone con la lanterna). Lo shop non è un rifugio: i ghoul ti seguono dentro.
-- **Menu col mouse libero** [DECISO], come il buy menu di CS:GO: premendo E il cursore si libera e si
-  clicca; intanto non miri. Tecnico: oggi il gioco va in pausa quando il mouse non è catturato
-  (Pointer Lock), quindi il menu dello shop sarà un'eccezione a quella regola.
+- **Armeria** [FATTO: passo 1, il posto]: al **piano di sopra del GUNSMITH** (sud-est, tra la torre est e
+  il magazzino), che ora ha due piani e una pianta più grande (8 × 7 m, dentro 7,4 × 6,4). **Niente
+  scale: ci si arriva col parkour**, ma **entrare e uscire non deve essere la parte difficile**: tre
+  entrate larghe. **Est**: una scala di casse lungo il muro fino alla porta di carico. **Sud**: gradini
+  di casse → tetto del magazzino (6,3 m) → salto di 1,2 m verso ovest sul **balcone** (profondo 1,8 m;
+  frena in aria, il salto è corto) → porta larga. **Ovest**: un finestrone basso (davanzale a 0,5 m), per
+  chi scende dalla torre est o sale a wall jump. Dal tetto del gunsmith (8 m: dalla banca o dalla torre)
+  si scende anche sul balcone. Dentro: bancone lungo la parete nord, lanterna, due rastrelliere, il
+  venditore dietro il bancone. (Primo tentativo troppo piccolo, 6 × 5 m con una finestra stretta: bocciato
+  in playtest.)
+- [PROPOSTO] **Emporio** per i potenziamenti (ci si entra già, e c'è un bancone con la lanterna).
+  Lo shop non è un rifugio: i ghoul ti seguono dentro.
+- **Menu col mouse libero** [FATTO], come il buy menu di CS:GO: vicino al venditore compare
+  "E · COMMERCIA"; premendo E il cursore si libera e il pannello si apre a destra, **sopra il gioco
+  che continua** (niente velo scuro: vedi l'orda arrivare). Intanto non miri e non spari, ma **ti muovi
+  con WASD**. E (o "Chiudi") richiude e riprende il mouse; Esc chiude e mette in pausa, come sempre.
+  Se ti allontani col pannello aperto resta lì, grigio, con "Sei troppo lontano dal venditore" (chiuderlo
+  da solo metterebbe in pausa: il browser non ridà il mouse senza un click o un tasto).
+  Dentro: saluto del venditore, il tuo vildenaro, gli articoli col prezzo (rosso se non basta).
+  **Prezzo della doppietta: 400** [PROPOSTO, da tarare] (un ghoul ne lascia 10, × lo Stile).
 
 **Vildenaro come drop** [DECISO]
 - **Monete lasciate dai nemici**, raccolte passandoci sopra (prendono il posto delle vecchie "anime"):
   altro motivo per muoversi. Si riusa il sistema dei raccoglibili, ma le monete si raccolgono
   **sempre** (non c'è un massimo) e spariscono anche loro dopo un po'.
-- [DA DECIDERE] Quante monete per nemico (in base al peso?) e se lo Stile moltiplica il valore al
-  momento dell'uccisione o della raccolta.
+- **Quante** [DECISO, da tarare]: ogni nemico lascia **sempre** monete (non è un tiro di dado come
+  munizioni e medikit), **tante quanto il suo peso**: ghoul 1, Malocchio 2, cane 3, toro 5. Ogni moneta
+  vale **10**. Schizzano fuori dal corpo insieme agli altri drop (ognuna cade dove capita: un toro che muore
+  sul bordo di un tetto ne lascia un po' sul tetto e un po' in strada). Restano a terra **15 s** (le altre cose 10).
+- **Lo Stile moltiplica il valore al momento dell'uccisione** [DECISO] (il valore è già scritto sulla
+  moneta quando cade): conta quanto eri stiloso quando hai ucciso, non quando raccogli. Se la catena si
+  spezza prima che tu la raccolga, la moneta vale lo stesso.
+- **Passo 1** [FATTO]: monete nella simulazione (`player.money`, si azzera alla morte), sprite di una
+  **piletta di monete d'oro** (due pile disordinate, niente moneta che gira alla Mario), pozza di
+  luce dorata, "ka-ching", contatore provvisorio sotto le uccisioni.
+- **Passo 2** [FATTO]: **contatore nell'HUD**, in alto a destra sotto i punti: la stessa piletta del
+  raccoglibile e il numero in oro che **sale come un registratore di cassa** (non salta: i soldi che
+  "scorrono" sembrano di più). Sotto, un **"+N"** che somma tutto quello che raccogli di fila (le cinque
+  pilette di un toro = un "+50") e poi svanisce.
+- **Passo 3** [FATTO, da tarare]: **moltiplicatore dello Stile** su punti e vildenaro: ×1 a D, +0,5 per
+  ogni rank (C ×1,5, B ×2, A ×2,5, S ×3, SS ×3,5), **×4 per tutto HIGH NOON**. Si legge col rank che avevi
+  quando hai premuto il grilletto (non con quello che quell'uccisione ti fa raggiungere). Sul meter dello
+  Stile, sotto la barra, c'è scritto quanto vale il rank ("×2,5").
 
 [DA DECIDERE]
 - Listino: quali potenziamenti (danno, caricatore, ricarica, salute massima; **movimento**: wall jump
@@ -471,7 +517,9 @@ futuro **poligono di tiro / tutorial**.
 3. Fonti dal movimento (velocità, tempo in aria, wall jump) + premio calante per le azioni ripetute.
 4. **Climax HIGH NOON** (5 s di caricatore infinito). [FATTO: meccanica, tinta, suoni, fine]
 5. **Vildenaro**: monete lasciate dai nemici + contatore nell'HUD; lo Stile moltiplica punti e vildenaro.
+   [FATTO: monete, contatore, moltiplicatore]
 6. **Shop**: venditore (sprite), tasto E, menu che non mette in pausa, primo acquisto: la doppietta.
+   [IN CORSO: armeria, venditore, tasto E e menu fatti; poi l'acquisto della doppietta]
 7. Potenziamenti all'emporio.
 8. Lazo / rampino.
 

@@ -6,6 +6,7 @@
 //   0: bullets — a cardboard box with three revolver cartridges sticking out
 //   1: shells  — two red shotgun shells with brass bases
 //   2: medkit  — a bottle of glowing green "tonic" with a red-cross label
+//   3: coin    — a pile of gold coins (vildenaro): two messy stacks
 // Coordinates: x right, y DOWN (like a canvas), row 15 = the floor.
 import * as THREE from 'three';
 import type { PickupKind } from '../sim/pickups';
@@ -13,7 +14,7 @@ import { buildSheet, PixelFrame, type SpriteSheet } from './enemies/spriteSheet'
 
 export const PICKUP_FRAME = 16;
 /** Which frame each kind uses. */
-export const PICKUP_FRAMES: Record<PickupKind, number> = { bullets: 0, shells: 1, medkit: 2 };
+export const PICKUP_FRAMES: Record<PickupKind, number> = { bullets: 0, shells: 1, medkit: 2, coin: 3 };
 
 const C = {
   outline: 0x120a08,
@@ -41,6 +42,11 @@ const C = {
   tonicDark: 0x188028,
   label: 0xe8dcb0,
   cross: 0xc01810,
+  // coin: hell's gold, a bit reddish
+  gold: 0xe0a830,
+  goldLight: 0xffe890,
+  goldDark: 0x9a6418,
+  goldStamp: 0x6a3c0c,
 };
 
 /**
@@ -119,6 +125,58 @@ function paintMedkit(): PixelFrame {
   return f;
 }
 
+/**
+ * One stack of `n` coins, `w` px wide, standing on the floor. Seen from the
+ * side and a bit from above: every coin is 2 px thick (a row of gold edge,
+ * shaded like a cylinder, and a dark line that separates it from the next),
+ * and on top the face of the last coin (2 rows, the upper one narrower: a
+ * flattened ellipse, the cheapest way to say "round" from this angle).
+ * `shifts` moves single coins 1 px left/right: a messy pile, not a machined column.
+ */
+function coinStack(f: PixelFrame, x: number, w: number, n: number, shifts: number[]): void {
+  const top = 16 - 2 * n; // first row of the edges
+  for (let i = 0; i < n; i++) {
+    const cx = x + (shifts[i] ?? 0);
+    const y = top + 2 * i;
+    column(f, cx, y, w, 1, C.goldLight, C.gold, C.goldDark, true);
+    f.rect(cx, y + 1, w, 1, C.goldDark);
+  }
+  const fx = x + (shifts[0] ?? 0);
+  for (let i = 1; i < w - 1; i++) f.set(fx + i, top - 2, C.goldLight, true);
+  for (let i = 0; i < w; i++) f.set(fx + i, top - 1, C.gold, true);
+  f.set(fx + 2, top - 1, C.goldLight, true); // a glint on the face
+  f.set(fx + w - 2, top - 1, C.goldDark); // the stamp, just a hint
+}
+
+/** A pile of vildenaro: a tall stack behind, a short one in front. */
+function paintCoin(): PixelFrame {
+  const f = new PixelFrame(PICKUP_FRAME, PICKUP_FRAME);
+  coinStack(f, 1, 8, 5, [0, 1, 0, 0, -1]);
+  coinStack(f, 8, 7, 3, [0, -1, 0]); // drawn after: it covers the tall one
+  f.outline(C.outline);
+  return f;
+}
+
+/**
+ * The coin pile as a small 2D canvas, for the HUD's vildenaro counter: the
+ * same pixels as the pickup on the ground, so the HUD and the world speak the
+ * same language ("that thing there = this number here"). CSS scales it up
+ * with `image-rendering: pixelated` (the HTML version of NearestFilter).
+ */
+export function coinIcon(): HTMLCanvasElement {
+  const f = paintCoin();
+  const n = PICKUP_FRAME;
+  const data = new ImageData(n, n);
+  for (let i = 0; i < n * n; i++) {
+    const c = f.color[i];
+    if (c !== -1) data.data.set([(c >> 16) & 255, (c >> 8) & 255, c & 255, 255], i * 4);
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = n;
+  canvas.getContext('2d')!.putImageData(data, 0, 0);
+  return canvas;
+}
+
 /** How much of its own color every pixel emits (the glowing ones emit all of it). */
 const SELF_LIGHT = 0.4;
 
@@ -131,7 +189,7 @@ const SELF_LIGHT = 0.4;
  * to the lit color: the dark parts never go fully black.
  */
 export function pickupSheet(): SpriteSheet & { emissive: THREE.CanvasTexture } {
-  const frames = [paintBullets(), paintShells(), paintMedkit()];
+  const frames = [paintBullets(), paintShells(), paintMedkit(), paintCoin()];
   const sheet = buildSheet(frames);
   const n = PICKUP_FRAME;
   const w = n * frames.length;

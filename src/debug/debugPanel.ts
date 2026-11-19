@@ -48,6 +48,7 @@ export function createDebugPanel(options: {
   style.number(tuning, 'styleHeadshotKill', 0, 200, 5);
   style.number(tuning, 'styleHurtPerDamage', 0, 20, 0.5);
   style.number(tuning, 'styleHighNoonTime', 1, 20, 0.5);
+  style.number(tuning, 'styleMultiplierPerRank', 0, 2, 0.05);
   style.button('Copy values', () => copyToClipboard(toSource(tuning)));
 
   // --- Movement ---
@@ -58,6 +59,7 @@ export function createDebugPanel(options: {
   move.number(tuning, 'stopSpeed', 0, 6, 0.1);
   move.number(tuning, 'gravity', 5, 50, 0.5);
   move.number(tuning, 'jumpSpeed', 2, 15, 0.1);
+  move.boolean(tuning, 'enemyBodyBlock');
   move.boolean(tuning, 'autoBhop');
   move.number(tuning, 'coyoteTime', 0, 0.3, 0.01);
   move.number(tuning, 'jumpBufferTime', 0, 0.3, 0.01);
@@ -107,6 +109,16 @@ export function createDebugPanel(options: {
   drops.number(tuning, 'medkitHeal', 5, 100, 5);
   drops.number(tuning, 'ammoPickupBullets', 0, 36, 1);
   drops.number(tuning, 'ammoPickupShells', 0, 12, 1);
+  drops.number(tuning, 'coinsPerWeight', 0, 5, 1);
+  drops.number(tuning, 'coinValue', 1, 100, 1);
+  drops.number(tuning, 'shopReach', 1, 6, 0.1);
+  drops.number(tuning, 'shotgunPrice', 0, 3000, 50);
+  drops.number(tuning, 'dropBurstSpeedMin', 0, 10, 0.5);
+  drops.number(tuning, 'dropBurstSpeedMax', 0, 10, 0.5);
+  drops.number(tuning, 'dropBurstUp', 0, 15, 0.5);
+  drops.number(tuning, 'dropBounce', 0, 0.9, 0.05);
+  drops.number(tuning, 'dropBounceMinSpeed', 0, 10, 0.5);
+  drops.number(tuning, 'coinLifetime', 1, 60, 1);
 
   const sg = panel.folder('Shotgun (src/sim/config.ts + render/weapons/viewmodel.ts, shotgunView.ts)');
   sg.number(tuning, 'shotgunPellets', 1, 30, 1);

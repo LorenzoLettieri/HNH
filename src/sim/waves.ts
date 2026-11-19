@@ -260,16 +260,21 @@ export function jumpToWave(game: GameState, n: number): void {
   game.wave = { number: n - 1, phase: 'break', breakTicks: secondsToTicks(2), budgetLeft: 0, spawnCooldownTicks: 0 };
 }
 
-/** Points, CoD style: something for every hit, more for the kill. */
-export function scoreHits(stats: Stats, events: SimEvent[]): void {
+/**
+ * Points, CoD style: something for every hit, more for the kill. All of it
+ * × the style multiplier (`multiplier`, from styleMultiplier in style.ts),
+ * rounded: the score stays a whole number.
+ */
+export function scoreHits(stats: Stats, events: SimEvent[], multiplier: number): void {
   for (const e of events) {
     if (e.type !== 'hit' || e.surface !== 'flesh') continue;
-    stats.score += 10;
+    let points = 10;
     if (e.killed) {
       stats.kills++;
-      stats.score += 100;
-      if (e.headshot) stats.score += 50; // headshot bonus
+      points += 100;
+      if (e.headshot) points += 50; // headshot bonus
     }
+    stats.score += Math.round(points * multiplier);
   }
 }
 

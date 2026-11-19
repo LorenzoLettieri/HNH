@@ -14,7 +14,8 @@
 //   │             ┌SHERIFF┐╎ ▫ ▫ ▫ ╎┌BANK┐                ▭ wagon  │
 //   │ HOUSE        └──────┘╎porches╎└────┘                ▭ wagon  │
 //   │ ┌┄┄┄┄┄┄┐      ■ tower ═══ bridge (14 m) ═══ ■ tower  GUNSMITH│
-//   │ ┊† † † ┊ HOUSE          spawn ↑               WAREHOUSE  MINE│
+//   │                                              (shop upstairs) │
+//   │ ┊† † † ┊ HOUSE          spawn ↑          ARMORY WAREHOUSE MINE│
 //   └─────────────────────────────────────────────────────────────┘
 //                               S (z = +46)
 // (▤ = open shed: a roof on posts. ┄ = low fence, everyone hops it.)
@@ -32,9 +33,16 @@
 //   steps on its west side. Both checked with a scripted player in the sim.
 // - HIGH ROAD (precise jumps between roofs, all checked with a scripted player):
 //   hotel → two 1×1 m pillars → undertaker; hotel → two floating platforms
-//   → saloon (→ church → bell tower); bank → drop onto the gunsmith → crate
-//   on its corner → warehouse.
-// - Low roofs (≤ 4.5 m: undertaker, houses, gunsmith, general store,
+//   → saloon (→ church → bell tower); bank → jump onto the gunsmith's roof
+//   (8.0) → drop onto the warehouse (6.3).
+// - ARMORY (the weapon shop, upstairs in the gunsmith, floor at 4.3 m): no
+//   stairs, but three wide ways in. (1) East: up a staircase of four crates,
+//   the last one in front of the loading door. (2) South:
+//   crate steps → warehouse roof → jump west across the 1.2 m gap onto the
+//   balcony → wide door. (3) West: a big low window (sill 0.5 m above the
+//   floor), for whoever drops from the east tower or wall-jumps up the alley.
+//   From the gunsmith's roof (bank, east tower) you can also drop onto the balcony.
+// - Low roofs (≤ 4.5 m: undertaker, houses, general store,
 //   telegraph) can be climbed with three well-timed wall jumps on one wall.
 // - SLIDE ONLY (1.1 m clearance, the ghouls are 1.8 m and go around): under
 //   the deck between the rail wagons (middle crossing), under the covered
@@ -174,6 +182,11 @@ function wallX(z: number, x1: number, x2: number, height: number, openings: [num
   return wallZ(z, x1, x2, height, openings).map((b) => ({ ...b, minX: b.minZ, maxX: b.maxZ, minZ: b.minX, maxZ: b.maxX }));
 }
 
+/** Moves boxes up by `dy`: walls built from the ground (wallZ/wallX) become the walls of an upper floor. */
+function raise(boxes: Box[], dy: number): Box[] {
+  return boxes.map((b) => ({ ...b, minY: b.minY + dy, maxY: b.maxY + dy }));
+}
+
 /**
  * Steps of crates against a wall, `count` crates `step` m apart in height,
  * going from (x, z) in the direction (dx, dz). The last one lets you jump
@@ -228,12 +241,14 @@ const props: Prop[] = [
   { type: 'lantern', mount: 'ground', x: -27.6, y: 8, z: -15.3, rotation: 0 }, // water tower top
   { type: 'lantern', mount: 'ground', x: 0, y: 14, z: 24, rotation: 45 }, // middle of the bridge
   { type: 'lantern', mount: 'ground', x: -25.5, y: 1, z: 17.3, rotation: 0 }, // on the general store's counter
+  { type: 'lantern', mount: 'ground', x: 19.6, y: 5.3, z: 23.3, rotation: 0 }, // on the armory's counter, next to the vendor
 
   // Signs on the sidewalks (board hangs toward +X, or -X with rotation 180).
   { type: 'sign', x: -5.6, y: 0, z: -21, rotation: 0, text: 'SALOON' },
   { type: 'sign', x: -5.6, y: 0, z: 11, rotation: 0, text: 'SHERIFF' },
   { type: 'sign', x: 5.6, y: 0, z: 11, rotation: 180, text: 'BANK' },
   { type: 'sign', x: 5.6, y: 0, z: -8, rotation: 180, text: 'CHURCH' },
+  { type: 'sign', x: 13.2, y: 0, z: 30.2, rotation: 180, text: 'GUNSMITH' }, // under the balcony, board toward Main Street
 
   // Barrels.
   { type: 'barrel', x: -7.2, y: 0, z: -21.5, rotation: 15 },
@@ -257,6 +272,10 @@ const props: Prop[] = [
 export const town: World = {
   spawn: { x: 0, y: 0, z: 36 },
   props,
+  // The vendors (see ShopSpawn in src/sim/world.ts).
+  shops: [
+    { x: 18, y: 4.3, z: 22.4, kind: 'weapons' }, // armory: behind the counter
+  ],
   // Steel practice targets. `rotation` = where the plate faces (same as ?look=):
   // 0 = north, 90 = west, 180 = south, -90 = east. Some are on the rooftops,
   // to give a reason to climb.
@@ -424,9 +443,8 @@ export const town: World = {
     //     which joins the old network (floating platforms → church → bell tower) ---
     box(-12, 5.6, -26.5, 2, 0.4, 2, 'metal'),
     box(-12, 6.3, -23, 2, 0.4, 2, 'metal'),
-    // --- High road 3: GUNSMITH roof (4.3: wall-jump it, or drop from the bank roof)
-    //     → crate on its corner (5.3) → WAREHOUSE roof (6.3) ---
-    box(19.6, 4.3, 28.6, 1.2, 1, 1.2, 'wood'), // on the corner: 0.5 m from the warehouse's eave
+    // --- High road 3: BANK roof (8.3) → GUNSMITH roof (8.0, a 1.9 m jump)
+    //     → WAREHOUSE roof (6.3, a drop: the two roofs almost touch at their corners) ---
 
     // --- Slide passage: the middle crossing of the rail line is blocked by a
     //     low coupling deck at 1.1 m. You slide under it; the ghouls (1.8 m)
@@ -452,8 +470,34 @@ export const town: World = {
     ...building(-16, 34, 7, 4, 6, 'planks'), // x -19.5..-12.5, z 31..37
     ...building(25, 34, 10, 6, 8, 'brick'), // x 20..30, z 30..38
     ...crateSteps(19, 30.4, 0, 1, 6, 1), // tops 1-6 m, going south → jump east onto the roof (6.3)
-    // --- South-east: GUNSMITH between the east tower and the warehouse (3 m alley to the tower) ---
-    ...building(17, 26, 6, 4, 5, 'stone'), // x 14..20, z 23.5..28.5
+    // --- South-east: GUNSMITH between the east tower and the warehouse (3 m alley to the tower,
+    //     2.5 m to the bank). Two storeys: a solid ground floor, and UPSTAIRS the ARMORY, the
+    //     weapon shop, 7.4 × 6.4 m inside. No stairs: you get there with some parkour (routes
+    //     at the top of the file). Three big ways in, so going in and out is never the hard part. ---
+    box(18, 0, 25, 8, 4, 7, 'stone'), // ground floor, x 14..22, z 21.5..28.5
+    box(18, 4, 25, 8.6, 0.3, 7.6, 'planks'), // upstairs floor, top 4.3
+    // Balcony on the south side, 1.8 m deep. It stops 1.2 m short of the
+    // warehouse's eave: from that roof you jump across (and drop 2 m).
+    box(16.1, 4, 29.7, 4.8, 0.3, 1.8, 'planks'), // x 13.7..18.5, z 28.8..30.6
+    // The armory's walls, 3.4 m tall, standing on the upstairs floor.
+    // Openings: [from, to, bottom, top], measured from the upstairs floor.
+    ...raise(wallX(28.35, 14, 22, 3.4, [[15.2, 17.6, 0, 2.9], [19.4, 21.2, 0.8, 2.9]]), 4.3), // south: wide door + window
+    ...raise(wallZ(14.15, 21.5, 28.5, 3.4, [[23.8, 26.6, 0.5, 2.9]]), 4.3), // west: big low window (from the tower side)
+    ...raise(wallZ(21.85, 21.5, 28.5, 3.4, [[24.2, 26.6, 0, 2.9]]), 4.3), // east: loading door (from the crates)
+    box(18, 4.3, 21.65, 8, 3.4, 0.3, 'planks'), // north wall: behind the vendor
+    box(18, 7.7, 25, 8.6, 0.3, 7.6, 'roof'), // roof, top 8.0
+    // Inside: the counter along the north wall, the vendor behind it (shops, above),
+    // a gun rack on each side of him.
+    box(18, 4.3, 23.3, 4, 1, 0.6, 'wood'), // counter, x 16..20, z 23.0..23.6
+    box(15.2, 4.3, 22.1, 1.8, 1.9, 0.5, 'wood'), // gun racks
+    box(20.8, 4.3, 22.1, 1.6, 1.9, 0.5, 'wood'),
+    // East: a staircase of crates along the wall, going south (tops 0.95-3.8 m),
+    // the last one right in front of the loading door (0.5 m below its threshold).
+    // At x 22.4..23.6: clear of the upstairs floor's overhang (22.3), or you'd bump your head.
+    box(23, 0, 21.8, 1.2, 0.95, 1.2, 'wood'),
+    box(23, 0, 23, 1.2, 1.9, 1.2, 'wood'),
+    box(23, 0, 24.2, 1.2, 2.85, 1.2, 'wood'),
+    box(23, 0, 25.4, 1.2, 3.8, 1.2, 'wood'),
     // --- South-east corner: MINE ENTRANCE dug into the canyon wall (a rock outcrop + timber frame) ---
     box(37, 0, 39.5, 9, 5, 5, 'rock'),
     box(34.5, 0, 36.8, 0.4, 3.2, 0.4, 'wood'),

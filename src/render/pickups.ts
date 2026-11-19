@@ -22,8 +22,10 @@ const POOL_RADIUS = 0.8;
 const POOL_STRENGTH = 0.55;
 /** Seconds before vanishing in which it blinks (the warning: hurry up). */
 const BLINK_TIME = 3;
-/** Color of the pool of light under each kind: brass, red-orange, green. */
-const GLOW_COLORS: Record<PickupKind, number> = { bullets: 0xffc040, shells: 0xff5020, medkit: 0x40ff60 };
+/** Color of the pool of light under each kind: brass, red-orange, green, gold. */
+const GLOW_COLORS: Record<PickupKind, number> = { bullets: 0xffc040, shells: 0xff5020, medkit: 0x40ff60, coin: 0xffb020 };
+/** Coins: their pool of light is smaller (a bull drops 5 piles side by side). */
+const COIN_POOL = 0.5;
 
 interface PickupView {
   sprite: THREE.Mesh;
@@ -31,7 +33,7 @@ interface PickupView {
 }
 
 export interface PickupRenderer {
-  update(pickups: Pickup[], camera: THREE.Camera, time: number): void;
+  update(pickups: Pickup[], camera: THREE.Camera, alpha: number, time: number): void;
 }
 
 /**
@@ -101,7 +103,7 @@ export function createPickupRenderer(scene: THREE.Scene): PickupRenderer {
   const views = new Map<number, PickupView>();
 
   return {
-    update(pickups, camera, time) {
+    update(pickups, camera, alpha, time) {
       // The glow pulses, same rhythm for everyone (the material is shared).
       const pulse = GLOW * (1 + GLOW_PULSE * Math.sin(time * 4));
       for (const m of Object.values(spriteMaterials)) m.emissiveIntensity = pulse;
@@ -115,20 +117,32 @@ export function createPickupRenderer(scene: THREE.Scene): PickupRenderer {
             sprite: new THREE.Mesh(spriteGeometry, spriteMaterials[d.kind]),
             pool: new THREE.Mesh(poolGeometry, poolMaterials[d.kind]),
           };
+          if (d.kind === 'coin') v.pool.scale.setScalar(COIN_POOL);
           scene.add(v.sprite, v.pool);
           views.set(d.id, v);
         }
+        // Where it is now: between the previous tick and this one (alpha =
+        // how far into the next tick we are), like the enemies and the camera.
+        // Without it a drop flying at 4 m/s would move in visible 60 Hz steps
+        // on a 144 Hz screen.
+        const x = d.px + (d.x - d.px) * alpha;
+        const y = d.py + (d.y - d.py) * alpha;
+        const z = d.pz + (d.z - d.pz) * alpha;
+        // Bobbing only once it has settled (in flight the arc is the motion).
         // The phase is offset by the id, so two drops side by side don't bob in sync.
-        v.sprite.position.set(d.x, d.y + HOVER + (1 + Math.sin(time * 3 + d.id)) * BOB, d.z);
+        const bob = d.landed ? (1 + Math.sin(time * 3 + d.id)) * BOB : 0;
+        v.sprite.position.set(x, y + HOVER + bob, z);
         // CYLINDRICAL billboard (Doom's items): turn only around the vertical
         // axis to face the camera. Looking down from a roof you see it
         // upright, not lying flat like a fully camera-facing sprite would.
         // atan2 of the camera's offset gives the angle to turn to.
-        v.sprite.rotation.y = Math.atan2(camera.position.x - d.x, camera.position.z - d.z);
-        v.pool.position.set(d.x, d.y + 0.02, d.z); // just above the floor: no z-fighting
+        v.sprite.rotation.y = Math.atan2(camera.position.x - x, camera.position.z - z);
+        v.pool.position.set(x, y + 0.02, z); // just above the floor: no z-fighting
         // Blinking: on/off 8 times a second in the last BLINK_TIME seconds.
         const visible = d.ticksLeft * TICK_DT > BLINK_TIME || Math.floor(time * 8) % 2 === 0;
-        v.sprite.visible = v.pool.visible = visible;
+        v.sprite.visible = visible;
+        // The pool of light belongs on the floor: hidden while the drop is in the air.
+        v.pool.visible = visible && d.landed;
       }
       for (const [id, v] of views) {
         if (alive.has(id)) continue;

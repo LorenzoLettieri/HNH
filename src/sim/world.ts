@@ -60,6 +60,17 @@ export interface TargetSpawn {
   rotation: number;
 }
 
+/**
+ * A shop: where the vendor stands (feet position). Enemies ignore him: he's
+ * not an entity, just a place in the level. `kind` = what he sells.
+ */
+export interface ShopSpawn {
+  x: number;
+  y: number;
+  z: number;
+  kind: 'weapons';
+}
+
 export interface World {
   boxes: Box[];
   props: Prop[];
@@ -67,6 +78,8 @@ export interface World {
   targets?: TargetSpawn[];
   /** Where enemies come into the level from. */
   enemySpawns?: SpawnPoint[];
+  /** The shops' vendors. Optional: the test arena has none. */
+  shops?: ShopSpawn[];
   /** Where the player (re)appears, feet position. */
   spawn: { x: number; y: number; z: number };
 }

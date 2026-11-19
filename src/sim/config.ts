@@ -115,7 +115,7 @@ export const tuning = {
   /** How close a wall must be to jump off it, meters (beyond your body). */
   wallJumpReach: 0.35,
   /** Upward speed of a wall jump, m/s. */
-  wallJumpUp: 7,
+  wallJumpUp: 8.5,
   /** Speed pushing you away from the wall, m/s (small: it's not a bounce). */
   wallJumpPush: 2.5,
   /**
@@ -127,6 +127,10 @@ export const tuning = {
   wallJumpsMax: 3,
   /** Minimum seconds between two wall jumps (else holding jump would burn them all at once). */
   wallJumpCooldown: 0.2,
+
+  // --- Body blocking (see bodyBlock.ts) ---
+  /** Enemies are solid: you can't run through the horde (CoD Zombies). Off = old ghost behavior. */
+  enemyBodyBlock: true,
 
   // --- Revolver ---
   /** Shots in the cylinder. */
@@ -179,6 +183,19 @@ export const tuning = {
   dropWeightMedkit: 3,
   /** Seconds a drop stays on the ground before vanishing. */
   dropLifetime: 10,
+  /**
+   * The BURST: drops fly out of the body (see burst in pickups.ts). Outward
+   * speed, a random value between min and max, m/s: with the upward kick
+   * below they land ~1-2 m from the body.
+   */
+  dropBurstSpeedMin: 2,
+  dropBurstSpeedMax: 4,
+  /** Upward speed of the burst, m/s (higher = longer, higher arc). */
+  dropBurstUp: 5,
+  /** Fraction of the falling speed it bounces back up with (0 = no bounce). */
+  dropBounce: 0.35,
+  /** Below this falling speed it doesn't bounce anymore: it settles, m/s. */
+  dropBounceMinSpeed: 2.5,
   /** How close (horizontally) you must pass to collect it, meters. */
   pickupRadius: 1.0,
   /** Health a medkit gives back. */
@@ -187,6 +204,20 @@ export const tuning = {
   ammoPickupBullets: 18,
   /** Shotgun shells in a 'shells' drop. */
   ammoPickupShells: 5,
+  // --- Shops (see shop.ts) ---
+  /** How close to a vendor you must be to trade (horizontal distance, meters). The counter is ~1.6 m from him. */
+  shopReach: 3,
+  /** ...and how far above/below him you can be: same floor only. */
+  shopReachHeight: 1.5,
+  /** Price of the shotgun at the armory, in vildenaro (a ghoul drops 10, × the style multiplier). */
+  shotgunPrice: 400,
+  // --- Vildenaro: the coins every enemy drops (see dropCoins in pickups.ts) ---
+  /** Coins dropped per point of enemy weight: ghoul 1 coin, eye-bat 2, hound 3, bull 5. ALWAYS, not a chance. */
+  coinsPerWeight: 1,
+  /** Vildenaro one coin is worth. */
+  coinValue: 10,
+  /** Seconds a coin stays on the ground (a bit longer than the other drops: it's never "not needed"). */
+  coinLifetime: 15,
   /** Pellets per shot (a fixed pattern: center + inner ring + outer ring). */
   shotgunPellets: 12,
   /** Half-angle of the outer ring of the pattern, degrees (7° = ~1.2 m wide at 10 m). */
@@ -613,6 +644,11 @@ export const tuning = {
    * the guns never run dry (no reloading, just shoot). Then the style starts over from zero.
    */
   styleHighNoonTime: 5,
+  /**
+   * The style MULTIPLIES score and vildenaro: ×(1 + rank × this). With 0.5:
+   * D ×1, C ×1.5, B ×2, A ×2.5, S ×3, SS ×3.5, HIGH NOON ×4. No chain = ×1.
+   */
+  styleMultiplierPerRank: 0.5,
 };
 
 /** Converts a duration in seconds to a whole number of ticks. */
