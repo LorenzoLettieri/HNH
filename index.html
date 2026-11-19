@@ -249,6 +249,21 @@
         position: fixed; right: 28px; bottom: 22px; display: flex; align-items: flex-end; gap: 14px;
         pointer-events: none; font-family: 'Rye', Georgia, serif;
       }
+      /* Weapon bar, above the ammo (src/render/weaponBar.ts): one slot per weapon, key number
+         + pixel-art silhouette (a canvas scaled up without smoothing). Inactive slots dim,
+         the active one lit and underlined in blood red. */
+      #weapon-bar {
+        position: fixed; right: 28px; bottom: 70px; display: flex; align-items: flex-end; gap: 16px;
+        pointer-events: none; font-family: 'Rye', Georgia, serif;
+      }
+      .weapon-slot {
+        display: flex; align-items: flex-end; gap: 5px; padding-bottom: 4px; opacity: 0.35;
+        border-bottom: 2px solid transparent; transition: opacity 0.15s;
+      }
+      .weapon-slot.active { opacity: 1; border-bottom-color: #9a1c10; }
+      .weapon-slot canvas { image-rendering: pixelated; filter: drop-shadow(2px 2px 0 #000) drop-shadow(0 0 6px #000); }
+      .weapon-key { font-size: 14px; line-height: 1; color: #8a7a62; text-shadow: 2px 2px 0 #000; }
+      .weapon-slot.active .weapon-key { color: #c8b8a0; }
       #ammo-rounds { display: flex; align-items: flex-end; gap: 5px; margin-bottom: 6px; }
       .round { display: block; box-shadow: 0 0 0 1px #000, 2px 2px 0 #000; }
       /* Revolver: a thin cartridge, dull lead tip and old brass. */
@@ -384,6 +399,7 @@
     <div id="hud-smudge-top-right" class="hud-smudge"></div>
     <div id="crosshair"></div>
     <div id="hitmarker"></div>
+    <div id="weapon-bar"></div>
     <div id="ammo-box"><div id="ammo-rounds"></div><div id="ammo-reserve"></div></div>
     <div id="hurt-arcs"></div>
     <div id="threats"></div>
