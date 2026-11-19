@@ -67,9 +67,12 @@ finale unico, "HIGH NOON". [DA DECIDERE: nomi definitivi]
   Tasca vuota = click a vuoto, niente ricarica (resta il calcio). Anche il revolver è finito.
   Le tasche si riempiono coi **drop dei nemici** (sotto); [DA DECIDERE] munizioni fisse sulla mappa.
 - **Drop dei nemici** [FATTO, da tarare]: niente loot table per nemico, una regola sola: probabilità
-  = **peso del nemico × 20%** (ghoul 20%, Malocchio 40%, cane 60%, toro 80% = il massimo). Del drop, 30% **medikit**
-  (+25 salute), 70% **munizioni** (+12 proiettili e +4 cartucce insieme). Si raccolgono passandoci
+  = **peso del nemico × 20%** (ghoul 20%, Malocchio 40%, cane 60%, toro 80% = il massimo). Il tipo è scelto coi **pesi**
+  4/3/3: 40% **proiettili** (+12, revolver), 30% **cartucce** (+4, doppietta), 30% **medikit** (+25 salute).
+  Munizioni **separate apposta**: se per un po' non cadono cartucce sei costretto a cambiare stile. Si raccolgono passandoci
   sopra; se non ti servono restano a terra. **Spariscono dopo 10 s** (lampeggiano negli ultimi 3).
+  Aspetto: sprite pixel art che galleggiano sopra una pozza di luce del loro colore (ottone =
+  proiettili, rosso = cartucce, verde = tonico/medikit), visibili anche di notte; suono diverso per tipo.
 
 ---
 

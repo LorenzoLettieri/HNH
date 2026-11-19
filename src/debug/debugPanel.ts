@@ -89,7 +89,9 @@ export function createDebugPanel(options: {
   const drops = panel.folder('Drops (src/sim/config.ts + pickups.ts)');
   drops.number(tuning, 'dropChancePerWeight', 0, 1, 0.05);
   drops.number(tuning, 'dropChanceMax', 0, 1, 0.05);
-  drops.number(tuning, 'dropMedkitShare', 0, 1, 0.05);
+  drops.number(tuning, 'dropWeightBullets', 0, 10, 1);
+  drops.number(tuning, 'dropWeightShells', 0, 10, 1);
+  drops.number(tuning, 'dropWeightMedkit', 0, 10, 1);
   drops.number(tuning, 'dropLifetime', 1, 60, 1);
   drops.number(tuning, 'pickupRadius', 0.3, 3, 0.1);
   drops.number(tuning, 'medkitHeal', 5, 100, 5);

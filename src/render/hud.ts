@@ -4,11 +4,12 @@
 import { tuning } from '../sim/config';
 import type { SimEvent } from '../sim/events';
 import type { PlayerState } from '../sim/player';
-import { playBell, playPlayerHurt } from '../audio/sfx';
+import { playBell, playPickup, playPlayerHurt } from '../audio/sfx';
 import type { GameState } from '../sim/game';
 
 const healthFill = document.getElementById('health-fill')!;
 const damage = document.getElementById('damage')!;
+const pickupFlash = document.getElementById('pickup-flash')!;
 const death = document.getElementById('death')!;
 const deathStats = document.getElementById('death-stats')!;
 const waveHud = document.getElementById('wave')!;
@@ -22,6 +23,9 @@ function showBanner(text: string, seconds: number): void {
 }
 
 let flash = 0; // 0..1, the red flash after a hit
+/** Screen tint for each pickup: same colors as their glow (render/pickups.ts). */
+const PICKUP_TINTS = { bullets: 'rgb(255, 200, 70)', shells: 'rgb(255, 90, 40)', medkit: 'rgb(70, 255, 100)' };
+let pickupTime = 0; // 0..1, the short flash when you collect something
 let deathTime = 0; // seconds left of the death message
 
 export function updateHud(game: GameState, events: SimEvent[], dt: number): void {
@@ -30,6 +34,13 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
     if (e.type === 'playerHurt') {
       flash = 1;
       playPlayerHurt();
+    }
+    if (e.type === 'pickup') {
+      // Doom's "bonus flash": the whole screen tinted for a moment, in the
+      // pickup's color (a CSS variable read by #pickup-flash in index.html).
+      pickupTime = 1;
+      pickupFlash.style.setProperty('--tint', PICKUP_TINTS[e.kind]);
+      playPickup(e.kind);
     }
     if (e.type === 'playerDied') {
       deathTime = 4;
@@ -66,6 +77,9 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
   flash = Math.max(0, flash - dt * 3);
   const lowHealth = Math.max(0, (0.4 - health) / 0.4) * 0.6;
   damage.style.opacity = String(Math.min(1, Math.max(flash, lowHealth)));
+
+  pickupTime = Math.max(0, pickupTime - dt * 5); // gone in 0.2 s
+  pickupFlash.style.opacity = String(pickupTime * 0.35);
 
   deathTime = Math.max(0, deathTime - dt);
   death.style.opacity = String(Math.min(1, deathTime));

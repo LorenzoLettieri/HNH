@@ -6,7 +6,7 @@ import { createDebugPanel } from './debug/debugPanel';
 import { buildCommand, updateLook, view } from './controls';
 import { TICK_DT, tuning } from './sim/config';
 import { copyPlayer, createPlayer, horizontalSpeed } from './sim/player';
-import { createGame, spawnBullInFront, spawnEyebatInFront, spawnHoundInFront, stepGame } from './sim/game';
+import { createGame, spawnBullInFront, spawnEyebatInFront, spawnHoundInFront, dropPickupsInFront, stepGame } from './sim/game';
 import { jumpToWave } from './sim/waves';
 import { currentAmmo, magazineSize } from './sim/weapon';
 import { DEFAULT_LEVEL, LEVELS } from './levels';
@@ -159,6 +159,8 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyG') spawnHoundInFront(game);
   // V: a bull.
   if (e.code === 'KeyV') spawnBullInFront(game);
+  // J: one pickup of each kind (bullets, shells, medkit).
+  if (e.code === 'KeyJ') dropPickupsInFront(game);
   if (e.code === 'Backquote') {
     debugPanel.toggle();
     document.exitPointerLock();
@@ -315,7 +317,7 @@ renderer.setAnimationLoop((now: number) => {
   hounds.update(game.entities, events, camera, alpha, dt);
   bulls.update(game.entities, events, camera, alpha, dt);
   projectiles.update(game.projectiles, events, camera, alpha, dt);
-  pickups.update(game.pickups, now / 1000);
+  pickups.update(game.pickups, camera, now / 1000);
   updateHud(game, events, dt);
   navDebug.update(getFlowField(getNavGraph(world), game.navGoal));
   hitboxDebug.update(game.entities);

@@ -93,6 +93,11 @@
         position: fixed; inset: 0; pointer-events: none; opacity: 0;
         background: radial-gradient(ellipse at center, transparent 45%, rgba(170, 10, 0, 0.75) 100%);
       }
+      /* Flash when you collect a pickup: color from the --tint variable (set in hud.ts). */
+      #pickup-flash {
+        position: fixed; inset: 0; pointer-events: none; opacity: 0;
+        background: radial-gradient(ellipse at center, transparent 30%, var(--tint, #fc4) 100%);
+      }
       #death {
         position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
         color: #ff3010; font: bold 64px monospace; letter-spacing: 8px; pointer-events: none; opacity: 0;
@@ -177,6 +182,7 @@
             <tr><td><kbd>B</kbd></td><td>Fai apparire un Malocchio</td></tr>
             <tr><td><kbd>G</kbd></td><td>Fai apparire un cane infernale</td></tr>
             <tr><td><kbd>V</kbd></td><td>Fai apparire un toro</td></tr>
+            <tr><td><kbd>J</kbd></td><td>Fai cadere un raccoglibile di ogni tipo</td></tr>
             <tr><td><kbd>\</kbd> / <kbd>`</kbd></td><td>Pannello di debug (tasto sotto Esc)</td></tr>
           </table>
           <button class="back" data-goto="main">Indietro</button>
@@ -188,6 +194,7 @@
     <div id="hitmarker"></div>
     <div id="ammo"></div>
     <div id="damage"></div>
+    <div id="pickup-flash"></div>
     <div id="health"><div id="health-fill"></div></div>
     <div id="death">SEI MORTO</div>
     <div id="death-stats"></div>

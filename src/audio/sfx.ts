@@ -176,6 +176,31 @@ function ring(base: number, duration: number, volume: number): void {
   }
 }
 
+/**
+ * You picked something up. Each kind has its own sound, so you know what you
+ * got without looking at the HUD:
+ * - bullets: a handful of small cartridges clinking (quick high clicks + a tiny ring);
+ * - shells: two heavier clacks, lower;
+ * - medkit: a cork pop and a warm, rising chime (two rings, the second higher).
+ */
+export function playPickup(kind: 'bullets' | 'shells' | 'medkit'): void {
+  if (kind === 'bullets') {
+    for (let i = 0; i < 3; i++) {
+      noiseBurst({ start: i * 0.045, duration: 0.02, volume: 0.35, filter: 'bandpass', frequency: 5000 - i * 600, q: 8 });
+    }
+    ring(2200, 0.2, 0.08);
+  } else if (kind === 'shells') {
+    for (let i = 0; i < 2; i++) {
+      noiseBurst({ start: i * 0.08, duration: 0.04, volume: 0.5, filter: 'bandpass', frequency: 1800, q: 4 });
+      thump({ start: i * 0.08, duration: 0.05, volume: 0.25, from: 500, to: 250 });
+    }
+  } else {
+    thump({ duration: 0.06, volume: 0.4, from: 900, to: 300 }); // pop!
+    ring(660, 0.5, 0.12);
+    setTimeout(() => ring(990, 0.6, 0.12), 90);
+  }
+}
+
 /** Bullet hits a steel target. */
 export function playTargetHit(): void {
   ring(900 + Math.random() * 120, 0.5, 0.35);
