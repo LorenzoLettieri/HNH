@@ -450,11 +450,9 @@ export const tuning = {
    */
   bullTrampleHeight: 0.9,
   /**
-   * Other enemies in the way of a charge get run over too: damage (100 =
-   * a ghoul dies up to wave 19) and a throw (m/s, sideways out of its path
-   * and forward; and up). Lure it through the horde.
+   * Other enemies in the way of a charge get shoved aside (no damage): a
+   * throw, m/s, sideways out of its path and forward; and up.
    */
-  bullTrampleDamage: 100,
   bullTrampleKnockback: 12,
   bullTrampleLift: 6,
   /** After an overshoot it skids to a stop for this long, seconds. */
@@ -471,7 +469,7 @@ export const tuning = {
   /** Collider height, meters: taller than you. It can't go under the slide passages. */
   bullHeight: 2.1,
   /** HITBOX width and height (what bullets hit), meters: a big target. */
-  bullHitWidth: 2.0,
+  bullHitWidth: 2.4,
   bullHitHeight: 2.3,
   /** Max height of an obstacle it steps over while walking, meters. */
   bullJumpHeight: 1.0,

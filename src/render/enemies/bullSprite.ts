@@ -155,8 +155,8 @@ function paintHeadSide(f: PixelFrame, mode: HeadMode, bob: number): void {
 function frontLeg(f: PixelFrame, s: P, hoof: P, c: number, cDark: number): void {
   const kx = s[0] + (hoof[0] - s[0]) * 0.55;
   const ky = s[1] + (hoof[1] - s[1]) * 0.55;
-  f.limb(s[0], s[1], kx, ky, 8, c, cDark);
-  f.limb(kx, ky, hoof[0], hoof[1] - 3, 5, c, cDark);
+  f.limb(s[0], s[1], kx, ky, 10, c, cDark);
+  f.limb(kx, ky, hoof[0], hoof[1] - 3, 6, c, cDark);
   hoofSide(f, hoof);
 }
 
@@ -166,15 +166,15 @@ function hindLeg(f: PixelFrame, hip: P, hoof: P, c: number, cDark: number): void
   const ky = hip[1] + 9;
   const hx = hoof[0] - 3;
   const hy = hoof[1] - 9;
-  f.limb(hip[0], hip[1], kx, ky, 10, c, cDark); // big thigh
-  f.limb(kx, ky, hx, hy, 6, c, cDark);
-  f.limb(hx, hy, hoof[0], hoof[1] - 3, 4, c, cDark);
+  f.limb(hip[0], hip[1], kx, ky, 13, c, cDark); // big thigh
+  f.limb(kx, ky, hx, hy, 7, c, cDark);
+  f.limb(hx, hy, hoof[0], hoof[1] - 3, 5, c, cDark);
   hoofSide(f, hoof);
 }
 
 /** Cloven hoof seen from the side: dark, with a notch. */
 function hoofSide(f: PixelFrame, h: P): void {
-  f.rect(h[0] - 3, h[1] - 2, 7, 3, C.hideDark);
+  f.rect(h[0] - 4, h[1] - 2, 8, 3, C.hideDark);
   f.set(h[0] + 1, h[1], C.outline);
   f.set(h[0] - 3, h[1] - 2, C.outline);
 }
@@ -182,23 +182,24 @@ function hoofSide(f: PixelFrame, h: P): void {
 function paintSide(p: SidePose): PixelFrame {
   const f = new PixelFrame(FRAME_W, FRAME_H);
   const b = p.bob;
-  const shoulder: P = [52, 44 + b];
-  const hip: P = [22, 40 + b];
+  const shoulder: P = [52, 50 + b];
+  const hip: P = [20, 46 + b];
 
   // Far legs first, darker (in shadow, behind the body).
   frontLeg(f, shoulder, p.frontFar, C.hideDark, C.outline);
   hindLeg(f, hip, p.backFar, C.hideDark, C.outline);
 
   // Tail: hangs from the rump, a tuft at the end with a smoldering tip.
-  f.limb(13, 27 + b, 9, 40 + b, 2, C.hide, C.hideDark);
-  f.limb(9, 40 + b, 9, 47 + b, 3, C.hideDark, C.outline);
-  embers(f, [[9, 48 + b]]);
+  f.limb(8, 30 + b, 4, 44 + b, 2, C.hide, C.hideDark);
+  f.limb(4, 44 + b, 4, 51 + b, 3, C.hideDark, C.outline);
+  embers(f, [[4, 52 + b]]);
 
   // Body column by column. The top line is the silhouette that says "bull":
   // low rump, rising back, a HUGE hump over the shoulders, down to the neck.
-  const top: P[] = [[12, 28], [24, 24], [36, 18], [46, 10], [52, 12], [60, 22]];
-  const bottom: P[] = [[12, 44], [24, 48], [40, 50], [52, 52], [60, 44]];
-  for (let x = 12; x <= 60; x++) {
+  // The bottom line is a deep, round barrel of a belly: a heavy animal.
+  const top: P[] = [[7, 32], [10, 27], [20, 22], [34, 15], [46, 7], [54, 9], [62, 22]];
+  const bottom: P[] = [[7, 44], [10, 50], [18, 56], [32, 59], [46, 59], [56, 55], [62, 46]];
+  for (let x = 7; x <= 62; x++) {
     const t = Math.round(profile(top, x)) + b;
     const u = Math.round(profile(bottom, x)) + b;
     f.rect(x, t, 1, u - t + 1, C.hide);
@@ -208,9 +209,11 @@ function paintSide(p: SidePose): PixelFrame {
     f.set(x, u - 1, C.hideDark);
   }
   // Shaggy darker mane on the hump (a few vertical strokes).
-  for (let x = 42; x <= 56; x += 2) f.rect(x, Math.round(profile(top, x)) + 3 + b, 1, 6, C.hideDark);
+  for (let x = 42; x <= 58; x += 2) f.rect(x, Math.round(profile(top, x)) + 3 + b, 1, 7, C.hideDark);
+  // Belly shadow: a darker band along the bottom makes it read round, not flat.
+  for (let x = 12; x <= 58; x++) f.rect(x, Math.round(profile(bottom, x)) - 4 + b, 1, 3, C.hideDark);
   // Brass plate riveted on its back, two exhaust pipes with glowing mouths.
-  for (let x = 26; x <= 38; x++) {
+  for (let x = 24; x <= 38; x++) {
     const t = Math.round(profile(top, x)) + b;
     f.rect(x, t - 2, 1, 6, C.brass);
     f.set(x, t - 2, C.brassLight);
@@ -224,11 +227,11 @@ function paintSide(p: SidePose): PixelFrame {
     embers(f, [[x, t - 8], [x + 1, t - 8]]);
   }
   // Ember cracks: haunch and shoulder.
-  embers(f, [[20, 32 + b], [21, 33 + b], [21, 34 + b], [22, 35 + b], [47, 30 + b], [48, 31 + b], [48, 32 + b], [49, 33 + b], [38, 40 + b], [39, 41 + b]]);
+  embers(f, [[16, 34 + b], [17, 35 + b], [17, 36 + b], [18, 37 + b], [47, 30 + b], [48, 31 + b], [48, 32 + b], [49, 33 + b], [36, 44 + b], [37, 45 + b], [38, 46 + b]]);
 
   // Neck (a thick limb from the shoulders to the skull), then the head.
   const { drop } = HEAD[p.head];
-  f.limb(54, 26 + b, 60, 32 + drop + b, 14, C.hide, C.hideDark);
+  f.limb(54, 26 + b, 60, 32 + drop + b, 17, C.hide, C.hideDark);
   paintHeadSide(f, p.head, b);
 
   // Near legs last, in front of the body.
@@ -259,7 +262,7 @@ function paintDead(): PixelFrame {
     f.rect(x1 - 2, 37, 6, 3, C.hideDark); // hooves up
   }
   for (let x = 10; x <= 60; x++) {
-    const t = Math.round(profile([[10, 58], [20, 52], [40, 50], [60, 54]], x));
+    const t = Math.round(profile([[10, 58], [18, 50], [40, 47], [60, 53]], x));
     f.rect(x, t, 1, 71 - t, C.hide);
     f.set(x, t, C.hideLight);
   }
@@ -285,13 +288,14 @@ function paintFront(liftL: number, liftR: number, bob: number, head: 'up' | 'dow
   const f = new PixelFrame(FRAME_W, FRAME_H);
   const b = bob;
   // Hind legs peeking out behind the front ones.
-  for (const x of [26, mx(31)]) {
-    f.rect(x, 50 + b, 6, 20 - b, C.hideDark);
-    f.rect(x - 1, 68, 8, 3, C.outline);
+  for (const x of [20, mx(27)]) {
+    f.rect(x, 52 + b, 8, 18 - b, C.hideDark);
+    f.rect(x - 1, 68, 10, 3, C.outline);
   }
-  // Body: rows, half-width from the narrow top of the hump to the wide shoulders.
-  const halfWidth: P[] = [[10, 6], [16, 15], [30, 19], [46, 18], [54, 13]];
-  for (let y = 10; y <= 54; y++) {
+  // Body: rows, half-width from the narrow top of the hump to the wide,
+  // round barrel of the chest and belly.
+  const halfWidth: P[] = [[10, 7], [14, 15], [22, 21], [36, 25], [48, 24], [54, 20], [58, 14]];
+  for (let y = 10; y <= 58; y++) {
     const hw = Math.round(profile(halfWidth, y));
     f.rect(42 - hw, y + b, hw * 2, 1, C.hide);
     f.set(42 - hw, y + b, C.hideLight);
@@ -305,13 +309,19 @@ function paintFront(liftL: number, liftR: number, bob: number, head: 'up' | 'dow
     f.rect(x, 4 + b, 2, 7, C.brass);
     embers(f, [[x, 3 + b], [x + 1, 3 + b]]);
   }
-  embers(f, [[28, 34 + b], [29, 35 + b], [29, 36 + b], [mx(28), 34 + b], [mx(29), 35 + b], [mx(29), 36 + b]]);
+  embers(f, [[22, 34 + b], [23, 35 + b], [23, 36 + b], [mx(22), 34 + b], [mx(23), 35 + b], [mx(23), 36 + b]]);
+  // Belly shadow on the sides: it reads round.
+  for (let y = 40; y <= 56; y++) {
+    const hw = Math.round(profile(halfWidth, y));
+    f.rect(42 - hw + 1, y + b, 2, 1, C.hideDark);
+    f.rect(40 + hw - 2, y + b, 2, 1, C.hideDark);
+  }
   // Front legs: pillars, one lifted at a time.
-  for (const [x, lift] of [[31, liftL], [mx(37), liftR]] as const) {
-    f.rect(x, 48 + b, 7, 21 - b - lift, C.hide);
-    f.rect(x, 48 + b, 1, 21 - b - lift, C.hideLight);
-    f.rect(x - 1, 68 - lift, 9, 3, C.hideDark); // hoof
-    f.set(x + 3, 70 - lift, C.outline); // the cleft
+  for (const [x, lift] of [[27, liftL], [mx(36), liftR]] as const) {
+    f.rect(x, 50 + b, 10, 19 - b - lift, C.hide);
+    f.rect(x, 50 + b, 1, 19 - b - lift, C.hideLight);
+    f.rect(x - 1, 68 - lift, 12, 3, C.hideDark); // hoof
+    f.set(x + 4, 70 - lift, C.outline); // the cleft
   }
 
   // Head. Lowered for the charge: everything drops 10 px, horns point at you.
@@ -369,12 +379,12 @@ function paintBack(stride: number): PixelFrame {
   // Horn tips sticking out past the hump (the head is hidden in front).
   for (const s of [1, -1]) {
     const X = (v: number) => (s === 1 ? v : mx(v));
-    f.limb(X(28), 20, X(20), 14, 3, C.bone, C.boneDark);
-    f.limb(X(20), 14, X(22), 8, 2, C.bone, C.boneDark);
+    f.limb(X(24), 20, X(16), 14, 3, C.bone, C.boneDark);
+    f.limb(X(16), 14, X(18), 8, 2, C.bone, C.boneDark);
   }
   // Hump (behind) and rump (in front): two stacks of rows.
   for (let y = 8; y <= 26; y++) {
-    const hw = Math.round(profile([[8, 6], [14, 14], [26, 18]], y));
+    const hw = Math.round(profile([[8, 7], [14, 16], [26, 22]], y));
     f.rect(42 - hw, y, hw * 2, 1, C.hideDark);
   }
   f.rect(36, 8, 12, 3, C.brass);
@@ -384,19 +394,19 @@ function paintBack(stride: number): PixelFrame {
     embers(f, [[x, 1], [x + 1, 1]]);
   }
   // Hind legs, alternating.
-  for (const [x, lift] of [[29, stride], [mx(36), 3 - stride]] as const) {
-    f.rect(x, 46, 8, 23 - lift, C.hide);
-    f.rect(x, 46, 1, 23 - lift, C.hideLight);
-    f.rect(x - 1, 68 - lift, 10, 3, C.hideDark);
-    f.set(x + 4, 70 - lift, C.outline);
+  for (const [x, lift] of [[25, stride], [mx(35), 3 - stride]] as const) {
+    f.rect(x, 48, 11, 21 - lift, C.hide);
+    f.rect(x, 48, 1, 21 - lift, C.hideLight);
+    f.rect(x - 1, 68 - lift, 13, 3, C.hideDark);
+    f.set(x + 5, 70 - lift, C.outline);
   }
-  for (let y = 20; y <= 50; y++) {
-    const hw = Math.round(profile([[20, 12], [26, 17], [40, 18], [50, 14]], y));
+  for (let y = 20; y <= 54; y++) {
+    const hw = Math.round(profile([[20, 14], [26, 21], [42, 24], [50, 22], [54, 16]], y));
     f.rect(42 - hw, y, hw * 2, 1, C.hide);
     f.set(42 - hw, y, C.hideLight);
     f.set(41 + hw, y, C.hideDark);
   }
-  embers(f, [[30, 30], [31, 31], [31, 32], [mx(30), 30], [mx(31), 31], [mx(31), 32]]);
+  embers(f, [[24, 30], [25, 31], [25, 32], [mx(24), 30], [mx(25), 31], [mx(25), 32]]);
   // Tail down the middle, tuft at the end.
   f.limb(42, 22, 42, 44, 2, C.hideDark, C.outline);
   f.rect(41, 44, 3, 5, C.hideDark);
@@ -411,9 +421,9 @@ function paintBack(stride: number): PixelFrame {
  * and gathered, head down.
  */
 const SIDE_WALK: SidePose[] = [
-  { frontNear: [60, 71], frontFar: [50, 71], backNear: [14, 71], backFar: [26, 70], bob: 0, head: 'up' },
+  { frontNear: [60, 71], frontFar: [50, 71], backNear: [12, 71], backFar: [24, 70], bob: 0, head: 'up' },
   { frontNear: [56, 70], frontFar: [54, 71], backNear: [18, 71], backFar: [22, 71], bob: 1, head: 'up' },
-  { frontNear: [50, 71], frontFar: [60, 70], backNear: [26, 70], backFar: [14, 71], bob: 0, head: 'up' },
+  { frontNear: [50, 71], frontFar: [60, 70], backNear: [24, 70], backFar: [12, 71], bob: 0, head: 'up' },
   { frontNear: [54, 71], frontFar: [56, 70], backNear: [22, 71], backFar: [18, 71], bob: 1, head: 'up' },
 ];
 

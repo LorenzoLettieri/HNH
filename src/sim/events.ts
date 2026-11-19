@@ -35,8 +35,6 @@ export type SimEvent =
       killed: boolean;
       surface: 'metal' | 'flesh';
       headshot: boolean;
-      /** An enemy hurt another (a bull's charge): blood and sounds yes, but no hitmarker, score or drop. */
-      byEnemy?: boolean;
     }
   | { type: 'playerHurt'; damage: number; fromX: number; fromZ: number }
   | { type: 'playerDied'; wave: number; kills: number; score: number }

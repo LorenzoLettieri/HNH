@@ -118,7 +118,6 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
           case 'reloadEnd':
             break;
           case 'hit':
-            if (e.byEnemy) break; // not your hit: no hitmarker
             if (e.surface === 'metal') {
               if (e.killed) playTargetDown();
               else playTargetHit();

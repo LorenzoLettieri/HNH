@@ -24,7 +24,7 @@
 // too heavy. It doesn't climb or ride vents: if you're on a roof it waits below.
 import { moveAndCollide, overlapsAny } from './collision';
 import { secondsToTicks, tuning } from './config';
-import { damage, type BullEntity, type Entity } from './entities';
+import type { BullEntity, Entity } from './entities';
 import type { SimEvent } from './events';
 import { interceptTime } from './eyebat';
 import { jumpTo } from './ghoul';
@@ -243,7 +243,7 @@ function charge(b: BullEntity, player: PlayerState, others: Entity[], world: Wor
     player.vy = Math.max(player.vy, tuning.bullChargeLift);
     events.push({ type: 'playerHurt', damage: tuning.bullChargeDamage, fromX: b.x, fromZ: b.z });
   }
-  trample(b, others, events);
+  trample(b, others);
 
   if (speedBefore > 1 && Math.hypot(b.vx, b.vz) < speedBefore * (1 - CRASH_SPEED_LOSS)) {
     setState(b, 'stunned');
@@ -259,16 +259,13 @@ function charge(b: BullEntity, player: PlayerState, others: Entity[], world: Wor
 }
 
 /**
- * Other enemies in the way get run over too: the bull doesn't care whose
- * side they're on. Same test as for you (circle on the ground + heights),
- * then damage and a throw via knockBack (the kick's), out of its path.
+ * Other enemies in the way get shoved aside: same test as for you (circle on
+ * the ground + heights), then a throw via knockBack (the kick's), out of its
+ * path. NO damage: the bull clears the way, it doesn't kill the horde for you
+ * (a ghoul thrown this way is still down for a moment, like after a kick).
  * The charge doesn't slow down. Each enemy only once per charge.
- *
- * The 'hit' event has byEnemy = true: the renderers show the blood and play
- * the sounds, but it's not your hit (no hitmarker, score or drop: those only
- * look at the events of your weapons).
  */
-function trample(b: BullEntity, others: Entity[], events: SimEvent[]): void {
+function trample(b: BullEntity, others: Entity[]): void {
   const reach = tuning.bullRadius + 0.8;
   for (const o of others) {
     if (o.type === 'target' || o.type === 'bull' || o.state === 'dead' || b.trampled.includes(o.id)) continue;
@@ -276,8 +273,6 @@ function trample(b: BullEntity, others: Entity[], events: SimEvent[]): void {
     const dz = o.z - b.z;
     if (Math.hypot(dx, dz) > reach || o.y > b.y + tuning.bullHeight || o.y + 1.5 < b.y) continue;
     b.trampled.push(o.id);
-    const killed = damage(o, tuning.bullTrampleDamage);
-    events.push({ type: 'hit', entityId: o.id, damage: tuning.bullTrampleDamage, killed, surface: 'flesh', headshot: false, byEnemy: true });
     // Throw: forward along the charge, plus sideways toward the side it was on.
     const side = dx * b.dirZ - dz * b.dirX >= 0 ? 1 : -1;
     let tx = b.dirX + b.dirZ * side;

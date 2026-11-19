@@ -174,6 +174,8 @@ interface BurstOptions {
   color: number;
   brightness: number; // > 1 = HDR, blooms
   additive: boolean;
+  /** How much each particle strays from the main direction (0 = a tight jet). Default 1.6. */
+  spread?: number;
 }
 
 class Burst {
@@ -199,9 +201,10 @@ class Burst {
       p[ix + 2] = point.z;
       // Normal + random vector = a random direction biased away from the surface.
       const speed = this.o.speed * (0.4 + Math.random());
-      this.vel[ix] = (normal.x + (Math.random() - 0.5) * 1.6) * speed;
-      this.vel[ix + 1] = (normal.y + (Math.random() - 0.5) * 1.6 + 0.4) * speed;
-      this.vel[ix + 2] = (normal.z + (Math.random() - 0.5) * 1.6) * speed;
+      const s = this.o.spread ?? 1.6;
+      this.vel[ix] = (normal.x + (Math.random() - 0.5) * s) * speed;
+      this.vel[ix + 1] = (normal.y + (Math.random() - 0.5) * s + 0.4) * speed;
+      this.vel[ix + 2] = (normal.z + (Math.random() - 0.5) * s) * speed;
       this.age[i] = Math.random() * 0.1;
       this.layer.sizes[i] = this.o.size * (0.6 + Math.random() * 0.8);
     }
@@ -267,13 +270,46 @@ export function spawnBlood(point: THREE.Vector3, normal: THREE.Vector3, count = 
   blood.spawn(point, normal, count);
 }
 
+/** Clods of dirt kicked up from the ground (a bull pawing, a charge). Opaque, they fall back down. */
+const dirt = new Burst({
+  max: 500,
+  life: 0.7,
+  size: 0.11,
+  speed: 3,
+  gravity: 14,
+  color: 0x4a3020,
+  brightness: 1,
+  additive: false,
+});
+
+/** Fiery snorts: short jets of glowing breath (nostrils, exhaust pipes). Additive, they bloom and drift up. */
+const snort = new Burst({
+  max: 500,
+  life: 0.45,
+  size: 0.09,
+  speed: 3,
+  gravity: -2, // negative: hot air rises
+  color: 0xff7a30,
+  brightness: 4,
+  additive: true,
+  spread: 0.5,
+});
+
+export function spawnDirt(point: THREE.Vector3, direction: THREE.Vector3, count = 8): void {
+  dirt.spawn(point, direction, count);
+}
+
+export function spawnSnort(point: THREE.Vector3, direction: THREE.Vector3, count = 5): void {
+  snort.spawn(point, direction, count);
+}
+
 export function createParticles(
   scene: THREE.Scene,
   levelFires: FireSource[],
   levelVents: THREE.Vector3[] = [],
 ): void {
   vents = levelVents;
-  scene.add(steam.points, sparks.layer.points, blood.layer.points);
+  scene.add(steam.points, sparks.layer.points, blood.layer.points, dirt.layer.points, snort.layer.points);
   steam.material.uniforms.color.value.set(0xe8dccc);
   fires = levelFires;
   totalEmberRate = fires.reduce((sum, f) => sum + f.emberRate, 0);
@@ -327,6 +363,8 @@ export function updateParticles(
   updateSteam(dt);
   sparks.update(dt);
   blood.update(dt);
+  dirt.update(dt);
+  snort.update(dt);
 }
 
 function updateDust(dt: number, time: number, cam: THREE.Vector3): void {

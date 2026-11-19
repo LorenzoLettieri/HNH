@@ -194,9 +194,9 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
     ostacolo basso: in carica non salta) resta **stordito 2,2 s** e **ogni colpo è critico** (×3:
     2 colpi di revolver). È la ricompensa della schivata con un muro dietro.
   - **Troppo pesante** per calcio e doppietta: prende il danno ma non si sposta.
-  - **Travolge anche gli altri nemici** (ghoul, cani, Malocchi bassi) che trova sulla traiettoria: 100 danni
-    (un ghoul muore fino all'ondata 19) e li lancia di lato. Si può **attirarlo attraverso l'orda**.
-    Quelle uccisioni non danno punti né drop (non sono colpi tuoi). [DA DECIDERE] premiarle?
+  - **Spinge via gli altri nemici** (ghoul, cani, Malocchi bassi) che trova sulla traiettoria, **senza
+    danno**: li lancia di lato e i ghoul restano a terra un attimo, come dopo un calcio. Attirarlo
+    attraverso l'orda ti apre un varco, non te la uccide.
   - Bot di prova in campo aperto (bersaglio a 8–20 m): **fermo, che corre dritto di lato, che scappa
     o che gli va incontro: preso**. **Cambia direzione** dopo il blocco (inverte, si ferma, scarta da
     fermo): **mancato**. **Salto**: funziona se parte quando il toro è a 5–7 m (finestra di ~0,15 s).
@@ -204,7 +204,12 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
     d'ottone** al naso, narici e crepe di brace; sulla schiena una **piastra d'ottone rivettata con due tubi di
     scarico** che brillano (il tocco steampunk). Sprite a **tre viste** come il cane; la mira si legge dalla
     posa: raspa il terreno → testa giù e occhi accesi (bloccato) → galoppo; da stordito testa ciondoloni,
-    lingua fuori e stelline.
+    lingua fuori e stelline. Più largo e tondo (pancia a botte, zampe a colonna); hitbox larga **2,4 m** per
+    coprire lo sprite (il collider resta 1,3 m, per passare nei vicoli).
+  - **Preavviso della carica rinforzato**: durante la mira **trema** sempre di più, ogni raspata **solleva
+    terra**, **sbuffi di fuoco** dalle narici e dai tubi sempre più fitti. Al **blocco**: vampata dalle narici,
+    colonna di fiamme dai tubi, nuvola di terra e il toro si **gonfia** per un istante. In carica lascia una
+    scia di terra e fiamme.
   - **Grafo tutto suo** (vedi Navigazione): col grafo dei ghoul s'incastrava nei passaggi stretti.
 - **Calcio (melee)** [FATTO, da tarare]: F o tasto destro. Colpisce **tutto** in un cono davanti
   (1,6 m, ±45°), 25 danni (mezzo ghoul base: è uno strumento, non l'arma principale), e **spinge via**

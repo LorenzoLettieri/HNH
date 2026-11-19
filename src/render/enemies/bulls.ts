@@ -15,6 +15,15 @@
 //   approach → walking;  aim → pawing the ground, head lowering, eyes heating;
 //   locked (end of aim) → head down, eyes blazing: MOVE;  charge → gallop;
 //   skid → braced legs;  stunned → drooping head, stars, eyes out: shoot it.
+//
+// The aim is the warning that matters most, so it gets more than a pose
+// (particles in particles.ts, all purely visual):
+//   - it TREMBLES, harder and harder (the sprite shakes sideways);
+//   - each scrape of the hoof kicks up DIRT behind it;
+//   - fiery SNORTS from the nostrils and puffs from the exhaust pipes, faster as it gets closer;
+//   - at the LOCK: a burst of fire from nostrils and pipes, a cloud of dirt and
+//     a "swell" of the sprite (it gets bigger for an instant). After that it's coming.
+//   - while charging it leaves a trail of dirt and flames behind.
 import * as THREE from 'three';
 import { tuning } from '../../sim/config';
 import type { BullEntity, Entity } from '../../sim/entities';
@@ -22,6 +31,7 @@ import type { SimEvent } from '../../sim/events';
 import { addHeightFog } from '../heightFog';
 import { soundAt } from '../soundPosition';
 import { bullSheet, FRAMES, FRAME_H, FRAME_W } from './bullSprite';
+import { spawnDirt, spawnSnort } from '../particles';
 import { playBullBellow, playBullCrash, playBullSnort, playGhoulDeath } from '../../audio/sfx';
 
 const PIXELS_PER_METER = 32;
@@ -41,6 +51,18 @@ const FRONT_ANGLE = (35 * Math.PI) / 180;
 const GLOW_CALM = 1.5;
 const GLOW_LOCKED = 7;
 const GLOW_DAZED = 0.4;
+/** Trembling while aiming: sideways shake, meters (grows from START to LOCKED), and speed (rad/s). */
+const SHAKE_START = 0.01;
+const SHAKE_LOCKED = 0.07;
+const SHAKE_SPEED = 70;
+/** Snorts while aiming: seconds between two, at the start and just before the lock. */
+const SNORT_EVERY_START = 0.45;
+const SNORT_EVERY_LOCKED = 0.12;
+/** How much the sprite swells at the lock (0.15 = +15%), and how fast it goes back (1/s). */
+const LOCK_SWELL = 0.15;
+const SWELL_DECAY = 6;
+/** Charge trail: seconds between two puffs of dirt/flames behind it. */
+const TRAIL_EVERY = 0.05;
 
 interface BullView {
   mesh: THREE.Mesh;
@@ -53,6 +75,14 @@ interface BullView {
   walkPhase: number;
   chargePhase: number;
   hurtTime: number;
+  /** Seconds until the next snort / trail puff. */
+  puffTimer: number;
+  /** The paw frame shown last (a new scrape = dirt). */
+  lastPaw: number;
+  /** The lock burst was already played for this aim. */
+  lockBurst: boolean;
+  /** 1 right at the lock, then back to 0: the swell. */
+  swell: number;
 }
 
 export interface BullRenderer {
@@ -71,6 +101,9 @@ export function createBullRenderer(scene: THREE.Scene): BullRenderer {
   const hurtTint = new THREE.Color(1, 0.55, 0.5);
 
   const views = new Map<number, BullView>();
+  // Scratch vectors for the particle calls (no new objects every frame).
+  const point = new THREE.Vector3();
+  const dir = new THREE.Vector3();
 
   function create(): BullView {
     // Own copies of the textures (same image): each bull shows its own frame.
@@ -89,7 +122,7 @@ export function createBullRenderer(scene: THREE.Scene): BullRenderer {
     mesh.castShadow = true;
     mesh.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map, alphaTest: 0.5 });
     scene.add(mesh);
-    return { mesh, material, map, glowMap, yaw: 0, walkPhase: 0, chargePhase: 0, hurtTime: 0 };
+    return { mesh, material, map, glowMap, yaw: 0, walkPhase: 0, chargePhase: 0, hurtTime: 0, puffTimer: 0, lastPaw: -1, lockBurst: false, swell: 0 };
   }
 
   /** Shows one frame of the sheet; a NEGATIVE repeat mirrors it for free (see hounds.ts). */
@@ -113,7 +146,13 @@ export function createBullRenderer(scene: THREE.Scene): BullRenderer {
         const where = soundAt(camera, b.x, b.y + 1.2, b.z);
         if (e.type === 'bullAim') playBullSnort(where, tuning.bullAimTime);
         if (e.type === 'bullCharge') playBullBellow(where);
-        if (e.type === 'bullCrash') playBullCrash(where);
+        if (e.type === 'bullCrash') {
+          playBullCrash(where);
+          // Debris where its head hit the wall.
+          point.set(b.x + b.dirX * 1.2, b.y + 0.6, b.z + b.dirZ * 1.2);
+          dir.set(-b.dirX, 0.8, -b.dirZ);
+          spawnDirt(point, dir, 30);
+        }
         if (e.type === 'hit') {
           const v = views.get(b.id);
           if (v) v.hurtTime = HURT_TIME;
@@ -182,6 +221,11 @@ export function createBullRenderer(scene: THREE.Scene): BullRenderer {
     else if (e.state === 'stunned') v.material.emissiveIntensity = GLOW_DAZED;
     else v.material.emissiveIntensity = GLOW_CALM;
 
+    effects(v, e, t, lockAt, locked, dt);
+    // The swell at the lock: bigger for an instant, then back to normal size.
+    v.swell = Math.max(0, v.swell - SWELL_DECAY * dt);
+    m.scale.setScalar(1 + LOCK_SWELL * v.swell);
+
     if (e.state === 'dead') {
       v.material.emissiveIntensity = 0; // the fire inside goes out
       showFrame(v, FRAMES.dead, mirror);
@@ -209,5 +253,85 @@ export function createBullRenderer(scene: THREE.Scene): BullRenderer {
       else if (e.state === 'stunned') frame = f.dazed;
       showFrame(v, frame, mirror);
     }
+  }
+
+  /**
+   * The aim's warning effects and the charge trail. Positions are computed in
+   * the world from the bull's facing (dirX, dirZ): nostrils ahead and low,
+   * pipes on the back, hooves on the ground. They don't depend on the sprite.
+   */
+  function effects(v: BullView, e: BullEntity, t: number, lockAt: number, locked: boolean, dt: number): void {
+    const m = v.mesh;
+    const fx = e.dirX;
+    const fz = e.dirZ;
+    if (e.state !== 'aim') {
+      v.lockBurst = false;
+      v.lastPaw = -1;
+    }
+
+    if (e.state === 'aim') {
+      // 0 → 1 over the aim, up to the lock.
+      const k = Math.min(1, t / Math.max(0.01, lockAt));
+      // Tremble: sideways along the billboard's own "right" axis (its local x
+      // in the world is (cos θ, 0, −sin θ) for a rotation θ around y).
+      const amp = locked ? SHAKE_LOCKED : SHAKE_START + (SHAKE_LOCKED - SHAKE_START) * k * 0.6;
+      const shake = Math.sin(t * SHAKE_SPEED) * amp;
+      m.position.x += Math.cos(m.rotation.y) * shake;
+      m.position.z -= Math.sin(m.rotation.y) * shake;
+
+      // A new scrape of the hoof (the paw frame changed): dirt flies backward.
+      const paw = Math.floor(t * PAW_RATE) % 2;
+      if (!locked && paw !== v.lastPaw && paw === 1) {
+        point.set(e.x + fx * 1.0, e.y + 0.1, e.z + fz * 1.0);
+        dir.set(-fx * 0.9, 0.5, -fz * 0.9);
+        spawnDirt(point, dir, 7);
+      }
+      v.lastPaw = paw;
+
+      // Snorts, more and more often.
+      v.puffTimer -= dt;
+      if (v.puffTimer <= 0 && !locked) {
+        v.puffTimer = SNORT_EVERY_START + (SNORT_EVERY_LOCKED - SNORT_EVERY_START) * k;
+        snortFrom(e, 3 + Math.round(k * 4));
+        pipesFrom(e, 2 + Math.round(k * 3));
+      }
+
+      // THE LOCK: one big burst, once.
+      if (locked && !v.lockBurst) {
+        v.lockBurst = true;
+        v.swell = 1;
+        snortFrom(e, 18);
+        pipesFrom(e, 14);
+        for (const side of [-1, 1]) {
+          point.set(e.x + fx * 0.9 - fz * side * 0.4, e.y + 0.1, e.z + fz * 0.9 + fx * side * 0.4);
+          dir.set(-fx * 0.5 - fz * side * 0.6, 0.4, -fz * 0.5 + fx * side * 0.6);
+          spawnDirt(point, dir, 12);
+        }
+      }
+    } else if (e.state === 'charge' || e.state === 'skid') {
+      // Trail: dirt from the hooves behind it; flames from the pipes while charging.
+      v.puffTimer -= dt;
+      if (v.puffTimer <= 0) {
+        v.puffTimer = TRAIL_EVERY;
+        point.set(e.x - fx * 0.8, e.y + 0.1, e.z - fz * 0.8);
+        dir.set(-fx * 0.4, 0.7, -fz * 0.4);
+        spawnDirt(point, dir, e.state === 'skid' ? 6 : 3);
+        if (e.state === 'charge') pipesFrom(e, 2);
+      }
+    }
+  }
+
+  /** Fiery breath from the nostrils: ahead of it, low (head down), blown forward and down. */
+  function snortFrom(e: BullEntity, count: number): void {
+    point.set(e.x + e.dirX * 1.5, e.y + 1.0, e.z + e.dirZ * 1.5);
+    dir.set(e.dirX * 0.8, -0.3, e.dirZ * 0.8);
+    spawnSnort(point, dir, count);
+  }
+
+  /** Flames from the exhaust pipes on its back, straight up. */
+  function pipesFrom(e: BullEntity, count: number): void {
+    point.set(e.x - e.dirX * 0.3, e.y + 2.25, e.z - e.dirZ * 0.3);
+    dir.set(0, 1, 0);
+    spawnSnort(point, dir, count);
   }
 }
