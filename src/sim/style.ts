@@ -49,8 +49,9 @@ export function stepStyle(style: StyleState, events: readonly SimEvent[], from: 
   let lost = 0;
   for (let i = from; i < events.length; i++) {
     const e = events[i];
-    // Your hits on enemies: not the steel targets (metal), not a bull trampling a ghoul (byEnemy).
-    if (e.type === 'hit' && e.surface === 'flesh' && !e.byEnemy) {
+    // Your hits on enemies, not the steel targets (metal). (A bull's charge
+    // shoves enemies without damage: it never produces 'hit' events.)
+    if (e.type === 'hit' && e.surface === 'flesh') {
       gained += tuning.styleHit;
       if (e.killed) gained += tuning.styleKill + (e.headshot ? tuning.styleHeadshotKill : 0);
     } else if (e.type === 'playerHurt') {
