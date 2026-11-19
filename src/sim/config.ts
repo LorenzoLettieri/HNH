@@ -182,6 +182,10 @@ export const tuning = {
   ghoulHitMoment: 0.55,
   /** Push given to the player by a hit, m/s. */
   ghoulKnockback: 4,
+  /** Climbing speed up walls, m/s. */
+  ghoulClimbSpeed: 2.8,
+  /** Closer than this (and on the same level) it walks straight at you, ignoring the graph. */
+  ghoulDirectChaseRange: 5,
   /** How long a dead ghoul lies on the ground before disappearing, seconds. */
   ghoulCorpseTime: 4,
   /** Max ghouls alive at once (0 = no ghouls). */

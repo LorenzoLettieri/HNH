@@ -45,12 +45,13 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   **indicatore prestazioni**: fps, ms simulazione/disegno, draw call).
   Debug: `?pos=x,y,z&look=yaw,pitch` nell'URL per partire da un punto preciso; `?level=arena` per l'arena di prova
 - `src/input.ts`: input grezzo (tasti e tasti del mouse premuti, pressioni brevi "memorizzate", movimento mouse, Pointer Lock)
-- `src/controls.ts`: sensibilità mouse (`controlSettings`), angoli di vista, **mappatura tasti** (WASD, Spazio, Shift/C = accovacciati/slide, click = spara, R = ricarica, K = respawn) → `InputCommand` (T = cambia atmosfera, P = pixel art on/off, tasto sotto Esc = pannello debug, in `main.ts`)
+- `src/controls.ts`: sensibilità mouse (`controlSettings`), angoli di vista, **mappatura tasti** (WASD, Spazio, Shift/C = accovacciati/slide, click = spara, R = ricarica, K = respawn) → `InputCommand` (T = cambia atmosfera, P = pixel art on/off, N = grafo IA, tasto sotto Esc = pannello debug, in `main.ts`)
 - `src/sim/`: simulazione pura (niente Three.js/DOM)
   - `config.ts`: **valori di tuning** (oggetto `tuning`, modificabile dal pannello debug) (tick rate, altezza occhi, salute e rigenerazione, dimensioni giocatore, movimento a terra, gravità/salto/coyote/buffer, movimento e controllo in aria, aiuti al bhop, accovacciata, slide, wall jump, **revolver**, bersagli, **ghoul**)
   - `game.ts`: **stato di gioco unico** (`GameState`: giocatore + entità) e `stepGame()` (un tick di tutto il gioco)
   - `entities.ts`: **entità colpibili** (bersagli, ghoul): dati, salute, danno, hitbox
-  - `ghoul.ts`: **IA del ghoul** (inseguimento, salto degli ostacoli bassi, aggiramento, separazione, artigliata con finestra per schivare)
+  - `ghoul.ts`: **IA del ghoul** (segue il flow field: cammina, salta con traiettoria balistica, si lascia cadere, **si arrampica**; da vicino inseguimento diretto con salto/aggiramento; separazione; artigliata con finestra per schivare)
+  - `nav.ts`: **grafo di navigazione** generato dai box (nodi ogni 1,5 m, link cammina/salta/cadi/arrampicati, limiti di salto/caduta/arrampicata) e **flow field** (Dijkstra dal giocatore)
   - `spawner.ts`: generatore di ghoul (quanti vivi, ogni quanto, punti di spawn lontani dal giocatore)
   - `command.ts`: tipo `InputCommand` (cosa vuole fare il giocatore in un tick)
   - `world.ts`: tipi del livello (`Box` AABB, `Prop` decorazioni, `TargetSpawn` bersagli, `World`) e helper `box()`
@@ -93,6 +94,7 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `enemies/`: **i nemici**
     - `ghoulSprite.ts`: **sprite del ghoul** disegnato pixel per pixel (palette, pose dei fotogrammi)
     - `ghouls.ts`: disegno dei ghoul (billboard verso la camera, fotogramma per stato, caduta da morti)
+  - `navDebug.ts`: vista del grafo di navigazione (tasto N): link colorati per tipo, nodi colorati per distanza dal giocatore
   - `targets.ts`: **bersagli** (modello, oscillazione a molla quando colpiti, caduta e rialzata)
   - `impacts.ts`: fori di proiettile sulle superfici (decal, dimensione, quanti ne restano)
   - `materials.ts`: **quale texture usa ogni materiale** (`LOOKS`), densità dei pixel, mesh dei box

@@ -4,6 +4,7 @@ import type { InputCommand } from './command';
 import { createEntities, stepTarget, type Entity } from './entities';
 import { stepGhoul } from './ghoul';
 import { stepSpawner } from './spawner';
+import { getFlowField, getNavGraph, nearestNode } from './nav';
 import type { SimEvent } from './events';
 import { createPlayer, respawn, stepPlayer, type PlayerState } from './player';
 import { secondsToTicks } from './config';
@@ -17,6 +18,8 @@ export interface GameState {
   /** Ids are never reused: the renderer recognizes entities by id. */
   nextEntityId: number;
   spawnCooldownTicks: number;
+  /** Navigation goal: the graph node the player stands on (the ghouls go there). */
+  navGoal: number;
 }
 
 export function createGame(world: World): GameState {
@@ -27,6 +30,7 @@ export function createGame(world: World): GameState {
     entities,
     nextEntityId: entities.length + 1,
     spawnCooldownTicks: 0,
+    navGoal: -1,
   };
 }
 
@@ -51,9 +55,20 @@ export function stepGame(
   }
   stepPlayer(game.player, cmd, world, dt);
   stepWeapon(game.player, cmd, world, game.entities, events);
+
+  // Navigation: where's the player on the graph? (Only while standing:
+  // in mid-jump we keep the last known node.) Checked 4 times a second;
+  // the flow field is recomputed only when that node changes.
+  const graph = getNavGraph(world);
+  if (game.tick % 15 === 0 && game.player.onGround) {
+    const node = nearestNode(graph, game.player.x, game.player.y, game.player.z);
+    if (node >= 0) game.navGoal = node;
+  }
+  const flow = getFlowField(graph, game.navGoal);
+
   for (const e of game.entities) {
     if (e.type === 'target') stepTarget(e);
-    else if (e.state !== 'dead') stepGhoul(e, game.player, game.entities, world, dt, events);
+    else if (e.state !== 'dead') stepGhoul(e, game.player, game.entities, world, graph, flow, dt, events);
   }
   stepSpawner(game, world);
 

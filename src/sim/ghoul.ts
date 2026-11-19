@@ -1,12 +1,17 @@
-// Ghoul AI: the basic horde enemy (think CoD zombies). It walks straight at
-// you, hops over low obstacles, goes around tall ones, and keeps a little
-// distance from its friends so the horde spreads instead of stacking.
-// (Climbing onto rooftops needs a navigation graph: a future step.)
+// Ghoul AI: the basic horde enemy (think CoD zombies).
+// - Far away, or on a different level: it follows the navigation flow field
+//   (nav.ts): walking, jumping across gaps and onto steps, dropping down,
+//   and CLIMBING walls to reach you on the rooftops.
+// - Close and on your level: it walks straight at you, hopping over low
+//   obstacles and going around tall ones.
+// - Always: it keeps a little distance from its friends (the horde spreads
+//   instead of stacking), and claws you when it gets close.
 import { moveAndCollide, overlapsAny } from './collision';
 import { secondsToTicks, tuning } from './config';
 import type { GhoulEntity, Entity } from './entities';
-import { hurtPlayer, type PlayerState } from './player';
 import type { SimEvent } from './events';
+import { nearestNode, type FlowField, type NavGraph, type NavLink, type NavNode } from './nav';
+import { hurtPlayer, type PlayerState } from './player';
 import type { World } from './world';
 
 /** Turn a direction (x, z) by `angle` radians around the vertical axis. */
@@ -21,6 +26,8 @@ export function stepGhoul(
   player: PlayerState,
   others: Entity[],
   world: World,
+  graph: NavGraph,
+  flow: FlowField,
   dt: number,
   events: SimEvent[],
 ): void {
@@ -28,20 +35,46 @@ export function stepGhoul(
   if (g.attackCooldownTicks > 0) g.attackCooldownTicks--;
   if (g.detourTicks > 0) g.detourTicks--;
 
-  // --- Where does it want to go? ---
+  if (g.climbTo >= 0) {
+    climb(g, graph.nodes[g.climbFrom], graph.nodes[g.climbTo], world, dt);
+    return;
+  }
+
+  // --- 1. Where is it on the graph, and where should it go? ---
+  if (g.onGround) {
+    const node = nearestNode(graph, g.x, g.y, g.z);
+    if (node >= 0) g.navNode = node;
+  }
+  const distToPlayer = Math.hypot(player.x - g.x, player.z - g.z);
+  const sameLevel = Math.abs(player.y - g.y) < 0.8;
+  const direct = distToPlayer < tuning.ghoulDirectChaseRange && sameLevel;
+
+  // In "direct" mode the target is the player; otherwise the next node
+  // along the flow field. (No link = already at the player's node, or the
+  // player is unreachable: fall back to walking straight at them.)
+  let link: NavLink | null = null;
+  let targetX = player.x;
+  let targetZ = player.z;
+  if (!direct && g.navNode >= 0 && flow.next[g.navNode]) {
+    link = flow.next[g.navNode];
+    const t = graph.nodes[link!.to];
+    targetX = t.x;
+    targetZ = t.z;
+  }
+
+  // --- 2. Wished direction: toward the target, plus separation ---
   let wishX = 0;
   let wishZ = 0;
   if (g.state === 'chase') {
-    const dx = player.x - g.x;
-    const dz = player.z - g.z;
+    const dx = targetX - g.x;
+    const dz = targetZ - g.z;
     const dist = Math.hypot(dx, dz);
     if (dist > 0.01) {
       wishX = dx / dist;
       wishZ = dz / dist;
     }
-    // Going around an obstacle: walk almost parallel to it (~85° from the
-    // direct line), always on the same side, until the way is clear.
-    if (g.detourTicks > 0) [wishX, wishZ] = rotate(wishX, wishZ, g.detourSide * 1.5);
+    // Going around an obstacle (direct mode only): walk almost parallel to it.
+    if (!link && g.detourTicks > 0) [wishX, wishZ] = rotate(wishX, wishZ, g.detourSide * 1.5);
 
     // Separation: a push away from every ghoul that's too close, stronger the
     // closer it is. Classic "boids" steering: each one only looks at its
@@ -59,7 +92,7 @@ export function stepGhoul(
     }
   }
 
-  // --- Accelerate toward the wished velocity (no Quake tricks for them) ---
+  // --- 3. Accelerate toward the wished velocity (only with feet on the ground) ---
   const speed = g.state === 'chase' ? tuning.ghoulSpeed : 0;
   const len = Math.hypot(wishX, wishZ);
   const targetVx = len > 0 ? (wishX / len) * speed : 0;
@@ -69,20 +102,38 @@ export function stepGhoul(
     g.vx += (targetVx - g.vx) * k;
     g.vz += (targetVz - g.vz) * k;
   }
+
+  // --- 4. Special links: jump or start climbing when in position ---
+  if (link && g.onGround && g.state === 'chase') {
+    const t = graph.nodes[link.to];
+    const here = graph.nodes[g.navNode];
+    const toTarget = Math.hypot(t.x - g.x, t.z - g.z);
+    if (link.kind === 'jump' && toTarget < 2.8) {
+      jumpTo(g, t);
+    } else if (link.kind === 'climb' && Math.hypot(here.x - g.x, here.z - g.z) < 1.5) {
+      // Close to the foot of the wall (it may already be pressing against it,
+      // a bit past the node): start climbing.
+      g.climbFrom = g.navNode;
+      g.climbTo = link.to;
+      g.climbTicks = 0;
+      return;
+    }
+    // 'walk' and 'drop' need nothing special: walking off the edge IS dropping.
+  }
+
   g.vy -= tuning.gravity * dt;
 
-  // --- Move with collisions (the same code the player uses) ---
+  // --- 5. Move with collisions (the same code the player uses) ---
   const wantedSpeed = Math.hypot(targetVx, targetVz);
   const speedBefore = Math.hypot(g.vx, g.vz);
   const { landed } = moveAndCollide(g, tuning.ghoulRadius, tuning.ghoulHeight, world.boxes, dt);
   g.onGround = landed;
 
-  // --- Blocked? Hop over it if it's low, otherwise go around it ---
+  // --- 6. Blocked? Hop over it if it's low, otherwise go around it ---
   // "Blocked" = the COLLISION stopped us (we were moving, now we aren't).
-  // Not just "slow": a ghoul that's just starting to walk is slow too.
-  const speedAfter = Math.hypot(g.vx, g.vz);
   // (Pushing against a wall, the collision zeroes our speed every tick, so
   // speedBefore stays small: the threshold must be low.)
+  const speedAfter = Math.hypot(g.vx, g.vz);
   const blocked = speedBefore > 0.2 && speedAfter < speedBefore * 0.5;
   if (g.state === 'chase' && g.onGround && wantedSpeed > 0.5 && blocked) {
     const aheadX = g.x + (targetVx / wantedSpeed) * 0.4;
@@ -93,13 +144,11 @@ export function stepGhoul(
     if (lowObstacle) {
       g.vy = Math.sqrt(2 * tuning.gravity * (tuning.ghoulJumpHeight + 0.15));
       g.onGround = false;
-    } else {
-      // Start (or keep extending) the detour. The side stays the same: a ghoul
-      // that picked "left" follows the wall to the left until it rounds the
-      // corner (flipping at random would make it dither in place)...
+    } else if (!link) {
+      // Direct mode: start (or keep extending) a detour around the obstacle.
+      // The side stays the same (flipping at random would make it dither in
+      // place)... unless it stays stuck for a while: then it's in a dead end.
       g.detourTicks = secondsToTicks(1.2);
-      // ...unless it stays stuck for a while: then it's in a dead end
-      // (a corner), and the other way is the only way out.
       g.stuckTicks++;
       if (g.stuckTicks > secondsToTicks(1.5)) {
         g.detourSide = -g.detourSide;
@@ -110,9 +159,8 @@ export function stepGhoul(
     g.stuckTicks = 0; // moving freely again
   }
 
-  // --- Attack when close: wind up, then the swipe lands at a precise moment ---
-  const distToPlayer = Math.hypot(player.x - g.x, player.z - g.z);
-  const sameHeight = Math.abs(player.y - g.y) < 1.5; // can't claw you on a roof
+  // --- 7. Attack when close: wind up, then the swipe lands at a precise moment ---
+  const sameHeight = Math.abs(player.y - g.y) < 1.5; // can't claw you from below a roof
   if (g.state === 'chase' && distToPlayer < tuning.ghoulAttackRange && sameHeight && g.attackCooldownTicks === 0) {
     g.state = 'attack';
     g.stateTicks = 0;
@@ -131,5 +179,54 @@ export function stepGhoul(
     g.state = 'chase';
     g.stateTicks = 0;
     g.attackCooldownTicks = secondsToTicks(tuning.ghoulAttackCooldown);
+  }
+}
+
+/**
+ * A jump that lands on `t`: ballistics, the physics of a thrown ball.
+ * 1. Pick how high to go: a bit above the higher of start and target.
+ * 2. Vertical speed to reach that height: v = √(2·g·h).
+ * 3. Flight time = time to go up + time to fall down to the target's height.
+ * 4. Horizontal speed = distance / flight time: it lands right on it.
+ */
+function jumpTo(g: GhoulEntity, t: NavNode): void {
+  const G = tuning.gravity;
+  const dy = t.y - g.y;
+  const peak = Math.max(dy, 0) + 0.7;
+  const vy = Math.sqrt(2 * G * peak);
+  const flightTime = vy / G + Math.sqrt((2 * (peak - dy)) / G);
+  const dx = t.x - g.x;
+  const dz = t.z - g.z;
+  const dist = Math.hypot(dx, dz) || 1;
+  const hSpeed = Math.max(dist / flightTime, 1.5);
+  g.vx = (dx / dist) * hSpeed;
+  g.vz = (dz / dist) * hSpeed;
+  g.vy = vy;
+  g.onGround = false;
+}
+
+/**
+ * Climbing a wall: go straight up at climbing speed (no gravity) along the
+ * column above `from` (the graph checked it's free all the way up: no roof
+ * eaves to bump into), then, once above the edge, step over onto `to`.
+ */
+function climb(g: GhoulEntity, from: NavNode, to: NavNode, world: World, dt: number): void {
+  g.climbTicks++;
+  const above = g.y >= to.y + 0.1;
+  // Below the edge: drift toward the free column. Above it: move onto the top.
+  const tx = above ? to.x : from.x;
+  const tz = above ? to.z : from.z;
+  const dx = tx - g.x;
+  const dz = tz - g.z;
+  const dist = Math.hypot(dx, dz);
+  const hSpeed = above ? 2.5 : Math.min(1.5, dist * 4); // slows down as it lines up
+  g.vx = dist > 0.01 ? (dx / dist) * hSpeed : 0;
+  g.vz = dist > 0.01 ? (dz / dist) * hSpeed : 0;
+  g.vy = above ? 0 : tuning.ghoulClimbSpeed;
+  moveAndCollide(g, tuning.ghoulRadius, tuning.ghoulHeight, world.boxes, dt);
+  // Done: over the edge (or it's been climbing way too long: give up).
+  if ((above && dist < 0.8) || g.climbTicks > secondsToTicks(12)) {
+    g.climbTo = -1;
+    g.onGround = false;
   }
 }

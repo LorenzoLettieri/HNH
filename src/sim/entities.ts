@@ -42,6 +42,14 @@ export interface GhoulEntity extends EntityBase {
   detourSide: number;
   /** Ticks spent blocked: if it lasts, the detour switches side (it's in a dead end). */
   stuckTicks: number;
+  /** Navigation: the graph node it's standing on (-1 = unknown). */
+  navNode: number;
+  /** Climbing a wall toward this node (-1 = not climbing). */
+  climbTo: number;
+  /** The node at the foot of the wall: it climbs up THIS column (known to be free). */
+  climbFrom: number;
+  /** Ticks spent climbing (safety: give up if it takes too long). */
+  climbTicks: number;
 }
 
 export type Entity = TargetEntity | GhoulEntity;
@@ -91,6 +99,10 @@ export function createGhoul(id: number, x: number, y: number, z: number): GhoulE
     // inputs → same result), so a server or a replay make the same choices.
     detourSide: id % 2 === 0 ? 1 : -1,
     stuckTicks: 0,
+    navNode: -1,
+    climbTo: -1,
+    climbFrom: -1,
+    climbTicks: 0,
   };
 }
 

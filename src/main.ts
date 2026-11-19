@@ -18,6 +18,8 @@ import { createWeaponFx } from './render/weaponFx';
 import { createTargets } from './render/targets';
 import { createGhoulRenderer } from './render/enemies/ghouls';
 import { updateHud } from './render/hud';
+import { createNavDebug } from './render/navDebug';
+import { getFlowField, getNavGraph } from './sim/nav';
 import { createViewmodel } from './render/weapons/viewmodel';
 import type { SimEvent } from './sim/events';
 import { initAudio } from './audio/sfx';
@@ -97,6 +99,7 @@ createParticles(scene, props.fires, props.vents);
 const weaponFx = createWeaponFx(scene);
 const targets = createTargets(scene, game.entities);
 const ghouls = createGhoulRenderer(scene);
+const navDebug = createNavDebug(scene, getNavGraph(world));
 // The gun in your hand: its own scene and camera, drawn over the world.
 const viewmodel = createViewmodel();
 viewmodel.setAspect(window.innerWidth / window.innerHeight);
@@ -125,6 +128,7 @@ window.addEventListener('keydown', (e) => {
     debugPanel.showAtmosphere(ATMOSPHERES[atmosphereIndex]);
   }
   if (e.code === 'KeyP') post.togglePixelArt();
+  if (e.code === 'KeyN') navDebug.toggle();
   if (e.code === 'Backquote') {
     debugPanel.toggle();
     document.exitPointerLock();
@@ -256,6 +260,7 @@ renderer.setAnimationLoop((now: number) => {
   targets.update(frameTime);
   ghouls.update(game.entities, events, camera, alpha, frameTime);
   updateHud(player, events, frameTime);
+  navDebug.update(getFlowField(getNavGraph(world), game.navGoal));
   ammoHud.textContent = player.reloadTicks > 0
     ? 'RELOADING'
     : '●'.repeat(player.ammo) + '○'.repeat(Math.max(0, 6 - player.ammo));
