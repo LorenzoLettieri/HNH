@@ -127,6 +127,8 @@ export function knockBack(e: Entity, dirX: number, dirZ: number, speed: number, 
     e.onGround = false;
     e.state = 'staggered'; // interrupts the bite too
     e.stateTicks = 0;
+  } else if (e.type === 'bull') {
+    // Too heavy: it takes the damage, but doesn't budge.
   } else if (e.type === 'eyebat') {
     // It flies: no lift needed. Its steering brings it back in a moment
     // (or, if the hit killed it, it falls while flying away).

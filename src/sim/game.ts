@@ -1,11 +1,12 @@
 // The whole game state in one object, and the one function that advances it
 // by one tick. Main loop (and one day the server) only talk to this.
 import type { InputCommand } from './command';
-import { createEntities, createEyebat, createHound, isEnemy, stepTarget, type Entity } from './entities';
+import { createBull, createEntities, createEyebat, createHound, isEnemy, stepTarget, type Entity } from './entities';
 import { stepEyebat } from './eyebat';
 import { stepProjectiles, type Projectile } from './projectiles';
 import { stepGhoul } from './ghoul';
 import { stepHound } from './hound';
+import { stepBull } from './bull';
 import { createWaveState, scoreHits, stepWaves, wavePressure, type Stats, type WaveState } from './waves';
 import { getFlowField, getNavGraph, nearestNode } from './nav';
 import type { SimEvent } from './events';
@@ -96,6 +97,7 @@ export function stepGame(
     if (e.type === 'target') stepTarget(e);
     else if (e.type === 'eyebat') stepEyebat(e, game, world, dt, events);
     else if (e.type === 'hound') stepHound(e, game.player, game.entities, world, graph, flow, dt, events);
+    else if (e.type === 'bull') stepBull(e, game.player, game.entities, world, graph, flow, dt, events);
     else if (e.state !== 'dead') stepGhoul(e, game.player, game.entities, world, graph, flow, dt, events, pressure);
   }
   game.projectiles = stepProjectiles(game.projectiles, game.player, world, dt, events);
@@ -133,4 +135,12 @@ export function spawnHoundInFront(game: GameState): void {
   const x = p.x - Math.sin(p.yaw) * 8;
   const z = p.z - Math.cos(p.yaw) * 8;
   game.entities.push(createHound(game.nextEntityId++, x, p.y + 0.5, z));
+}
+
+/** Debug: spawns a bull 14 m in front of the player (V key): far enough to see it aim. */
+export function spawnBullInFront(game: GameState): void {
+  const p = game.player;
+  const x = p.x - Math.sin(p.yaw) * 14;
+  const z = p.z - Math.cos(p.yaw) * 14;
+  game.entities.push(createBull(game.nextEntityId++, x, p.y + 0.5, z));
 }

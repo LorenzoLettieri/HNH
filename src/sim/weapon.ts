@@ -177,10 +177,13 @@ function trace(
   //   height of the impact point is enough: no second hitbox.
   // - eye-bat: the bullet passed through the pupil (see pupilHit).
   // - hound: same as the ghoul, above houndHeadHeight (head and ears).
+  // - bull: no weak spot while it's up. Stunned against a wall, EVERY hit is
+  //   critical: the reward for making it crash.
   const headshot =
     target !== null &&
     ((target.type === 'ghoul' && hit!.y - target.y > tuning.ghoulHeadHeight) ||
       (target.type === 'hound' && hit!.y - target.y > tuning.houndHeadHeight) ||
+      (target.type === 'bull' && target.state === 'stunned') ||
       (target.type === 'eyebat' && pupilHit(target, ox, oy, oz, dx, dy, dz)));
 
   const to = hit

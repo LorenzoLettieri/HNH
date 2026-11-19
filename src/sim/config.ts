@@ -395,6 +395,80 @@ export const tuning = {
   /** First wave where hounds can appear. */
   houndFromWave: 5,
 
+  // --- Bull (big charging brute; AI in src/sim/bull.ts) ---
+  /**
+   * Health: TOUGH on purpose (a mini-boss, the exception to "no bullet
+   * sponges"): 6 revolver shots to the body. But you're not supposed to
+   * shoot it while it's coming: dodge the charge first. Stunned against a
+   * wall every hit is critical (×3): 2 revolver shots.
+   */
+  bullHealth: 300,
+  /** Walking speed while it closes in, m/s: slow, you can always walk away from it. */
+  bullSpeed: 3.5,
+  /** How quickly it reaches its speed (1/s): heavy, it starts and turns slowly. */
+  bullAccel: 4,
+  /** It only charges from closer than this, meters (and with a clear straight line to you). */
+  bullChargeRange: 22,
+  /**
+   * AIM, the warning: it stops, paws the ground and snorts for this long,
+   * seconds, turning toward you. Then it goes.
+   */
+  bullAimTime: 1.1,
+  /**
+   * In the last part of the aim it stops turning (head down, direction
+   * locked), seconds: that's your cue to move. Before that it keeps tracking you.
+   */
+  bullAimLockTime: 0.3,
+  /** How fast it can turn while aiming, degrees/s: run around it fast enough and it can't follow you. */
+  bullAimTurnRate: 160,
+  /**
+   * Aims where you'll be when it arrives (0 = where you are, 1 = full lead,
+   * like eyebatLeadFactor): running straight doesn't save you, changing
+   * direction after it locks does.
+   */
+  bullLeadFactor: 0.9,
+  /** Charge speed, m/s: faster than you even when bunny-hopping. It doesn't steer. */
+  bullChargeSpeed: 17,
+  /** The charge ends this far past you (it overshoots, then skids), meters. */
+  bullOvershoot: 5,
+  /** A charge never lasts more than this, seconds (safety: open fields). */
+  bullChargeMaxTime: 2.5,
+  /** Damage when it runs you over. A lot: being hit is the mistake to avoid. */
+  bullChargeDamage: 40,
+  /** It throws you: horizontal push (m/s, along its charge) and upward push (m/s). */
+  bullChargeKnockback: 14,
+  bullChargeLift: 7,
+  /**
+   * Your feet must be below this height (above its feet) to get run over,
+   * meters. Jump at the right moment (a jump peaks at ~1.2 m and stays above
+   * 0.9 m for ~0.35 s) and it passes under you: you can leap over it.
+   */
+  bullTrampleHeight: 0.9,
+  /** After an overshoot it skids to a stop for this long, seconds. */
+  bullSkidTime: 0.9,
+  /**
+   * Crashed into a wall (or a low obstacle: it doesn't jump while charging):
+   * dazed for this long, seconds. Every hit is critical meanwhile. The reward for dodging.
+   */
+  bullStunTime: 2.2,
+  /** Minimum time between two charges, seconds (counted from the end of the previous one). */
+  bullChargeCooldown: 1.5,
+  /** Half the width of its COLLIDER, meters: wide, but it still fits in the 2.5 m alleys. */
+  bullRadius: 0.65,
+  /** Collider height, meters: taller than you. It can't go under the slide passages. */
+  bullHeight: 2.1,
+  /** HITBOX width and height (what bullets hit), meters: a big target. */
+  bullHitWidth: 2.0,
+  bullHitHeight: 2.3,
+  /** Max height of an obstacle it steps over while walking, meters. */
+  bullJumpHeight: 1.0,
+  /** How long a dead bull lies on the ground before disappearing, seconds. */
+  bullCorpseTime: 4,
+  /** Weight in the waves' budget (see src/sim/waves.ts): 5, the heaviest so far. */
+  bullCost: 5,
+  /** First wave where bulls can appear. */
+  bullFromWave: 7,
+
   // --- Malocchio (flying eye-bat; AI in src/sim/eyebat.ts) ---
   /**
    * Health: the SAME as the ghoul, so it follows the same breakpoints (see

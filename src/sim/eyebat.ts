@@ -203,10 +203,10 @@ function fire(b: EyebatEntity, game: GameState, events: SimEvent[]): void {
  * Squaring both sides gives a quadratic equation  a·t² + b·t + c = 0  with
  *     a = v·v − speed²,   b = 2·(r·v),   c = r·r
  * (the "·" between vectors is the dot product). We want the smallest
- * positive solution. No solution (target faster than the ball, running
+ * positive solution (also used by the bull's charge, bull.ts). No solution (target faster than the ball, running
  * away): we fall back to the time it takes to cover the current distance.
  */
-function interceptTime(rx: number, ry: number, rz: number, vx: number, vy: number, vz: number, speed: number): number {
+export function interceptTime(rx: number, ry: number, rz: number, vx: number, vy: number, vz: number, speed: number): number {
   const a = vx * vx + vy * vy + vz * vz - speed * speed;
   const b = 2 * (rx * vx + ry * vy + rz * vz);
   const c = rx * rx + ry * ry + rz * rz;

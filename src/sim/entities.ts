@@ -111,9 +111,38 @@ export interface HoundEntity extends EntityBase {
   stalkSide: number;
 }
 
-export type Entity = TargetEntity | GhoulEntity | EyebatEntity | HoundEntity;
+/** The bull: a big brute that aims and charges in a straight line. Position = feet. */
+export interface BullEntity extends EntityBase {
+  type: 'bull';
+  vx: number;
+  vy: number;
+  vz: number;
+  onGround: boolean;
+  /**
+   * The charge cycle (see bull.ts): walking toward you, aiming (the warning:
+   * it stops and paws the ground), charging straight, skidding to a stop
+   * after a miss, dazed after crashing into a wall, dead.
+   */
+  state: 'approach' | 'aim' | 'charge' | 'skid' | 'stunned' | 'dead';
+  /** Ticks spent in the current state. */
+  stateTicks: number;
+  /**
+   * Where it's facing, a unit vector on the ground. While aiming it turns
+   * toward you; while charging it's the (locked) direction of the charge.
+   */
+  dirX: number;
+  dirZ: number;
+  /** Ticks before it can start another charge. */
+  chargeCooldownTicks: number;
+  /** This charge already ran you over (it only hurts once per charge). */
+  chargeHit: boolean;
+  /** Navigation: the graph node it's standing on (-1 = unknown). */
+  navNode: number;
+}
+
+export type Entity = TargetEntity | GhoulEntity | EyebatEntity | HoundEntity | BullEntity;
 /** Everything that fights you (not the practice targets). */
-export type Enemy = GhoulEntity | EyebatEntity | HoundEntity;
+export type Enemy = GhoulEntity | EyebatEntity | HoundEntity | BullEntity;
 
 export function isEnemy(e: Entity): e is Enemy {
   return e.type !== 'target';
@@ -233,6 +262,32 @@ export function createHound(id: number, x: number, y: number, z: number, health 
   };
 }
 
+export function createBull(id: number, x: number, y: number, z: number, health = tuning.bullHealth): BullEntity {
+  return {
+    id,
+    type: 'bull',
+    x,
+    y,
+    z,
+    px: x,
+    py: y,
+    pz: z,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    health,
+    onGround: false,
+    state: 'approach',
+    stateTicks: 0,
+    dirX: 0,
+    dirZ: 1,
+    // First charge 1-2 s after spawning, staggered by id (deterministic).
+    chargeCooldownTicks: secondsToTicks(1 + (id % 4) * 0.3),
+    chargeHit: false,
+    navNode: -1,
+  };
+}
+
 export function isAlive(e: Entity): boolean {
   return e.health > 0;
 }
@@ -253,6 +308,12 @@ export function hitBox(e: Entity): Box {
   }
   if (e.type === 'hound') {
     return box(e.x, e.y, e.z, tuning.houndHitWidth, tuning.houndHitHeight, tuning.houndHitWidth);
+  }
+  if (e.type === 'bull') {
+    // A box, the same from every side (our raycast only knows axis-aligned
+    // boxes, and the bull is long): as wide as it is long, a bit generous
+    // from the front, about right from the side.
+    return box(e.x, e.y, e.z, tuning.bullHitWidth, tuning.bullHitHeight, tuning.bullHitWidth);
   }
   if (e.type === 'eyebat') {
     // A cube around the eye, a bit bigger than the eye itself (it includes

@@ -339,6 +339,63 @@ export function playHowl(where: Where): void {
   noiseBurst({ out, duration: 0.4, volume: 0.15, filter: 'bandpass', frequency: 1800, q: 1 }); // breath
 }
 
+/**
+ * Bull aims a charge: the WARNING. Two hoof scrapes on the ground (short
+ * low-passed noise, sweeping down) and a heavy snort through the nostrils
+ * (a burst of bandpassed noise, like blowing air). Spread over `duration`
+ * (the aim time), so the last scrape tells you it's about to go.
+ */
+export function playBullSnort(where: Where, duration: number): void {
+  const out = placeSound(where);
+  if (!out) return;
+  noiseBurst({ out, duration: 0.18, volume: 0.6, filter: 'lowpass', frequency: 1400, frequencyEnd: 300 });
+  noiseBurst({ out, start: 0.15, duration: 0.35, volume: 0.7, filter: 'bandpass', frequency: 700, frequencyEnd: 350, q: 1.5 });
+  noiseBurst({ out, start: duration * 0.55, duration: 0.18, volume: 0.6, filter: 'lowpass', frequency: 1400, frequencyEnd: 300 });
+  noiseBurst({ out, start: duration * 0.6, duration: 0.3, volume: 0.8, filter: 'bandpass', frequency: 800, frequencyEnd: 400, q: 1.5 });
+}
+
+/**
+ * Bull charges: a deep BELLOW (two detuned sawtooth waves through a low
+ * "throat" filter: detuning makes them beat, a rough, big voice) plus a
+ * rumble of hooves (low thumps in quick succession).
+ */
+export function playBullBellow(where: Where): void {
+  const out = placeSound(where);
+  if (!ctx || !out) return;
+  const t0 = ctx.currentTime;
+  const dur = 0.9;
+  const throat = ctx.createBiquadFilter();
+  throat.type = 'bandpass';
+  throat.frequency.value = 400;
+  throat.Q.value = 2;
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0.001, t0);
+  env.gain.exponentialRampToValueAtTime(0.9, t0 + 0.1);
+  env.gain.setValueAtTime(0.9, t0 + 0.5);
+  env.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+  throat.connect(env).connect(out);
+  for (const f of [70, 73.5]) {
+    const voice = ctx.createOscillator();
+    voice.type = 'sawtooth';
+    voice.frequency.setValueAtTime(f, t0);
+    voice.frequency.exponentialRampToValueAtTime(f * 1.4, t0 + 0.3); // rises...
+    voice.frequency.exponentialRampToValueAtTime(f * 0.9, t0 + dur); // ...and sinks
+    voice.connect(throat);
+    voice.start(t0);
+    voice.stop(t0 + dur);
+  }
+  for (let i = 0; i < 6; i++) thump({ out, start: i * 0.13, duration: 0.1, volume: 0.5, from: 90, to: 45 }); // hooves
+}
+
+/** Bull slams into a wall: a big low BOOM and a crunch of wood. */
+export function playBullCrash(where: Where): void {
+  const out = placeSound(where);
+  if (!out) return;
+  thump({ out, duration: 0.45, volume: 1.2, from: 110, to: 30 });
+  noiseBurst({ out, duration: 0.4, volume: 0.9, filter: 'lowpass', frequency: 2500, frequencyEnd: 200 });
+  noiseBurst({ out, start: 0.05, duration: 0.25, volume: 0.4, filter: 'bandpass', frequency: 1800, q: 3 }); // splinters
+}
+
 /** Ghoul dies: a lower, sinking groan and a wet splat. */
 export function playGhoulDeath(where: Where): void {
   const out = placeSound(where);

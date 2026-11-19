@@ -7,7 +7,7 @@
 // among those the remaining budget can afford. Same budget, different mix in
 // every game. A future tough enemy (a brute worth 5) just gets a higher cost.
 import { secondsToTicks, tuning } from './config';
-import { createEyebat, createGhoul, createHound, isEnemy, type Enemy, type GhoulEntity } from './entities';
+import { createBull, createEyebat, createGhoul, createHound, isEnemy, type Enemy, type GhoulEntity } from './entities';
 import { random, randomInt } from './random';
 import type { SimEvent } from './events';
 import type { GameState } from './game';
@@ -121,22 +121,29 @@ const ROSTER: EnemyType[] = [
     fromWave: () => tuning.houndFromWave,
     spawn: (game, id, x, y, z) => createHound(id, x, y, z, healthForWave(tuning.houndHealth, game.wave.number)),
   },
+  {
+    cost: () => tuning.bullCost,
+    fromWave: () => tuning.bullFromWave,
+    spawn: (game, id, x, y, z) => createBull(id, x, y, z, healthForWave(tuning.bullHealth, game.wave.number)),
+  },
 ];
 
 /** How much an enemy weighs (for the "alive at the same time" limit, and the drop chance in pickups.ts). */
 export function enemyCost(e: Enemy): number {
   if (e.type === 'ghoul') return tuning.ghoulCost;
   if (e.type === 'eyebat') return tuning.eyebatCost;
-  return tuning.houndCost;
+  if (e.type === 'hound') return tuning.houndCost;
+  return tuning.bullCost;
 }
 
 export function stepWaves(game: GameState, world: World, events: SimEvent[]): void {
   // Dead enemies lie on the ground for a while, then are removed from the list.
-  // (Eye-bats and hounds count their own stateTicks: they keep falling while dead.)
+  // (Eye-bats, hounds and bulls count their own stateTicks: they keep falling while dead.)
   const corpseTicks = {
     ghoul: secondsToTicks(tuning.ghoulCorpseTime),
     eyebat: secondsToTicks(tuning.eyebatCorpseTime),
     hound: secondsToTicks(tuning.houndCorpseTime),
+    bull: secondsToTicks(tuning.bullCorpseTime),
   };
   game.entities = game.entities.filter(
     (e) => !(isEnemy(e) && e.state === 'dead' && e.stateTicks > corpseTicks[e.type]),

@@ -39,6 +39,12 @@ export type SimEvent =
   | { type: 'houndHowl'; entityId: number }
   /** A hound opens its jaws: the bite lands in houndBiteWindup seconds. */
   | { type: 'houndBite'; entityId: number }
+  /** A bull stops to aim a charge: pawing and snorting (the warning). */
+  | { type: 'bullAim'; entityId: number }
+  /** A bull starts its charge (direction locked). */
+  | { type: 'bullCharge'; entityId: number }
+  /** A charging bull slams into a wall: dazed. */
+  | { type: 'bullCrash'; entityId: number }
   /** An eye-bat starts charging a shot (the warning: glow + whine). */
   | { type: 'eyebatCharge'; entityId: number }
   /** An eye-bat fires: a projectile leaves its eye. */

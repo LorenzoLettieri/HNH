@@ -67,7 +67,7 @@ finale unico, "HIGH NOON". [DA DECIDERE: nomi definitivi]
   Tasca vuota = click a vuoto, niente ricarica (resta il calcio). Anche il revolver è finito.
   Le tasche si riempiono coi **drop dei nemici** (sotto); [DA DECIDERE] munizioni fisse sulla mappa.
 - **Drop dei nemici** [FATTO, da tarare]: niente loot table per nemico, una regola sola: probabilità
-  = **peso del nemico × 20%** (ghoul 20%, Malocchio 40%, cane 60%, max 80%). Del drop, 30% **medikit**
+  = **peso del nemico × 20%** (ghoul 20%, Malocchio 40%, cane 60%, toro 80% = il massimo). Del drop, 30% **medikit**
   (+25 salute), 70% **munizioni** (+12 proiettili e +4 cartucce insieme). Si raccolgono passandoci
   sopra; se non ti servono restano a terra. **Spariscono dopo 10 s** (lampeggiano negli ultimi 3).
 
@@ -88,7 +88,7 @@ con un chiaro preavviso.
 | **Fuoco fatuo** | Volante a distanza, proiettili lenti (forse superato dal Malocchio) | Il movimento diventa difesa |
 | **Pistolero scheletro** | A distanza, colpo istantaneo **annunciato** (luccichio + click) | Punisce chi sta fermo in vista, premia chi rompe la linea di tiro |
 | **Dinamitardo** | Lancia dinamite ad arco, lascia fiamme | Nega zone: ti costringe a spostarti |
-| **Toro / Bruto** | Lento, corazzato, carica devastante | Si schiva di lato o si scavalca |
+| **Toro** [FATTO, prima versione greybox; da tarare] | Grosso e resistente: ti punta (preavviso), poi **carica dritto** senza sterzare (dettagli sotto). Pesa **5** nelle ondate, dall'ondata 7 | Prima si schiva (cambio di direzione o salto), poi si uccide: meglio con un muro alle spalle |
 | **Boss** | Pattern complessi, ogni tot ondate | Picco di intensità |
 
 Stile: **sprite 2D** (tipo Doom), coerenti con il resto.
@@ -170,6 +170,26 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
   - Bot di prova (non spara mai), 3 cani: ululato in media a ~90° da dove guardi (di lato o alle
     spalle), a 10–20 m; tra ululato e morso **~0,8–1,3 s**: il tempo per girarsi e sparare.
     Fermo: 525 danni in 40 s; correndo in tondo: 150.
+- **Toro: la carica.** L'eccezione voluta alla regola "niente spugne": **300 di salute** (6 colpi di
+  revolver al corpo), ma non va affrontato a colpi mentre arriva. Priorità: **schivarlo, poi ucciderlo**.
+  Ciclo **avvicinamento → mira → carica → sbandata / stordito**:
+  - **Avvicinamento** a 3,5 m/s (più lento di te) sul flow field; non si arrampica e non usa gli sfiatatoi.
+  - **Mira** (il preavviso, 1,1 s), quando ti ha in linea retta entro 22 m: si ferma, **raspa il terreno e
+    sbuffa**, abbassa la testa e si gira verso **dove sarai** (tiro d'anticipo vero, con l'intercettazione
+    del Malocchio; gira al massimo di 160°/s). Negli **ultimi 0,3 s smette di girare**: testa giù, occhi
+    accesi = direzione bloccata, è il momento di muoversi.
+  - **Carica** a **17 m/s** (più veloce anche del bhop) in linea retta, senza sterzare. Se ti prende:
+    **40 danni** e vieni lanciato (14 m/s lungo la carica, un po' di lato, 7 m/s in alto).
+    Ti prende solo coi piedi sotto **0,9 m**: con un **salto al momento giusto** ti passa sotto.
+  - Se ti manca e ti supera di 5 m **sbanda** (0,9 s) e ricomincia. Se **sbatte** contro un muro (o un
+    ostacolo basso: in carica non salta) resta **stordito 2,2 s** e **ogni colpo è critico** (×3:
+    2 colpi di revolver). È la ricompensa della schivata con un muro dietro.
+  - **Troppo pesante** per calcio e doppietta: prende il danno ma non si sposta.
+  - Bot di prova in campo aperto (bersaglio a 8–20 m): **fermo, che corre dritto di lato, che scappa
+    o che gli va incontro: preso**. **Cambia direzione** dopo il blocco (inverte, si ferma, scarta da
+    fermo): **mancato**. **Salto**: funziona se parte quando il toro è a 5–7 m (finestra di ~0,15 s).
+  - [DA FARE] Il grafo di navigazione è tarato sulla taglia del ghoul: il toro (largo 1,3 m) a volte
+    s'incastra nei passaggi più stretti. Serve un grafo per i corpi grandi.
 - **Calcio (melee)** [FATTO, da tarare]: F o tasto destro. Colpisce **tutto** in un cono davanti
   (1,6 m, ±45°), 25 danni (mezzo ghoul base: è uno strumento, non l'arma principale), e **spinge via**
   (13 m/s in avanti, 5 m/s in alto): il ghoul vola via, interrompe artigliata e balzo, e resta a terra
@@ -264,7 +284,7 @@ si ricomincia dall'ondata 1.
 un **peso** (quanto è pericoloso), ogni ondata un **budget** di peso; a ogni spawn si pesca un tipo
 a caso tra quelli che il budget residuo si può permettere. Stesso budget, mix diverso in ogni
 partita. Il ghoul pesa **1**, il Malocchio **2** e compare **dall'ondata 3** (`eyebatFromWave`):
-le prime due ondate sono di soli ghoul, per scaldarsi. Il cane infernale pesa **3** e compare dall'ondata 5. Un futuro bruto potrebbe pesare 5.
+le prime due ondate sono di soli ghoul, per scaldarsi. Il cane infernale pesa **3** e compare dall'ondata 5. Il toro pesa **5** e compare dall'ondata 7.
 Il caso usa un generatore con **seed** (deterministico: stesso seed = stessa partita).
 
 | Ondata | Budget (peso) | Corridori (tra i ghoul) | Salute (ghoul = Malocchio) |

@@ -6,7 +6,7 @@ import { createDebugPanel } from './debug/debugPanel';
 import { buildCommand, updateLook, view } from './controls';
 import { TICK_DT, tuning } from './sim/config';
 import { copyPlayer, createPlayer, horizontalSpeed } from './sim/player';
-import { createGame, spawnEyebatInFront, spawnHoundInFront, stepGame } from './sim/game';
+import { createGame, spawnBullInFront, spawnEyebatInFront, spawnHoundInFront, stepGame } from './sim/game';
 import { jumpToWave } from './sim/waves';
 import { currentAmmo, magazineSize } from './sim/weapon';
 import { DEFAULT_LEVEL, LEVELS } from './levels';
@@ -23,6 +23,7 @@ import { createTargets } from './render/targets';
 import { createGhoulRenderer } from './render/enemies/ghouls';
 import { createEyebatRenderer } from './render/enemies/eyebats';
 import { createHoundRenderer } from './render/enemies/hounds';
+import { createBullRenderer } from './render/enemies/bulls';
 import { createProjectileRenderer } from './render/projectiles';
 import { createPickupRenderer } from './render/pickups';
 import { updateHud } from './render/hud';
@@ -115,6 +116,7 @@ const targets = createTargets(scene, game.entities);
 const ghouls = createGhoulRenderer(scene);
 const eyebats = createEyebatRenderer(scene);
 const hounds = createHoundRenderer(scene);
+const bulls = createBullRenderer(scene);
 const projectiles = createProjectileRenderer(scene);
 const pickups = createPickupRenderer(scene);
 const navDebug = createNavDebug(scene, getNavGraph(world));
@@ -155,6 +157,8 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyB') spawnEyebatInFront(game);
   // G: a hellhound.
   if (e.code === 'KeyG') spawnHoundInFront(game);
+  // V: a bull.
+  if (e.code === 'KeyV') spawnBullInFront(game);
   if (e.code === 'Backquote') {
     debugPanel.toggle();
     document.exitPointerLock();
@@ -309,6 +313,7 @@ renderer.setAnimationLoop((now: number) => {
   ghouls.update(game.entities, events, camera, alpha, dt);
   eyebats.update(game.entities, events, camera, alpha, dt);
   hounds.update(game.entities, events, camera, alpha, dt);
+  bulls.update(game.entities, events, camera, alpha, dt);
   projectiles.update(game.projectiles, events, camera, alpha, dt);
   pickups.update(game.pickups, now / 1000);
   updateHud(game, events, dt);

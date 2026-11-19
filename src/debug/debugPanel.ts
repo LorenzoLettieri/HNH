@@ -234,6 +234,32 @@ export function createDebugPanel(options: {
   hound.number(tuning, 'houndBiteCooldown', 0.1, 5, 0.1);
   hound.button('Copy values', () => copyToClipboard(toSource(tuning)));
 
+  // --- Bull ---
+  const bull = panel.folder('Bull (src/sim/config.ts) — V to spawn');
+  bull.number(tuning, 'bullHealth', 50, 2000, 10);
+  bull.number(tuning, 'bullCost', 1, 15, 1);
+  bull.number(tuning, 'bullFromWave', 1, 40, 1);
+  bull.number(tuning, 'bullSpeed', 0.5, 10, 0.1);
+  bull.number(tuning, 'bullAccel', 0.5, 20, 0.5);
+  bull.number(tuning, 'bullChargeRange', 5, 50, 1);
+  bull.number(tuning, 'bullAimTime', 0.2, 3, 0.05);
+  bull.number(tuning, 'bullAimLockTime', 0, 1.5, 0.05);
+  bull.number(tuning, 'bullAimTurnRate', 10, 720, 10);
+  bull.number(tuning, 'bullLeadFactor', 0, 1.5, 0.05);
+  bull.number(tuning, 'bullChargeSpeed', 5, 35, 0.5);
+  bull.number(tuning, 'bullOvershoot', 0, 20, 0.5);
+  bull.number(tuning, 'bullChargeMaxTime', 0.5, 6, 0.1);
+  bull.number(tuning, 'bullChargeDamage', 1, 100, 1);
+  bull.number(tuning, 'bullChargeKnockback', 0, 40, 0.5);
+  bull.number(tuning, 'bullChargeLift', 0, 20, 0.5);
+  bull.number(tuning, 'bullTrampleHeight', 0, 2.5, 0.05);
+  bull.number(tuning, 'bullSkidTime', 0, 3, 0.05);
+  bull.number(tuning, 'bullStunTime', 0, 6, 0.1);
+  bull.number(tuning, 'bullChargeCooldown', 0, 8, 0.1);
+  bull.number(tuning, 'bullHitWidth', 0.5, 4, 0.05);
+  bull.number(tuning, 'bullHitHeight', 0.5, 4, 0.05);
+  bull.button('Copy values', () => copyToClipboard(toSource(tuning)));
+
   // --- Camera feel ---
   const feel = panel.folder('Camera feel (src/render/cameraFeel.ts)');
   feel.number(cameraFeelSettings, 'baseFov', 50, 110, 1);
