@@ -49,10 +49,10 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   `?seed=123` per rigiocare la stessa sequenza di ondate (il seed di ogni partita è scritto nella console del browser)
 - `src/menu.ts`: **menu di avvio/pausa** (pagine Gioca / Impostazioni / Comandi; il markup e lo stile stanno in `index.html`)
 - `src/settings.ts`: **impostazioni del giocatore** salvate nel `localStorage` (per ora la sensibilità del mouse, scala Quake/CS)
-- `src/input.ts`: input grezzo (tasti e tasti del mouse premuti, pressioni brevi "memorizzate", movimento mouse, Pointer Lock)
-- `src/controls.ts`: sensibilità mouse in radianti (`controlSettings`, impostata da `settings.ts`), angoli di vista, **mappatura tasti** (WASD, Spazio, Shift/C = accovacciati/slide, click = spara, R = ricarica, **F / tasto destro = calcio**, K = respawn) → `InputCommand` (T = cambia atmosfera, P = pixel art on/off, N = grafo IA, **H = hitbox**, **B = fai apparire un Malocchio** (debug), tasto sotto Esc = pannello debug, in `main.ts`)
+- `src/input.ts`: input grezzo (tasti e tasti del mouse premuti, pressioni brevi "memorizzate", **rotellina** come tasti `WheelUp`/`WheelDown`, movimento mouse, Pointer Lock)
+- `src/controls.ts`: sensibilità mouse in radianti (`controlSettings`, impostata da `settings.ts`), angoli di vista, **mappatura tasti** (WASD, Spazio, Shift/C = accovacciati/slide, click = spara, R = ricarica, **F / tasto destro = calcio**, **1/2 = revolver/doppietta, Q/rotellina = cambia arma**, K = respawn) → `InputCommand` (T = cambia atmosfera, P = pixel art on/off, N = grafo IA, **H = hitbox**, **B = fai apparire un Malocchio** (debug), tasto sotto Esc = pannello debug, in `main.ts`)
 - `src/sim/`: simulazione pura (niente Three.js/DOM)
-  - `config.ts`: **valori di tuning** (oggetto `tuning`, modificabile dal pannello debug) (tick rate, altezza occhi, salute, **ondate** (anche picco della pressione e spawn), dimensioni giocatore, movimento a terra, gravità/salto/coyote/buffer, movimento e controllo in aria, aiuti al bhop, accovacciata, slide, wall jump, **revolver**, **calcio** (`kick*`), bersagli, **ghoul**, **Malocchio** (anche sparo: carica, intervallo, velocità/danno della palla di fuoco, **tiro d'anticipo** `eyebatLeadFactor`), **balzo del ghoul** (`ghoulLunge*`), **proiettili nemici**)
+  - `config.ts`: **valori di tuning** (oggetto `tuning`, modificabile dal pannello debug) (tick rate, altezza occhi, salute, **ondate** (anche picco della pressione e spawn), dimensioni giocatore, movimento a terra, gravità/salto/coyote/buffer, movimento e controllo in aria, aiuti al bhop, accovacciata, slide, wall jump, **revolver**, **calcio** (`kick*`), **doppietta** (`shotgun*`: pallini, rosata, danno e calo con la distanza, spinta in aria), **tempo di cambio arma**, bersagli, **ghoul**, **Malocchio** (anche sparo: carica, intervallo, velocità/danno della palla di fuoco, **tiro d'anticipo** `eyebatLeadFactor`), **balzo del ghoul** (`ghoulLunge*`), **proiettili nemici**)
   - `game.ts`: **stato di gioco unico** (`GameState`: giocatore, entità, **proiettili nemici**, ondata, statistiche) e `stepGame()` (un tick di tutto il gioco; game over alla morte)
   - `entities.ts`: **entità colpibili** (bersagli, ghoul, Malocchio): dati, salute, danno, **hitbox** (`hitBox`: separata dal collider, misure in `config.ts`: `ghoulHitWidth/Height`, `eyebatHitRadius`, `eyebatPupilRadius`)
   - `ghoul.ts`: **IA del ghoul** (segue il flow field: cammina, salta con traiettoria balistica, si lascia cadere, **si arrampica**; da vicino inseguimento diretto con salto/aggiramento; separazione; artigliata senza fermarsi; **inseguimento** quando ti vede: punta dove stai andando e di lato, così l'orda accerchia; **balzo** da 2–6 m con preavviso, tiro d'anticipo e recupero a terra)
@@ -64,10 +64,10 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `command.ts`: tipo `InputCommand` (cosa vuole fare il giocatore in un tick)
   - `world.ts`: tipi del livello (`Box` AABB, `Prop` decorazioni, `TargetSpawn` bersagli, `World`) e helper `box()`
   - `props.ts`: **box di collisione invisibili dei props** (barile, palo del cartello, torcia) e zona di lancio degli sfiatatoi
-  - `weapon.ts`: revolver (sparo semi-automatico, munizioni, ricarica, hitscan, **colpo alla testa**, **colpo nella pupilla** del Malocchio)
+  - `weapon.ts`: **armi del giocatore** (elenco `WEAPONS` = slot 1, 2…; **cambio arma**; sparo semi-automatico, munizioni, ricarica, hitscan, **colpo alla testa**, **colpo nella pupilla** del Malocchio). **Revolver**: un proiettile. **Doppietta**: rosata fissa di pallini (`pelletPattern`), danno sommato per nemico, calo con la distanza (`falloff`), ricarica automatica a canne vuote, **spinta sul giocatore in aria** (shotgun jump)
   - `kick.ts`: **calcio (melee)**: preavviso minimo, cono davanti al giocatore (portata, angolo, altezza, niente attraverso i muri), danno e **spinta** (il ghoul vola e resta a terra: stato `staggered` in `ghoul.ts`)
   - `raycast.ts`: raggio contro i box (metodo degli "slab"): cosa colpisce un proiettile
-  - `events.ts`: eventi della simulazione (sparo, colpo su un'entità, **calcio**, attacco del ghoul, carica/sparo del Malocchio, impatto di un proiettile, giocatore ferito/morto, colpo a vuoto, ricarica) per effetti e suoni
+  - `events.ts`: eventi della simulazione (**`fire`** = l'arma ha sparato, **`shot`** = un proiettile/pallino e dove è arrivato, **cambio arma**, colpo su un'entità, **calcio**, attacco del ghoul, carica/sparo del Malocchio, impatto di un proiettile, giocatore ferito/morto, colpo a vuoto, ricarica) per effetti e suoni
   - `collision.ts`: movimento con collisioni asse per asse contro i box, `overlapsAny` (c'è spazio?), `findWall` (muro vicino?)
   - `player.ts`: stato del giocatore e `stepPlayer()` (salto e bhop facilitato, slide/accovacciata, wall jump stile Apex, attrito, accelerazione Quake + air control, gravità, sfiatatoi, respawn)
 - `src/debug/`: pannello di debug
@@ -96,13 +96,15 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `heightFog.ts`: nebbia al suolo (patch dello shader della nebbia di Three.js)
   - `weapons/`: **l'arma in mano (viewmodel)**
     - `viewmodel.ts`: scena/camera dell'arma, **posa, rinculo, ondeggiamento, bob, ricarica, lampo, calcio** (`viewmodelSettings`)
+    - `viewmodel.ts` contiene anche **posa della doppietta** (`shotgun*` in `viewmodelSettings`: posizione, rotazione, rinculo) e l'animazione di **cambio arma** (la nuova arma sale dal basso)
     - `revolverModel.ts`: modello procedurale del revolver (canna, tamburo, cane, calcio)
+    - `shotgunView.ts`: **doppietta in mano**: carica `public/models/shotgun.glb`, mani in posa, animazioni in codice ruotando le parti del modello (**cani** che cadono allo sparo, **ricarica**: canne che si aprono, bossoli espulsi, cartucce nuove, chiusura; fasi come frazioni del tempo di ricarica in cima al file)
     - `kickLeg.ts`: **gamba del calcio**: carica `public/models/leg.glb` (GLTFLoader), lo anima con `AnimationMixer` sincronizzando il fotogramma d'impatto con `kickWindup`
-    - `hands.ts`: **mani a blocchi** (guanti, maniche) e **keyframe del fanning** della mano sinistra
+    - `hands.ts`: **mani a blocchi** (guanti, maniche; le stesse mani, rimesse in posa, tengono anche la doppietta) e **keyframe del fanning** della mano sinistra
   - `hud.ts`: barra della salute, vignetta rossa, **numero dell'ondata, punteggio, scritte di inizio/fine ondata e conto alla rovescia**, riepilogo alla morte
   - `projectiles.ts`: **palle di fuoco nemiche** (sprite pixel art luminoso, scia di braci, scintille e suono all'impatto)
   - `soundPosition.ts`: volume e panning di un suono in base alla posizione rispetto alla camera
-  - `weaponFx.ts`: effetti degli spari (lampo di luce, fori, scintille, suoni)
+  - `weaponFx.ts`: effetti degli spari (lampo di luce, fori, scintille, suoni; effetti più piccoli per i pallini)
   - `enemies/`: **i nemici**
     - `spriteSheet.ts`: strumenti comuni per gli sprite (`PixelFrame`: pixel, rettangoli, arti, triangoli, contorno; `buildSheet`: sprite sheet + maschera di glow)
     - `eyebatSprite.ts`: **sprite del Malocchio** (palette, ali, occhio con iride luminosa e pupilla, fotogrammi)
@@ -114,11 +116,12 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `targets.ts`: **bersagli** (modello, oscillazione a molla quando colpiti, caduta e rialzata)
   - `impacts.ts`: fori di proiettile sulle superfici (decal, dimensione, quanti ne restano)
   - `materials.ts`: **quale texture usa ogni materiale** (`LOOKS`), densità dei pixel, mesh dei box
-- `src/audio/sfx.ts`: **effetti sonori sintetizzati** con Web Audio (sparo, ricarica, **calcio** (fruscio e tonfo), "ding" dei bersagli, versi/artigliate/morte dei ghoul con panning stereo, **carica, sparo e impatto delle palle di fuoco del Malocchio**, giocatore ferito, **campana delle ondate**, volume, pausa dell'audio)
+- `src/audio/sfx.ts`: **effetti sonori sintetizzati** con Web Audio (sparo, ricarica, **doppietta** (sparo più grave, ricarica a tempo con l'animazione), **cambio arma**, **calcio** (fruscio e tonfo), "ding" dei bersagli, versi/artigliate/morte dei ghoul con panning stereo, **carica, sparo e impatto delle palle di fuoco del Malocchio**, giocatore ferito, **campana delle ondate**, volume, pausa dell'audio)
 - `tools/blender/`: **modelli 3D generati con script Python per Blender** (`bpy`, Blender senza interfaccia)
   - `setup.sh`: installazione una tantum (venv con `bpy` in `tools/blender/.venv`)
-  - `lib.py`: mini-libreria di modellazione: **loft** (anelli di sezione uniti in un tubo), anelli ellittici, box/cilindri/stelle, **texture pixel art** (`Pixels`), materiali con filtro "Closest"
+  - `lib.py`: mini-libreria di modellazione: **loft** (anelli di sezione uniti in un tubo), anelli ellittici, box/cilindri/stelle, **texture pixel art** (`Pixels`), materiali con filtro "Closest", **render di anteprima** (`setup_preview`, `render_frame`)
   - `leg.py`: **gamba sinistra con stivale da cowboy**, **low-poly** (pochi lati per sezione, shading piatto, texture 8–32 px) (jeans, gambale con cuciture, punta, tacco cubano, sperone, borchia), **scheletro** (anca → coscia → stinco → piede), **animazione del calcio** con IK poi "bakata", render di anteprima, export. **Proporzioni** (`LEG_STRETCH` = lunghezza gamba, `BOOT_SCALE` = grandezza stivale), tabelle delle forme (`FOOT`, `SOLE_TOP`), pose del calcio (`key_foot`, `KICK_HIP`) e fotogrammi (`IMPACT_FRAME` ecc.) in cima
+  - `shotgun.py`: **doppietta** a canne mozze (canne brunite, bascula in ottone inciso con ingranaggi, impugnatura a pistola in noce zigrinata, cani esterni, cartucce). **Niente scheletro**: parti rigide con l'origine sul perno (`stock` → `barrels` (cerniera) → `shell_L/R`; `hammer_L/R`), animate dal gioco. **Misure** (`BARREL_*`, `HINGE`, `HAMMER_*`), palette e texture in cima al file
   - `previews/`: render di anteprima (non nel repo)
 - `public/models/`: **modelli glTF (.glb) generati** da `tools/blender/` (nel repo, così il sito non ha bisogno di Blender)
 - `public/textures/`: texture PNG (servite così come sono da Vite su `/textures/...`)

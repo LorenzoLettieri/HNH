@@ -8,6 +8,7 @@ import { TICK_DT } from './sim/config';
 import { copyPlayer, createPlayer, horizontalSpeed } from './sim/player';
 import { createGame, spawnEyebatInFront, stepGame } from './sim/game';
 import { jumpToWave } from './sim/waves';
+import { currentAmmo, magazineSize } from './sim/weapon';
 import { DEFAULT_LEVEL, LEVELS } from './levels';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
 import { updateCameraFeel } from './render/cameraFeel';
@@ -117,8 +118,8 @@ const hitboxDebug = createHitboxDebug(scene);
 // The gun in your hand: its own scene and camera, drawn over the world.
 const viewmodel = createViewmodel();
 viewmodel.setAspect(window.innerWidth / window.innerHeight);
-weaponFx.onShot.push(() => viewmodel.onShot());
-weaponFx.onReload.push(() => viewmodel.onReload());
+weaponFx.onShot.push((weapon, barrel) => viewmodel.onShot(weapon, barrel));
+weaponFx.onReload.push((weapon) => viewmodel.onReload(weapon));
 weaponFx.onKick.push(() => viewmodel.onKick());
 
 let atmosphereIndex = 0;
@@ -305,9 +306,12 @@ renderer.setAnimationLoop((now: number) => {
   updateHud(game, events, dt);
   navDebug.update(getFlowField(getNavGraph(world), game.navGoal));
   hitboxDebug.update(game.entities);
+  // Ammo: one dot per round (revolver), one tall block per shell (shotgun).
+  const [full, empty] = player.weapon === 'shotgun' ? ['▮', '▯'] : ['●', '○'];
+  const ammo = currentAmmo(player);
   ammoHud.textContent = player.reloadTicks > 0
     ? 'RELOADING'
-    : '●'.repeat(player.ammo) + '○'.repeat(Math.max(0, 6 - player.ammo));
+    : full.repeat(ammo) + empty.repeat(Math.max(0, magazineSize(player.weapon) - ammo));
 
   updateFireLights(now / 1000);
   props.update(now / 1000);

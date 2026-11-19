@@ -255,3 +255,43 @@ def assign(obj, mat):
 
 def rng(seed):
     return random.Random(seed)
+
+
+# --------------------------------------------------------------------------
+# Preview renders
+# --------------------------------------------------------------------------
+
+def setup_preview():
+    """Cycles at the game's pixel resolution, a reddish sky, the viewmodel's key light and camera (at the eye, 55° FOV)."""
+    scene = bpy.context.scene
+    scene.render.engine = 'CYCLES'
+    scene.cycles.device = 'CPU'
+    scene.cycles.samples = 24
+    scene.cycles.use_denoising = False
+    scene.render.resolution_x, scene.render.resolution_y = 480, 270  # the game's pixel resolution
+    world = bpy.data.worlds.new('sky')
+    world.use_nodes = True
+    world.node_tree.nodes['Background'].inputs['Color'].default_value = (0.5, 0.09, 0.03, 1)
+    world.node_tree.nodes['Background'].inputs['Strength'].default_value = 0.8
+    scene.world = world
+    # Key light like the game's viewmodel: from above-left, slightly behind you.
+    sun = bpy.data.objects.new('key', bpy.data.lights.new('key', 'SUN'))
+    sun.data.energy = 3.0
+    sun.rotation_euler = Vector((-1, -1.5, 2)).normalized().to_track_quat('Z', 'Y').to_euler()
+    scene.collection.objects.link(sun)
+    # The same camera as the game's viewmodel: at the eye, looking forward, 55° vertical FOV.
+    cam = bpy.data.objects.new('eye', bpy.data.cameras.new('eye'))
+    cam.data.sensor_fit = 'VERTICAL'
+    cam.data.angle = math.radians(55)
+    cam.data.clip_start = 0.01
+    cam.rotation_euler = (math.radians(90), 0, 0)
+    scene.collection.objects.link(cam)
+    scene.camera = cam
+    return cam
+
+
+def render_frame(path, frame):
+    scene = bpy.context.scene
+    scene.frame_set(frame)
+    scene.render.filepath = path
+    bpy.ops.render.render(write_still=True)

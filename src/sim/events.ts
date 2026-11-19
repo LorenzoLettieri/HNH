@@ -3,9 +3,18 @@
 // appends them to a list; it doesn't know or care who listens.
 // (On a future server, the same events would be sent to the clients.)
 
+import type { WeaponId } from './weapon';
+
 export type SimEvent =
+  /** A weapon fired (sound, flash, recoil). For the shotgun, `barrel` is 0 = right, 1 = left. */
+  | { type: 'fire'; weapon: WeaponId; barrel: number }
+  /** You switched weapon: the new one is coming up. */
+  | { type: 'weaponSwitch'; weapon: WeaponId }
+  /** One bullet or pellet: where it went and what it hit (impacts, blood). A shotgun blast is many of these. */
   | {
       type: 'shot';
+      /** A shotgun pellet (smaller effects) rather than a revolver bullet. */
+      pellet: boolean;
       /** Where the bullet started (the player's eye). */
       from: { x: number; y: number; z: number };
       /** Where it stopped: the hit point, or max range if it hit nothing. */
@@ -36,5 +45,5 @@ export type SimEvent =
   /** The foot lands: how many things it hit (0 = kicked the air). */
   | { type: 'kickLand'; hits: number }
   | { type: 'dryFire' } // pulled the trigger with an empty cylinder
-  | { type: 'reloadStart' }
+  | { type: 'reloadStart'; weapon: WeaponId }
   | { type: 'reloadEnd' };

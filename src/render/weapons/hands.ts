@@ -35,6 +35,9 @@ export interface Hands {
   right: THREE.Group;
   /** Goes inside the viewmodel holder: moved by the fanning animation. */
   left: THREE.Group;
+  /** The forearms (inside `right` / `left`), to re-pose them for another gun. */
+  rightArm: THREE.Mesh;
+  leftArm: THREE.Mesh;
 }
 
 export function createHands(): Hands {
@@ -76,7 +79,7 @@ export function createHands(): Hands {
   leftArm.rotation.set(0.2, -1.25, 0);
   left.add(leftArm);
 
-  return { right, left };
+  return { right, left, rightArm, leftArm };
 }
 
 // --- Fanning animation --------------------------------------------------------

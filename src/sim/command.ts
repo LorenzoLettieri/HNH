@@ -18,6 +18,11 @@ export interface InputCommand {
   kick: boolean;
   /** Reload button held. */
   reload: boolean;
+  /**
+   * Weapon change asked this tick: 0 = none, 1..N = that slot (1 = revolver,
+   * 2 = shotgun), -1 = next weapon, -2 = previous (mouse wheel, Q).
+   */
+  weaponSelect: number;
   /** Go back to the spawn point (debug/testing). */
   respawn: boolean;
   /** View angles (radians) at the time the command was built. */

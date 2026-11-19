@@ -147,6 +147,38 @@ export const tuning = {
   /** Max shooting distance, meters. */
   weaponRange: 200,
 
+  // --- Double-barrel shotgun ("la doppietta", see weapon.ts) ---
+  /** Shells: one per barrel. */
+  shotgunAmmo: 2,
+  /** Seconds between the two barrels (you can fire both almost together). */
+  shotgunFireInterval: 0.16,
+  /** Seconds to break it open, swap both shells and snap it shut. Starts by itself when both barrels are empty. */
+  shotgunReloadTime: 1.05,
+  /** Pellets per shot (a fixed pattern: center + inner ring + outer ring). */
+  shotgunPellets: 12,
+  /** Half-angle of the outer ring of the pattern, degrees (7° = ~1.2 m wide at 10 m). */
+  shotgunSpread: 7,
+  /** Damage of one pellet at close range (all 12 = 168: anything basic dies point blank). */
+  shotgunPelletDamage: 14,
+  /** Pellets do full damage up to this distance, meters... */
+  shotgunFalloffStart: 6,
+  /** ...then less and less, down to shotgunFalloffMin × damage at this distance. */
+  shotgunFalloffEnd: 22,
+  shotgunFalloffMin: 0.25,
+  /** Max distance a pellet flies, meters. */
+  shotgunRange: 60,
+  /** Critical multiplier PER PELLET (lower than the revolver's: a blast to the head is already a lot of pellets). */
+  shotgunHeadshotMultiplier: 1.5,
+  /**
+   * Recoil on YOU, m/s, only in the air: shooting down pushes you up (a
+   * "shotgun jump"), shooting backward pushes you forward. Movement tech.
+   */
+  shotgunSelfPush: 5,
+
+  // --- Weapon switching ---
+  /** Seconds for the new weapon to come up: you can't fire before. */
+  weaponSwitchTime: 0.25,
+
   // --- Kick (melee, see kick.ts) ---
   /** Seconds from the key press to the foot landing (a tiny wind-up: the leg has to get there). */
   kickWindup: 0.08,
