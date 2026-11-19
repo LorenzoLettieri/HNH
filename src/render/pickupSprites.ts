@@ -6,6 +6,8 @@
 //   0: bullets — a cardboard box with three revolver cartridges sticking out
 //   1: shells  — two red shotgun shells with brass bases
 //   2: medkit  — a bottle of glowing green "tonic" with a red-cross label
+//   3: coin    — a gold coin of vildenaro with a skull stamped on it (seen
+//                face-on: the renderer makes it spin by squashing it)
 // Coordinates: x right, y DOWN (like a canvas), row 15 = the floor.
 import * as THREE from 'three';
 import type { PickupKind } from '../sim/pickups';
@@ -13,7 +15,7 @@ import { buildSheet, PixelFrame, type SpriteSheet } from './enemies/spriteSheet'
 
 export const PICKUP_FRAME = 16;
 /** Which frame each kind uses. */
-export const PICKUP_FRAMES: Record<PickupKind, number> = { bullets: 0, shells: 1, medkit: 2 };
+export const PICKUP_FRAMES: Record<PickupKind, number> = { bullets: 0, shells: 1, medkit: 2, coin: 3 };
 
 const C = {
   outline: 0x120a08,
@@ -41,6 +43,11 @@ const C = {
   tonicDark: 0x188028,
   label: 0xe8dcb0,
   cross: 0xc01810,
+  // coin: hell's gold, a bit reddish
+  gold: 0xe0a830,
+  goldLight: 0xffe890,
+  goldDark: 0x9a6418,
+  goldStamp: 0x6a3c0c,
 };
 
 /**
@@ -119,6 +126,46 @@ function paintMedkit(): PixelFrame {
   return f;
 }
 
+/**
+ * A coin, 10 px wide, standing on the floor (rows 6..15). Painted with the
+ * distance from the center, like a compass: inside the radius = coin. The
+ * distance also gives the shading: the outer pixels are the rim (dark, or
+ * light on the upper-left where the light comes from), then a dark ring that
+ * frames the stamp. The center is at x = 7.5, BETWEEN two pixels, exactly on
+ * the sprite's middle: it spins around that axis, so it must be symmetric.
+ */
+function paintCoin(): PixelFrame {
+  const f = new PixelFrame(PICKUP_FRAME, PICKUP_FRAME);
+  const cx = 7.5;
+  const cy = 10.5;
+  const r = 5;
+  for (let y = 0; y < PICKUP_FRAME; y++) {
+    for (let x = 0; x < PICKUP_FRAME; x++) {
+      const dx = x - cx;
+      const dy = y - cy;
+      const d = Math.hypot(dx, dy);
+      if (d > r) continue;
+      if (d > r - 1) {
+        // The rim: lit on the upper-left half, in shadow on the other.
+        const lit = dx + dy < 0;
+        f.set(x, y, lit ? C.goldLight : C.goldDark, lit);
+      } else if (d > r - 1.9) {
+        f.set(x, y, C.goldDark); // the ring around the stamp
+      } else {
+        f.set(x, y, C.gold, true); // the face shines (glow mask)
+      }
+    }
+  }
+  // The stamp: a little skull (two eyes and a row of teeth).
+  f.set(6, 9, C.goldStamp);
+  f.set(9, 9, C.goldStamp);
+  f.rect(6, 12, 4, 1, C.goldStamp);
+  f.set(7, 12, C.gold, true); // a gap between the teeth
+  f.set(5, 8, C.goldLight, true); // a glint on the face
+  f.outline(C.outline);
+  return f;
+}
+
 /** How much of its own color every pixel emits (the glowing ones emit all of it). */
 const SELF_LIGHT = 0.4;
 
@@ -131,7 +178,7 @@ const SELF_LIGHT = 0.4;
  * to the lit color: the dark parts never go fully black.
  */
 export function pickupSheet(): SpriteSheet & { emissive: THREE.CanvasTexture } {
-  const frames = [paintBullets(), paintShells(), paintMedkit()];
+  const frames = [paintBullets(), paintShells(), paintMedkit(), paintCoin()];
   const sheet = buildSheet(frames);
   const n = PICKUP_FRAME;
   const w = n * frames.length;

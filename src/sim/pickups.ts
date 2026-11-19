@@ -3,6 +3,8 @@
 // - BULLETS: spare rounds for the revolver;
 // - SHELLS: spare shells for the shotgun;
 // - MEDKIT: health (the only way to heal: there's no regeneration).
+// Plus the COINS (the vildenaro, the game's money), which work differently:
+// every enemy ALWAYS drops some (see dropCoins), and you ALWAYS collect them.
 // Ammo is split ON PURPOSE: if the shells don't come for a while, you're
 // forced to play with the revolver (and the other way around).
 //
@@ -17,7 +19,7 @@
 // Pure simulation, like everything in src/sim: the renderer reads the list.
 import { secondsToTicks, tuning } from './config';
 import type { SimEvent } from './events';
-import type { Entity } from './entities';
+import type { Enemy } from './entities';
 import type { GameState } from './game';
 import { random } from './random';
 import { raycastBoxes } from './raycast';
@@ -25,10 +27,10 @@ import { enemyCost } from './waves';
 import type { WeaponId } from './weapon';
 import type { World } from './world';
 
-export type PickupKind = 'bullets' | 'shells' | 'medkit';
+export type PickupKind = 'bullets' | 'shells' | 'medkit' | 'coin';
 
 /** Which weapon's pockets each kind of ammo fills. */
-const AMMO_FOR: Record<Exclude<PickupKind, 'medkit'>, WeaponId> = { bullets: 'revolver', shells: 'shotgun' };
+const AMMO_FOR: Record<'bullets' | 'shells', WeaponId> = { bullets: 'revolver', shells: 'shotgun' };
 
 export interface Pickup {
   /** Unique (shares the counter with the entities): the renderer keeps one mesh per id. */
@@ -40,6 +42,12 @@ export interface Pickup {
   z: number;
   /** Ticks left before it vanishes. */
   ticksLeft: number;
+  /**
+   * Vildenaro it's worth (coins only, 0 for the rest). Stored on the coin,
+   * decided when it's dropped: so one day the style multiplier can be
+   * applied at the moment of the KILL, not of the pickup.
+   */
+  value: number;
 }
 
 /**
@@ -52,6 +60,7 @@ export function dropFromKills(game: GameState, world: World, events: SimEvent[])
     if (ev.type !== 'hit' || !ev.killed) continue;
     const enemy = game.entities.find((e) => e.id === ev.entityId);
     if (!enemy || enemy.type === 'target') continue; // steel targets drop nothing
+    dropCoins(game, world, enemy);
     // Chance = weight × dropChancePerWeight, capped. Ghoul 1 → 30%, eye-bat 2 → 60%, hound 3 → 80% (cap).
     const chance = Math.min(tuning.dropChanceMax, enemyCost(enemy) * tuning.dropChancePerWeight);
     if (random(game) >= chance) continue;
@@ -65,6 +74,37 @@ export function dropFromKills(game: GameState, world: World, events: SimEvent[])
       y: floor,
       z: enemy.z,
       ticksLeft: secondsToTicks(tuning.dropLifetime),
+      value: 0,
+    });
+  }
+}
+
+/**
+ * The vildenaro: every enemy ALWAYS drops coins, as many as its weight
+ * (× coinsPerWeight): a ghoul 1, a bull 5. Heavier = harder to kill = more money.
+ * The coins scatter around the body, each at a random angle and distance
+ * (from the seeded generator: same seed, same coins), and each one looks for
+ * its own floor: a bull dying at the edge of a roof can drop some coins on
+ * the roof and some down in the street. Worth chasing.
+ */
+function dropCoins(game: GameState, world: World, enemy: Enemy): void {
+  const count = Math.round(enemyCost(enemy) * tuning.coinsPerWeight);
+  for (let i = 0; i < count; i++) {
+    const angle = random(game) * Math.PI * 2;
+    // One coin alone stays (almost) on the body; several spread out.
+    const dist = count === 1 ? 0 : tuning.coinScatter * (0.4 + 0.6 * random(game));
+    const x = enemy.x + Math.cos(angle) * dist;
+    const z = enemy.z + Math.sin(angle) * dist;
+    const floor = floorBelow({ x, y: enemy.y, z }, world);
+    if (floor === null) continue;
+    game.pickups.push({
+      id: game.nextEntityId++,
+      kind: 'coin',
+      x,
+      y: floor,
+      z,
+      ticksLeft: secondsToTicks(tuning.coinLifetime),
+      value: tuning.coinValue,
     });
   }
 }
@@ -98,7 +138,7 @@ function pickKind(roll: number): PickupKind {
  * straight down (the same raycast as the bullets) and put the drop where it hits.
  * The ray starts a bit above the feet, so a body slightly inside the floor still works.
  */
-function floorBelow(e: Entity, world: World): number | null {
+function floorBelow(e: { x: number; y: number; z: number }, world: World): number | null {
   const hit = raycastBoxes(e.x, e.y + 0.5, e.z, 0, -1, 0, 200, world.boxes);
   return hit ? hit.y : null;
 }
@@ -115,15 +155,21 @@ export function stepPickups(game: GameState, events: SimEvent[]): void {
     const level = d.y > p.y - 0.5 && d.y < p.y + tuning.playerHeight;
     if (!near || !level) return true;
     // Doom rule: if you don't need it, it stays on the ground (for later).
-    if (!collect(game, d.kind)) return true;
+    if (!collect(game, d)) return true;
     events.push({ type: 'pickup', kind: d.kind, x: d.x, y: d.y, z: d.z });
     return false;
   });
 }
 
 /** Gives the pickup to the player. Returns false if it would be wasted entirely. */
-function collect(game: GameState, kind: PickupKind): boolean {
+function collect(game: GameState, d: Pickup): boolean {
   const p = game.player;
+  const kind = d.kind;
+  // Money is never "not needed": no maximum, always collected.
+  if (kind === 'coin') {
+    p.money += d.value;
+    return true;
+  }
   if (kind === 'medkit') {
     if (p.health >= tuning.playerMaxHealth) return false;
     p.health = Math.min(tuning.playerMaxHealth, p.health + tuning.medkitHeal);

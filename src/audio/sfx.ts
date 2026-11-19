@@ -251,8 +251,14 @@ function ring(base: number, duration: number, volume: number): void {
  * - shells: two heavier clacks, lower;
  * - medkit: a cork pop and a warm, rising chime (two rings, the second higher).
  */
-export function playPickup(kind: 'bullets' | 'shells' | 'medkit'): void {
-  if (kind === 'bullets') {
+export function playPickup(kind: 'bullets' | 'shells' | 'medkit' | 'coin'): void {
+  if (kind === 'coin') {
+    // "Ka-ching": a tiny metallic tick, then two bright bells a fifth apart
+    // (the second higher, so it sounds like a reward, not an alarm).
+    noiseBurst({ duration: 0.015, volume: 0.25, filter: 'highpass', frequency: 6000 });
+    ring(1760, 0.15, 0.06);
+    setTimeout(() => ring(2640, 0.35, 0.07), 55);
+  } else if (kind === 'bullets') {
     for (let i = 0; i < 3; i++) {
       noiseBurst({ start: i * 0.045, duration: 0.02, volume: 0.35, filter: 'bandpass', frequency: 5000 - i * 600, q: 8 });
     }

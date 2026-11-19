@@ -53,6 +53,12 @@ export interface PlayerState {
    * weapon = adding a key.
    */
   reserve: Record<WeaponId, number>;
+  /**
+   * The vildenaro in your pocket: the game's money (coins dropped by the
+   * enemies, spent in the shops). On the player, not in the game's stats:
+   * in multiplayer every player has their own wallet.
+   */
+  money: number;
   /** Ticks left before the next shot is allowed. */
   fireCooldownTicks: number;
   /** Ticks left in which a recent click is still waiting to fire. */
@@ -100,6 +106,7 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     ammo: tuning.revolverAmmo,
     shells: tuning.shotgunAmmo,
     reserve: startingReserve(),
+    money: 0,
     fireCooldownTicks: 0,
     fireBufferTicks: 0,
     fireHeld: false,
@@ -393,6 +400,7 @@ export function respawn(p: PlayerState, world: World): void {
   p.ammo = tuning.revolverAmmo;
   p.shells = tuning.shotgunAmmo;
   p.reserve = startingReserve();
+  p.money = 0; // dead = the game starts over: empty pockets
   p.reloadTicks = 0;
   p.switchTicks = 0;
   p.kickTicks = 0;

@@ -22,8 +22,11 @@ const POOL_RADIUS = 0.8;
 const POOL_STRENGTH = 0.55;
 /** Seconds before vanishing in which it blinks (the warning: hurry up). */
 const BLINK_TIME = 3;
-/** Color of the pool of light under each kind: brass, red-orange, green. */
-const GLOW_COLORS: Record<PickupKind, number> = { bullets: 0xffc040, shells: 0xff5020, medkit: 0x40ff60 };
+/** Color of the pool of light under each kind: brass, red-orange, green, gold. */
+const GLOW_COLORS: Record<PickupKind, number> = { bullets: 0xffc040, shells: 0xff5020, medkit: 0x40ff60, coin: 0xffb020 };
+/** Coins: how fast they spin (turns per second), and their pool of light is smaller (they come in piles). */
+const COIN_SPIN = 0.8;
+const COIN_POOL = 0.5;
 
 interface PickupView {
   sprite: THREE.Mesh;
@@ -115,6 +118,7 @@ export function createPickupRenderer(scene: THREE.Scene): PickupRenderer {
             sprite: new THREE.Mesh(spriteGeometry, spriteMaterials[d.kind]),
             pool: new THREE.Mesh(poolGeometry, poolMaterials[d.kind]),
           };
+          if (d.kind === 'coin') v.pool.scale.setScalar(COIN_POOL);
           scene.add(v.sprite, v.pool);
           views.set(d.id, v);
         }
@@ -125,6 +129,14 @@ export function createPickupRenderer(scene: THREE.Scene): PickupRenderer {
         // upright, not lying flat like a fully camera-facing sprite would.
         // atan2 of the camera's offset gives the angle to turn to.
         v.sprite.rotation.y = Math.atan2(camera.position.x - d.x, camera.position.z - d.z);
+        // The coin SPINS, the classic arcade trick: no 3D model, just squash
+        // the sprite horizontally with cos(). At 0 it's edge-on, at ±1 face-on
+        // (at -1 mirrored: the back of the coin). Never quite 0: a coin seen
+        // edge-on is still a thin line, it doesn't vanish.
+        if (d.kind === 'coin') {
+          const c = Math.cos((time * COIN_SPIN + d.id * 0.37) * Math.PI * 2);
+          v.sprite.scale.x = Math.sign(c || 1) * Math.max(0.12, Math.abs(c));
+        }
         v.pool.position.set(d.x, d.y + 0.02, d.z); // just above the floor: no z-fighting
         // Blinking: on/off 8 times a second in the last BLINK_TIME seconds.
         const visible = d.ticksLeft * TICK_DT > BLINK_TIME || Math.floor(time * 8) % 2 === 0;

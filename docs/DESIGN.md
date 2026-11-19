@@ -404,8 +404,15 @@ Punteggio e moneta sono **separati**:
 - **Monete lasciate dai nemici**, raccolte passandoci sopra (prendono il posto delle vecchie "anime"):
   altro motivo per muoversi. Si riusa il sistema dei raccoglibili, ma le monete si raccolgono
   **sempre** (non c'è un massimo) e spariscono anche loro dopo un po'.
-- [DA DECIDERE] Quante monete per nemico (in base al peso?) e se lo Stile moltiplica il valore al
-  momento dell'uccisione o della raccolta.
+- **Quante** [DECISO, da tarare]: ogni nemico lascia **sempre** monete (non è un tiro di dado come
+  munizioni e medikit), **tante quanto il suo peso**: ghoul 1, Malocchio 2, cane 3, toro 5. Ogni moneta
+  vale **10**. Sparpagliate attorno al corpo (ognuna cerca il suo pavimento: un toro che muore sul bordo
+  di un tetto ne lascia un po' sul tetto e un po' in strada). Restano a terra **15 s** (le altre cose 10).
+- [PROPOSTO] Lo Stile moltiplica il valore **al momento dell'uccisione** (il valore è già scritto
+  sulla moneta quando cade): conta quanto eri stiloso quando hai ucciso, non quando raccogli.
+- **Passo 1** [FATTO]: monete nella simulazione (`player.money`, si azzera alla morte), sprite di una
+  moneta d'oro col teschio che **gira** (trucco arcade: lo sprite schiacciato in orizzontale), pozza di
+  luce dorata, "ka-ching", contatore provvisorio sotto le uccisioni.
 
 [DA DECIDERE]
 - Listino: quali potenziamenti (danno, caricatore, ricarica, salute massima; **movimento**: wall jump
@@ -471,6 +478,7 @@ futuro **poligono di tiro / tutorial**.
 3. Fonti dal movimento (velocità, tempo in aria, wall jump) + premio calante per le azioni ripetute.
 4. **Climax HIGH NOON** (5 s di caricatore infinito). [FATTO: meccanica, tinta, suoni, fine]
 5. **Vildenaro**: monete lasciate dai nemici + contatore nell'HUD; lo Stile moltiplica punti e vildenaro.
+   [IN CORSO: passo 1 fatto (monete); poi contatore vero nell'HUD, poi moltiplicatore dello Stile]
 6. **Shop**: venditore (sprite), tasto E, menu che non mette in pausa, primo acquisto: la doppietta.
 7. Potenziamenti all'emporio.
 8. Lazo / rampino.

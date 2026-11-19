@@ -107,6 +107,10 @@ export function createDebugPanel(options: {
   drops.number(tuning, 'medkitHeal', 5, 100, 5);
   drops.number(tuning, 'ammoPickupBullets', 0, 36, 1);
   drops.number(tuning, 'ammoPickupShells', 0, 12, 1);
+  drops.number(tuning, 'coinsPerWeight', 0, 5, 1);
+  drops.number(tuning, 'coinValue', 1, 100, 1);
+  drops.number(tuning, 'coinScatter', 0, 3, 0.1);
+  drops.number(tuning, 'coinLifetime', 1, 60, 1);
 
   const sg = panel.folder('Shotgun (src/sim/config.ts + render/weapons/viewmodel.ts, shotgunView.ts)');
   sg.number(tuning, 'shotgunPellets', 1, 30, 1);

@@ -27,6 +27,7 @@ const waveHud = document.getElementById('wave')!;
 const waveBox = document.getElementById('wave-box')!;
 const scoreHud = document.getElementById('score')!;
 const killsHud = document.getElementById('kills')!;
+const moneyHud = document.getElementById('money')!;
 const enemiesHud = document.getElementById('enemies-left')!;
 const fpsHud = document.getElementById('fps')!;
 const speedHud = document.getElementById('speed')!;
@@ -76,12 +77,16 @@ const FLASH_SHIFT = 30;
 /** How fast the red flash fades (per second). */
 const FLASH_FADE = 2;
 /** Screen tint for each pickup: same colors as their glow (render/pickups.ts). */
-const PICKUP_TINTS = { bullets: 'rgb(255, 200, 70)', shells: 'rgb(255, 90, 40)', medkit: 'rgb(70, 255, 100)' };
+const PICKUP_TINTS = { bullets: 'rgb(255, 200, 70)', shells: 'rgb(255, 90, 40)', medkit: 'rgb(70, 255, 100)', coin: 'rgb(255, 190, 40)' };
+/** Coins tint the screen less: you pick up dozens, it shouldn't feel like a camera flash every time. */
+const COIN_FLASH = 0.4;
 let pickupTime = 0; // 0..1, the short flash when you collect something
 let deathTime = 0; // seconds left of the death message
 
 export function updateHud(game: GameState, events: SimEvent[], dt: number): void {
   const player: PlayerState = game.player;
+  // A bull's 5 coins can be collected in the same frame: one sound, not five on top of each other.
+  const soundsPlayed = new Set<string>();
   for (const e of events) {
     if (e.type === 'playerHurt') {
       // How hard: 0..1 (a hound bite 0.4, a ghoul claw 0.5, a bull charge 1).
@@ -100,9 +105,10 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
     if (e.type === 'pickup') {
       // Doom's "bonus flash": the whole screen tinted for a moment, in the
       // pickup's color (a CSS variable read by #pickup-flash in index.html).
-      pickupTime = 1;
+      pickupTime = Math.max(pickupTime, e.kind === 'coin' ? COIN_FLASH : 1);
       pickupFlash.style.setProperty('--tint', PICKUP_TINTS[e.kind]);
-      playPickup(e.kind);
+      if (!soundsPlayed.has(e.kind)) playPickup(e.kind);
+      soundsPlayed.add(e.kind);
     }
     if (e.type === 'playerDied') {
       deathTime = DEATH_TIME;
@@ -133,6 +139,7 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
   waveHud.textContent = String(w.number);
   scoreHud.textContent = String(game.stats.score);
   killsHud.textContent = `${game.stats.kills} UCCISIONI`;
+  moneyHud.textContent = `${player.money} VILDENARO`; // provisional: the real counter is the next step
   // Enemies alive right now (corpses still on the ground don't count). A "+"
   // while the wave is still spawning: more are coming than you can see here.
   let alive = 0;

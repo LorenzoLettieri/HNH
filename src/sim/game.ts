@@ -166,21 +166,22 @@ export function spawnBullInFront(game: GameState): void {
   game.entities.push(createBull(game.nextEntityId++, x, p.y + 0.5, z));
 }
 
-/** Debug: drops one pickup of each kind in a row 4 m in front of the player (J key). */
+/** Debug: drops one pickup of each kind in a row 4 m in front of the player (J key), coin included. */
 export function dropPickupsInFront(game: GameState): void {
   const p = game.player;
   const fx = -Math.sin(p.yaw);
   const fz = -Math.cos(p.yaw);
-  const kinds = ['bullets', 'shells', 'medkit'] as const;
+  const kinds = ['coin', 'bullets', 'shells', 'medkit'] as const; // the coin on the left: the gun doesn't hide it
   kinds.forEach((kind, i) => {
-    const side = i - 1; // -1, 0, +1: left, center, right
+    const side = i - 1.5; // -1.5 .. +1.5: from left to right
     game.pickups.push({
       id: game.nextEntityId++,
       kind,
       x: p.x + fx * 4 - fz * side * 1.2,
       y: p.y,
       z: p.z + fz * 4 + fx * side * 1.2,
-      ticksLeft: secondsToTicks(tuning.dropLifetime),
+      ticksLeft: secondsToTicks(kind === 'coin' ? tuning.coinLifetime : tuning.dropLifetime),
+      value: kind === 'coin' ? tuning.coinValue : 0,
     });
   });
 }

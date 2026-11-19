@@ -187,6 +187,15 @@ export const tuning = {
   ammoPickupBullets: 18,
   /** Shotgun shells in a 'shells' drop. */
   ammoPickupShells: 5,
+  // --- Vildenaro: the coins every enemy drops (see dropCoins in pickups.ts) ---
+  /** Coins dropped per point of enemy weight: ghoul 1 coin, eye-bat 2, hound 3, bull 5. ALWAYS, not a chance. */
+  coinsPerWeight: 1,
+  /** Vildenaro one coin is worth. */
+  coinValue: 10,
+  /** How far from the body the coins scatter, meters (several coins don't stack on one spot). */
+  coinScatter: 0.9,
+  /** Seconds a coin stays on the ground (a bit longer than the other drops: it's never "not needed"). */
+  coinLifetime: 15,
   /** Pellets per shot (a fixed pattern: center + inner ring + outer ring). */
   shotgunPellets: 12,
   /** Half-angle of the outer ring of the pattern, degrees (7° = ~1.2 m wide at 10 m). */
