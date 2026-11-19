@@ -1,11 +1,13 @@
 // HUD: health bar, red flash when you get hit, red vignette when low on
-// health, wave number, score, wave banners and the death summary.
+// health, wave number, score, wave banners, the style meter (styleMeter.ts)
+// and the death summary.
 // Plain HTML/CSS elements (see index.html), updated from here.
 import { tuning } from '../sim/config';
 import type { SimEvent } from '../sim/events';
 import type { PlayerState } from '../sim/player';
 import { playBell, playPickup, playPlayerHurt } from '../audio/sfx';
 import type { GameState } from '../sim/game';
+import { updateStyleMeter } from './styleMeter';
 
 const healthFill = document.getElementById('health-fill')!;
 const damage = document.getElementById('damage')!;
@@ -69,6 +71,8 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
     bannerTime = Math.max(0, bannerTime - dt);
     banner.style.opacity = String(Math.min(1, bannerTime));
   }
+
+  updateStyleMeter(game.style, dt);
 
   const health = player.health / tuning.playerMaxHealth;
   healthFill.style.width = `${health * 100}%`;

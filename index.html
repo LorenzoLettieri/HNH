@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>High Noon Hell</title>
     <style>
+      /* The 'Rye' font (western wood type) is loaded by src/render/fonts.ts. */
       html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
       canvas { display: block; width: 100%; height: 100%; }
       /* --- Menu (start / pause) --- */
@@ -129,6 +130,42 @@
       }
       #ammo.dry { color: #d02010; } /* no spare rounds left */
 
+      /* Style meter, right side: rank letter, rank name, progress bar to the next rank.
+         --top/--mid/--bottom (the rank's colors) and --glow are set by src/render/styleMeter.ts;
+         opacity and the letter's transform are animated from there every frame. */
+      #style-meter {
+        --top: #fff; --mid: #888; --bottom: #444; --glow: 0px;
+        position: fixed; right: 28px; top: 24%; width: 230px; text-align: center;
+        font-family: 'Rye', Georgia, serif; pointer-events: none; opacity: 0;
+        transform: rotate(-3deg); /* slightly askew, like a poster nailed to a post */
+      }
+      #style-letter {
+        font-size: 104px; line-height: 1.1; white-space: nowrap;
+        /* Gradient-filled letter: paint the background, then clip it to the shape of the text. */
+        background: linear-gradient(to bottom, var(--top) 25%, var(--mid) 55%, var(--bottom) 85%);
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+        /* Each drop-shadow works on the result of the previous one: four 2 px copies make a
+           dark outline, then a hard shadow, then the glow in the rank's color around it all. */
+        filter:
+          drop-shadow(2px 0 0 #120604) drop-shadow(-2px 0 0 #120604)
+          drop-shadow(0 2px 0 #120604) drop-shadow(0 -2px 0 #120604)
+          drop-shadow(4px 5px 0 #000) drop-shadow(0 0 var(--glow) var(--mid));
+      }
+      #style-name {
+        margin-top: -6px; font-size: 18px; letter-spacing: 2px; white-space: nowrap;
+        color: var(--top); text-shadow: 2px 2px 0 #000;
+      }
+      /* The bar: a brass-rimmed gauge. The fill is scaled (scaleX) instead of resized (width):
+         transforms don't trigger a layout, the browser only moves pixels around. */
+      #style-bar {
+        margin: 6px auto 0; width: 170px; height: 8px; background: #1a0a04;
+        border: 2px solid #9a7434; box-shadow: 0 0 0 2px #120604, 2px 3px 0 2px #000;
+      }
+      #style-bar-fill {
+        height: 100%; transform-origin: left; transform: scaleX(0);
+        background: linear-gradient(to bottom, var(--top), var(--mid) 50%, var(--bottom));
+      }
+
       #hud {
         white-space: pre; /* the readout has two lines */
         position: fixed; left: 12px; bottom: 10px; color: #f0c080;
@@ -201,6 +238,11 @@
     <div id="wave"></div>
     <div id="score"></div>
     <div id="banner"></div>
+    <div id="style-meter">
+      <div id="style-letter"></div>
+      <div id="style-name"></div>
+      <div id="style-bar"><div id="style-bar-fill"></div></div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

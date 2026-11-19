@@ -64,6 +64,15 @@ uccisioni (+40, +30 se alla testa). Un rank ogni **200 punti** (HIGH NOON a 1200
 riga di debug in alto a sinistra; valori nel pannello debug (cartella "Style").
 Prova: 25 uccisioni di fila, una al secondo = SS (1185 punti), a un passo da HIGH NOON.
 
+**A schermo** [FATTO: passo 2] (`src/render/styleMeter.ts`): sul lato destro, leggermente storta come un
+manifesto inchiodato, la **lettera del rank** in **Rye** (font western da "wanted", licenza OFL), il nome
+sotto e una **barra** col progresso dentro il rank (piena a HIGH NOON). I colori seguono il **metallo che si
+scalda nella forgia**: D grigio cenere, C rosso spento, B rosso, A arancio, S giallo, SS giallo chiaro,
+HIGH NOON bianco incandescente con l'alone che pulsa; l'alone cresce col rank. Appare quando parte una
+catena, sparisce quando si spezza (resta la lettera di prima mentre svanisce). Salire di rank = la lettera
+cala come un **timbro**; perdere un rank per i danni = la lettera **trema**.
+[DA DECIDERE] Mostrare anche il timer della catena (quanto manca prima che si spezzi).
+
 ### A cosa serve
 - **Moltiplicatore** sul **punteggio** e sul **vildenaro** guadagnato (la moneta: vedi §5, Economia).
 - **Climax "HIGH NOON"** [DECISO]: quando raggiungi il rank massimo, per **5 s** le armi non consumano

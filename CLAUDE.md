@@ -106,6 +106,8 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
     - `kickLeg.ts`: **gamba del calcio**: carica `public/models/leg.glb` (GLTFLoader), lo anima con `AnimationMixer` sincronizzando il fotogramma d'impatto con `kickWindup`
     - `hands.ts`: **braccia** (carica `public/models/arms.glb`: braccio destro sull'impugnatura, sinistro mosso come un blocco; le stesse braccia, rimesse in posa in `shotgunView.ts`, tengono anche la doppietta) e **keyframe del fanning** della mano sinistra
   - `hud.ts`: barra della salute, vignetta rossa, **lampo colorato quando raccogli qualcosa** (+ suono), **numero dell'ondata, punteggio, scritte di inizio/fine ondata e conto alla rovescia**, riepilogo alla morte
+  - `styleMeter.ts`: **meter dello Stile a schermo** (a destra: lettera del rank, nome, barra del progresso verso il rank successivo). **Colori di ogni rank** (`RANK_LOOKS`: gradiente e alone, scala "metallo che si scalda"), **animazioni** in cima al file (timbro quando sali di rank, tremolio quando lo perdi, dissolvenze, pulsazione a HIGH NOON); markup e CSS in `index.html` (`#style-meter`)
+  - `fonts.ts`: **font del gioco** caricati con la FontFace API (per ora **Rye**, western); per cambiarlo: metti il file in `public/fonts/` e cambia nome e percorso qui
   - `pickups.ts`: **raccoglibili a terra**: billboard **cilindrico** (ruota solo in orizzontale, come gli oggetti di Doom) che galleggia, **bagliore pulsante**, **pozza di luce colorata** sul pavimento (blending additivo), lampeggio prima di sparire. Misure, colori e intensità in costanti in cima
   - `pickupSprites.ts`: **sprite dei raccoglibili** 16×16 (scatola di proiettili, cartucce rosse, bottiglia di tonico verde con la croce): palette e disegno pixel per pixel, texture **emissiva** (ogni pixel emette `SELF_LIGHT` del suo colore, quelli della maschera tutto)
   - `projectiles.ts`: **palle di fuoco nemiche** (sprite pixel art luminoso, scia di braci, scintille e suono all'impatto)
@@ -136,9 +138,10 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `previews/`: render di anteprima (non nel repo)
 - `public/models/`: **modelli glTF (.glb) generati** da `tools/blender/` (nel repo, così il sito non ha bisogno di Blender)
 - `public/textures/`: texture PNG (servite così come sono da Vite su `/textures/...`)
+- `public/fonts/`: **font** (TTF) con la loro licenza accanto (es. `Rye-OFL.txt`)
 - `docs/DESIGN.md`: **documento di design** (decisioni di gameplay e domande aperte)
 - `CREDITS.md`: autori e licenze degli asset
-- `index.html`: pagina con canvas, **menu** (pagine Impostazioni e **Comandi**: la lista dei tasti va aggiornata qui quando se ne aggiunge uno), HUD, mirino, **hitmarker**, munizioni (con la riserva), **salute**, vignetta di danno, **lampo di raccolta** (`#pickup-flash`), **ondata, punteggio, banner**, riepilogo di morte (stili CSS inclusi)
+- `index.html`: pagina con canvas, **menu** (pagine Impostazioni e **Comandi**: la lista dei tasti va aggiornata qui quando se ne aggiunge uno), HUD, mirino, **hitmarker**, munizioni (con la riserva), **salute**, vignetta di danno, **lampo di raccolta** (`#pickup-flash`), **ondata, punteggio, banner**, **meter dello Stile** (`#style-meter`), riepilogo di morte (stili CSS inclusi)
 - `vite.config.ts`: config del dev server e della build (`base: './'` per funzionare in sottocartella su GitHub Pages)
 - `.github/workflows/deploy.yml`: **deploy automatico su GitHub Pages** a ogni push su `main`.
   Gli asset in `public/` vanno referenziati con `import.meta.env.BASE_URL` (mai `/...` assoluto)

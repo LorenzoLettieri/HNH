@@ -311,7 +311,7 @@ renderer.setAnimationLoop((now: number) => {
   sky.position.copy(camera.position);
 
   const state = player.sliding ? 'SLIDE' : player.onGround ? (player.crouched ? 'CROUCH' : 'GROUND') : 'AIR';
-  // Style meter, raw numbers for now (the real HUD bar comes later).
+  // Style meter, raw numbers for tuning (the real meter is drawn by render/styleMeter.ts).
   const style = game.style;
   const styleText =
     style.chainTicks > 0
