@@ -24,6 +24,7 @@ import type { GameState } from './game';
 import { random } from './random';
 import { raycastBoxes } from './raycast';
 import { enemyCost } from './waves';
+import { styleMultiplier } from './style';
 import type { WeaponId } from './weapon';
 import type { World } from './world';
 
@@ -44,8 +45,8 @@ export interface Pickup {
   ticksLeft: number;
   /**
    * Vildenaro it's worth (coins only, 0 for the rest). Stored on the coin,
-   * decided when it's dropped: so one day the style multiplier can be
-   * applied at the moment of the KILL, not of the pickup.
+   * decided when it's dropped: the style multiplier counts at the moment of
+   * the KILL, not of the pickup.
    */
   value: number;
 }
@@ -104,7 +105,9 @@ function dropCoins(game: GameState, world: World, enemy: Enemy): void {
       y: floor,
       z,
       ticksLeft: secondsToTicks(tuning.coinLifetime),
-      value: tuning.coinValue,
+      // × the style multiplier at the moment of the kill, written on the coin:
+      // if the chain breaks before you pick it up, it's still worth the same.
+      value: Math.round(tuning.coinValue * styleMultiplier(game.style)),
     });
   }
 }

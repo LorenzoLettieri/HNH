@@ -310,6 +310,8 @@
         margin: 6px auto 0; width: 170px; height: 8px; background: #1a0a04;
         border: 2px solid #9a7434; box-shadow: 0 0 0 2px #120604, 2px 3px 0 2px #000;
       }
+      /* The multiplier on score and vildenaro, under the bar, in the rank's color. */
+      #style-mult { margin-top: 6px; font-size: 22px; letter-spacing: 1px; color: var(--top); text-shadow: 2px 2px 0 #000, 0 0 8px #000; }
       #style-bar-fill {
         height: 100%; transform-origin: left; transform: scaleX(0);
         background: linear-gradient(to bottom, var(--top), var(--mid) 50%, var(--bottom));
@@ -425,6 +427,7 @@
       <div id="style-letter"></div>
       <div id="style-name"></div>
       <div id="style-bar"><div id="style-bar-fill"></div></div>
+      <div id="style-mult"></div>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

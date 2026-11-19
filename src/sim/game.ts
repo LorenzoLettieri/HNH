@@ -14,7 +14,7 @@ import { createPlayer, respawn, stepPlayer, type PlayerState } from './player';
 import { stepWeapon } from './weapon';
 import { stepKick } from './kick';
 import { dropFromKills, stepPickups, type Pickup } from './pickups';
-import { createStyle, isHighNoon, stepStyle, type StyleState } from './style';
+import { createStyle, isHighNoon, stepStyle, styleMultiplier, type StyleState } from './style';
 import type { World } from './world';
 import { secondsToTicks, tuning } from './config';
 
@@ -91,7 +91,10 @@ export function stepGame(
   stepWeapon(game.player, cmd, world, game.entities, events, isHighNoon(game.style));
   stepKick(game.player, cmd, world, game.entities, events);
   const playerHits = events.slice(firstNewEvent);
-  scoreHits(game.stats, playerHits);
+  // The style multiplies what you earn. Read BEFORE stepStyle (end of the
+  // tick): a kill counts with the rank you had when you pulled the trigger,
+  // not with the rank that same kill is about to give you.
+  scoreHits(game.stats, playerHits, styleMultiplier(game.style));
   dropFromKills(game, world, playerHits);
 
   // Navigation: where's the player on the graph? (Only while standing:

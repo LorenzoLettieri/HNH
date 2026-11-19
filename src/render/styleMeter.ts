@@ -4,7 +4,7 @@
 // faster. Markup and CSS are in index.html; from here we only change CSS
 // variables (the colors of the rank), text, opacity and transforms.
 import { TICK_DT, tuning } from '../sim/config';
-import { isHighNoon, STYLE_RANKS, styleRank, type StyleState } from '../sim/style';
+import { isHighNoon, rankMultiplier, STYLE_RANKS, styleRank, type StyleState } from '../sim/style';
 import './fonts'; // the letters are written in Rye
 
 interface RankLook {
@@ -77,6 +77,7 @@ const meter = document.getElementById('style-meter')!;
 const letter = document.getElementById('style-letter')!;
 const rankName = document.getElementById('style-name')!;
 const barFill = document.getElementById('style-bar-fill')!;
+const multText = document.getElementById('style-mult')!;
 
 /** The rank on screen. Not always the real one: it stays put while the meter fades out after the chain breaks. */
 let shownRank = 0;
@@ -104,6 +105,8 @@ function showRank(rank: number): void {
   const { letter: text, name } = STYLE_RANKS[rank];
   letter.textContent = text;
   rankName.textContent = name.toUpperCase();
+  // What the rank is worth: "×2,5" under the bar (Italian decimal comma).
+  multText.textContent = `×${String(rankMultiplier(rank)).replace('.', ',')}`;
   applyLook(RANK_LOOKS[text]);
 }
 

@@ -408,8 +408,9 @@ Punteggio e moneta sono **separati**:
   munizioni e medikit), **tante quanto il suo peso**: ghoul 1, Malocchio 2, cane 3, toro 5. Ogni moneta
   vale **10**. Sparpagliate attorno al corpo (ognuna cerca il suo pavimento: un toro che muore sul bordo
   di un tetto ne lascia un po' sul tetto e un po' in strada). Restano a terra **15 s** (le altre cose 10).
-- [PROPOSTO] Lo Stile moltiplica il valore **al momento dell'uccisione** (il valore è già scritto
-  sulla moneta quando cade): conta quanto eri stiloso quando hai ucciso, non quando raccogli.
+- **Lo Stile moltiplica il valore al momento dell'uccisione** [DECISO] (il valore è già scritto sulla
+  moneta quando cade): conta quanto eri stiloso quando hai ucciso, non quando raccogli. Se la catena si
+  spezza prima che tu la raccolga, la moneta vale lo stesso.
 - **Passo 1** [FATTO]: monete nella simulazione (`player.money`, si azzera alla morte), sprite di una
   **piletta di monete d'oro** (due pile disordinate, niente moneta che gira alla Mario), pozza di
   luce dorata, "ka-ching", contatore provvisorio sotto le uccisioni.
@@ -417,6 +418,10 @@ Punteggio e moneta sono **separati**:
   raccoglibile e il numero in oro che **sale come un registratore di cassa** (non salta: i soldi che
   "scorrono" sembrano di più). Sotto, un **"+N"** che somma tutto quello che raccogli di fila (le cinque
   pilette di un toro = un "+50") e poi svanisce.
+- **Passo 3** [FATTO, da tarare]: **moltiplicatore dello Stile** su punti e vildenaro: ×1 a D, +0,5 per
+  ogni rank (C ×1,5, B ×2, A ×2,5, S ×3, SS ×3,5), **×4 per tutto HIGH NOON**. Si legge col rank che avevi
+  quando hai premuto il grilletto (non con quello che quell'uccisione ti fa raggiungere). Sul meter dello
+  Stile, sotto la barra, c'è scritto quanto vale il rank ("×2,5").
 
 [DA DECIDERE]
 - Listino: quali potenziamenti (danno, caricatore, ricarica, salute massima; **movimento**: wall jump
@@ -482,7 +487,7 @@ futuro **poligono di tiro / tutorial**.
 3. Fonti dal movimento (velocità, tempo in aria, wall jump) + premio calante per le azioni ripetute.
 4. **Climax HIGH NOON** (5 s di caricatore infinito). [FATTO: meccanica, tinta, suoni, fine]
 5. **Vildenaro**: monete lasciate dai nemici + contatore nell'HUD; lo Stile moltiplica punti e vildenaro.
-   [IN CORSO: monete e contatore fatti; poi moltiplicatore dello Stile]
+   [FATTO: monete, contatore, moltiplicatore]
 6. **Shop**: venditore (sprite), tasto E, menu che non mette in pausa, primo acquisto: la doppietta.
 7. Potenziamenti all'emporio.
 8. Lazo / rampino.

@@ -622,6 +622,11 @@ export const tuning = {
    * the guns never run dry (no reloading, just shoot). Then the style starts over from zero.
    */
   styleHighNoonTime: 5,
+  /**
+   * The style MULTIPLIES score and vildenaro: ×(1 + rank × this). With 0.5:
+   * D ×1, C ×1.5, B ×2, A ×2.5, S ×3, SS ×3.5, HIGH NOON ×4. No chain = ×1.
+   */
+  styleMultiplierPerRank: 0.5,
 };
 
 /** Converts a duration in seconds to a whole number of ticks. */
