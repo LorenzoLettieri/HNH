@@ -94,7 +94,10 @@ stilosa riavvia la catena e il lampeggio si ferma. Niente barra del tempo: la ba
   **Passo 3** [FATTO, da sentire]: **suoni**. All'inizio una **campana enorme e grave** (non quella delle
   ondate) e un **fischio da duello** (melodia originale: sale, tiene col vibrato, scende); per tutto il climax
   un'**eco da canyon** su ogni suono (spari, nemici, il fischio stesso), che si spegne alla fine.
-  [PROSSIMO] La fine del climax.
+  **Passo 4** [FATTO]: **la fine**. Chiude la metafora della forgia: la lettera incandescente viene
+  **temprata** come ferro rovente nell'acqua. Diventa grigio ferro di colpo, con uno **sbuffo di vapore**
+  e il "tink" del metallo che si raffredda, fa un saltello e **cade** dallo schermo ruotando. Succede anche
+  se muori durante il climax (senza il vapore). Un colpo durante la caduta fa ripartire subito la catena da D.
 - [DA DECIDERE] Bonus di danno ai rank alti (forse superato dal climax).
 - [DA DECIDERE] Eventuale bonus di drop della salute ai rank alti.
 
@@ -445,7 +448,7 @@ futuro **poligono di tiro / tutorial**.
 1. **Stile**: punti e catena nella simulazione (numeri nella riga di debug). [FATTO]
 2. Barra e rank dello stile nell'HUD. [FATTO, col timer della catena]
 3. Fonti dal movimento (velocità, tempo in aria, wall jump) + premio calante per le azioni ripetute.
-4. **Climax HIGH NOON** (5 s di caricatore infinito). [FATTO la meccanica; manca l'annuncio forte]
+4. **Climax HIGH NOON** (5 s di caricatore infinito). [FATTO: meccanica, tinta, suoni, fine]
 5. **Vildenaro**: monete lasciate dai nemici + contatore nell'HUD; lo Stile moltiplica punti e vildenaro.
 6. **Shop**: venditore (sprite), tasto E, menu che non mette in pausa, primo acquisto: la doppietta.
 7. Potenziamenti all'emporio.

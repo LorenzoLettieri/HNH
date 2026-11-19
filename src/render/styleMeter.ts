@@ -62,6 +62,16 @@ const BLINK_DIM = 0.15;
 /** HIGH NOON: the glow pulses, how much (fraction of its radius) and how fast (Hz). */
 const HIGH_NOON_PULSE = 0.4;
 const HIGH_NOON_PULSE_HZ = 3;
+/**
+ * End of HIGH NOON: the white-hot letter is QUENCHED, like hot iron dipped
+ * in water (with a hiss of steam, see highNoon.ts): it turns to cold grey
+ * iron at once, hops and falls off the screen, spinning.
+ */
+const QUENCHED: RankLook = { top: '#a49c94', mid: '#5c544e', bottom: '#2a2420', glow: 0 };
+const FALL_TIME = 0.9; // seconds
+const FALL_PX = 240; // how far it falls, px
+const FALL_HOP = 0.6; // the hop at the start (0 = it just drops; 0.6 ≈ 13 px up)
+const FALL_SPIN = 28; // degrees by the end
 
 const meter = document.getElementById('style-meter')!;
 const letter = document.getElementById('style-letter')!;
@@ -77,18 +87,24 @@ let shake = 0; // 1 → 0 during the shake
 let progress = 0; // the bar on screen, 0..1, follows the real value
 let clock = 0; // seconds, for the HIGH NOON pulse
 let blinkPhase = 0; // 0..1, where we are in the current blink: first half on, second half off
+let wasHighNoon = false;
+let fall = -1; // -1 = not falling, otherwise 0 → 1 while the quenched letter falls
+
+/** Colors of the letter and the bar (CSS variables read by index.html). */
+function applyLook(look: RankLook): void {
+  meter.style.setProperty('--top', look.top);
+  meter.style.setProperty('--mid', look.mid);
+  meter.style.setProperty('--bottom', look.bottom);
+  meter.style.setProperty('--glow', `${look.glow}px`);
+}
 
 /** Changes the rank on screen: text and colors. Only called when the rank changes, not every frame. */
 function showRank(rank: number): void {
   shownRank = rank;
   const { letter: text, name } = STYLE_RANKS[rank];
-  const look = RANK_LOOKS[text];
   letter.textContent = text;
   rankName.textContent = name.toUpperCase();
-  meter.style.setProperty('--top', look.top);
-  meter.style.setProperty('--mid', look.mid);
-  meter.style.setProperty('--bottom', look.bottom);
-  meter.style.setProperty('--glow', `${look.glow}px`);
+  applyLook(RANK_LOOKS[text]);
 }
 
 export function updateStyleMeter(style: StyleState, dt: number): void {
@@ -101,8 +117,10 @@ export function updateStyleMeter(style: StyleState, dt: number): void {
     const rank = highNoon ? lastRank : styleRank(style.points);
     if (!wasActive || rank > shownRank) {
       // A new chain, or a new rank: stamp it on screen, the bar starts from empty.
+      // (A new chain also cuts short the fall of the last HIGH NOON.)
       stamp = 1;
       progress = 0;
+      fall = -1;
       showRank(rank);
     } else if (rank < shownRank) {
       // Damage cost you a rank: the letter shakes, the bar starts from full.
@@ -120,8 +138,29 @@ export function updateStyleMeter(style: StyleState, dt: number): void {
   }
   wasActive = active;
 
-  // Fade in quickly when a chain starts, fade out slower when it breaks.
-  opacity = active ? Math.min(1, opacity + dt * FADE_IN) : Math.max(0, opacity - dt * FADE_OUT);
+  // HIGH NOON just ended (or you died during it): quench the letter and let it fall.
+  if (wasHighNoon && !highNoon) {
+    fall = 0;
+    applyLook(QUENCHED);
+  }
+  wasHighNoon = highNoon;
+
+  let fallY = 0;
+  let fallSpin = 0;
+  if (fall >= 0) {
+    fall = Math.min(1, fall + dt / FALL_TIME);
+    // A throw: up at first, then gravity wins. Height over time is a parabola
+    // (constant gravity → the position goes with time squared): written so
+    // that it starts at 0 going up (the hop) and ends exactly at FALL_PX.
+    fallY = FALL_PX * ((1 + FALL_HOP) * fall * fall - FALL_HOP * fall);
+    fallSpin = FALL_SPIN * fall;
+    // The meter stays visible while the letter starts to fall, then fades fast.
+    opacity = 1 - fall * fall;
+    if (fall >= 1) fall = -1;
+  } else {
+    // Fade in quickly when a chain starts, fade out slower when it breaks.
+    opacity = active ? Math.min(1, opacity + dt * FADE_IN) : Math.max(0, opacity - dt * FADE_OUT);
+  }
   meter.style.opacity = String(opacity);
 
   // The stamp: `stamp` goes down linearly, but the size follows 2s - s², which
@@ -131,10 +170,10 @@ export function updateStyleMeter(style: StyleState, dt: number): void {
   const slam = 2 * stamp - stamp * stamp;
   shake = Math.max(0, shake - dt / SHAKE_TIME);
   const dx = (Math.random() * 2 - 1) * SHAKE_PX * shake;
-  const dy = (Math.random() * 2 - 1) * SHAKE_PX * shake;
+  const dy = (Math.random() * 2 - 1) * SHAKE_PX * shake + fallY;
   letter.style.transform =
     `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px) ` +
-    `scale(${(1 + STAMP_SCALE * slam).toFixed(3)}) rotate(${(STAMP_TILT * slam).toFixed(1)}deg)`;
+    `scale(${(1 + STAMP_SCALE * slam).toFixed(3)}) rotate(${(STAMP_TILT * slam + fallSpin).toFixed(1)}deg)`;
   barFill.style.transform = `scaleX(${progress.toFixed(3)})`;
 
   // Chain timer: the chain is about to break (or the climax to end), the
@@ -157,8 +196,9 @@ export function updateStyleMeter(style: StyleState, dt: number): void {
   }
   letter.style.opacity = String(letterOpacity);
 
-  // HIGH NOON: the white-hot glow breathes.
-  if (shownRank === lastRank) {
+  // HIGH NOON: the white-hot glow breathes. (Only during the climax: once
+  // quenched, the letter is cold iron with no glow.)
+  if (highNoon) {
     const pulse = 1 + HIGH_NOON_PULSE * Math.sin(clock * HIGH_NOON_PULSE_HZ * Math.PI * 2);
     meter.style.setProperty('--glow', `${(RANK_LOOKS.HN.glow * pulse).toFixed(1)}px`);
   }

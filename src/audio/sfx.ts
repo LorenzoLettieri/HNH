@@ -608,6 +608,21 @@ export function playHighNoon(): void {
 }
 
 /**
+ * HIGH NOON is over: the white-hot iron is quenched, like a blacksmith dipping
+ * it in water. The sharp "ts" of the dip, a long burst of steam (noise through
+ * a bandpass that sweeps down: from a hiss to a sigh), a dull splash, and a
+ * little later the "tink" of the metal shrinking as it cools.
+ */
+export function playQuench(): void {
+  if (!ctx) return;
+  master.gain.value = sfxSettings.volume;
+  noiseBurst({ duration: 0.12, volume: 0.35, filter: 'highpass', frequency: 3000 }); // ts
+  noiseBurst({ duration: 1.5, volume: 0.45, filter: 'bandpass', frequency: 6000, frequencyEnd: 1200, q: 0.8 }); // steam
+  thump({ duration: 0.3, volume: 0.3, from: 90, to: 45 }); // splash
+  setTimeout(() => ring(1250, 0.6, 0.05), 350); // tink
+}
+
+/**
  * Pause: suspends the whole AudioContext. Sounds already playing (a charge
  * whine, an echo) freeze where they are and continue on resume, in sync with
  * the frozen game.

@@ -6,12 +6,13 @@
 // it all fades away at the end. Two layers in index.html (#high-noon-heat,
 // #high-noon); from here we only animate their CSS variables.
 //
-// The sounds: a deep bell and a duel whistle when it starts, and for the
-// whole climax a canyon echo on every sound (src/audio/sfx.ts).
+// The sounds: a deep bell and a duel whistle when it starts, for the whole
+// climax a canyon echo on every sound, and a hiss of steam when it ends (the
+// white-hot letter of the style meter is quenched: see styleMeter.ts).
 import { TICK_DT } from '../sim/config';
 import type { SimEvent } from '../sim/events';
 import { isHighNoon, type StyleState } from '../sim/style';
-import { playHighNoon, setCanyonEcho } from '../audio/sfx';
+import { playHighNoon, playQuench, setCanyonEcho } from '../audio/sfx';
 
 /** The flash at the start: how long it lasts (s), how strong in the middle and at the borders (0..1). */
 const FLASH_TIME = 0.7;
@@ -55,6 +56,7 @@ export function updateHighNoon(style: StyleState, events: readonly SimEvent[], d
       flash = 1;
       playHighNoon();
     }
+    if (e.type === 'highNoonEnd') playQuench();
   }
   clock += dt;
   flash = Math.max(0, flash - dt / FLASH_TIME);
