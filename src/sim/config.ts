@@ -188,10 +188,22 @@ export const tuning = {
   ghoulDirectChaseRange: 5,
   /** How long a dead ghoul lies on the ground before disappearing, seconds. */
   ghoulCorpseTime: 4,
-  /** Max ghouls alive at once (0 = no ghouls). */
-  ghoulMaxAlive: 6,
-  /** Seconds between two spawns. */
-  ghoulSpawnInterval: 2,
+  /** Speed of the "runners" (fast ghouls, from wave 4), m/s. */
+  ghoulRunnerSpeed: 5.4,
+
+  // --- Waves (CoD-zombies style; the curve is in src/sim/waves.ts) ---
+  /** Turn off to roam the map without enemies. */
+  wavesEnabled: true,
+  /** Ghouls in wave 1. */
+  waveBaseCount: 6,
+  /** Max ghouls alive at the same time, in any wave. */
+  waveMaxAliveCap: 24,
+  /** Extra ghoul health per wave. */
+  waveHealthPerWave: 15,
+  /** Seconds before the first wave. */
+  waveFirstBreak: 4,
+  /** Seconds of breather between waves. */
+  waveBreak: 8,
 };
 
 /** Converts a duration in seconds to a whole number of ticks. */

@@ -44,7 +44,7 @@ export function createGhoulRenderer(scene: THREE.Scene): GhoulRenderer {
 
   const views = new Map<number, GhoulView>();
 
-  function create(): GhoulView {
+  function create(e: GhoulEntity): GhoulView {
     // Each ghoul has its own copy of the textures (same image) so it can
     // show its own frame, like the flames.
     const map = sheet.color.clone();
@@ -52,7 +52,8 @@ export function createGhoulRenderer(scene: THREE.Scene): GhoulRenderer {
     const material = new THREE.MeshStandardMaterial({
       map,
       alphaTest: 0.5, // hard pixel edges, no transparency sorting
-      emissive: 0xff7020,
+      // Runners have red eyes: you can tell them apart in the horde.
+      emissive: e.runner ? 0xff1008 : 0xff7020,
       emissiveMap: glowMap,
       emissiveIntensity: EYE_GLOW,
       roughness: 1,
@@ -113,7 +114,7 @@ export function createGhoulRenderer(scene: THREE.Scene): GhoulRenderer {
         seen.add(e.id);
         let v = views.get(e.id);
         if (!v) {
-          v = create();
+          v = create(e);
           views.set(e.id, v);
         }
         place(v, e, camera, alpha);

@@ -89,8 +89,12 @@ export function createDebugPanel(options: {
 
   // --- Ghouls ---
   const ghoul = panel.folder('Ghoul (src/sim/config.ts)');
-  ghoul.number(tuning, 'ghoulMaxAlive', 0, 40, 1);
-  ghoul.number(tuning, 'ghoulSpawnInterval', 0.1, 10, 0.1);
+  ghoul.boolean(tuning, 'wavesEnabled');
+  ghoul.number(tuning, 'waveBaseCount', 1, 30, 1);
+  ghoul.number(tuning, 'waveMaxAliveCap', 1, 60, 1);
+  ghoul.number(tuning, 'waveHealthPerWave', 0, 100, 5);
+  ghoul.number(tuning, 'waveBreak', 0, 30, 0.5);
+  ghoul.number(tuning, 'ghoulRunnerSpeed', 1, 12, 0.1);
   ghoul.number(tuning, 'ghoulSpeed', 0.5, 10, 0.1);
   ghoul.number(tuning, 'ghoulAccel', 1, 20, 0.5);
   ghoul.number(tuning, 'ghoulHealth', 10, 500, 5);

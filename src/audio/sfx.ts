@@ -244,3 +244,17 @@ export function playPlayerHurt(): void {
   noiseBurst({ duration: 0.12, volume: 0.5, filter: 'lowpass', frequency: 700 });
   thump({ start: 0.02, duration: 0.15, volume: 0.25, from: 220, to: 150 }); // "ugh"
 }
+
+/**
+ * Church bell: the same "ring" as the targets (inharmonic partials), much
+ * lower and with a long decay. Tolled `times` times, `gap` seconds apart.
+ */
+export function playBell(times: number, base = 160, gap = 1.1): void {
+  if (!ctx) return;
+  for (let i = 0; i < times; i++) {
+    setTimeout(() => {
+      ring(base, 3.5, 0.5);
+      thump({ duration: 0.15, volume: 0.25, from: base * 2, to: base });
+    }, i * gap * 1000);
+  }
+}

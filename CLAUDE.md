@@ -47,12 +47,12 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
 - `src/input.ts`: input grezzo (tasti e tasti del mouse premuti, pressioni brevi "memorizzate", movimento mouse, Pointer Lock)
 - `src/controls.ts`: sensibilità mouse (`controlSettings`), angoli di vista, **mappatura tasti** (WASD, Spazio, Shift/C = accovacciati/slide, click = spara, R = ricarica, K = respawn) → `InputCommand` (T = cambia atmosfera, P = pixel art on/off, N = grafo IA, tasto sotto Esc = pannello debug, in `main.ts`)
 - `src/sim/`: simulazione pura (niente Three.js/DOM)
-  - `config.ts`: **valori di tuning** (oggetto `tuning`, modificabile dal pannello debug) (tick rate, altezza occhi, salute e rigenerazione, dimensioni giocatore, movimento a terra, gravità/salto/coyote/buffer, movimento e controllo in aria, aiuti al bhop, accovacciata, slide, wall jump, **revolver**, bersagli, **ghoul**)
-  - `game.ts`: **stato di gioco unico** (`GameState`: giocatore + entità) e `stepGame()` (un tick di tutto il gioco)
+  - `config.ts`: **valori di tuning** (oggetto `tuning`, modificabile dal pannello debug) (tick rate, altezza occhi, salute e rigenerazione, **ondate**, dimensioni giocatore, movimento a terra, gravità/salto/coyote/buffer, movimento e controllo in aria, aiuti al bhop, accovacciata, slide, wall jump, **revolver**, bersagli, **ghoul**)
+  - `game.ts`: **stato di gioco unico** (`GameState`: giocatore, entità, ondata, statistiche) e `stepGame()` (un tick di tutto il gioco; game over alla morte)
   - `entities.ts`: **entità colpibili** (bersagli, ghoul): dati, salute, danno, hitbox
   - `ghoul.ts`: **IA del ghoul** (segue il flow field: cammina, salta con traiettoria balistica, si lascia cadere, **si arrampica**; da vicino inseguimento diretto con salto/aggiramento; separazione; artigliata con finestra per schivare)
   - `nav.ts`: **grafo di navigazione** generato dai box (nodi ogni 1,5 m, link cammina/salta/cadi/arrampicati/**sfiatatoio** (lancio simulato in anticipo), limiti di salto/caduta/arrampicata) e **flow field** (Dijkstra dal giocatore)
-  - `spawner.ts`: generatore di ghoul (quanti vivi, ogni quanto, punti di spawn lontani dal giocatore)
+  - `waves.ts`: **ondate stile CoD Zombies** (curva di difficoltà: quanti ghoul, quanti vivi insieme, salute, corridori, intervallo di spawn) e **punteggio**
   - `command.ts`: tipo `InputCommand` (cosa vuole fare il giocatore in un tick)
   - `world.ts`: tipi del livello (`Box` AABB, `Prop` decorazioni, `TargetSpawn` bersagli, `World`) e helper `box()`
   - `props.ts`: **box di collisione invisibili dei props** (barile, palo del cartello, torcia) e zona di lancio degli sfiatatoi
@@ -89,7 +89,7 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
     - `viewmodel.ts`: scena/camera dell'arma, **posa, rinculo, ondeggiamento, bob, ricarica, lampo** (`viewmodelSettings`)
     - `revolverModel.ts`: modello procedurale del revolver (canna, tamburo, cane, calcio)
     - `hands.ts`: **mani a blocchi** (guanti, maniche) e **keyframe del fanning** della mano sinistra
-  - `hud.ts`: barra della salute, vignetta rossa quando vieni colpito / sei a corto di salute, scritta di morte
+  - `hud.ts`: barra della salute, vignetta rossa, **numero dell'ondata, punteggio, scritte di inizio/fine ondata e conto alla rovescia**, riepilogo alla morte
   - `weaponFx.ts`: effetti degli spari (lampo di luce, fori, scintille, suoni)
   - `enemies/`: **i nemici**
     - `ghoulSprite.ts`: **sprite del ghoul** disegnato pixel per pixel (palette, pose dei fotogrammi)
@@ -98,11 +98,11 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `targets.ts`: **bersagli** (modello, oscillazione a molla quando colpiti, caduta e rialzata)
   - `impacts.ts`: fori di proiettile sulle superfici (decal, dimensione, quanti ne restano)
   - `materials.ts`: **quale texture usa ogni materiale** (`LOOKS`), densità dei pixel, mesh dei box
-- `src/audio/sfx.ts`: **effetti sonori sintetizzati** con Web Audio (sparo, ricarica, "ding" dei bersagli, versi/artigliate/morte dei ghoul con panning stereo, giocatore ferito, volume)
+- `src/audio/sfx.ts`: **effetti sonori sintetizzati** con Web Audio (sparo, ricarica, "ding" dei bersagli, versi/artigliate/morte dei ghoul con panning stereo, giocatore ferito, **campana delle ondate**, volume)
 - `public/textures/`: texture PNG (servite così come sono da Vite su `/textures/...`)
 - `docs/DESIGN.md`: **documento di design** (decisioni di gameplay e domande aperte)
 - `CREDITS.md`: autori e licenze degli asset
-- `index.html`: pagina con canvas, overlay "Click to play", HUD, mirino, **hitmarker**, munizioni, **salute**, vignetta di danno, scritta di morte (stili CSS inclusi)
+- `index.html`: pagina con canvas, overlay "Click to play", HUD, mirino, **hitmarker**, munizioni, **salute**, vignetta di danno, **ondata, punteggio, banner**, riepilogo di morte (stili CSS inclusi)
 - `vite.config.ts`: config del dev server e della build (`base: './'` per funzionare in sottocartella su GitHub Pages)
 - `.github/workflows/deploy.yml`: **deploy automatico su GitHub Pages** a ogni push su `main`.
   Gli asset in `public/` vanno referenziati con `import.meta.env.BASE_URL` (mai `/...` assoluto)

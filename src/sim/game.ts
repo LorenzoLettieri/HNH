@@ -3,11 +3,10 @@
 import type { InputCommand } from './command';
 import { createEntities, stepTarget, type Entity } from './entities';
 import { stepGhoul } from './ghoul';
-import { stepSpawner } from './spawner';
+import { createWaveState, scoreHits, stepWaves, type Stats, type WaveState } from './waves';
 import { getFlowField, getNavGraph, nearestNode } from './nav';
 import type { SimEvent } from './events';
 import { createPlayer, respawn, stepPlayer, type PlayerState } from './player';
-import { secondsToTicks } from './config';
 import { stepWeapon } from './weapon';
 import type { World } from './world';
 
@@ -17,7 +16,8 @@ export interface GameState {
   entities: Entity[];
   /** Ids are never reused: the renderer recognizes entities by id. */
   nextEntityId: number;
-  spawnCooldownTicks: number;
+  wave: WaveState;
+  stats: Stats;
   /** Navigation goal: the graph node the player stands on (the ghouls go there). */
   navGoal: number;
 }
@@ -29,7 +29,8 @@ export function createGame(world: World): GameState {
     player: createPlayer(world.spawn.x, world.spawn.y, world.spawn.z),
     entities,
     nextEntityId: entities.length + 1,
-    spawnCooldownTicks: 0,
+    wave: createWaveState(),
+    stats: { kills: 0, score: 0 },
     navGoal: -1,
   };
 }
@@ -37,7 +38,7 @@ export function createGame(world: World): GameState {
 /**
  * One tick of the whole game, always in the same order:
  * 1. the player moves; 2. the player's weapon fires (and hits);
- * 3. targets and enemies update; 4. the spawner adds/removes enemies.
+ * 3. targets and enemies update; 4. the wave system spawns enemies.
  * Things that happened go into `events`.
  */
 export function stepGame(
@@ -54,7 +55,9 @@ export function stepGame(
     e.pz = e.z;
   }
   stepPlayer(game.player, cmd, world, dt);
+  const firstNewEvent = events.length;
   stepWeapon(game.player, cmd, world, game.entities, events);
+  scoreHits(game.stats, events.slice(firstNewEvent));
 
   // Navigation: where's the player on the graph? (Only while standing:
   // in mid-jump we keep the last known node.) Checked 4 times a second;
@@ -70,14 +73,16 @@ export function stepGame(
     if (e.type === 'target') stepTarget(e);
     else if (e.state !== 'dead') stepGhoul(e, game.player, game.entities, world, graph, flow, dt, events);
   }
-  stepSpawner(game, world);
+  stepWaves(game, world, events);
 
-  // Dead: back to the start, the horde is cleared, a short breather.
+  // Dead: game over, CoD style. Report how far you got, then start over from
+  // wave 1: back to the spawn, the horde is cleared, stats reset.
   if (game.player.health <= 0) {
-    events.push({ type: 'playerDied' });
+    events.push({ type: 'playerDied', wave: game.wave.number, kills: game.stats.kills, score: game.stats.score });
     respawn(game.player, world);
     game.entities = game.entities.filter((e) => e.type !== 'ghoul');
-    game.spawnCooldownTicks = secondsToTicks(3);
+    game.wave = createWaveState();
+    game.stats = { kills: 0, score: 0 };
   }
   game.tick++;
 }

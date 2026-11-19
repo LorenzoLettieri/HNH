@@ -65,6 +65,25 @@
         color: #ff3010; font: bold 64px monospace; letter-spacing: 8px; pointer-events: none; opacity: 0;
         text-shadow: 4px 4px 0 #000;
       }
+      #death-stats {
+        position: fixed; left: 0; right: 0; top: 60%; text-align: center; pointer-events: none; opacity: 0;
+        color: #f0c080; font: bold 22px monospace; text-shadow: 2px 2px 0 #000;
+      }
+      /* Wave number: big, red, old-western serif, like CoD's tally of rounds. */
+      #wave {
+        position: fixed; left: 16px; bottom: 80px; pointer-events: none;
+        color: #b01808; font: bold 72px Georgia, 'Times New Roman', serif; text-shadow: 3px 3px 0 #000;
+      }
+      #score {
+        position: fixed; right: 16px; bottom: 44px; pointer-events: none;
+        color: #f0c080; font: bold 18px monospace; text-shadow: 2px 2px 0 #000;
+      }
+      /* Center banner: "ONDATA 3", "ONDATA SUPERATA", countdown. */
+      #banner {
+        position: fixed; left: 0; right: 0; top: 22%; text-align: center; pointer-events: none; opacity: 0;
+        color: #d02010; font: bold 56px Georgia, 'Times New Roman', serif; letter-spacing: 6px;
+        text-shadow: 3px 3px 0 #000;
+      }
       #ammo {
         position: fixed; right: 16px; bottom: 10px; color: #f0c080;
         font: bold 26px monospace; letter-spacing: 4px; pointer-events: none;
@@ -86,6 +105,10 @@
     <div id="damage"></div>
     <div id="health"><div id="health-fill"></div></div>
     <div id="death">SEI MORTO</div>
+    <div id="death-stats"></div>
+    <div id="wave"></div>
+    <div id="score"></div>
+    <div id="banner"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

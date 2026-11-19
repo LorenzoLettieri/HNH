@@ -19,7 +19,9 @@ export type SimEvent =
     }
   | { type: 'hit'; entityId: number; damage: number; killed: boolean; surface: 'metal' | 'flesh' }
   | { type: 'playerHurt'; damage: number; fromX: number; fromZ: number }
-  | { type: 'playerDied' }
+  | { type: 'playerDied'; wave: number; kills: number; score: number }
+  | { type: 'waveStart'; wave: number }
+  | { type: 'waveEnd'; wave: number }
   | { type: 'ghoulAttack'; entityId: number }
   | { type: 'dryFire' } // pulled the trigger with an empty cylinder
   | { type: 'reloadStart' }

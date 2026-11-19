@@ -27,6 +27,8 @@ export interface TargetEntity extends EntityBase {
 
 export interface GhoulEntity extends EntityBase {
   type: 'ghoul';
+  /** Runners are faster (and have red eyes). */
+  runner: boolean;
   vx: number;
   vy: number;
   vz: number;
@@ -75,10 +77,18 @@ export function createEntities(world: World): Entity[] {
   }));
 }
 
-export function createGhoul(id: number, x: number, y: number, z: number): GhoulEntity {
+export function createGhoul(
+  id: number,
+  x: number,
+  y: number,
+  z: number,
+  health = tuning.ghoulHealth,
+  runner = false,
+): GhoulEntity {
   return {
     id,
     type: 'ghoul',
+    runner,
     x,
     y,
     z,
@@ -88,7 +98,7 @@ export function createGhoul(id: number, x: number, y: number, z: number): GhoulE
     vx: 0,
     vy: 0,
     vz: 0,
-    health: tuning.ghoulHealth,
+    health,
     onGround: false,
     state: 'chase',
     stateTicks: 0,

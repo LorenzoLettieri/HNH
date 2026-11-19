@@ -259,7 +259,7 @@ renderer.setAnimationLoop((now: number) => {
   targets.handle(events);
   targets.update(frameTime);
   ghouls.update(game.entities, events, camera, alpha, frameTime);
-  updateHud(player, events, frameTime);
+  updateHud(game, events, frameTime);
   navDebug.update(getFlowField(getNavGraph(world), game.navGoal));
   ammoHud.textContent = player.reloadTicks > 0
     ? 'RELOADING'

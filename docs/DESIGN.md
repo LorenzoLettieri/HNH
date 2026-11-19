@@ -139,9 +139,21 @@ vagoni. 4 sfiatatoi di vapore. Tutti i percorsi sono stati verificati in simulaz
 
 ## 5. Gameplay loop
 
-### Struttura della partita [DA DECIDERE]
-Orientamento attuale: **a ondate stile CoD Zombies** (ondate numerate, sempre più dure, pausa
-breve tra un'ondata e l'altra). Alternativa: run continua a tempo con level-up alla Megabonk.
+### Struttura della partita [FATTO: ondate stile CoD Zombies]
+Ondate numerate (`src/sim/waves.ts`), sempre più dure, 8 s di pausa tra una e l'altra,
+annunciate dalla campana della chiesa. Alla morte: riepilogo (ondata, uccisioni, punti) e
+si ricomincia dall'ondata 1.
+
+| Ondata | Ghoul totali | Corridori | Salute |
+|---|---|---|---|
+| 1 | 6 | 0 | 100 |
+| 4 | 13 | ~10% | 145 |
+| 8 | 27 | ~50% | 205 |
+
+- Vivi insieme: 6 + 2·ondata (max 24). Intervallo di spawn: da 2 s a 0,5 s.
+- **Corridori** (dall'ondata 4): 5,4 m/s invece di 3,6, **occhi rossi**.
+- **Punteggio** stile CoD: 10 per colpo, 100 per uccisione.
+  [DA DECIDERE] cosa si compra con i punti (armi, potenziamenti, "santuari" sulla mappa).
 
 Elementi indipendenti dalla scelta:
 - I nemici lasciano **anime** (XP/valuta) da raccogliere passandoci sopra; svaniscono dopo

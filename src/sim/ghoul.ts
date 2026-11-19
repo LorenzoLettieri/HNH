@@ -12,6 +12,7 @@ import type { GhoulEntity, Entity } from './entities';
 import type { SimEvent } from './events';
 import { launchFromVent, nearestNode, type FlowField, type NavGraph, type NavLink, type NavNode } from './nav';
 import { ventUnder } from './props';
+import { ghoulSpeed } from './waves';
 import { hurtPlayer, type PlayerState } from './player';
 import type { World } from './world';
 
@@ -95,7 +96,7 @@ export function stepGhoul(
   }
 
   // --- 3. Accelerate toward the wished velocity (only with feet on the ground) ---
-  const speed = g.state === 'chase' ? tuning.ghoulSpeed : 0;
+  const speed = g.state === 'chase' ? ghoulSpeed(g) : 0;
   const len = Math.hypot(wishX, wishZ);
   const targetVx = len > 0 ? (wishX / len) * speed : 0;
   const targetVz = len > 0 ? (wishZ / len) * speed : 0;
