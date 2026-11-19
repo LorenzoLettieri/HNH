@@ -141,6 +141,12 @@ export const tuning = {
   revolverDamage: 34,
   /** Max shooting distance, meters. */
   weaponRange: 200,
+
+  // --- Practice targets ---
+  /** Health of a target (revolver does 34: 3 hits). */
+  targetHealth: 100,
+  /** Seconds before a knocked-down target stands up again. */
+  targetRespawnTime: 3,
 };
 
 /** Converts a duration in seconds to a whole number of ticks. */

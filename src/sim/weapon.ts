@@ -6,11 +6,13 @@ import type { SimEvent } from './events';
 import { currentEyeHeight, type PlayerState } from './player';
 import { raycastBoxes } from './raycast';
 import type { World } from './world';
+import { damage, hitBox, isAlive, type Entity } from './entities';
 
 export function stepWeapon(
   p: PlayerState,
   cmd: InputCommand,
   world: World,
+  entities: Entity[],
   events: SimEvent[],
 ): void {
   // Timers.
@@ -43,7 +45,7 @@ export function stepWeapon(
 
   const ready = p.fireCooldownTicks === 0 && p.reloadTicks === 0 && p.ammo > 0;
   if (p.fireBufferTicks > 0 && ready) {
-    fire(p, world, events);
+    fire(p, world, entities, events);
     p.ammo--;
     p.fireCooldownTicks = secondsToTicks(tuning.revolverFireInterval);
     p.fireBufferTicks = 0;
@@ -51,7 +53,7 @@ export function stepWeapon(
 }
 
 /** Hitscan: the bullet travels instantly along the view direction. */
-function fire(p: PlayerState, world: World, events: SimEvent[]): void {
+function fire(p: PlayerState, world: World, entities: Entity[], events: SimEvent[]): void {
   // Start at the eye, go where the player looks. Same yaw/pitch math as the
   // camera: yaw turns around the vertical axis, pitch tilts up/down.
   const ox = p.x;
@@ -62,7 +64,15 @@ function fire(p: PlayerState, world: World, events: SimEvent[]): void {
   const dy = Math.sin(p.pitch);
   const dz = -Math.cos(p.yaw) * cosPitch;
 
-  const hit = raycastBoxes(ox, oy, oz, dx, dy, dz, tuning.weaponRange, world.boxes);
+  // Two raycasts: against the level and against the (living) entities.
+  // The bullet stops at whichever is closer: a target behind a wall is safe.
+  const levelHit = raycastBoxes(ox, oy, oz, dx, dy, dz, tuning.weaponRange, world.boxes);
+  const living = entities.filter(isAlive);
+  const entityHit = raycastBoxes(ox, oy, oz, dx, dy, dz, tuning.weaponRange, living.map(hitBox));
+  const hitEntity = entityHit && (!levelHit || entityHit.distance < levelHit.distance);
+  const hit = hitEntity ? entityHit : levelHit;
+  const target = hitEntity ? living[entityHit.index] : null;
+
   const to = hit
     ? { x: hit.x, y: hit.y, z: hit.z }
     : { x: ox + dx * tuning.weaponRange, y: oy + dy * tuning.weaponRange, z: oz + dz * tuning.weaponRange };
@@ -71,5 +81,11 @@ function fire(p: PlayerState, world: World, events: SimEvent[]): void {
     from: { x: ox, y: oy, z: oz },
     to,
     normal: hit ? { x: hit.nx, y: hit.ny, z: hit.nz } : null,
+    entityId: target ? target.id : null,
   });
+
+  if (target) {
+    const killed = damage(target, tuning.revolverDamage);
+    events.push({ type: 'hit', entityId: target.id, damage: tuning.revolverDamage, killed });
+  }
 }

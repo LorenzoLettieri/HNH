@@ -13,6 +13,8 @@ export interface RayHit {
   nx: number;
   ny: number;
   nz: number;
+  /** Index of the box that was hit, in the array passed in. */
+  index: number;
 }
 
 /**
@@ -30,10 +32,12 @@ export function raycastBoxes(
   boxes: Box[],
 ): RayHit | null {
   let best: RayHit | null = null;
-  for (const b of boxes) {
+  boxes.forEach((b, index) => {
     const hit = rayBox(ox, oy, oz, dx, dy, dz, b);
-    if (hit && hit.distance <= maxDistance && (!best || hit.distance < best.distance)) best = hit;
-  }
+    if (hit && hit.distance <= maxDistance && (!best || hit.distance < best.distance)) {
+      best = { ...hit, index };
+    }
+  });
   return best;
 }
 
@@ -53,7 +57,7 @@ function rayBox(
   dy: number,
   dz: number,
   b: Box,
-): RayHit | null {
+): Omit<RayHit, 'index'> | null {
   let tEnter = -Infinity;
   let tExit = Infinity;
   let normalAxis = -1; // which axis the latest entry happened on (0 = x, 1 = y, 2 = z)

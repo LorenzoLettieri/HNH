@@ -46,13 +46,15 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
 - `src/input.ts`: input grezzo (tasti e tasti del mouse premuti, pressioni brevi "memorizzate", movimento mouse, Pointer Lock)
 - `src/controls.ts`: sensibilità mouse (`controlSettings`), angoli di vista, **mappatura tasti** (WASD, Spazio, Shift/C = accovacciati/slide, click = spara, R = ricarica, K = respawn) → `InputCommand` (T = cambia atmosfera, P = pixel art on/off, tasto sotto Esc = pannello debug, in `main.ts`)
 - `src/sim/`: simulazione pura (niente Three.js/DOM)
-  - `config.ts`: **valori di tuning** (oggetto `tuning`, modificabile dal pannello debug) (tick rate, altezza occhi, dimensioni giocatore, movimento a terra, gravità/salto/coyote/buffer, movimento e controllo in aria, aiuti al bhop, accovacciata, slide, wall jump, **revolver**)
+  - `config.ts`: **valori di tuning** (oggetto `tuning`, modificabile dal pannello debug) (tick rate, altezza occhi, dimensioni giocatore, movimento a terra, gravità/salto/coyote/buffer, movimento e controllo in aria, aiuti al bhop, accovacciata, slide, wall jump, **revolver**, bersagli)
+  - `game.ts`: **stato di gioco unico** (`GameState`: giocatore + entità) e `stepGame()` (un tick di tutto il gioco)
+  - `entities.ts`: **entità colpibili** (per ora i bersagli): salute, danno, hitbox, respawn
   - `command.ts`: tipo `InputCommand` (cosa vuole fare il giocatore in un tick)
-  - `world.ts`: tipi del livello (`Box` AABB, `Prop` decorazioni, `World`) e helper `box()`
+  - `world.ts`: tipi del livello (`Box` AABB, `Prop` decorazioni, `TargetSpawn` bersagli, `World`) e helper `box()`
   - `props.ts`: **box di collisione invisibili dei props** (barile, palo del cartello, torcia) e zona di lancio degli sfiatatoi
   - `weapon.ts`: revolver (sparo semi-automatico, munizioni, ricarica, hitscan)
   - `raycast.ts`: raggio contro i box (metodo degli "slab"): cosa colpisce un proiettile
-  - `events.ts`: eventi della simulazione (sparo, colpo a vuoto, ricarica) per effetti e suoni
+  - `events.ts`: eventi della simulazione (sparo, colpo su un'entità, colpo a vuoto, ricarica) per effetti e suoni
   - `collision.ts`: movimento con collisioni asse per asse contro i box, `overlapsAny` (c'è spazio?), `findWall` (muro vicino?)
   - `player.ts`: stato del giocatore e `stepPlayer()` (salto e bhop facilitato, slide/accovacciata, wall jump stile Apex, attrito, accelerazione Quake + air control, gravità, sfiatatoi, respawn)
 - `src/debug/`: pannello di debug
@@ -60,7 +62,7 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `debugPanel.ts`: **quali valori sono esposti nel pannello** e i loro range
 - `src/levels/`: **i livelli** (dati puri)
   - `index.ts`: elenco dei livelli e livello di default
-  - `town.ts`: **la cittadina** (mappa principale, greybox): edifici, torri, ponte, piattaforme sospese, sfiatatoi; percorsi descritti in cima al file
+  - `town.ts`: **la cittadina** (mappa principale, greybox): edifici, torri, ponte, piattaforme sospese, sfiatatoi, **bersagli** (`targets`); percorsi descritti in cima al file
   - `testArena.ts`: arena di prova 40×40 (piattaforma, scale, corridoio, colonne, casse, trave bassa per lo slide) + **props** (lista `props` in cima al file)
 - `src/render/`: effetti puramente visivi (non toccano la simulazione)
   - `landingDip.ts`: abbassamento camera all'atterraggio (intensità, recupero)
@@ -84,13 +86,14 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
     - `revolverModel.ts`: modello procedurale del revolver (canna, tamburo, cane, calcio)
     - `hands.ts`: **mani a blocchi** (guanti, maniche) e **keyframe del fanning** della mano sinistra
   - `weaponFx.ts`: effetti degli spari (lampo di luce, fori, scintille, suoni)
+  - `targets.ts`: **bersagli** (modello, oscillazione a molla quando colpiti, caduta e rialzata)
   - `impacts.ts`: fori di proiettile sulle superfici (decal, dimensione, quanti ne restano)
   - `materials.ts`: **quale texture usa ogni materiale** (`LOOKS`), densità dei pixel, mesh dei box
-- `src/audio/sfx.ts`: **effetti sonori sintetizzati** con Web Audio (sparo, colpo a vuoto, ricarica, volume)
+- `src/audio/sfx.ts`: **effetti sonori sintetizzati** con Web Audio (sparo, colpo a vuoto, ricarica, "ding" dei bersagli, volume)
 - `public/textures/`: texture PNG (servite così come sono da Vite su `/textures/...`)
 - `docs/DESIGN.md`: **documento di design** (decisioni di gameplay e domande aperte)
 - `CREDITS.md`: autori e licenze degli asset
-- `index.html`: pagina con canvas, overlay "Click to play", HUD, mirino e munizioni (stili CSS inclusi)
+- `index.html`: pagina con canvas, overlay "Click to play", HUD, mirino, **hitmarker** e munizioni (stili CSS inclusi)
 - `vite.config.ts`: config del dev server e della build (`base: './'` per funzionare in sottocartella su GitHub Pages)
 - `.github/workflows/deploy.yml`: **deploy automatico su GitHub Pages** a ogni push su `main`.
   Gli asset in `public/` vanno referenziati con `import.meta.env.BASE_URL` (mai `/...` assoluto)

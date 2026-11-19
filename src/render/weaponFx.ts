@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import type { SimEvent } from '../sim/events';
 import { tuning } from '../sim/config';
-import { playDryFire, playReload, playShot } from '../audio/sfx';
+import { playDryFire, playReload, playShot, playTargetDown, playTargetHit } from '../audio/sfx';
 import { createImpacts } from './impacts';
 import { spawnSparks } from './particles';
 
@@ -17,6 +17,19 @@ export interface WeaponFx {
   /** Listeners for other modules (e.g. the viewmodel recoil). */
   onShot: (() => void)[];
   onReload: (() => void)[];
+}
+
+/**
+ * Hitmarker: the little X around the crosshair that confirms a hit.
+ * Pure CSS: we add a class, and remove it after a moment. Restarting a CSS
+ * animation needs a "reflow" in between (reading offsetWidth forces it).
+ */
+const hitmarker = document.getElementById('hitmarker');
+function showHitmarker(kill: boolean): void {
+  if (!hitmarker) return;
+  hitmarker.classList.remove('hit', 'kill');
+  void hitmarker.offsetWidth;
+  hitmarker.classList.add(kill ? 'kill' : 'hit');
 }
 
 export function createWeaponFx(scene: THREE.Scene): WeaponFx {
@@ -47,8 +60,9 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
             if (e.normal) {
               point.set(e.to.x, e.to.y, e.to.z);
               normal.set(e.normal.x, e.normal.y, e.normal.z);
-              impacts.add(point, normal);
-              spawnSparks(point, normal);
+              // No holes on entities: they move (the hole would float in the air).
+              if (e.entityId === null) impacts.add(point, normal);
+              spawnSparks(point, normal, e.entityId === null ? 10 : 18);
             }
             for (const f of fx.onShot) f();
             break;
@@ -60,6 +74,11 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
             for (const f of fx.onReload) f();
             break;
           case 'reloadEnd':
+            break;
+          case 'hit':
+            if (e.killed) playTargetDown();
+            else playTargetHit();
+            showHitmarker(e.killed);
             break;
         }
       }

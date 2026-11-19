@@ -325,3 +325,28 @@ function paintVent(glowMask: boolean): THREE.Texture {
   }
   return c.toTexture();
 }
+
+/**
+ * Steel practice target: a rusty plate with painted rings (black, white,
+ * red bullseye). The paint is chipped, like it's been shot a thousand times.
+ */
+export function targetTexture(): THREE.Texture {
+  return cached('target', () => {
+    const S = 32;
+    const c = new PixelCanvas(S, S);
+    const rand = seededRandom(12);
+    for (let y = 0; y < S; y++) {
+      for (let x = 0; x < S; x++) {
+        const r = Math.hypot(x - S / 2 + 0.5, y - S / 2 + 0.5) / (S / 2);
+        let color = shade(PALETTE.iron, 1.3);
+        if (r < 0.95) color = 0x1a1612; // black outer ring
+        if (r < 0.75) color = 0xd8ccb0; // white
+        if (r < 0.5) color = 0x1a1612; // black
+        if (r < 0.28) color = 0xb02818; // red bullseye
+        if (rand() < 0.12) color = mixColor(PALETTE.rust, PALETTE.iron, rand()); // chipped paint
+        c.set(x, y, color);
+      }
+    }
+    return c.toTexture();
+  });
+}

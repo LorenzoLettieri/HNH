@@ -106,3 +106,35 @@ export function playReload(duration: number): void {
   noiseBurst({ start: duration - 0.12, duration: 0.06, volume: 0.6, filter: 'bandpass', frequency: 1600, q: 2 }); // snap
   thump({ start: duration - 0.12, duration: 0.05, volume: 0.3, from: 400, to: 200 });
 }
+
+/**
+ * A metallic "ding": a few sine partials at frequencies that are NOT simple
+ * multiples of each other ("inharmonic"), which is what makes metal sound
+ * like metal instead of like a musical note. Each one rings and fades.
+ */
+function ring(base: number, duration: number, volume: number): void {
+  if (!ctx) return;
+  const t0 = ctx.currentTime;
+  for (const [ratio, gainRatio] of [[1, 1], [2.76, 0.5], [5.4, 0.25], [8.9, 0.12]]) {
+    const osc = ctx.createOscillator();
+    osc.frequency.value = base * ratio * (0.98 + Math.random() * 0.04);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(volume * gainRatio, t0);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration / ratio ** 0.3);
+    osc.connect(gain).connect(master);
+    osc.start(t0);
+    osc.stop(t0 + duration);
+  }
+}
+
+/** Bullet hits a steel target. */
+export function playTargetHit(): void {
+  ring(900 + Math.random() * 120, 0.5, 0.35);
+  noiseBurst({ duration: 0.03, volume: 0.4, filter: 'highpass', frequency: 3000 });
+}
+
+/** Target knocked down: a lower, longer clang and a thud. */
+export function playTargetDown(): void {
+  ring(520, 1.2, 0.45);
+  noiseBurst({ start: 0.25, duration: 0.15, volume: 0.35, filter: 'lowpass', frequency: 600 });
+}

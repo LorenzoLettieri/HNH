@@ -12,7 +12,10 @@ export type SimEvent =
       to: { x: number; y: number; z: number };
       /** Normal of the surface hit, or null if it hit nothing. */
       normal: { x: number; y: number; z: number } | null;
+      /** Id of the entity hit, if the bullet hit one (instead of the level). */
+      entityId: number | null;
     }
+  | { type: 'hit'; entityId: number; damage: number; killed: boolean }
   | { type: 'dryFire' } // pulled the trigger with an empty cylinder
   | { type: 'reloadStart' }
   | { type: 'reloadEnd' };

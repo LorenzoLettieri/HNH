@@ -146,6 +146,21 @@ const props: Prop[] = [
 export const town: World = {
   spawn: { x: 0, y: 0, z: 36 },
   props,
+  // Steel practice targets. `rotation` = where the plate faces (same as ?look=):
+  // 0 = north, 90 = west, 180 = south, -90 = east. Some are on the rooftops,
+  // to give a reason to climb.
+  targets: [
+    { x: -3, y: 0, z: 27, rotation: 180 }, // near the spawn, facing it
+    { x: 3, y: 0, z: 27, rotation: 180 },
+    { x: 16, y: 0, z: -1.5, rotation: 90 }, // shooting range on Cross Street (east)
+    { x: 19, y: 0, z: 1.5, rotation: 90 },
+    { x: 22, y: 0, z: -0.5, rotation: 90 },
+    { x: -18, y: 7.3, z: -11, rotation: -90 }, // saloon roof
+    { x: 19, y: 9.3, z: -12, rotation: 90 }, // church roof
+    { x: -9, y: 14, z: 24, rotation: 180 }, // top of the west tower
+    { x: -26.3, y: 8, z: -12.8, rotation: -90 }, // water tower
+    { x: -30, y: 0, z: 34, rotation: 0 }, // cemetery
+  ],
   boxes: [
     ...props.flatMap(propColliders),
 

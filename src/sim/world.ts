@@ -41,9 +41,23 @@ export type Prop =
   /** A patch of grass tufts scattered in a circle (purely visual). */
   | { type: 'grass'; x: number; z: number; radius: number; count: number };
 
+/** A practice target placed in the level (it becomes an entity at game start). */
+export interface TargetSpawn {
+  x: number;
+  y: number;
+  z: number;
+  /**
+   * Direction the plate's front faces, degrees, same convention as the
+   * player's look (?look=): 0 = north (-Z), 90 = west, 180 = south, -90 = east.
+   */
+  rotation: number;
+}
+
 export interface World {
   boxes: Box[];
   props: Prop[];
+  /** Practice targets. Optional: not every level has them. */
+  targets?: TargetSpawn[];
   /** Where the player (re)appears, feet position. */
   spawn: { x: number; y: number; z: number };
 }

@@ -3,7 +3,8 @@ import { initInput, isTypingInField } from './input';
 import { createDebugPanel } from './debug/debugPanel';
 import { buildCommand, updateLook, view } from './controls';
 import { TICK_DT } from './sim/config';
-import { copyPlayer, createPlayer, horizontalSpeed, stepPlayer } from './sim/player';
+import { copyPlayer, createPlayer, horizontalSpeed } from './sim/player';
+import { createGame, stepGame } from './sim/game';
 import { DEFAULT_LEVEL, LEVELS } from './levels';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
 import { updateCameraFeel } from './render/cameraFeel';
@@ -14,8 +15,8 @@ import { applyFireLights, createFireLights, updateFireLights } from './render/fi
 import { createProps } from './render/props';
 import { createPostProcess } from './render/postprocess';
 import { createWeaponFx } from './render/weaponFx';
+import { createTargets } from './render/targets';
 import { createViewmodel } from './render/weapons/viewmodel';
-import { stepWeapon } from './sim/weapon';
 import type { SimEvent } from './sim/events';
 import { initAudio } from './audio/sfx';
 import { applyParticles, createParticles, updateParticles } from './render/particles';
@@ -81,6 +82,8 @@ function applyAtmosphere(a: Atmosphere): void {
 // ?level=arena in the URL picks another level (see src/levels/index.ts).
 const params = new URLSearchParams(location.search);
 const world = LEVELS[params.get('level') ?? DEFAULT_LEVEL] ?? LEVELS[DEFAULT_LEVEL];
+// The whole game state (player + entities), created from the level.
+const game = createGame(world);
 
 await loadMaterials(); // top-level await: the game starts once textures are ready
 // Boxes without a `look` are invisible colliders (e.g. around props): not drawn.
@@ -90,6 +93,7 @@ const props = createProps(scene, world);
 createFireLights(scene, props.fires);
 createParticles(scene, props.fires, props.vents);
 const weaponFx = createWeaponFx(scene);
+const targets = createTargets(scene, game.entities);
 // The gun in your hand: its own scene and camera, drawn over the world.
 const viewmodel = createViewmodel();
 viewmodel.setAspect(window.innerWidth / window.innerHeight);
@@ -139,7 +143,8 @@ const ammoHud = document.getElementById('ammo')!;
 
 // Two copies of the player state: the previous tick and the current one.
 // The camera is drawn somewhere in between (interpolation).
-const player = createPlayer(world.spawn.x, world.spawn.y, world.spawn.z);
+// `player` is just a shortcut into the game state.
+const player = game.player;
 const prevPlayer = createPlayer();
 
 // Debug: start from a given spot with ?pos=x,y,z&look=yaw,pitch (degrees)
@@ -167,7 +172,6 @@ window.addEventListener('resize', () => {
 // rendering runs at the monitor's rate (60, 144, ... fps), the simulation
 // always advances in fixed TICK_DT steps. The accumulator stores the
 // "leftover" time that isn't enough for a full tick yet.
-let tick = 0;
 let accumulator = 0;
 let lastViewYaw = view.yaw;
 let lastViewPitch = view.pitch;
@@ -185,12 +189,10 @@ renderer.setAnimationLoop((now: number) => {
   const events: SimEvent[] = [];
   while (accumulator >= TICK_DT) {
     copyPlayer(player, prevPlayer);
-    const cmd = buildCommand(tick);
-    stepPlayer(player, cmd, world, TICK_DT);
-    stepWeapon(player, cmd, world, events);
+    const cmd = buildCommand(game.tick);
+    stepGame(game, cmd, world, TICK_DT, events);
     // The renderer only *reads* the state: "were we in the air, and now we're not?"
     if (!prevPlayer.onGround && player.onGround) triggerLandingDip(-prevPlayer.vy);
-    tick++;
     accumulator -= TICK_DT;
   }
 
@@ -226,6 +228,8 @@ renderer.setAnimationLoop((now: number) => {
   // Weapon events of this frame → effects and sounds.
   weaponFx.handle(events, camera);
   weaponFx.update(frameTime);
+  targets.handle(events);
+  targets.update(frameTime);
   ammoHud.textContent = player.reloadTicks > 0
     ? 'RELOADING'
     : '●'.repeat(player.ammo) + '○'.repeat(Math.max(0, 6 - player.ammo));

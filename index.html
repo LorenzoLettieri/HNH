@@ -34,6 +34,21 @@
         background: #ffe0a0; pointer-events: none;
         box-shadow: -8px 0 0 #ffe0a0, 8px 0 0 #ffe0a0, 0 -8px 0 #ffe0a0, 0 8px 0 #ffe0a0;
       }
+      /* Hitmarker: 4 short diagonal strokes around the crosshair, flashed on hit.
+         The color is a CSS variable: white for a hit, red for a knockdown. */
+      #hitmarker {
+        --c: #fff;
+        position: fixed; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px;
+        pointer-events: none; opacity: 0;
+        background:
+          linear-gradient(45deg, transparent 44%, var(--c) 44%, var(--c) 56%, transparent 56%) top left / 7px 7px no-repeat,
+          linear-gradient(-45deg, transparent 44%, var(--c) 44%, var(--c) 56%, transparent 56%) top right / 7px 7px no-repeat,
+          linear-gradient(-45deg, transparent 44%, var(--c) 44%, var(--c) 56%, transparent 56%) bottom left / 7px 7px no-repeat,
+          linear-gradient(45deg, transparent 44%, var(--c) 44%, var(--c) 56%, transparent 56%) bottom right / 7px 7px no-repeat;
+      }
+      #hitmarker.hit { animation: hitmarker 0.15s ease-out; }
+      #hitmarker.kill { --c: #ff4020; animation: hitmarker 0.4s ease-out; width: 30px; height: 30px; margin: -15px 0 0 -15px; }
+      @keyframes hitmarker { from { opacity: 1; } to { opacity: 0; } }
       #ammo {
         position: fixed; right: 16px; bottom: 10px; color: #f0c080;
         font: bold 26px monospace; letter-spacing: 4px; pointer-events: none;
@@ -49,6 +64,7 @@
     <div id="overlay">Click to play<small>WASD · Spazio · Click spara · R ricarica · K respawn · T atmosfera · P pixel · \ (tasto sotto Esc) debug</small></div>
     <div id="hud"></div>
     <div id="crosshair"></div>
+    <div id="hitmarker"></div>
     <div id="ammo"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
