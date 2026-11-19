@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { initInput, isPointerLocked, isTypingInField, requestLock } from './input';
+import { initInput, isKeyDown, isPointerLocked, isTypingInField, requestLock } from './input';
 import { loadSettings } from './settings';
 import { createMenu } from './menu';
 import { createDebugPanel } from './debug/debugPanel';
@@ -28,6 +28,7 @@ import { createProjectileRenderer } from './render/projectiles';
 import { createPickupRenderer } from './render/pickups';
 import { createVendorRenderer } from './render/vendors';
 import { createShopMenu } from './render/shopMenu';
+import { createMapOverlay } from './render/mapOverlay';
 import { shopInReach } from './sim/shop';
 import { updateHud } from './render/hud';
 import { updateAmmoHud } from './render/ammoHud';
@@ -127,6 +128,7 @@ const sharpshooters = createSharpshooterRenderer(scene, world);
 const projectiles = createProjectileRenderer(scene);
 const pickups = createPickupRenderer(scene);
 const vendors = createVendorRenderer(scene, world);
+const mapOverlay = createMapOverlay(world);
 const navDebug = createNavDebug(scene, getNavGraph(world));
 const navDebugBig = createNavDebug(scene, getNavGraph(world, BIG_BODY));
 /** N cycles: 0 = off, 1 = ghouls' graph, 2 = bulls' graph. */
@@ -156,6 +158,12 @@ debugPanel.showAtmosphere(ATMOSPHERES[atmosphereIndex]);
 // P toggles the pixel-art look, to compare before/after.
 // Backquote (the key below Esc: ` or \ depending on the keyboard) opens the debug panel and frees the mouse to use it.
 window.addEventListener('keydown', (e) => {
+  // Tab = the map (held down: read in the loop below). In a browser Tab moves
+  // the keyboard focus to the next button: stop that while playing, or a
+  // focused button would get "clicked" by the next Space (jump). Before the
+  // e.repeat check: holding the key sends a keydown every few ms, and each
+  // one would move the focus again.
+  if (e.code === 'Tab' && !paused && !isTypingInField(e)) e.preventDefault();
   if (e.repeat || isTypingInField(e)) return;
   if (e.code === 'KeyT') {
     atmosphereIndex = (atmosphereIndex + 1) % ATMOSPHERES.length;
@@ -372,6 +380,8 @@ renderer.setAnimationLoop((now: number) => {
   updateAmmoHud(player);
   updateWeaponBar(player);
   updateMoneyHud(game.player.money, dt);
+  // The map: only while Tab is held, never over the pause menu.
+  mapOverlay.update(game, alpha, camera.position.x, camera.position.z, view.yaw, isKeyDown('Tab') && !paused, now / 1000);
 
   updateFireLights(now / 1000);
   props.update(now / 1000);

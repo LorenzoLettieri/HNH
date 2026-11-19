@@ -1,31 +1,36 @@
 // Sharpshooter AI: a skeleton with a cowboy hat and a Winchester. It doesn't
-// chase you: it SHOOTS you from afar. A fast bullet (much faster than a
-// fireball), so the fairness is all in the WARNING (docs/DESIGN.md,
-// "leggibilità"): a red laser shows exactly where the rifle points.
+// chase you: it goes up to a high spot (a "perch") and SHOOTS you from afar.
+// A fast bullet (much faster than a fireball), so the fairness is all in the
+// WARNING (docs/DESIGN.md, "leggibilità"): a red laser shows exactly where
+// the rifle points.
 //
-//   idle ──(cooldown over, you're in range and in sight)──▶ aim
-//    ▲                                                       │ (laser on, it FOLLOWS
-//    │                                                       │  where you'll be)
-//    │                                                       ▼
-//    └──────── fires the bullet ◀──(after LockTime)────── lock (laser stops, blinks)
+//   move ──(on its perch, or nowhere better to go)──▶ idle ──(cooldown over, you're in sight)──▶ aim
+//    ▲                                                 │ ▲                                         │
+//    └────(hasn't seen you for RelocateTime)───────────┘ └──── fires the bullet ◀──── lock ◀──────┘
 //
+// - MOVE: choose a perch (perch.ts: high up, at the right distance, with a
+//   view of you) and go there along the ghouls' navigation graph: walking,
+//   jumping, dropping, climbing walls, riding vents. It doesn't shoot while
+//   it moves: that's your chance to close in (or to shoot it off a wall).
+// - IDLE: laser off, the rifle getting ready. If it can't see you for a while
+//   (you hid, you went elsewhere), it looks for a new perch.
 // - AIM: the laser glides toward where you WILL be when the bullet arrives
 //   (the same "lead" as the eye-bat). Lose its line of sight for a moment
 //   and it gives up.
 // - LOCK: the laser freezes. The bullet will go exactly there: it's your cue
 //   to change direction (jump, slide, cut back). Keep running straight and
 //   the lead gets you; stand still and the laser is on you.
-//
-// For now it stands where it spawned (gravity only). Climbing to high spots
-// comes in a later step.
-import { moveAndCollide } from './collision';
+import { moveAndCollide, overlapsAny } from './collision';
 import { secondsToTicks, tuning } from './config';
 import type { SharpshooterEntity } from './entities';
 import type { SimEvent } from './events';
 import { interceptTime } from './eyebat';
 import type { GameState } from './game';
+import { climbWall, jumpTo } from './ghoul';
+import { computeFlowField, launchFromVent, nearestNode, type FlowField, type NavGraph, type NavLink } from './nav';
+import { choosePerch, clearShot } from './perch';
 import { currentHeight, type PlayerState } from './player';
-import { raycastBoxes } from './raycast';
+import { ventUnder } from './props';
 import type { World } from './world';
 
 /**
@@ -42,13 +47,44 @@ import type { World } from './world';
 const MUZZLE_FORWARD = 0.1;
 /** On the ground it stops quickly (pushed by a kick, it slides a bit), 1/s. */
 const GROUND_FRICTION = 8;
+/** Walking: how quickly it reaches its speed or turns (1/s, like ghoulAccel). */
+const WALK_ACCEL = 8;
+/** On its perch when its feet are this close to the node, meters. */
+const ARRIVE_DIST = 0.4;
+/** Just arrived: it takes position for this long before it can aim, seconds. */
+const SETTLE_TIME = 0.6;
 
-export function stepSharpshooter(s: SharpshooterEntity, game: GameState, world: World, dt: number, events: SimEvent[]): void {
+export function stepSharpshooter(
+  s: SharpshooterEntity,
+  game: GameState,
+  world: World,
+  graph: NavGraph,
+  dt: number,
+  events: SimEvent[],
+): void {
   const player = game.player;
   s.stateTicks++;
   if (s.shootCooldownTicks > 0) s.shootCooldownTicks--;
 
-  // Physics: just gravity and friction (it stands still, for now).
+  // Partway up a wall: nothing else until it's over the edge (a dead one just falls).
+  if (s.state === 'dead') s.climbTo = -1;
+  if (s.climbTo >= 0) {
+    const from = graph.nodes[s.climbFrom];
+    const to = graph.nodes[s.climbTo];
+    climbWall(s, from, to, tuning.sharpshooterRadius, tuning.sharpshooterHeight, tuning.sharpshooterClimbSpeed, world, dt);
+    return;
+  }
+  // Where is it on the graph? (Only with its feet down: in the air it keeps the last one.)
+  if (s.onGround) {
+    const node = nearestNode(graph, s.x, s.y, s.z);
+    if (node >= 0) s.navNode = node;
+  }
+  if (s.state === 'move') {
+    stepMove(s, game, world, graph, dt);
+    return;
+  }
+
+  // Standing: gravity and friction (pushed by a kick, it slides a bit).
   if (s.onGround) {
     const k = Math.min(1, GROUND_FRICTION * dt);
     s.vx -= s.vx * k;
@@ -63,7 +99,16 @@ export function stepSharpshooter(s: SharpshooterEntity, game: GameState, world: 
     // Laser off: the rifle simply turns toward you (the renderer uses the aim
     // to know which way it faces).
     pointAt(s, player.x, chestY(player), player.z, Math.PI);
-    if (s.shootCooldownTicks === 0 && player.health > 0 && canSee(s, player, world)) {
+    const sees = player.health > 0 && canSee(s, player, world);
+    s.unseenTicks = sees ? 0 : s.unseenTicks + 1;
+    if (s.onGround && s.unseenTicks >= secondsToTicks(tuning.sharpshooterRelocateTime)) {
+      // It's lost you: this spot is useless now, time to find a better one.
+      s.unseenTicks = 0;
+      s.perchNode = -1;
+      setState(s, 'move');
+      return;
+    }
+    if (s.shootCooldownTicks === 0 && sees) {
       setState(s, 'aim');
       s.lostSightTicks = 0;
       events.push({ type: 'sharpshooterAim', entityId: s.id });

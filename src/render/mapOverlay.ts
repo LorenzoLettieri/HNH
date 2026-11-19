@@ -1,0 +1,224 @@
+// The map (hold Tab): the level seen from above, north up, like a paper map
+// pinned over the game. Enemies are red dots, you're an arrow, the places
+// that matter (shops, steam vents) have their own marks. Most useful at the
+// end of a wave, to find the last ghoul hiding behind the saloon: when only
+// a few enemies are left, each one sends out a "radar ping" ring.
+//
+// It's a plain 2D <canvas> (the same Canvas API you'd use on a web page),
+// not Three.js: a map is flat, no camera or 3D needed. Two layers:
+//   1. the LEVEL, drawn once into an offscreen canvas (it never changes):
+//      every box seen from above, the higher the lighter, in steps like the
+//      contour bands of a topographic map;
+//   2. every frame while the map is open: copy layer 1 (one drawImage,
+//      cheap), then draw marks, enemies and player on top.
+// Compute the expensive part once, redo only what moves: the same idea as
+// caching a rendered partial in Laravel.
+//
+// Markup and CSS in index.html (#map, #map-legend).
+import type { GameState } from '../sim/game';
+import { isEnemy } from '../sim/entities';
+import type { ShopSpawn, World } from '../sim/world';
+import { coinIcon } from './pickupSprites';
+import './fonts'; // the labels are written in Rye
+
+type RGB = [number, number, number];
+
+// --- Tuning ---
+/** Map size: share of the window's shorter side. */
+const SIZE = 0.78;
+/** Height (m) of the lightest roofs: everything above it gets the same color. */
+const TOP_HEIGHT = 15;
+/** How many color steps between the lowest box and TOP_HEIGHT (the contour bands). */
+const BANDS = 6;
+/** Colors: the ground, the lowest boxes, the highest ones, the canyon rock. */
+const GROUND: RGB = [46, 30, 20];
+const LOW: RGB = [84, 58, 38];
+const HIGH: RGB = [212, 190, 150];
+const ROCK = '#140c08';
+/** Sizes of the marks, in CSS pixels (so they're the same on any screen). */
+const ENEMY_RADIUS = 4;
+const PLAYER_SIZE = 10;
+const SHOP_ICON = 22;
+const VENT_RADIUS = 4;
+/** With this many enemies left (or fewer), each one pings like a radar. */
+const PING_BELOW = 3;
+/** Seconds per ping, and how far its ring grows (CSS px). */
+const PING_TIME = 1.2;
+const PING_RADIUS = 26;
+/** Shop names on the map, by kind. */
+const SHOP_NAMES: Record<ShopSpawn['kind'], string> = { weapons: 'ARMERIA' };
+
+const root = document.getElementById('map')!;
+const canvas = document.getElementById('map-canvas') as HTMLCanvasElement;
+const ctx = canvas.getContext('2d')!;
+const coin = coinIcon(); // the same coin pile as the vildenaro counter: shops = where the money goes
+
+const rgb = (c: number[]): string => `rgb(${c.map(Math.round).join(',')})`;
+
+/** Color of a box's top: by height, in BANDS steps from LOW to HIGH. */
+function heightColor(top: number): string {
+  // Round UP to a band: even a 0.9 m fence must not look like bare ground.
+  const band = Math.min(BANDS, Math.max(1, Math.ceil((top / TOP_HEIGHT) * BANDS)));
+  const t = (band - 1) / (BANDS - 1);
+  return rgb(LOW.map((v, i) => v + (HIGH[i] - v) * t));
+}
+
+export interface MapOverlay {
+  /**
+   * Call every frame. `open` = Tab held (and the game not paused); when
+   * false the map is just hidden. (x, z, yaw) = where you are and look
+   * (the camera's: already interpolated). `time` in seconds, for the pings.
+   */
+  update(game: GameState, alpha: number, x: number, z: number, yaw: number, open: boolean, time: number): void;
+}
+
+export function createMapOverlay(world: World): MapOverlay {
+  // The map shows the drawn boxes only (no look = an invisible collider).
+  const visible = world.boxes.filter((b) => b.look);
+  const minX = Math.min(...visible.map((b) => b.minX));
+  const minZ = Math.min(...visible.map((b) => b.minZ));
+  const sizeX = Math.max(...visible.map((b) => b.maxX)) - minX;
+  const sizeZ = Math.max(...visible.map((b) => b.maxZ)) - minZ;
+
+  const level = document.createElement('canvas'); // layer 1, never shown by itself
+  let scale = 1; // canvas pixels per meter
+  let unit = 1; // canvas pixels per CSS pixel (the screen's devicePixelRatio)
+
+  // World → map. A top-down view simply forgets Y. X (east) goes right, and
+  // Z (south) goes DOWN, just like the canvas' y: north ends up on top for free.
+  const mapX = (x: number): number => (x - minX) * scale;
+  const mapY = (z: number): number => (z - minZ) * scale;
+
+  /**
+   * Sizes the canvas to the window. Two sizes, like an <img> on a retina
+   * screen: the CSS size (how big it looks) and the pixel size (how many
+   * pixels it has: CSS size × devicePixelRatio, or it would look blurry).
+   * Redraws layer 1 only when the size actually changed.
+   */
+  function fit(): void {
+    unit = window.devicePixelRatio;
+    const cssPerMeter = (Math.min(window.innerWidth, window.innerHeight) * SIZE) / Math.max(sizeX, sizeZ);
+    const width = Math.round(sizeX * cssPerMeter * unit);
+    const height = Math.round(sizeZ * cssPerMeter * unit);
+    if (canvas.width === width && canvas.height === height) return;
+    canvas.width = level.width = width;
+    canvas.height = level.height = height;
+    canvas.style.width = `${width / unit}px`;
+    canvas.style.height = `${height / unit}px`;
+    scale = width / sizeX;
+    drawLevel();
+  }
+
+  /** Layer 1: the level from above. */
+  function drawLevel(): void {
+    const c = level.getContext('2d')!;
+    c.fillStyle = rgb(GROUND);
+    c.fillRect(0, 0, level.width, level.height);
+    // Painter's algorithm: the lowest tops first, so the higher ones paint
+    // over them. Looking down from a plane, at each point you see the
+    // highest thing there: a roof covers its walls, the bridge the street.
+    // (The GPU solves the same problem with a depth buffer, pixel by pixel.)
+    const boxes = visible.filter((b) => b.maxY > 0).sort((a, b) => a.maxY - b.maxY);
+    c.lineWidth = unit;
+    c.strokeStyle = 'rgba(0, 0, 0, 0.6)'; // a dark edge: two roofs of the same height stay two roofs
+    for (const b of boxes) {
+      const x = mapX(b.minX);
+      const y = mapY(b.minZ);
+      const w = (b.maxX - b.minX) * scale;
+      const h = (b.maxZ - b.minZ) * scale;
+      c.fillStyle = b.look === 'rock' ? ROCK : heightColor(b.maxY);
+      c.fillRect(x, y, w, h);
+      c.strokeRect(x, y, w, h);
+    }
+  }
+
+  /** Text with a black outline (stroke first, then the fill on top). */
+  function label(text: string, x: number, y: number, color: string): void {
+    ctx.font = `${13 * unit}px Rye, Georgia, serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.lineWidth = 3 * unit;
+    ctx.strokeStyle = '#000';
+    ctx.strokeText(text, x, y);
+    ctx.fillStyle = color;
+    ctx.fillText(text, x, y);
+  }
+
+  return {
+    update(game, alpha, x, z, yaw, open, time) {
+      root.hidden = !open;
+      if (!open) return;
+      fit();
+      ctx.drawImage(level, 0, 0);
+
+      // Steam vents: a pale ring, where to step to get launched.
+      ctx.lineWidth = 2 * unit;
+      ctx.strokeStyle = '#c8d4d4';
+      for (const p of world.props) {
+        if (p.type !== 'vent') continue;
+        ctx.beginPath();
+        ctx.arc(mapX(p.x), mapY(p.z), VENT_RADIUS * unit, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Shops: the coin pile and the name. Smoothing off: it's pixel art,
+      // enlarging it must make bigger squares, not a blur.
+      ctx.imageSmoothingEnabled = false;
+      for (const s of world.shops ?? []) {
+        const size = SHOP_ICON * unit;
+        ctx.drawImage(coin, mapX(s.x) - size / 2, mapY(s.z) - size / 2, size, size);
+        label(SHOP_NAMES[s.kind], mapX(s.x), mapY(s.z) + size / 2, '#d8a838');
+      }
+
+      // Enemies: red dots, at the same in-between position the renderer
+      // draws them (between the last two ticks, see `alpha` in main.ts).
+      const enemies = game.entities.filter((e) => isEnemy(e) && e.state !== 'dead');
+      const ping = enemies.length <= PING_BELOW;
+      for (const e of enemies) {
+        const ex = mapX(e.px + (e.x - e.px) * alpha);
+        const ey = mapY(e.pz + (e.z - e.pz) * alpha);
+        if (ping) {
+          // A ring that grows and fades, over and over. Each enemy starts at
+          // a different moment (from its id): they don't all ping together.
+          const phase = ((time + e.id * 0.37) % PING_TIME) / PING_TIME;
+          ctx.globalAlpha = 1 - phase;
+          ctx.lineWidth = 2 * unit;
+          ctx.strokeStyle = '#ff4020';
+          ctx.beginPath();
+          ctx.arc(ex, ey, (ENEMY_RADIUS + phase * PING_RADIUS) * unit, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+        ctx.beginPath();
+        ctx.arc(ex, ey, ENEMY_RADIUS * unit, 0, Math.PI * 2);
+        ctx.fillStyle = '#e0301c';
+        ctx.fill();
+        ctx.lineWidth = unit;
+        ctx.strokeStyle = '#000';
+        ctx.stroke();
+      }
+
+      // You: an arrow pointing where you look. Drawn pointing UP (north)
+      // around (0, 0), then the canvas is moved and turned under it
+      // (translate + rotate: the 2D version of the matrices of a 3D scene).
+      // yaw 0 = north, positive = turning left; canvas rotations go
+      // clockwise on screen, so the angle is flipped.
+      const s = PLAYER_SIZE * unit;
+      ctx.save();
+      ctx.translate(mapX(x), mapY(z));
+      ctx.rotate(-yaw);
+      ctx.beginPath();
+      ctx.moveTo(0, -s);
+      ctx.lineTo(s * 0.65, s * 0.7);
+      ctx.lineTo(0, s * 0.3);
+      ctx.lineTo(-s * 0.65, s * 0.7);
+      ctx.closePath();
+      ctx.fillStyle = '#f0e0b0';
+      ctx.fill();
+      ctx.lineWidth = 2 * unit;
+      ctx.strokeStyle = '#000';
+      ctx.stroke();
+      ctx.restore();
+    },
+  };
+}

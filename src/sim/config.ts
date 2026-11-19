@@ -619,9 +619,37 @@ export const tuning = {
   sharpshooterBulletRadius: 0.12,
   /** Height of the rifle's muzzle above its feet, meters (where the laser and the bullet start). */
   sharpshooterMuzzleHeight: 1.45,
-  /** Half the width of its collider, and its height, meters (like the ghoul: thin, a skeleton). */
+  /**
+   * Half the width of its collider, and its height, meters. EXACTLY the
+   * ghoul's: it walks the ghouls' navigation graph, which only promises that
+   * a ghoul-sized body fits (a skeleton 5 cm taller could get stuck under a
+   * beam the graph says is fine).
+   */
   sharpshooterRadius: 0.35,
-  sharpshooterHeight: 1.85,
+  sharpshooterHeight: 1.8,
+  /**
+   * Walking to its perch, m/s: a bit slower than a ghoul (3.6), so you can
+   * catch it on the way. While moving it doesn't shoot: that's your window.
+   */
+  sharpshooterWalkSpeed: 3.4,
+  /** Climbing a wall, m/s (ghoul: 2.8). Halfway up a wall it's an easy target. */
+  sharpshooterClimbSpeed: 2.4,
+  /** Not seeing you for this long (seconds), it looks for a new perch. */
+  sharpshooterRelocateTime: 3,
+  /**
+   * Where a perch can be: at least / at most this far from you (horizontally),
+   * meters. Closer is too easy to reach; farther, you'd step out of its range
+   * (sharpshooterRange) as soon as you move.
+   */
+  sharpshooterPerchMinRange: 12,
+  sharpshooterPerchMaxRange: 40,
+  /**
+   * How much it likes height: points per meter above you, against 1 point per
+   * meter of walking. 3 = it walks 30 m more for a spot 10 m higher.
+   */
+  sharpshooterPerchHeightBonus: 3,
+  /** It doesn't consider perches farther than this to walk to (graph cost, ≈ meters; climbing costs more). */
+  sharpshooterMaxTravel: 60,
   /** HITBOX width and height (what bullets hit), meters: the hat included. */
   sharpshooterHitWidth: 0.9,
   sharpshooterHitHeight: 2.15,

@@ -544,6 +544,11 @@ futuro **poligono di tiro / tutorial**.
   battito del cuore (visivo e sonoro) sempre più veloce. [FATTO]
 - **Colpo subito**: deve sentirsi e deve dire **da dove** arriva: arco rosso intorno al mirino che punta
   verso il colpo (anche mentre ti giri), la testa spinta via dal colpo (molla smorzata), lampo rosso. [FATTO]
+- **Mappa (tieni premuto Tab)**: la cittadina vista dall'alto con il nord in alto, edifici più chiari
+  quanto più sono alti; nemici come puntini rossi, tu come freccia, shop (piletta di monete + nome) e
+  sfiatatoi. Serve soprattutto a fine ondata per trovare l'ultimo nemico: con 3 o meno rimasti ogni
+  puntino manda un "ping" radar. Il gioco non si ferma mentre la guardi. [FATTO]
+  [DA DECIDERE] mostrare se un nemico è sopra o sotto di te (tetti); minimappa sempre visibile in un angolo?
 
 ## 7. Ordine di sviluppo
 

@@ -396,11 +396,40 @@
         background: #3a2414; color: #e0c890; border: 2px solid #120604;
       }
       #shop-close:hover { background: #5a3a20; }
+
+      /* --- Map, hold Tab (src/render/mapOverlay.ts) ---
+         Pinned in the middle over the game, with the shop's brass frame. The canvas gets
+         its size from the TS (inline width/height win over the global `canvas` rule).
+         Above the death curtain (1), below the shop (4) and the menu (5). */
+      #map {
+        position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 3; pointer-events: none;
+        padding: 10px; background: rgba(28, 12, 6, 0.9); border: 3px solid #9a7434;
+        box-shadow: 0 0 0 3px #120604, 6px 8px 0 3px #000;
+      }
+      #map[hidden] { display: none; }
+      #map-canvas { display: block; }
+      #map-legend {
+        display: flex; justify-content: center; gap: 24px; margin-top: 8px;
+        font: 13px 'Rye', Georgia, serif; letter-spacing: 2px; color: #a89070; text-shadow: 2px 2px 0 #000;
+      }
+      /* The legend's marks: the same shapes the canvas draws, made with CSS. */
+      #map-legend i { display: inline-block; vertical-align: middle; margin: -3px 6px 0 0; }
+      .map-key-enemy { width: 8px; height: 8px; border-radius: 50%; background: #e0301c; box-shadow: 0 0 0 1px #000; }
+      .map-key-you { width: 12px; height: 13px; background: #f0e0b0; clip-path: polygon(50% 0, 100% 100%, 50% 75%, 0 100%); }
+      .map-key-vent { width: 6px; height: 6px; border-radius: 50%; border: 2px solid #c8d4d4; }
     </style>
   </head>
   <body>
     <div id="shop-prompt" hidden><kbd>E</kbd>COMMERCIA</div>
     <div id="grab-hint" hidden>Clicca per riprendere la mira</div>
+    <div id="map" hidden>
+      <canvas id="map-canvas"></canvas>
+      <div id="map-legend">
+        <span><i class="map-key-you"></i>TU</span>
+        <span><i class="map-key-enemy"></i>NEMICI</span>
+        <span><i class="map-key-vent"></i>SFIATATOI</span>
+      </div>
+    </div>
     <div id="shop" hidden>
       <h2>ARMERIA</h2>
       <div id="shop-greeting"></div>
@@ -460,6 +489,7 @@
             <tr><td><kbd>F</kbd> / <kbd>Click destro</kbd></td><td>Calcio</td></tr>
             <tr><th colspan="2">Gioco</th></tr>
             <tr><td><kbd>E</kbd></td><td>Vicino a un venditore: apri/chiudi lo shop (il gioco non si ferma; anche Esc lo chiude)</td></tr>
+            <tr><td><kbd>Tab</kbd> (tieni premuto)</td><td>Mappa: dove sei, i nemici, gli shop</td></tr>
             <tr><td><kbd>Esc</kbd></td><td>Pausa</td></tr>
             <tr><th colspan="2">Debug</th></tr>
             <tr><td><kbd>K</kbd></td><td>Respawn</td></tr>
