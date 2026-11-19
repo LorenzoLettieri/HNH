@@ -1,5 +1,7 @@
 import * as THREE from 'three';
-import { initInput, isPointerLocked, isTypingInField } from './input';
+import { initInput, isPointerLocked, isTypingInField, requestLock } from './input';
+import { loadSettings } from './settings';
+import { createMenu } from './menu';
 import { createDebugPanel } from './debug/debugPanel';
 import { buildCommand, updateLook, view } from './controls';
 import { TICK_DT } from './sim/config';
@@ -155,8 +157,10 @@ window.addEventListener('keydown', (e) => {
 // This keeps the horizon level.
 camera.rotation.order = 'YXZ';
 
-const overlay = document.getElementById('overlay')!;
-const overlayTitle = document.getElementById('overlay-title')!;
+// --- Menu & settings --------------------------------------------------------
+// Saved settings first, so the menu shows (and the game uses) the right values.
+loadSettings();
+const menu = createMenu({ onPlay: () => requestLock(renderer.domElement) });
 const hud = document.getElementById('hud')!;
 
 // --- Pause ------------------------------------------------------------------
@@ -167,12 +171,12 @@ let paused = true; // until the first click
 function updatePause(): void {
   paused = !isPointerLocked() && !debugPanel.visible;
   setAudioPaused(paused);
-  overlay.style.display = paused ? 'flex' : 'none';
+  menu.setOpen(paused);
 }
 initInput(renderer.domElement, (locked) => {
   if (locked) {
     initAudio(); // audio is allowed only after a user gesture
-    overlayTitle.textContent = 'PAUSA'; // from now on, the overlay means "paused"
+    menu.markStarted(); // from now on, the menu means "paused"
   }
   updatePause();
 });

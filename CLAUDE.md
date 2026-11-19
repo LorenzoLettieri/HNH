@@ -46,8 +46,10 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   **indicatore prestazioni**: fps, ms simulazione/disegno, draw call).
   Debug: `?pos=x,y,z&look=yaw,pitch` nell'URL per partire da un punto preciso; `?level=arena` per l'arena di prova;
   `?seed=123` per rigiocare la stessa sequenza di ondate (il seed di ogni partita è scritto nella console del browser)
+- `src/menu.ts`: **menu di avvio/pausa** (pagine Gioca / Impostazioni / Comandi; il markup e lo stile stanno in `index.html`)
+- `src/settings.ts`: **impostazioni del giocatore** salvate nel `localStorage` (per ora la sensibilità del mouse, scala Quake/CS)
 - `src/input.ts`: input grezzo (tasti e tasti del mouse premuti, pressioni brevi "memorizzate", movimento mouse, Pointer Lock)
-- `src/controls.ts`: sensibilità mouse (`controlSettings`), angoli di vista, **mappatura tasti** (WASD, Spazio, Shift/C = accovacciati/slide, click = spara, R = ricarica, **F / tasto destro = calcio**, K = respawn) → `InputCommand` (T = cambia atmosfera, P = pixel art on/off, N = grafo IA, **B = fai apparire un Malocchio** (debug), tasto sotto Esc = pannello debug, in `main.ts`)
+- `src/controls.ts`: sensibilità mouse in radianti (`controlSettings`, impostata da `settings.ts`), angoli di vista, **mappatura tasti** (WASD, Spazio, Shift/C = accovacciati/slide, click = spara, R = ricarica, **F / tasto destro = calcio**, K = respawn) → `InputCommand` (T = cambia atmosfera, P = pixel art on/off, N = grafo IA, **B = fai apparire un Malocchio** (debug), tasto sotto Esc = pannello debug, in `main.ts`)
 - `src/sim/`: simulazione pura (niente Three.js/DOM)
   - `config.ts`: **valori di tuning** (oggetto `tuning`, modificabile dal pannello debug) (tick rate, altezza occhi, salute, **ondate** (anche picco della pressione e spawn), dimensioni giocatore, movimento a terra, gravità/salto/coyote/buffer, movimento e controllo in aria, aiuti al bhop, accovacciata, slide, wall jump, **revolver**, **calcio** (`kick*`), bersagli, **ghoul**, **Malocchio** (anche sparo: carica, intervallo, velocità/danno della palla di fuoco, **tiro d'anticipo** `eyebatLeadFactor`), **balzo del ghoul** (`ghoulLunge*`), **proiettili nemici**)
   - `game.ts`: **stato di gioco unico** (`GameState`: giocatore, entità, **proiettili nemici**, ondata, statistiche) e `stepGame()` (un tick di tutto il gioco; game over alla morte)
@@ -114,7 +116,7 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
 - `public/textures/`: texture PNG (servite così come sono da Vite su `/textures/...`)
 - `docs/DESIGN.md`: **documento di design** (decisioni di gameplay e domande aperte)
 - `CREDITS.md`: autori e licenze degli asset
-- `index.html`: pagina con canvas, overlay "Click to play", HUD, mirino, **hitmarker**, munizioni, **salute**, vignetta di danno, **ondata, punteggio, banner**, riepilogo di morte (stili CSS inclusi)
+- `index.html`: pagina con canvas, **menu** (pagine Impostazioni e **Comandi**: la lista dei tasti va aggiornata qui quando se ne aggiunge uno), HUD, mirino, **hitmarker**, munizioni, **salute**, vignetta di danno, **ondata, punteggio, banner**, riepilogo di morte (stili CSS inclusi)
 - `vite.config.ts`: config del dev server e della build (`base: './'` per funzionare in sottocartella su GitHub Pages)
 - `.github/workflows/deploy.yml`: **deploy automatico su GitHub Pages** a ogni push su `main`.
   Gli asset in `public/` vanno referenziati con `import.meta.env.BASE_URL` (mai `/...` assoluto)

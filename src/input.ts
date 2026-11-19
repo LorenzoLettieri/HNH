@@ -44,6 +44,20 @@ export function isPointerLocked(): boolean {
   return document.pointerLockElement !== null;
 }
 
+/** Grabs the mouse (Pointer Lock): the cursor disappears and we get raw movement. */
+export async function requestLock(target: HTMLElement): Promise<void> {
+  if (isPointerLocked()) return;
+  try {
+    // unadjustedMovement = raw mouse input, without the OS acceleration curve.
+    await target.requestPointerLock({ unadjustedMovement: true });
+  } catch {
+    // Some browsers/OSes don't support raw input: fall back to the normal one.
+    // This can fail too: Chrome refuses a new lock for ~1 s after Esc. Just
+    // ignore it, the player clicks again.
+    await target.requestPointerLock().catch(() => {});
+  }
+}
+
 /** Wires up the browser events. `target` is the element that grabs the mouse on click. */
 export function initInput(target: HTMLElement, onLockChange: (locked: boolean) => void): void {
   window.addEventListener('keydown', (e) => {
@@ -58,16 +72,8 @@ export function initInput(target: HTMLElement, onLockChange: (locked: boolean) =
   // If the window loses focus we never receive the keyup: forget everything.
   window.addEventListener('blur', () => keysDown.clear());
 
-  target.addEventListener('click', async () => {
-    if (isPointerLocked()) return;
-    try {
-      // unadjustedMovement = raw mouse input, without the OS acceleration curve.
-      await target.requestPointerLock({ unadjustedMovement: true });
-    } catch {
-      // Some browsers/OSes don't support raw input: fall back to the normal one.
-      await target.requestPointerLock();
-    }
-  });
+  // Clicking the canvas grabs the mouse (when the menu is hidden, e.g. with the debug panel open).
+  target.addEventListener('click', () => requestLock(target));
 
   document.addEventListener('pointerlockchange', () => {
     keysDown.clear();

@@ -1,7 +1,6 @@
 // The game's debug panel: which values can be tweaked live, and their ranges.
 // To expose a new value, add one line here.
 import { tuning } from '../sim/config';
-import { controlSettings } from '../controls';
 import { postSettings } from '../render/postprocess';
 import { cameraFeelSettings } from '../render/cameraFeel';
 import { viewmodelSettings } from '../render/weapons/viewmodel';
@@ -43,7 +42,6 @@ export function createDebugPanel(options: {
 
   // --- Movement ---
   const move = panel.folder('Movement (src/sim/config.ts)');
-  move.number(controlSettings, 'mouseSensitivity', 0.0005, 0.006, 0.0001);
   move.number(tuning, 'maxGroundSpeed', 2, 25, 0.1);
   move.number(tuning, 'groundAccel', 1, 40, 0.5);
   move.number(tuning, 'groundFriction', 0, 20, 0.5);

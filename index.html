@@ -7,13 +7,44 @@
     <style>
       html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
       canvas { display: block; width: 100%; height: 100%; }
+      /* --- Menu (start / pause) --- */
       #overlay {
         position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-        background: rgba(0, 0, 0, 0.5); color: #f0c080; font: bold 28px monospace;
-        pointer-events: none; /* clicks go through to the canvas below */
+        background: rgba(0, 0, 0, 0.6); color: #f0c080; font: 16px monospace; z-index: 5;
       }
-      #overlay small { display: block; margin-top: 12px; font-size: 14px; opacity: 0.8; }
-      #overlay { flex-direction: column; text-align: center; }
+      #menu {
+        min-width: 340px; max-width: 92vw; max-height: 92vh; overflow-y: auto; box-sizing: border-box;
+        padding: 24px 32px; text-align: center;
+        background: rgba(28, 12, 6, 0.94); border: 3px solid #5a3a20; box-shadow: 0 0 0 3px #120604;
+      }
+      #overlay-title {
+        margin: 0 0 20px; color: #d02010; letter-spacing: 4px;
+        font: bold 44px Georgia, 'Times New Roman', serif; text-shadow: 3px 3px 0 #000;
+      }
+      #menu h2 { margin: 0 0 16px; font: bold 24px Georgia, 'Times New Roman', serif; letter-spacing: 2px; }
+      .menu-page[hidden] { display: none; }
+      #menu button {
+        display: block; width: 100%; margin: 8px 0; padding: 10px; cursor: pointer;
+        background: #5a3a20; color: #f0c080; border: 2px solid #120604; font: bold 18px monospace;
+      }
+      #menu button:hover, #menu button:focus-visible { background: #7a4a24; color: #fff0c0; outline: none; }
+      #menu .back { margin-top: 20px; }
+      /* One setting = label, slider, number box on a row. */
+      .setting { display: grid; grid-template-columns: auto 1fr 70px; gap: 10px; align-items: center; text-align: left; }
+      .setting input[type='range'] { accent-color: #d02010; }
+      .setting input[type='number'] {
+        width: 70px; box-sizing: border-box; background: #2a1810; color: inherit;
+        border: 1px solid #5a3a20; font: 16px monospace; padding: 2px 4px;
+      }
+      .hint { font-size: 12px; opacity: 0.7; text-align: left; max-width: 420px; }
+      /* Commands list: key on the left, action on the right. */
+      .keys { border-collapse: collapse; margin: 0 auto; text-align: left; }
+      .keys th { padding: 12px 0 4px; color: #d02010; font: bold 15px Georgia, 'Times New Roman', serif; letter-spacing: 2px; }
+      .keys td { padding: 3px 8px; }
+      .keys kbd {
+        display: inline-block; padding: 1px 6px; margin: 1px; background: #2a1810;
+        border: 1px solid #5a3a20; border-bottom-width: 3px; font: bold 13px monospace; color: #fff0c0;
+      }
 
       /* --- Debug panel --- */
       #debug-panel {
@@ -100,7 +131,52 @@
     </style>
   </head>
   <body>
-    <div id="overlay"><span id="overlay-title">Click to play</span><small>Click per giocare · Esc pausa · WASD · Spazio · Click spara · R ricarica · K respawn · T atmosfera · P pixel · N grafo IA · \ (tasto sotto Esc) debug</small></div>
+    <div id="overlay">
+      <div id="menu">
+        <h1 id="overlay-title">HIGH NOON HELL</h1>
+
+        <div class="menu-page" data-page="main">
+          <button id="menu-play">Gioca</button>
+          <button data-goto="settings">Impostazioni</button>
+          <button data-goto="controls">Comandi</button>
+        </div>
+
+        <div class="menu-page" data-page="settings" hidden>
+          <h2>Impostazioni</h2>
+          <label class="setting">
+            <span>Sensibilità mouse</span>
+            <input type="range" id="set-sens" min="0.5" max="15" step="0.1" />
+            <input type="number" id="set-sens-num" step="0.01" />
+          </label>
+          <p class="hint">Stessa scala di Quake e Counter-Strike: a parità di DPI del mouse puoi usare lo stesso valore. Salvata nel browser.</p>
+          <button class="back" data-goto="main">Indietro</button>
+        </div>
+
+        <div class="menu-page" data-page="controls" hidden>
+          <h2>Comandi</h2>
+          <table class="keys">
+            <tr><th colspan="2">Movimento</th></tr>
+            <tr><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></td><td>Muoviti</td></tr>
+            <tr><td><kbd>Spazio</kbd></td><td>Salta · in aria vicino a un muro: wall jump</td></tr>
+            <tr><td><kbd>Shift</kbd> / <kbd>C</kbd></td><td>Accovacciati · in corsa: slide</td></tr>
+            <tr><th colspan="2">Combattimento</th></tr>
+            <tr><td><kbd>Click sinistro</kbd></td><td>Spara</td></tr>
+            <tr><td><kbd>R</kbd></td><td>Ricarica</td></tr>
+            <tr><td><kbd>F</kbd> / <kbd>Click destro</kbd></td><td>Calcio</td></tr>
+            <tr><th colspan="2">Gioco</th></tr>
+            <tr><td><kbd>Esc</kbd></td><td>Pausa</td></tr>
+            <tr><th colspan="2">Debug</th></tr>
+            <tr><td><kbd>K</kbd></td><td>Respawn</td></tr>
+            <tr><td><kbd>T</kbd></td><td>Cambia atmosfera (High Noon / High Midnight)</td></tr>
+            <tr><td><kbd>P</kbd></td><td>Pixel art on/off</td></tr>
+            <tr><td><kbd>N</kbd></td><td>Grafo di navigazione dell'IA</td></tr>
+            <tr><td><kbd>B</kbd></td><td>Fai apparire un Malocchio</td></tr>
+            <tr><td><kbd>\</kbd> / <kbd>`</kbd></td><td>Pannello di debug (tasto sotto Esc)</td></tr>
+          </table>
+          <button class="back" data-goto="main">Indietro</button>
+        </div>
+      </div>
+    </div>
     <div id="hud"></div>
     <div id="crosshair"></div>
     <div id="hitmarker"></div>
