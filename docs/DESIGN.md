@@ -117,6 +117,9 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
 | 20–29 | 150 | 3 colpi | 1 colpo |
 | 30+ | 200 | 4 colpi | 2 colpi |
 
+  La salute **si ferma a ×4** (`waveHealthMaxMultiplier`): prima continuava a salire (all'ondata 50
+  un ghoul aveva 300 HP e un Malocchio 600, cioè spugne). Malocchio: 100 / 200 / 300 / **400**.
+
 - La difficoltà delle prime ondate viene da **quantità, velocità, direzioni, tipi di nemico**;
   la salute alta arriva solo molto tardi. Nemici resistenti = **miniboss** (eventi, non la norma).
 - **Malocchio**: 100 di salute = **2 colpi al corpo, 1 nella pupilla**. Il critico si calcola
@@ -190,10 +193,9 @@ si ricomincia dall'ondata 1.
 **Composizione casuale a budget [DECISO]**: niente ondate scritte a mano. Ogni tipo di nemico ha
 un **peso** (quanto è pericoloso), ogni ondata un **budget** di peso; a ogni spawn si pesca un tipo
 a caso tra quelli che il budget residuo si può permettere. Stesso budget, mix diverso in ogni
-partita. Oggi ghoul e Malocchio pesano **1** (quindi il budget = numero di nemici); un futuro bruto
-potrebbe pesare 5. Il caso usa un generatore con **seed** (deterministico: stesso seed = stessa partita).
-[DA VALUTARE] con pesi uguali un'ondata 1 può avere 4 Malocchi su 6: se è troppo, alzare il peso
-del Malocchio (es. 2) o aggiungere un'ondata minima di comparsa.
+partita. Il ghoul pesa **1**, il Malocchio **2** e compare **dall'ondata 3** (`eyebatFromWave`):
+le prime due ondate sono di soli ghoul, per scaldarsi. Un futuro bruto potrebbe pesare 5.
+Il caso usa un generatore con **seed** (deterministico: stesso seed = stessa partita).
 
 | Ondata | Budget (nemici) | Corridori (tra i ghoul) | Salute ghoul / Malocchio |
 |---|---|---|---|
@@ -202,8 +204,17 @@ del Malocchio (es. 2) o aggiungere un'ondata minima di comparsa.
 | 8 | 27 | ~50% | 50 / 100 |
 | 10 | 36 | 60% | 100 / 200 |
 
-- Peso vivo insieme: 6 + 2·ondata (max 24). La salute di tutti i nemici sale a gradini ogni 10 ondate. Intervallo di spawn: da 2 s a 0,5 s.
-- **Corridori** (dall'ondata 4): 5,4 m/s invece di 3,6, **occhi rossi**.
+- Peso vivo insieme: 6 + 2·ondata (**max 40**, raggiunto all'ondata 17; prima era 24, raggiunto
+  all'ondata 9, e da lì la pressione non cresceva più). La salute di tutti i nemici sale a gradini
+  ogni 10 ondate, fino a ×4. Intervallo di spawn: da 2 s a 0,5 s.
+- **Corridori** (dall'ondata 4): 5,4 m/s invece di 3,6, **occhi rossi**. +10% a ondata fino al 60%
+  all'ondata 9, poi sempre più lentamente fino al **90% al picco**.
+- **Pressione** (`wavePressure`): 0 all'ondata 1, sale fino a 1 all'**ondata 35** (`wavePeak`), poi
+  resta lì. Al picco i Malocchi sparano ogni 1,5 s invece di 2,5 e i ghoul balzano ogni 1,5 s invece
+  di 3. Il picco è attorno a 30–40 perché l'ondata 50 è già "late game" per un giocatore molto bravo.
+- Bot di prova (gira in tondo, **non spara mai**: un limite superiore, un giocatore vero uccide):
+  danni al minuto ghoul + palle di fuoco ≈ 340 (ondata 2), 500 (5), 780 (10), 1100 (35+).
+  Prima di questi cambi: **0 a qualsiasi ondata**.
 - **Dove nascono i nemici** (stile CoD Zombies / Left 4 Dead): 24 punti di spawn sparsi per tutta la
   cittadina (non solo ai bordi). A ogni spawn si preferisce un punto **fuori vista** (un muro tra
   i tuoi occhi e il punto), tra 15 e 40 m, e nel 70% dei casi **davanti a te** (entro 60° dalla

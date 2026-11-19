@@ -21,7 +21,7 @@ import type { GhoulEntity, Entity } from './entities';
 import type { SimEvent } from './events';
 import { launchFromVent, nearestNode, type FlowField, type NavGraph, type NavLink, type NavNode } from './nav';
 import { ventUnder } from './props';
-import { ghoulSpeed } from './waves';
+import { ghoulSpeed, lerp } from './waves';
 import { hurtPlayer, type PlayerState } from './player';
 import { raycastBoxes } from './raycast';
 import type { World } from './world';
@@ -42,6 +42,8 @@ export function stepGhoul(
   flow: FlowField,
   dt: number,
   events: SimEvent[],
+  /** How aggressive the current wave is, 0-1 (see wavePressure in waves.ts). */
+  pressure = 0,
 ): void {
   g.stateTicks++;
   if (g.attackCooldownTicks > 0) g.attackCooldownTicks--;
@@ -53,7 +55,7 @@ export function stepGhoul(
     return;
   }
   if (g.state === 'lunge' || g.state === 'recover') {
-    stepLunge(g, player, world, dt, events);
+    stepLunge(g, player, world, dt, events, pressure);
     return;
   }
 
@@ -250,7 +252,7 @@ export function stepGhoul(
  *    Touching you in the air hurts you (once per leap).
  * 3. recover: landed, it stands still for a moment. Then back to chasing.
  */
-function stepLunge(g: GhoulEntity, player: PlayerState, world: World, dt: number, events: SimEvent[]): void {
+function stepLunge(g: GhoulEntity, player: PlayerState, world: World, dt: number, events: SimEvent[], pressure: number): void {
   const windupTicks = secondsToTicks(tuning.ghoulLungeWindup);
   const onFeet = g.onGround;
 
@@ -303,8 +305,10 @@ function stepLunge(g: GhoulEntity, player: PlayerState, world: World, dt: number
   } else if (g.state === 'recover' && g.stateTicks >= secondsToTicks(tuning.ghoulLungeRecover)) {
     g.state = 'chase';
     g.stateTicks = 0;
-    // Next pounce: cooldown + 0-1.5 s, deterministic from the id (like the eye-bat).
-    g.lungeCooldownTicks = secondsToTicks(tuning.ghoulLungeCooldown + ((g.id * 7) % 16) * 0.1);
+    // Next pounce: cooldown (shorter in later waves) + 0-1.5 s, deterministic
+    // from the id (like the eye-bat).
+    const cooldown = tuning.ghoulLungeCooldown * lerp(1, tuning.peakLungeCooldownFactor, pressure);
+    g.lungeCooldownTicks = secondsToTicks(cooldown + ((g.id * 7) % 16) * 0.1);
     g.attackCooldownTicks = 0;
   }
 }

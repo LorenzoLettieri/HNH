@@ -261,8 +261,13 @@ export const tuning = {
   eyebatSeparation: 2.5,
   /** How long a dead eye-bat lies on the ground before disappearing, seconds. */
   eyebatCorpseTime: 3,
-  /** Weight in the waves' budget (see src/sim/waves.ts). */
-  eyebatCost: 1,
+  /**
+   * Weight in the waves' budget (see src/sim/waves.ts). 2: it shoots from
+   * afar and makes you look up, it's worth two ghouls.
+   */
+  eyebatCost: 2,
+  /** First wave where eye-bats can appear: the first two waves are ghouls only, to warm up. */
+  eyebatFromWave: 3,
   /** In the waves it appears this high above the spawn point, meters. */
   eyebatSpawnHeight: 4,
   /** It only shoots when you're closer than this (and in sight), meters. */
@@ -299,10 +304,27 @@ export const tuning = {
   wavesEnabled: true,
   /** Weight budget of wave 1 (= number of enemies, if they all weigh 1). */
   waveBaseCount: 6,
-  /** Max weight alive at the same time, in any wave. */
-  waveMaxAliveCap: 24,
+  /** Max weight alive at the same time, in any wave (reached around wave 17). */
+  waveMaxAliveCap: 40,
   /** Enemy health goes up one step (+ base health) every this many waves. */
   waveHealthStep: 10,
+  /**
+   * ...but never above this many times the base health: ×4 = ghoul 200 from
+   * wave 30 (4 body shots, 2 headshots). No bullet sponges in the late game:
+   * the difficulty keeps growing through numbers, speed and aggression.
+   */
+  waveHealthMaxMultiplier: 4,
+  /**
+   * The wave where the "pressure" peaks (see wavePressure in waves.ts):
+   * eye-bats shoot and ghouls pounce more and more often until here, then stay put.
+   */
+  wavePeak: 35,
+  /** At the peak, eye-bats wait this fraction of eyebatShootInterval between shots. */
+  peakShootIntervalFactor: 0.6,
+  /** At the peak, ghouls wait this fraction of ghoulLungeCooldown between pounces. */
+  peakLungeCooldownFactor: 0.5,
+  /** Share of runners among the ghouls at the peak (it's 60% at wave 9, then grows to this). */
+  peakRunnerChance: 0.9,
   /** Seconds before the first wave. */
   waveFirstBreak: 4,
   /** Seconds of breather between waves. */

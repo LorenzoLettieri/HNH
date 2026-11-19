@@ -44,17 +44,36 @@ export function createWaveState(): WaveState {
 export function waveBudget(n: number): number {
   return Math.round(tuning.waveBaseCount + 2 * (n - 1) + 0.15 * (n - 1) ** 2);
 }
-/** How much weight can be alive at the same time. */
+/** How much weight can be alive at the same time: 8, 10, 12... up to waveMaxAliveCap. */
 function maxAlive(n: number): number {
   return Math.min(tuning.waveMaxAliveCap, 6 + 2 * n);
+}
+
+/**
+ * "Pressure": 0 at wave 1, growing in a straight line to 1 at tuning.wavePeak,
+ * then it stays at 1. One number for "how aggressive are the enemies now",
+ * used to scale how often eye-bats shoot and ghouls pounce. (A linear
+ * interpolation, "lerp": value = start + (end − start) × pressure.)
+ */
+export function wavePressure(n: number): number {
+  return Math.min(1, Math.max(0, (n - 1) / Math.max(1, tuning.wavePeak - 1)));
+}
+/** Linear interpolation: a at t = 0, b at t = 1. */
+export function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
 }
 /** Seconds between two spawns: faster in later waves. */
 function spawnInterval(n: number): number {
   return Math.max(0.5, 2 - 0.15 * (n - 1));
 }
-/** Share of "runners" among the ghouls: none in the first 3 waves, then +10% per wave, max 60%. */
+/**
+ * Share of "runners" among the ghouls: none in the first 3 waves, then +10%
+ * per wave up to 60% at wave 9; then slower, up to peakRunnerChance at the peak.
+ */
 function runnerChance(n: number): number {
-  return Math.min(0.6, Math.max(0, (n - 3) * 0.1));
+  if (n <= 9) return Math.max(0, (n - 3) * 0.1);
+  const t = Math.min(1, (n - 9) / Math.max(1, tuning.wavePeak - 9));
+  return lerp(0.6, tuning.peakRunnerChance, t);
 }
 
 /**
@@ -65,7 +84,8 @@ function runnerChance(n: number): number {
  * early waves comes from numbers, mix and speed, not from bullet sponges.
  */
 export function healthForWave(baseHealth: number, n: number): number {
-  return baseHealth * (1 + Math.floor(n / tuning.waveHealthStep));
+  const steps = 1 + Math.floor(n / tuning.waveHealthStep);
+  return baseHealth * Math.min(steps, tuning.waveHealthMaxMultiplier);
 }
 
 /**
@@ -75,11 +95,14 @@ export function healthForWave(baseHealth: number, n: number): number {
 interface EnemyType {
   /** Weight: how many budget points it takes. */
   cost: () => number;
+  /** First wave it can appear in. */
+  fromWave: () => number;
   spawn: (game: GameState, id: number, x: number, y: number, z: number) => Enemy;
 }
 const ROSTER: EnemyType[] = [
   {
     cost: () => tuning.ghoulCost,
+    fromWave: () => 1,
     spawn: (game, id, x, y, z) => {
       const n = game.wave.number;
       const runner = random(game) < runnerChance(n);
@@ -88,6 +111,7 @@ const ROSTER: EnemyType[] = [
   },
   {
     cost: () => tuning.eyebatCost,
+    fromWave: () => tuning.eyebatFromWave,
     // Flyers appear in the air above the spawn point, then fly to you.
     spawn: (game, id, x, y, z) =>
       createEyebat(id, x, y + tuning.eyebatSpawnHeight, z, healthForWave(tuning.eyebatHealth, game.wave.number)),
@@ -144,7 +168,7 @@ export function stepWaves(game: GameState, world: World, events: SimEvent[]): vo
 
   // Pick a random enemy type among those the remaining budget can afford.
   // (Random from the game's seeded generator: deterministic, see random.ts.)
-  const affordable = ROSTER.filter((t) => t.cost() <= w.budgetLeft);
+  const affordable = ROSTER.filter((t) => t.cost() <= w.budgetLeft && w.number >= t.fromWave());
   if (affordable.length === 0) {
     w.budgetLeft = 0; // leftover too small for anything: the wave is fully spawned
     return;

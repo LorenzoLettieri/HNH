@@ -5,7 +5,7 @@ import { createEntities, createEyebat, isEnemy, stepTarget, type Entity } from '
 import { stepEyebat } from './eyebat';
 import { stepProjectiles, type Projectile } from './projectiles';
 import { stepGhoul } from './ghoul';
-import { createWaveState, scoreHits, stepWaves, type Stats, type WaveState } from './waves';
+import { createWaveState, scoreHits, stepWaves, wavePressure, type Stats, type WaveState } from './waves';
 import { getFlowField, getNavGraph, nearestNode } from './nav';
 import type { SimEvent } from './events';
 import { createPlayer, respawn, stepPlayer, type PlayerState } from './player';
@@ -81,11 +81,12 @@ export function stepGame(
     if (node >= 0) game.navGoal = node;
   }
   const flow = getFlowField(graph, game.navGoal);
+  const pressure = wavePressure(game.wave.number);
 
   for (const e of game.entities) {
     if (e.type === 'target') stepTarget(e);
     else if (e.type === 'eyebat') stepEyebat(e, game, world, dt, events);
-    else if (e.state !== 'dead') stepGhoul(e, game.player, game.entities, world, graph, flow, dt, events);
+    else if (e.state !== 'dead') stepGhoul(e, game.player, game.entities, world, graph, flow, dt, events, pressure);
   }
   game.projectiles = stepProjectiles(game.projectiles, game.player, world, dt, events);
   stepWaves(game, world, events);

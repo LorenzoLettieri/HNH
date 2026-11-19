@@ -23,6 +23,7 @@ import type { GameState } from './game';
 import { currentHeight, currentEyeHeight } from './player';
 import { raycastBoxes } from './raycast';
 import type { World } from './world';
+import { lerp, wavePressure } from './waves';
 
 /** How far ahead (in seconds of flight) it looks for obstacles. */
 const LOOKAHEAD = 0.5;
@@ -130,7 +131,9 @@ export function stepEyebat(b: EyebatEntity, game: GameState, world: World, dt: n
     // Next shot: the interval plus 0-1 s of variation. "Random" but
     // deterministic (from the id and the tick), like the rest of the sim.
     const jitter = ((b.id * 37 + game.tick) % 60) / 60;
-    b.shootCooldownTicks = secondsToTicks(tuning.eyebatShootInterval + jitter);
+    // Later waves: shorter interval (see wavePressure in waves.ts).
+    const interval = tuning.eyebatShootInterval * lerp(1, tuning.peakShootIntervalFactor, wavePressure(game.wave.number));
+    b.shootCooldownTicks = secondsToTicks(interval + jitter);
   }
 }
 

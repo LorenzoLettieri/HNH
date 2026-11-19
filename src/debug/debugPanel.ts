@@ -104,6 +104,11 @@ export function createDebugPanel(options: {
   ghoul.number(tuning, 'waveBaseCount', 1, 30, 1);
   ghoul.number(tuning, 'waveMaxAliveCap', 1, 60, 1);
   ghoul.number(tuning, 'waveHealthStep', 1, 30, 1);
+  ghoul.number(tuning, 'waveHealthMaxMultiplier', 1, 10, 1);
+  ghoul.number(tuning, 'wavePeak', 2, 80, 1);
+  ghoul.number(tuning, 'peakShootIntervalFactor', 0.1, 1, 0.05);
+  ghoul.number(tuning, 'peakLungeCooldownFactor', 0.1, 1, 0.05);
+  ghoul.number(tuning, 'peakRunnerChance', 0, 1, 0.05);
   ghoul.number(tuning, 'ghoulHeadHeight', 0.8, 1.8, 0.05);
   ghoul.number(tuning, 'waveBreak', 0, 30, 0.5);
   ghoul.number(tuning, 'spawnMinDistance', 0, 40, 1);
@@ -140,6 +145,7 @@ export function createDebugPanel(options: {
   const eyebat = panel.folder('Malocchio / eye-bat (src/sim/config.ts) — B to spawn');
   eyebat.number(tuning, 'eyebatHealth', 10, 500, 5);
   eyebat.number(tuning, 'eyebatCost', 1, 10, 1);
+  eyebat.number(tuning, 'eyebatFromWave', 1, 30, 1);
   eyebat.number(tuning, 'eyebatPupilRadius', 0.02, 0.4, 0.01);
   eyebat.number(tuning, 'eyebatSpeed', 0.5, 15, 0.1);
   eyebat.number(tuning, 'eyebatAccel', 0.5, 10, 0.1);
