@@ -170,11 +170,30 @@
         text-shadow: 3px 3px 0 #000; white-space: pre-line; /* "\n" = second line, smaller */
       }
       #banner::first-line { font-size: 56px; }
-      #ammo {
-        position: fixed; right: 16px; bottom: 10px; color: #f0c080;
-        font: bold 26px monospace; letter-spacing: 4px; pointer-events: none;
+      /* --- Ammo, bottom-right (src/render/ammoHud.ts) ---
+         The rounds are empty <i> elements: the shape is all CSS. A gradient with hard
+         stops (no blending between colors) paints the parts, like pixel art:
+         the bullet's lead tip on top, the brass case below. */
+      #ammo-box {
+        position: fixed; right: 28px; bottom: 22px; display: flex; align-items: flex-end; gap: 14px;
+        pointer-events: none; font-family: 'Rye', Georgia, serif;
       }
-      #ammo.dry { color: #d02010; } /* no spare rounds left */
+      #ammo-rounds { display: flex; align-items: flex-end; gap: 5px; margin-bottom: 6px; }
+      .round { display: block; box-shadow: 0 0 0 1px #000, 2px 2px 0 #000; }
+      /* Revolver: a thin cartridge, dull lead tip and old brass. */
+      .round.revolver { width: 7px; height: 24px; background: linear-gradient(#8c8478 0 25%, #a08048 25% 90%, #6a5228 90%); }
+      /* Shotgun: a fat shell, dark red paper hull and a tall brass base. */
+      .round.shotgun { width: 13px; height: 30px; background: linear-gradient(to right, rgba(255, 255, 255, 0.12) 0 2px, transparent 2px), linear-gradient(#7a1a10 0 68%, #9a7a40 68% 90%, #6a5228 90%); }
+      /* Spent: only a dim outline is left. */
+      .round.spent { background: transparent; box-shadow: inset 0 0 0 1px #4a3c2a, 2px 2px 0 rgba(0, 0, 0, 0.5); }
+      #ammo-reserve {
+        min-width: 1.6em; text-align: right; font-size: 30px; line-height: 1;
+        color: #8a7a62; text-shadow: 0 0 2px #000, 2px 2px 0 #000, 0 0 12px rgba(0, 0, 0, 0.9);
+      }
+      #ammo-box.dry #ammo-reserve { color: #9a1c10; } /* no spare rounds left */
+      /* Reloading: the rounds dim and blink slowly until the gun is ready. */
+      #ammo-box.reloading #ammo-rounds { animation: reload-blink 0.5s steps(2) infinite; }
+      @keyframes reload-blink { from { opacity: 0.6; } to { opacity: 0.15; } }
 
       /* Style meter, right side: rank letter, rank name, progress bar to the next rank.
          --top/--mid/--bottom (the rank's colors) and --glow are set by src/render/styleMeter.ts;
@@ -282,7 +301,7 @@
     <div id="hud"></div>
     <div id="crosshair"></div>
     <div id="hitmarker"></div>
-    <div id="ammo"></div>
+    <div id="ammo-box"><div id="ammo-rounds"></div><div id="ammo-reserve"></div></div>
     <div id="damage"></div>
     <div id="pickup-flash"></div>
     <div id="health-plate">

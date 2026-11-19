@@ -4,12 +4,11 @@ import { loadSettings } from './settings';
 import { createMenu } from './menu';
 import { createDebugPanel } from './debug/debugPanel';
 import { buildCommand, updateLook, view } from './controls';
-import { TICK_DT, tuning } from './sim/config';
+import { TICK_DT } from './sim/config';
 import { copyPlayer, createPlayer, horizontalSpeed } from './sim/player';
 import { createGame, spawnBullInFront, spawnEyebatInFront, spawnHoundInFront, dropPickupsInFront, stepGame } from './sim/game';
 import { jumpToWave } from './sim/waves';
 import { STYLE_RANKS, styleRank } from './sim/style';
-import { currentAmmo, magazineSize } from './sim/weapon';
 import { DEFAULT_LEVEL, LEVELS } from './levels';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
 import { updateCameraFeel } from './render/cameraFeel';
@@ -28,6 +27,7 @@ import { createBullRenderer } from './render/enemies/bulls';
 import { createProjectileRenderer } from './render/projectiles';
 import { createPickupRenderer } from './render/pickups';
 import { updateHud } from './render/hud';
+import { updateAmmoHud } from './render/ammoHud';
 import { createNavDebug } from './render/navDebug';
 import { createHitboxDebug } from './render/hitboxDebug';
 import { BIG_BODY, getFlowField, getNavGraph } from './sim/nav';
@@ -204,7 +204,6 @@ initInput(renderer.domElement, (locked) => {
   }
   updatePause();
 });
-const ammoHud = document.getElementById('ammo')!;
 
 // Two copies of the player state: the previous tick and the current one.
 // The camera is drawn somewhere in between (interpolation).
@@ -339,16 +338,7 @@ renderer.setAnimationLoop((now: number) => {
   navDebug.update(getFlowField(getNavGraph(world), game.navGoal));
   navDebugBig.update(getFlowField(getNavGraph(world, BIG_BODY), game.navGoalBig));
   hitboxDebug.update(game.entities);
-  // Ammo: one dot per round (revolver), one tall block per shell (shotgun).
-  const [full, empty] = player.weapon === 'shotgun' ? ['▮', '▯'] : ['●', '○'];
-  const ammo = currentAmmo(player);
-  // Then the spare rounds in your pockets ("∞" with the debug infinite ammo).
-  const spare = tuning.infiniteAmmo ? '∞' : String(player.reserve[player.weapon]);
-  ammoHud.textContent = (player.reloadTicks > 0
-    ? 'RELOADING'
-    : full.repeat(ammo) + empty.repeat(Math.max(0, magazineSize(player.weapon) - ammo))) + ' ' + spare;
-  // Empty pockets: the number turns red (CSS class in index.html).
-  ammoHud.classList.toggle('dry', !tuning.infiniteAmmo && player.reserve[player.weapon] === 0);
+  updateAmmoHud(player);
 
   updateFireLights(now / 1000);
   props.update(now / 1000);

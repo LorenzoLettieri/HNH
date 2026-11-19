@@ -444,7 +444,7 @@ futuro **poligono di tiro / tutorial**.
   fascia "fantasma" del colpo subito. [FATTO]
 - **In alto**: a sinistra l'**ondata** (numero rosso, come il conteggio dei round di CoD Zombies),
   a destra **punti e uccisioni**. [FATTO]
-- **Basso a destra**: munizioni, colpi disegnati con forma diversa per arma + riserva. [IN CORSO]
+- **Basso a destra**: munizioni, colpi disegnati con forma diversa per arma + riserva. [FATTO]
 - **Vita bassa**: effetto rosso intorno allo schermo stile CoD (sostituirà la vignetta attuale). [DA FARE]
 
 ## 7. Ordine di sviluppo
