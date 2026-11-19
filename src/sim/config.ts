@@ -115,7 +115,7 @@ export const tuning = {
   /** How close a wall must be to jump off it, meters (beyond your body). */
   wallJumpReach: 0.35,
   /** Upward speed of a wall jump, m/s. */
-  wallJumpUp: 7,
+  wallJumpUp: 8.5,
   /** Speed pushing you away from the wall, m/s (small: it's not a bounce). */
   wallJumpPush: 2.5,
   /**
