@@ -56,9 +56,10 @@ finale unico, "HIGH NOON". [DA DECIDERE: nomi definitivi]
 
 ### A cosa serve
 - **Moltiplicatore** sul **punteggio** e sul **vildenaro** guadagnato (la moneta: vedi §5, Economia).
-- **Climax "HIGH NOON"** [PROPOSTO]: quando raggiungi il rank massimo, per **5 s** le armi non consumano
+- **Climax "HIGH NOON"** [DECISO]: quando raggiungi il rank massimo, per **5 s** le armi non consumano
   i colpi del caricatore (niente ricarica: spari e basta). Va annunciato forte (scritta, suono, tinta
-  dello schermo, magari la campana della chiesa). [DA DECIDERE] cosa succede allo stile dopo i 5 s.
+  dello schermo, magari la campana della chiesa). **Finito il climax lo stile si azzera**: si riparte
+  da D, quindi HIGH NOON è un evento da inseguire, non uno stato in cui restare.
 - [DA DECIDERE] Bonus di danno ai rank alti (forse superato dal climax).
 - [DA DECIDERE] Eventuale bonus di drop della salute ai rank alti.
 
@@ -341,19 +342,28 @@ Punteggio e moneta sono **separati**:
 - **Lo Stile moltiplica entrambi**: chi si muove bene fa più punti *e* diventa più forte prima.
   È un effetto valanga voluto (pilastro "movimento come potere").
 
-**Shop** [DECISO: uno o più, in una parte della mappa]
-- Si comprano le **armi** (si parte col solo revolver; la doppietta si compra) e i **potenziamenti**.
+**Shop** [DECISO]
+- Uno o più, in una parte della mappa. Si comprano le **armi** (si parte col solo revolver; la
+  doppietta si compra) e i **potenziamenti**.
+- **Venditore**: un **NPC disegnato come sprite** (stile Doom, come i nemici), a tema. I nemici lo
+  ignorano. [DA DECIDERE] aspetto (idea: mercante infernale col cilindro e un braccio meccanico d'ottone).
+- **Menu che NON mette in pausa**: ti avvicini al venditore, premi **E** e il menu si apre sopra il
+  gioco mentre l'orda continua ad arrivare. **Sempre aperto, anche a metà ondata**: chi vuole comprare
+  durante il round deve farlo in fretta. Funziona uguale in multiplayer (lì il tempo non si può fermare).
 - [PROPOSTO] Usare edifici che esistono già: **armeria** (armi) ed **emporio** (potenziamenti: ci si
-  entra già, e c'è un bancone con la lanterna).
-- [PROPOSTO] Acquisto **nel mondo**, come i "wall buy" di CoD Zombies: guardi l'oggetto sul bancone,
-  compare il prezzo, premi **E**. Niente menu che mette in pausa: funziona uguale in multiplayer, e lo
-  shop non diventa un rifugio (i ghoul ti seguono dentro).
+  entra già, e c'è un bancone con la lanterna). Lo shop non è un rifugio: i ghoul ti seguono dentro.
+- [DA DECIDERE, tecnico] Oggi il gioco va in pausa quando il mouse non è catturato (Pointer Lock): il
+  menu dello shop dovrà essere un'eccezione. Si sceglie col mouse (puntatore libero, intanto non miri)
+  o coi tasti numerici (il mouse resta catturato, più rapido)?
+
+**Vildenaro come drop** [DECISO]
+- **Monete lasciate dai nemici**, raccolte passandoci sopra (prendono il posto delle vecchie "anime"):
+  altro motivo per muoversi. Si riusa il sistema dei raccoglibili, ma le monete si raccolgono
+  **sempre** (non c'è un massimo) e spariscono anche loro dopo un po'.
+- [DA DECIDERE] Quante monete per nemico (in base al peso?) e se lo Stile moltiplica il valore al
+  momento dell'uccisione o della raccolta.
 
 [DA DECIDERE]
-- Come si guadagna il vildenaro: **monete lasciate dai nemici** da raccogliere passandoci sopra
-  (prendono il posto delle vecchie "anime": altro motivo per muoversi, si riusa il sistema dei
-  raccoglibili) oppure **accredito diretto** a ogni colpo/uccisione (più semplice).
-- Shop aperto **sempre** o **solo tra un'ondata e l'altra** (oggi la pausa è di 8 s: andrebbe allungata)?
 - Listino: quali potenziamenti (danno, caricatore, ricarica, salute massima; **movimento**: wall jump
   extra, doppio salto, scatto, slide più lungo, lazo più lungo) e prezzi che crescono.
 - Si comprano anche le munizioni?
@@ -396,8 +406,8 @@ futuro **poligono di tiro / tutorial**.
 2. Barra e rank dello stile nell'HUD.
 3. Fonti dal movimento (velocità, tempo in aria, wall jump) + premio calante per le azioni ripetute.
 4. **Climax HIGH NOON** (5 s di caricatore infinito).
-5. **Vildenaro**: guadagno + contatore nell'HUD; lo Stile moltiplica punti e vildenaro.
-6. Interazione col mondo (tasto E) + primo acquisto: la doppietta all'armeria.
+5. **Vildenaro**: monete lasciate dai nemici + contatore nell'HUD; lo Stile moltiplica punti e vildenaro.
+6. **Shop**: venditore (sprite), tasto E, menu che non mette in pausa, primo acquisto: la doppietta.
 7. Potenziamenti all'emporio.
 8. Lazo / rampino.
 
