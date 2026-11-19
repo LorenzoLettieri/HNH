@@ -49,6 +49,22 @@
       #hitmarker.hit { animation: hitmarker 0.15s ease-out; }
       #hitmarker.kill { --c: #ff4020; animation: hitmarker 0.4s ease-out; width: 30px; height: 30px; margin: -15px 0 0 -15px; }
       @keyframes hitmarker { from { opacity: 1; } to { opacity: 0; } }
+      /* Health bar, bottom-left above the debug text. */
+      #health {
+        position: fixed; left: 16px; bottom: 36px; width: 200px; height: 14px;
+        background: #2a1008; border: 2px solid #120604; pointer-events: none;
+      }
+      #health-fill { height: 100%; width: 100%; background: linear-gradient(#e04020, #a01808); }
+      /* Red vignette: transparent in the middle, red at the edges. */
+      #damage {
+        position: fixed; inset: 0; pointer-events: none; opacity: 0;
+        background: radial-gradient(ellipse at center, transparent 45%, rgba(170, 10, 0, 0.75) 100%);
+      }
+      #death {
+        position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+        color: #ff3010; font: bold 64px monospace; letter-spacing: 8px; pointer-events: none; opacity: 0;
+        text-shadow: 4px 4px 0 #000;
+      }
       #ammo {
         position: fixed; right: 16px; bottom: 10px; color: #f0c080;
         font: bold 26px monospace; letter-spacing: 4px; pointer-events: none;
@@ -66,6 +82,9 @@
     <div id="crosshair"></div>
     <div id="hitmarker"></div>
     <div id="ammo"></div>
+    <div id="damage"></div>
+    <div id="health"><div id="health-fill"></div></div>
+    <div id="death">SEI MORTO</div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

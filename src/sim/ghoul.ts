@@ -5,7 +5,8 @@
 import { moveAndCollide, overlapsAny } from './collision';
 import { secondsToTicks, tuning } from './config';
 import type { GhoulEntity, Entity } from './entities';
-import type { PlayerState } from './player';
+import { hurtPlayer, type PlayerState } from './player';
+import type { SimEvent } from './events';
 import type { World } from './world';
 
 /** Turn a direction (x, z) by `angle` radians around the vertical axis. */
@@ -21,6 +22,7 @@ export function stepGhoul(
   others: Entity[],
   world: World,
   dt: number,
+  events: SimEvent[],
 ): void {
   g.stateTicks++;
   if (g.attackCooldownTicks > 0) g.attackCooldownTicks--;
@@ -108,11 +110,22 @@ export function stepGhoul(
     g.stuckTicks = 0; // moving freely again
   }
 
-  // --- Attack when close (the damage itself comes in a later step) ---
+  // --- Attack when close: wind up, then the swipe lands at a precise moment ---
   const distToPlayer = Math.hypot(player.x - g.x, player.z - g.z);
-  if (g.state === 'chase' && distToPlayer < tuning.ghoulAttackRange && g.attackCooldownTicks === 0) {
+  const sameHeight = Math.abs(player.y - g.y) < 1.5; // can't claw you on a roof
+  if (g.state === 'chase' && distToPlayer < tuning.ghoulAttackRange && sameHeight && g.attackCooldownTicks === 0) {
     g.state = 'attack';
     g.stateTicks = 0;
+    events.push({ type: 'ghoulAttack', entityId: g.id });
+  }
+  const hitTick = Math.round(secondsToTicks(tuning.ghoulAttackTime) * tuning.ghoulHitMoment);
+  if (g.state === 'attack' && g.stateTicks === hitTick) {
+    // The claws come down: does it still reach you? Moving away during the
+    // wind-up dodges the hit: a little window that rewards movement.
+    if (distToPlayer < tuning.ghoulAttackRange + 0.4 && sameHeight && player.health > 0) {
+      hurtPlayer(player, tuning.ghoulDamage, g.x, g.z, tuning.ghoulKnockback);
+      events.push({ type: 'playerHurt', damage: tuning.ghoulDamage, fromX: g.x, fromZ: g.z });
+    }
   }
   if (g.state === 'attack' && g.stateTicks >= secondsToTicks(tuning.ghoulAttackTime)) {
     g.state = 'chase';

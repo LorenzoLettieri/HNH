@@ -35,6 +35,7 @@ export function initAudio(): void {
 
 /** Plays a burst of filtered noise with a volume envelope. */
 function noiseBurst(options: {
+  out?: AudioNode;
   start?: number;
   duration: number;
   volume: number;
@@ -57,13 +58,20 @@ function noiseBurst(options: {
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(options.volume, t0);
   gain.gain.exponentialRampToValueAtTime(0.001, t0 + options.duration); // fast decay
-  src.connect(filter).connect(gain).connect(master);
+  src.connect(filter).connect(gain).connect(options.out ?? master);
   // Start at a random point of the noise so repeated sounds aren't identical.
   src.start(t0, Math.random() * 0.5, options.duration);
 }
 
 /** A sine "thump" whose pitch drops: the low punch of a shot or a click. */
-function thump(options: { start?: number; duration: number; volume: number; from: number; to: number }): void {
+function thump(options: {
+  out?: AudioNode;
+  start?: number;
+  duration: number;
+  volume: number;
+  from: number;
+  to: number;
+}): void {
   if (!ctx) return;
   const t0 = ctx.currentTime + (options.start ?? 0);
   const osc = ctx.createOscillator();
@@ -72,7 +80,7 @@ function thump(options: { start?: number; duration: number; volume: number; from
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(options.volume, t0);
   gain.gain.exponentialRampToValueAtTime(0.001, t0 + options.duration);
-  osc.connect(gain).connect(master);
+  osc.connect(gain).connect(options.out ?? master);
   osc.start(t0);
   osc.stop(t0 + options.duration);
 }
@@ -137,4 +145,90 @@ export function playTargetHit(): void {
 export function playTargetDown(): void {
   ring(520, 1.2, 0.45);
   noiseBurst({ start: 0.25, duration: 0.15, volume: 0.35, filter: 'lowpass', frequency: 600 });
+}
+
+// --- Positional sounds (enemies) ----------------------------------------------
+/**
+ * A sound coming from a place: `volume` 0..1 (from the distance) and `pan`
+ * -1 (left) .. +1 (right), from the direction relative to where you look.
+ * A StereoPannerNode moves the sound between the two speakers: the simplest
+ * form of 3D audio, and already enough to hear where the horde comes from.
+ */
+export interface Where {
+  volume: number;
+  pan: number;
+}
+
+function placeSound(where: Where): AudioNode | null {
+  if (!ctx || where.volume < 0.02) return null;
+  const gain = ctx.createGain();
+  gain.gain.value = where.volume;
+  const panner = ctx.createStereoPanner();
+  panner.pan.value = Math.max(-1, Math.min(1, where.pan));
+  gain.connect(panner).connect(master);
+  return gain;
+}
+
+/**
+ * Ghoul groan: a low buzzing "voice" (sawtooth wave) with a wobble
+ * (vibrato: a slow oscillator modulating the pitch), filtered to sound like
+ * a throat, plus some breath noise. Pitch and length vary every time.
+ */
+export function playGroan(where: Where, pitch = 1): void {
+  const out = placeSound(where);
+  if (!ctx || !out) return;
+  const t0 = ctx.currentTime;
+  const dur = 0.8 + Math.random() * 0.6;
+  const f0 = (80 + Math.random() * 40) * pitch;
+
+  const voice = ctx.createOscillator();
+  voice.type = 'sawtooth';
+  voice.frequency.setValueAtTime(f0, t0);
+  voice.frequency.exponentialRampToValueAtTime(f0 * 0.75, t0 + dur); // the groan sinks
+
+  const vibrato = ctx.createOscillator();
+  vibrato.frequency.value = 5 + Math.random() * 3;
+  const vibratoDepth = ctx.createGain();
+  vibratoDepth.gain.value = f0 * 0.06;
+  vibrato.connect(vibratoDepth).connect(voice.frequency); // LFO → pitch
+
+  const throat = ctx.createBiquadFilter(); // a "formant": the resonance of a mouth
+  throat.type = 'bandpass';
+  throat.frequency.value = 500 + Math.random() * 200;
+  throat.Q.value = 1.5;
+
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0.001, t0);
+  env.gain.exponentialRampToValueAtTime(0.5, t0 + 0.12);
+  env.gain.setValueAtTime(0.5, t0 + dur * 0.6);
+  env.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+
+  voice.connect(throat).connect(env).connect(out);
+  voice.start(t0);
+  vibrato.start(t0);
+  voice.stop(t0 + dur);
+  vibrato.stop(t0 + dur);
+  noiseBurst({ out, duration: dur, volume: 0.12, filter: 'bandpass', frequency: 1200, q: 1 }); // breath
+}
+
+/** Claw swipe: a quick "whoosh" (noise whose filter sweeps up). */
+export function playSwipe(where: Where): void {
+  const out = placeSound(where);
+  if (!out) return;
+  noiseBurst({ out, duration: 0.25, volume: 0.5, filter: 'bandpass', frequency: 400, frequencyEnd: 2600, q: 2 });
+}
+
+/** Ghoul dies: a lower, sinking groan and a wet splat. */
+export function playGhoulDeath(where: Where): void {
+  const out = placeSound(where);
+  if (!out) return;
+  playGroan(where, 0.7);
+  noiseBurst({ out, duration: 0.2, volume: 0.5, filter: 'lowpass', frequency: 900, frequencyEnd: 200 });
+}
+
+/** The player gets hit: a heavy thud and a short grunt. */
+export function playPlayerHurt(): void {
+  thump({ duration: 0.2, volume: 0.9, from: 140, to: 45 });
+  noiseBurst({ duration: 0.12, volume: 0.5, filter: 'lowpass', frequency: 700 });
+  thump({ start: 0.02, duration: 0.15, volume: 0.25, from: 220, to: 150 }); // "ugh"
 }

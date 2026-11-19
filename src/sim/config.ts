@@ -142,6 +142,16 @@ export const tuning = {
   /** Max shooting distance, meters. */
   weaponRange: 200,
 
+  // --- Player health ---
+  playerMaxHealth: 100,
+  /**
+   * Temporary, CoD-style: health comes back after a few seconds without
+   * damage. (The design doc proposes health from kills instead: undecided.)
+   * Set the rate to 0 to disable.
+   */
+  playerRegenDelay: 4,
+  playerRegenRate: 25, // health per second
+
   // --- Practice targets ---
   /** Health of a target (revolver does 34: 3 hits). */
   targetHealth: 100,
@@ -166,6 +176,12 @@ export const tuning = {
   ghoulAttackTime: 0.7,
   /** Pause between attacks, seconds. */
   ghoulAttackCooldown: 0.6,
+  /** Damage of one claw swipe. */
+  ghoulDamage: 20,
+  /** The swipe lands at this fraction of the attack animation (when the claws come down). */
+  ghoulHitMoment: 0.55,
+  /** Push given to the player by a hit, m/s. */
+  ghoulKnockback: 4,
   /** How long a dead ghoul lies on the ground before disappearing, seconds. */
   ghoulCorpseTime: 4,
   /** Max ghouls alive at once (0 = no ghouls). */

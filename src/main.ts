@@ -17,6 +17,7 @@ import { createPostProcess } from './render/postprocess';
 import { createWeaponFx } from './render/weaponFx';
 import { createTargets } from './render/targets';
 import { createGhoulRenderer } from './render/enemies/ghouls';
+import { updateHud } from './render/hud';
 import { createViewmodel } from './render/weapons/viewmodel';
 import type { SimEvent } from './sim/events';
 import { initAudio } from './audio/sfx';
@@ -233,6 +234,7 @@ renderer.setAnimationLoop((now: number) => {
   targets.handle(events);
   targets.update(frameTime);
   ghouls.update(game.entities, events, camera, alpha, frameTime);
+  updateHud(player, events, frameTime);
   ammoHud.textContent = player.reloadTicks > 0
     ? 'RELOADING'
     : '●'.repeat(player.ammo) + '○'.repeat(Math.max(0, 6 - player.ammo));

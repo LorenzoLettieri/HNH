@@ -5,7 +5,8 @@ import { createEntities, stepTarget, type Entity } from './entities';
 import { stepGhoul } from './ghoul';
 import { stepSpawner } from './spawner';
 import type { SimEvent } from './events';
-import { createPlayer, stepPlayer, type PlayerState } from './player';
+import { createPlayer, respawn, stepPlayer, type PlayerState } from './player';
+import { secondsToTicks } from './config';
 import { stepWeapon } from './weapon';
 import type { World } from './world';
 
@@ -52,8 +53,16 @@ export function stepGame(
   stepWeapon(game.player, cmd, world, game.entities, events);
   for (const e of game.entities) {
     if (e.type === 'target') stepTarget(e);
-    else if (e.state !== 'dead') stepGhoul(e, game.player, game.entities, world, dt);
+    else if (e.state !== 'dead') stepGhoul(e, game.player, game.entities, world, dt, events);
   }
   stepSpawner(game, world);
+
+  // Dead: back to the start, the horde is cleared, a short breather.
+  if (game.player.health <= 0) {
+    events.push({ type: 'playerDied' });
+    respawn(game.player, world);
+    game.entities = game.entities.filter((e) => e.type !== 'ghoul');
+    game.spawnCooldownTicks = secondsToTicks(3);
+  }
   game.tick++;
 }

@@ -48,6 +48,11 @@ export interface PlayerState {
   fireHeld: boolean;
   /** Ticks left until the reload finishes (0 = not reloading). */
   reloadTicks: number;
+
+  // --- Health ---
+  health: number;
+  /** Ticks since the last damage taken (for regeneration). */
+  ticksSinceHurt: number;
 }
 
 export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
@@ -75,6 +80,8 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     fireBufferTicks: 0,
     fireHeld: false,
     reloadTicks: 0,
+    health: tuning.playerMaxHealth,
+    ticksSinceHurt: 0,
   };
 }
 
@@ -208,7 +215,13 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
   if (landed) p.wallJumpsLeft = tuning.wallJumpsMax; // touching ground recharges wall jumps
   if (!landed) p.sliding = false; // slid off a ledge: now we're just falling
 
-  // 7. Fell off the world (or asked to): back to the spawn point.
+  // 7. Health regeneration after a while without damage.
+  p.ticksSinceHurt++;
+  if (p.ticksSinceHurt > secondsToTicks(tuning.playerRegenDelay) && p.health > 0) {
+    p.health = Math.min(tuning.playerMaxHealth, p.health + tuning.playerRegenRate * dt);
+  }
+
+  // 8. Fell off the world (or asked to): back to the spawn point.
   if (p.y < tuning.killY || cmd.respawn) respawn(p, world);
 }
 
@@ -341,6 +354,9 @@ export function respawn(p: PlayerState, world: World): void {
   p.vx = p.vy = p.vz = 0;
   p.crouched = false;
   p.sliding = false;
+  p.health = tuning.playerMaxHealth;
+  p.ammo = tuning.revolverAmmo;
+  p.reloadTicks = 0;
 }
 
 /** Quake's friction: removes a slice of speed every tick, keeping the direction. */
@@ -386,4 +402,17 @@ function accelerate(
   const accelSpeed = Math.min(accel * wishSpeed * dt, addSpeed);
   p.vx += accelSpeed * wishX;
   p.vz += accelSpeed * wishZ;
+}
+
+/** Damages the player and pushes them away from (fromX, fromZ). */
+export function hurtPlayer(p: PlayerState, amount: number, fromX: number, fromZ: number, push: number): void {
+  p.health = Math.max(0, p.health - amount);
+  p.ticksSinceHurt = 0;
+  const dx = p.x - fromX;
+  const dz = p.z - fromZ;
+  const d = Math.hypot(dx, dz) || 1;
+  p.vx += (dx / d) * push;
+  p.vz += (dz / d) * push;
+  p.vy = Math.max(p.vy, 2); // a little hop: the hit lifts you off your feet
+  p.onGround = false;
 }
