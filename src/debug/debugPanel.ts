@@ -113,6 +113,17 @@ export function createDebugPanel(options: {
   ghoul.number(tuning, 'ghoulJumpHeight', 0, 2, 0.05);
   ghoul.number(tuning, 'ghoulSeparation', 0, 3, 0.05);
   ghoul.number(tuning, 'ghoulAttackRange', 0.5, 3, 0.05);
+  ghoul.number(tuning, 'ghoulAttackMoveFactor', 0, 1, 0.05);
+  ghoul.number(tuning, 'ghoulDamage', 1, 100, 1);
+  ghoul.number(tuning, 'ghoulLungeMinRange', 0, 6, 0.1);
+  ghoul.number(tuning, 'ghoulLungeRange', 0, 15, 0.1);
+  ghoul.number(tuning, 'ghoulLungeWindup', 0.05, 1.5, 0.05);
+  ghoul.number(tuning, 'ghoulLungeSpeed', 2, 30, 0.5);
+  ghoul.number(tuning, 'ghoulLungeUpSpeed', 0, 12, 0.1);
+  ghoul.number(tuning, 'ghoulLungeLead', 0, 1.2, 0.05);
+  ghoul.number(tuning, 'ghoulLungeDamage', 1, 100, 1);
+  ghoul.number(tuning, 'ghoulLungeRecover', 0, 2, 0.05);
+  ghoul.number(tuning, 'ghoulLungeCooldown', 0, 10, 0.1);
   ghoul.number(tuning, 'ghoulCost', 1, 10, 1);
   ghoul.button('Copy values', () => copyToClipboard(toSource(tuning)));
 

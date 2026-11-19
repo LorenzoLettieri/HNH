@@ -9,7 +9,7 @@ import type { SimEvent } from '../../sim/events';
 import { addHeightFog } from '../heightFog';
 import { soundAt } from '../soundPosition';
 import { FRAMES, FRAME_H, FRAME_W, GHOUL_FRAME_COUNT, ghoulSheet } from './ghoulSprite';
-import { playGhoulDeath, playGroan, playSwipe } from '../../audio/sfx';
+import { playGhoulDeath, playGroan, playLungeScreech, playSwipe } from '../../audio/sfx';
 
 const PIXELS_PER_METER = 32;
 /** Walk animation speed: frames per meter walked (feet must not "skate"). */
@@ -93,6 +93,11 @@ export function createGhoulRenderer(scene: THREE.Scene): GhoulRenderer {
           const g = byId.get(e.entityId);
           if (g) playSwipe(soundAt(camera, g.x, g.y + 1.5, g.z));
         }
+        if (e.type === 'ghoulLunge') {
+          // The pounce warning: a screech, so you notice it even behind you.
+          const g = byId.get(e.entityId);
+          if (g) playLungeScreech(soundAt(camera, g.x, g.y + 1.5, g.z));
+        }
       }
 
       const seen = new Set<number>();
@@ -153,6 +158,14 @@ export function createGhoulRenderer(scene: THREE.Scene): GhoulRenderer {
     } else if (!e.onGround && e.vy > 4) {
       // Shooting up (a vent, a big jump): arms up, enjoying the ride.
       showFrame(v, FRAMES.windup);
+    } else if (e.state === 'lunge') {
+      // Crouched with the claws up (the warning), then claws forward in the air.
+      const crouching = e.stateTicks < tuning.ghoulLungeWindup * 60;
+      showFrame(v, crouching ? FRAMES.windup : FRAMES.swipe);
+      // Crouch: the sprite squashes a bit, so the pose reads from far away.
+      if (crouching) v.mesh.position.y -= 0.15;
+    } else if (e.state === 'recover') {
+      showFrame(v, FRAMES.hurt); // sprawled after landing: shoot it now
     } else if (e.state === 'attack') {
       const progress = e.stateTicks / (tuning.ghoulAttackTime * 60);
       showFrame(v, progress < 0.55 ? FRAMES.windup : FRAMES.swipe);

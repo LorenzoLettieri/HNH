@@ -230,6 +230,34 @@ export function playSwipe(where: Where): void {
   noiseBurst({ out, duration: 0.25, volume: 0.5, filter: 'bandpass', frequency: 400, frequencyEnd: 2600, q: 2 });
 }
 
+/**
+ * Ghoul about to pounce: a short, shrill screech that RISES in pitch (a
+ * groan sinks, this goes up: it's the "watch out" sound). Not limited like
+ * the groans: it's a warning, it must always play.
+ */
+export function playLungeScreech(where: Where): void {
+  const out = placeSound(where);
+  if (!ctx || !out) return;
+  const t0 = ctx.currentTime;
+  const dur = 0.35;
+  const voice = ctx.createOscillator();
+  voice.type = 'sawtooth';
+  voice.frequency.setValueAtTime(260, t0);
+  voice.frequency.exponentialRampToValueAtTime(620, t0 + dur);
+  const throat = ctx.createBiquadFilter();
+  throat.type = 'bandpass';
+  throat.frequency.value = 1400;
+  throat.Q.value = 2;
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0.001, t0);
+  env.gain.exponentialRampToValueAtTime(0.45, t0 + 0.05);
+  env.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+  voice.connect(throat).connect(env).connect(out);
+  voice.start(t0);
+  voice.stop(t0 + dur);
+  noiseBurst({ out, duration: dur, volume: 0.15, filter: 'highpass', frequency: 2500 }); // hiss
+}
+
 /** Ghoul dies: a lower, sinking groan and a wet splat. */
 export function playGhoulDeath(where: Where): void {
   const out = placeSound(where);

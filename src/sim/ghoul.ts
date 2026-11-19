@@ -5,7 +5,12 @@
 // - Close and on your level: it walks straight at you, hopping over low
 //   obstacles and going around tall ones.
 // - Always: it keeps a little distance from its friends (the horde spreads
-//   instead of stacking), and claws you when it gets close.
+//   instead of stacking), and claws you when it gets close (still walking:
+//   running past it is not a free pass).
+// - A few meters away, with a clear line: it POUNCES. A short crouch with a
+//   screech (the warning), then a low, fast leap aimed where you'll be.
+//   After landing it needs a moment to get up: the time to punish it.
+//      chase ──(2-6 m, in sight)──▶ lunge: crouch ──▶ leap ──(lands)──▶ recover ──▶ chase
 import { moveAndCollide, overlapsAny } from './collision';
 import { secondsToTicks, tuning } from './config';
 import type { GhoulEntity, Entity } from './entities';
@@ -14,6 +19,7 @@ import { launchFromVent, nearestNode, type FlowField, type NavGraph, type NavLin
 import { ventUnder } from './props';
 import { ghoulSpeed } from './waves';
 import { hurtPlayer, type PlayerState } from './player';
+import { raycastBoxes } from './raycast';
 import type { World } from './world';
 
 /** Turn a direction (x, z) by `angle` radians around the vertical axis. */
@@ -35,10 +41,15 @@ export function stepGhoul(
 ): void {
   g.stateTicks++;
   if (g.attackCooldownTicks > 0) g.attackCooldownTicks--;
+  if (g.lungeCooldownTicks > 0) g.lungeCooldownTicks--;
   if (g.detourTicks > 0) g.detourTicks--;
 
   if (g.climbTo >= 0) {
     climb(g, graph.nodes[g.climbFrom], graph.nodes[g.climbTo], world, dt);
+    return;
+  }
+  if (g.state === 'lunge' || g.state === 'recover') {
+    stepLunge(g, player, world, dt, events);
     return;
   }
 
@@ -68,7 +79,7 @@ export function stepGhoul(
   // --- 2. Wished direction: toward the target, plus separation ---
   let wishX = 0;
   let wishZ = 0;
-  if (g.state === 'chase') {
+  if (g.state === 'chase' || g.state === 'attack') {
     const dx = targetX - g.x;
     const dz = targetZ - g.z;
     const dist = Math.hypot(dx, dz);
@@ -96,7 +107,9 @@ export function stepGhoul(
   }
 
   // --- 3. Accelerate toward the wished velocity (only with feet on the ground) ---
-  const speed = g.state === 'chase' ? ghoulSpeed(g) : 0;
+  // While swinging it keeps coming, a bit slower: the swipe can catch you
+  // even if you're running past it.
+  const speed = ghoulSpeed(g) * (g.state === 'attack' ? tuning.ghoulAttackMoveFactor : 1);
   const len = Math.hypot(wishX, wishZ);
   const targetVx = len > 0 ? (wishX / len) * speed : 0;
   const targetVz = len > 0 ? (wishZ / len) * speed : 0;
@@ -176,7 +189,24 @@ export function stepGhoul(
     g.stuckTicks = 0; // moving freely again
   }
 
-  // --- 7. Attack when close: wind up, then the swipe lands at a precise moment ---
+  // --- 7. Pounce from a few meters away (needs feet on the ground and a clear line) ---
+  if (
+    g.state === 'chase' &&
+    g.onGround &&
+    g.lungeCooldownTicks === 0 &&
+    distToPlayer > tuning.ghoulLungeMinRange &&
+    distToPlayer < tuning.ghoulLungeRange &&
+    Math.abs(player.y - g.y) < 1 &&
+    clearLine(g, player, distToPlayer, world)
+  ) {
+    g.state = 'lunge';
+    g.stateTicks = 0;
+    g.lungeHit = false;
+    events.push({ type: 'ghoulLunge', entityId: g.id });
+    return;
+  }
+
+  // --- 8. Attack when close: wind up, then the swipe lands at a precise moment ---
   const sameHeight = Math.abs(player.y - g.y) < 1.5; // can't claw you from below a roof
   if (g.state === 'chase' && distToPlayer < tuning.ghoulAttackRange && sameHeight && g.attackCooldownTicks === 0) {
     g.state = 'attack';
@@ -197,6 +227,83 @@ export function stepGhoul(
     g.stateTicks = 0;
     g.attackCooldownTicks = secondsToTicks(tuning.ghoulAttackCooldown);
   }
+}
+
+/**
+ * The pounce, in three phases (all in the 'lunge' and 'recover' states):
+ * 1. crouch (ghoulLungeWindup): it stops and gets ready. The warning.
+ * 2. leap: a low ballistic jump toward where you'll be when it lands.
+ *    Touching you in the air hurts you (once per leap).
+ * 3. recover: landed, it stands still for a moment. Then back to chasing.
+ */
+function stepLunge(g: GhoulEntity, player: PlayerState, world: World, dt: number, events: SimEvent[]): void {
+  const windupTicks = secondsToTicks(tuning.ghoulLungeWindup);
+  const onFeet = g.onGround;
+
+  if (g.state === 'lunge' && g.stateTicks === windupTicks) {
+    // Launch. Flight time of a jump that starts and ends at the same height:
+    // up at vy, gravity brings it back down after t = 2·vy / g.
+    const vy = tuning.ghoulLungeUpSpeed;
+    const flightTime = Math.max(0.1, (2 * vy) / tuning.gravity);
+    // Aim where you'll be when it lands (only part of the way: ghoulLungeLead).
+    const lead = flightTime * tuning.ghoulLungeLead;
+    const dx = player.x + player.vx * lead - g.x;
+    const dz = player.z + player.vz * lead - g.z;
+    const dist = Math.hypot(dx, dz) || 1;
+    // Horizontal speed to cover that distance in the flight time, capped.
+    const hSpeed = Math.min(tuning.ghoulLungeSpeed, dist / flightTime);
+    g.vx = (dx / dist) * hSpeed;
+    g.vz = (dz / dist) * hSpeed;
+    g.vy = vy;
+    g.onGround = false;
+  } else if (onFeet) {
+    // Crouching or getting up: feet planted, it slides to a stop quickly.
+    const k = Math.min(1, 12 * dt);
+    g.vx -= g.vx * k;
+    g.vz -= g.vz * k;
+  }
+
+  g.vy -= tuning.gravity * dt;
+  const { landed } = moveAndCollide(g, tuning.ghoulRadius, tuning.ghoulHeight, world.boxes, dt);
+  g.onGround = landed;
+
+  const airborne = g.state === 'lunge' && g.stateTicks > windupTicks;
+  // In the air: did it reach you? Its box against yours, a little generous
+  // (claws stretched forward).
+  if (airborne && !g.lungeHit && player.health > 0) {
+    const reach = tuning.ghoulRadius + tuning.playerRadius + 0.35;
+    const touching =
+      Math.hypot(player.x - g.x, player.z - g.z) < reach &&
+      g.y < player.y + tuning.playerHeight &&
+      g.y + tuning.ghoulHeight > player.y;
+    if (touching) {
+      g.lungeHit = true;
+      hurtPlayer(player, tuning.ghoulLungeDamage, g.x, g.z, tuning.ghoulKnockback);
+      events.push({ type: 'playerHurt', damage: tuning.ghoulLungeDamage, fromX: g.x, fromZ: g.z });
+    }
+  }
+  // Landed (or flying for way too long, e.g. stuck on an edge): get up.
+  if (airborne && (g.onGround || g.stateTicks > windupTicks + secondsToTicks(2))) {
+    g.state = 'recover';
+    g.stateTicks = 0;
+  } else if (g.state === 'recover' && g.stateTicks >= secondsToTicks(tuning.ghoulLungeRecover)) {
+    g.state = 'chase';
+    g.stateTicks = 0;
+    // Next pounce: cooldown + 0-1.5 s, deterministic from the id (like the eye-bat).
+    g.lungeCooldownTicks = secondsToTicks(tuning.ghoulLungeCooldown + ((g.id * 7) % 16) * 0.1);
+    g.attackCooldownTicks = 0;
+  }
+}
+
+/** Nothing between its chest and yours? (It won't pounce through a wall or a fence.) */
+function clearLine(g: GhoulEntity, player: PlayerState, dist: number, world: World): boolean {
+  if (dist < 0.001) return true;
+  const chest = 1.1;
+  const dx = player.x - g.x;
+  const dy = player.y - g.y;
+  const dz = player.z - g.z;
+  const d = Math.hypot(dx, dy, dz);
+  return raycastBoxes(g.x, g.y + chest, g.z, dx / d, dy / d, dz / d, d, world.boxes) === null;
 }
 
 /**

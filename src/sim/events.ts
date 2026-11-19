@@ -24,6 +24,7 @@ export type SimEvent =
   | { type: 'waveStart'; wave: number }
   | { type: 'waveEnd'; wave: number }
   | { type: 'ghoulAttack'; entityId: number }
+  | { type: 'ghoulLunge'; entityId: number } // starts crouching for a pounce (the warning)
   /** An eye-bat starts charging a shot (the warning: glow + whine). */
   | { type: 'eyebatCharge'; entityId: number }
   /** An eye-bat fires: a projectile leaves its eye. */

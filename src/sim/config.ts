@@ -183,6 +183,32 @@ export const tuning = {
   ghoulHitMoment: 0.55,
   /** Push given to the player by a hit, m/s. */
   ghoulKnockback: 4,
+  /**
+   * While swinging its claws it keeps walking at this fraction of its speed
+   * (0 = it stops dead, like before: then the swipe only hit players standing still).
+   */
+  ghoulAttackMoveFactor: 0.6,
+
+  // --- Ghoul lunge: a pounce at you from a few meters away (src/sim/ghoul.ts) ---
+  /** It pounces when you're between these two distances, meters (closer = plain swipe). */
+  ghoulLungeMinRange: 2,
+  ghoulLungeRange: 6,
+  /**
+   * Warning before the pounce, seconds: it crouches with its claws up and
+   * screeches. That's your window to jump, slide aside or shoot it.
+   */
+  ghoulLungeWindup: 0.35,
+  /** Max horizontal speed of the pounce, m/s (you run at 8: it's faster than you, briefly). */
+  ghoulLungeSpeed: 13,
+  /** Upward speed of the pounce, m/s: low and flat, ~0.4 s in the air. */
+  ghoulLungeUpSpeed: 4,
+  /** How much it aims where you'll be when it lands (0 = where you are, 1 = full lead). */
+  ghoulLungeLead: 0.8,
+  ghoulLungeDamage: 20,
+  /** After landing it stays still this long, seconds: the moment to punish it. */
+  ghoulLungeRecover: 0.6,
+  /** Seconds between two pounces of the same ghoul (plus up to 1.5 s of variation). */
+  ghoulLungeCooldown: 3,
   /** Climbing speed up walls, m/s. */
   ghoulClimbSpeed: 2.8,
   /** Closer than this (and on the same level) it walks straight at you, ignoring the graph. */

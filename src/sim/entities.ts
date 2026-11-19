@@ -35,12 +35,19 @@ export interface GhoulEntity extends EntityBase {
   vy: number;
   vz: number;
   onGround: boolean;
-  /** What it's doing: walking to you, swinging its claws, or lying dead. */
-  state: 'chase' | 'attack' | 'dead';
+  /**
+   * What it's doing: walking to you, swinging its claws, pouncing at you
+   * (crouch, then a leap), getting up after a pounce, or lying dead.
+   */
+  state: 'chase' | 'attack' | 'lunge' | 'recover' | 'dead';
   /** Ticks spent in the current state. */
   stateTicks: number;
   /** Ticks before it can attack again. */
   attackCooldownTicks: number;
+  /** Ticks before it can pounce again. */
+  lungeCooldownTicks: number;
+  /** This pounce already hit you (it only hurts once per leap). */
+  lungeHit: boolean;
   /** Going around an obstacle: ticks left, and which side (+1 / -1). */
   detourTicks: number;
   detourSide: number;
@@ -130,6 +137,10 @@ export function createGhoul(
     state: 'chase',
     stateTicks: 0,
     attackCooldownTicks: 0,
+    // The first pounce comes 1-2.5 s after spawning, staggered by id: a horde
+    // arriving together doesn't pounce in sync.
+    lungeCooldownTicks: secondsToTicks(1 + (id % 6) * 0.3),
+    lungeHit: false,
     detourTicks: 0,
     // Half of them go around obstacles on the left, half on the right. Based on
     // the id, not Math.random(): the simulation must be deterministic (same

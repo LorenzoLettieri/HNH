@@ -123,6 +123,13 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
   alla stessa velocità ti prende. Per schivarla devi **cambiare direzione** dopo il preavviso
   (salto, slide, inversione). Prima mirava dove eri: bastava muoversi, e al playtest girare in
   tondo rendeva immortali (0 colpi su 190 col bot di prova).
+- **Ghoul: artigliata e balzo.** L'artigliata (20 danni) non lo ferma più: continua a camminare
+  al 60% della velocità mentre colpisce, quindi passargli accanto non è gratis. Tra **2 e 6 m**,
+  con la linea libera, **balza**: 0,35 s accovacciato a braccia alzate con uno **stridio che sale**
+  (il preavviso), poi un salto basso e veloce (fino a 13 m/s, ~0,4 s in aria) mirato **dove sarai**
+  all'atterraggio. Ti ferisce se ti tocca in volo (20 danni). Atterrato resta **a terra 0,6 s**:
+  è il momento di punirlo. Ricarica di 3–4,5 s. Resta un nemico che punisce le distrazioni:
+  per chi lo vede arrivare è schivabile (salto, slide di lato).
 - **Niente rigenerazione della salute.** [DA DECIDERE] drop casuali dei nemici (medikit o simili).
 
 ## 4. La mappa [DECISO: cittadina all'aperto]
