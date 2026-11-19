@@ -42,6 +42,7 @@ per chi sta fermo); nemici che attaccano lo spazio (anche volanti e a distanza);
 ## Dove trovare le cose
 Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella rilevante.
 - `src/main.ts`: entry point (renderer, scena, luci, caricamento livello, game loop a passo fisso + interpolazione camera,
+  **pausa** (Esc: senza mouse catturato la simulazione si ferma e l'audio si sospende; col pannello debug aperto il gioco continua),
   **indicatore prestazioni**: fps, ms simulazione/disegno, draw call).
   Debug: `?pos=x,y,z&look=yaw,pitch` nell'URL per partire da un punto preciso; `?level=arena` per l'arena di prova;
   `?seed=123` per rigiocare la stessa sequenza di ondate (il seed di ogni partita è scritto nella console del browser)
@@ -67,7 +68,7 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `player.ts`: stato del giocatore e `stepPlayer()` (salto e bhop facilitato, slide/accovacciata, wall jump stile Apex, attrito, accelerazione Quake + air control, gravità, sfiatatoi, respawn)
 - `src/debug/`: pannello di debug
   - `panel.ts`: mini-libreria DOM per i controlli (slider, checkbox, colori, "Copy values")
-  - `debugPanel.ts`: **quali valori sono esposti nel pannello** e i loro range
+  - `debugPanel.ts`: **quali valori sono esposti nel pannello** e i loro range; in cima **"Waves"**: scegli un'ondata e "Go to this wave" per provarla subito (`jumpToWave` in `src/sim/waves.ts`)
 - `src/levels/`: **i livelli** (dati puri)
   - `index.ts`: elenco dei livelli e livello di default
   - `town.ts`: **la cittadina** (mappa principale, greybox): edifici, torri, ponte, piattaforme sospese, sfiatatoi, **bersagli** (`targets`), **punti di spawn dei nemici** (`enemySpawns`); percorsi descritti in cima al file
@@ -107,7 +108,7 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `targets.ts`: **bersagli** (modello, oscillazione a molla quando colpiti, caduta e rialzata)
   - `impacts.ts`: fori di proiettile sulle superfici (decal, dimensione, quanti ne restano)
   - `materials.ts`: **quale texture usa ogni materiale** (`LOOKS`), densità dei pixel, mesh dei box
-- `src/audio/sfx.ts`: **effetti sonori sintetizzati** con Web Audio (sparo, ricarica, "ding" dei bersagli, versi/artigliate/morte dei ghoul con panning stereo, **carica, sparo e impatto delle palle di fuoco del Malocchio**, giocatore ferito, **campana delle ondate**, volume)
+- `src/audio/sfx.ts`: **effetti sonori sintetizzati** con Web Audio (sparo, ricarica, "ding" dei bersagli, versi/artigliate/morte dei ghoul con panning stereo, **carica, sparo e impatto delle palle di fuoco del Malocchio**, giocatore ferito, **campana delle ondate**, volume, pausa dell'audio)
 - `public/textures/`: texture PNG (servite così come sono da Vite su `/textures/...`)
 - `docs/DESIGN.md`: **documento di design** (decisioni di gameplay e domande aperte)
 - `CREDITS.md`: autori e licenze degli asset

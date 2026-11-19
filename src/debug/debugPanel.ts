@@ -22,6 +22,7 @@ const ATMOSPHERE_COLORS = [
 
 export interface DebugPanel {
   toggle(): void;
+  readonly visible: boolean;
   /** Rebuilds the atmosphere section for the preset now in use. */
   showAtmosphere(a: Atmosphere): void;
 }
@@ -29,8 +30,16 @@ export interface DebugPanel {
 export function createDebugPanel(options: {
   onAtmosphereChange: () => void;
   onPostSizeChange: () => void;
+  /** Debug: clear the enemies and start wave n. */
+  onJumpToWave: (wave: number) => void;
 }): DebugPanel {
   const panel = createPanel();
+
+  // --- Waves (first: it's the one you use most while testing) ---
+  const waves = panel.folder('Waves (src/sim/waves.ts)');
+  const jump = { wave: 10 };
+  waves.number(jump, 'wave', 1, 60, 1);
+  waves.button('Go to this wave', () => options.onJumpToWave(jump.wave));
 
   // --- Movement ---
   const move = panel.folder('Movement (src/sim/config.ts)');
@@ -178,6 +187,9 @@ export function createDebugPanel(options: {
 
   return {
     toggle: () => panel.toggle(),
+    get visible() {
+      return panel.visible;
+    },
     showAtmosphere: (a) => fillAtmosphere(atmo, a),
   };
 }

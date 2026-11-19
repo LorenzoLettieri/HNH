@@ -315,3 +315,14 @@ export function playFireballHit(where: Where): void {
   noiseBurst({ out, duration: 0.3, volume: 0.8, filter: 'lowpass', frequency: 3000, frequencyEnd: 250 });
   noiseBurst({ out, start: 0.05, duration: 0.4, volume: 0.25, filter: 'highpass', frequency: 4000 }); // sizzle
 }
+
+/**
+ * Pause: suspends the whole AudioContext. Sounds already playing (a charge
+ * whine, an echo) freeze where they are and continue on resume, in sync with
+ * the frozen game.
+ */
+export function setAudioPaused(paused: boolean): void {
+  if (!ctx) return;
+  if (paused) void ctx.suspend();
+  else void ctx.resume();
+}

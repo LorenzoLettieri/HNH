@@ -1,10 +1,11 @@
 import * as THREE from 'three';
-import { initInput, isTypingInField } from './input';
+import { initInput, isPointerLocked, isTypingInField } from './input';
 import { createDebugPanel } from './debug/debugPanel';
 import { buildCommand, updateLook, view } from './controls';
 import { TICK_DT } from './sim/config';
 import { copyPlayer, createPlayer, horizontalSpeed } from './sim/player';
 import { createGame, spawnEyebatInFront, stepGame } from './sim/game';
+import { jumpToWave } from './sim/waves';
 import { DEFAULT_LEVEL, LEVELS } from './levels';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
 import { updateCameraFeel } from './render/cameraFeel';
@@ -25,7 +26,7 @@ import { getFlowField, getNavGraph } from './sim/nav';
 import { createViewmodel } from './render/weapons/viewmodel';
 import type { SimEvent } from './sim/events';
 import { isEnemy } from './sim/entities';
-import { initAudio } from './audio/sfx';
+import { initAudio, setAudioPaused } from './audio/sfx';
 import { applyParticles, createParticles, updateParticles } from './render/particles';
 import { applyHeightFog } from './render/heightFog';
 import { applySky, createSky, directionFromAngles } from './render/sky';
@@ -122,6 +123,7 @@ applyAtmosphere(ATMOSPHERES[atmosphereIndex]);
 const debugPanel = createDebugPanel({
   onAtmosphereChange: () => applyAtmosphere(ATMOSPHERES[atmosphereIndex]),
   onPostSizeChange: () => post.refresh(),
+  onJumpToWave: (n) => jumpToWave(game, n),
 });
 debugPanel.showAtmosphere(ATMOSPHERES[atmosphereIndex]);
 
@@ -143,6 +145,7 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'Backquote') {
     debugPanel.toggle();
     document.exitPointerLock();
+    updatePause();
   }
 });
 
@@ -152,10 +155,25 @@ window.addEventListener('keydown', (e) => {
 camera.rotation.order = 'YXZ';
 
 const overlay = document.getElementById('overlay')!;
+const overlayTitle = document.getElementById('overlay-title')!;
 const hud = document.getElementById('hud')!;
+
+// --- Pause ------------------------------------------------------------------
+// Esc already makes the browser release the mouse (pointer lock): we use that
+// as the pause signal. No mouse = no game. Exception: with the debug panel
+// open the game keeps running, so you can tweak values and watch the result.
+let paused = true; // until the first click
+function updatePause(): void {
+  paused = !isPointerLocked() && !debugPanel.visible;
+  setAudioPaused(paused);
+  overlay.style.display = paused ? 'flex' : 'none';
+}
 initInput(renderer.domElement, (locked) => {
-  overlay.style.display = locked ? 'none' : 'flex';
-  if (locked) initAudio(); // audio is allowed only after a user gesture
+  if (locked) {
+    initAudio(); // audio is allowed only after a user gesture
+    overlayTitle.textContent = 'PAUSA'; // from now on, the overlay means "paused"
+  }
+  updatePause();
 });
 const ammoHud = document.getElementById('ammo')!;
 
@@ -220,8 +238,12 @@ renderer.setAnimationLoop((now: number) => {
 
   updateLook(); // mouse look every frame, for the snappiest aim
 
+  // Paused: the simulation doesn't advance (no time goes into the
+  // accumulator) and everything animated by the game gets dt = 0: the scene
+  // freezes like a photo, but keeps being drawn (the overlay sits on top).
+  const dt = paused ? 0 : frameTime;
   const simStart = performance.now();
-  accumulator += frameTime;
+  accumulator += dt;
   const events: SimEvent[] = [];
   while (accumulator >= TICK_DT) {
     copyPlayer(player, prevPlayer);
@@ -240,7 +262,7 @@ renderer.setAnimationLoop((now: number) => {
   // (rotation.z, the roll, is set by the camera feel below.)
   // The gun animates first: it also returns the visual "punch" of the shot.
   const viewKick = viewmodel.update(
-    frameTime,
+    dt,
     player,
     camera,
     view.yaw - lastViewYaw,
@@ -250,10 +272,10 @@ renderer.setAnimationLoop((now: number) => {
   lastViewPitch = view.pitch;
   camera.rotation.x = view.pitch + viewKick; // the punch is only visual: aim is unaffected
   camera.rotation.y = view.yaw;
-  const eyeHeight = updateCameraFeel(camera, player, frameTime);
+  const eyeHeight = updateCameraFeel(camera, player, dt);
   camera.position.set(
     prevPlayer.x + (player.x - prevPlayer.x) * alpha,
-    prevPlayer.y + (player.y - prevPlayer.y) * alpha + eyeHeight - updateLandingDip(frameTime),
+    prevPlayer.y + (player.y - prevPlayer.y) * alpha + eyeHeight - updateLandingDip(dt),
     prevPlayer.z + (player.z - prevPlayer.z) * alpha,
   );
   // The sky follows the camera: you can never get closer to it.
@@ -266,13 +288,13 @@ renderer.setAnimationLoop((now: number) => {
 
   // Weapon events of this frame → effects and sounds.
   weaponFx.handle(events, camera);
-  weaponFx.update(frameTime);
+  weaponFx.update(dt);
   targets.handle(events);
-  targets.update(frameTime);
-  ghouls.update(game.entities, events, camera, alpha, frameTime);
-  eyebats.update(game.entities, events, camera, alpha, frameTime);
-  projectiles.update(game.projectiles, events, camera, alpha, frameTime);
-  updateHud(game, events, frameTime);
+  targets.update(dt);
+  ghouls.update(game.entities, events, camera, alpha, dt);
+  eyebats.update(game.entities, events, camera, alpha, dt);
+  projectiles.update(game.projectiles, events, camera, alpha, dt);
+  updateHud(game, events, dt);
   navDebug.update(getFlowField(getNavGraph(world), game.navGoal));
   ammoHud.textContent = player.reloadTicks > 0
     ? 'RELOADING'
@@ -280,7 +302,7 @@ renderer.setAnimationLoop((now: number) => {
 
   updateFireLights(now / 1000);
   props.update(now / 1000);
-  updateParticles(frameTime, now / 1000, camera, post.sceneSize.y);
+  updateParticles(dt, now / 1000, camera, post.sceneSize.y);
   // renderer.info counts draw calls; it normally resets at every render()
   // call, but a frame here is many renders (scene, gun, post passes): we
   // reset it ourselves once per frame to get the total.

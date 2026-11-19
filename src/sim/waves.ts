@@ -158,6 +158,18 @@ export function stepWaves(game: GameState, world: World, events: SimEvent[]): vo
   w.spawnCooldownTicks = secondsToTicks(spawnInterval(w.number));
 }
 
+/**
+ * Debug: jump to wave n. Clears the enemies and their projectiles, heals the
+ * player, and starts wave n after a short break, exactly as if wave n-1 had
+ * just ended (so budget, health steps and runners are those of wave n).
+ */
+export function jumpToWave(game: GameState, n: number): void {
+  game.entities = game.entities.filter((e) => !isEnemy(e));
+  game.projectiles = [];
+  game.player.health = tuning.playerMaxHealth;
+  game.wave = { number: n - 1, phase: 'break', breakTicks: secondsToTicks(2), budgetLeft: 0, spawnCooldownTicks: 0 };
+}
+
 /** Points, CoD style: something for every hit, more for the kill. */
 export function scoreHits(stats: Stats, events: SimEvent[]): void {
   for (const e of events) {
