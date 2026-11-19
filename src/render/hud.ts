@@ -1,5 +1,5 @@
-// HUD: health plate (healthPlate.ts), red flash when you get hit, red vignette when low on
-// health, wave number, score, wave banners, the style meter (styleMeter.ts)
+// HUD: health plate (healthPlate.ts), red flash when you get hit, low health (lowHealth.ts),
+// wave number, score, wave banners, the style meter (styleMeter.ts)
 // and the death summary.
 // Plain HTML/CSS elements (see index.html), updated from here.
 import { tuning } from '../sim/config';
@@ -10,6 +10,7 @@ import type { GameState } from '../sim/game';
 import { updateStyleMeter } from './styleMeter';
 import { updateHighNoon } from './highNoon';
 import { updateHealthPlate } from './healthPlate';
+import { updateLowHealth } from './lowHealth';
 
 const damage = document.getElementById('damage')!;
 const pickupFlash = document.getElementById('pickup-flash')!;
@@ -83,12 +84,12 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
   updateHighNoon(game.style, events, dt);
 
   const health = player.health / tuning.playerMaxHealth;
+  updateLowHealth(health, player.health <= 0, dt); // first: it moves the heartbeat
   updateHealthPlate(player.health, dt);
 
-  // Red vignette: a flash on each hit, plus a constant glow when below 40%.
+  // Red vignette: a flash on each hit (low health has its own effect, lowHealth.ts).
   flash = Math.max(0, flash - dt * 3);
-  const lowHealth = Math.max(0, (0.4 - health) / 0.4) * 0.6;
-  damage.style.opacity = String(Math.min(1, Math.max(flash, lowHealth)));
+  damage.style.opacity = String(flash);
 
   pickupTime = Math.max(0, pickupTime - dt * 5); // gone in 0.2 s
   pickupFlash.style.opacity = String(pickupTime * 0.35);

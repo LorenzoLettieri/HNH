@@ -445,7 +445,9 @@ futuro **poligono di tiro / tutorial**.
 - **In alto**: a sinistra l'**ondata** (numero rosso, come il conteggio dei round di CoD Zombies),
   a destra **punti e uccisioni**. [FATTO]
 - **Basso a destra**: munizioni, colpi disegnati con forma diversa per arma + riserva. [FATTO]
-- **Vita bassa**: effetto rosso intorno allo schermo stile CoD (sostituirà la vignetta attuale). [DA FARE]
+- **Vita bassa** (sotto il 35%): stile CoD, sangue scuro che entra dai bordi, immagine che perde colore,
+  battito del cuore (visivo e sonoro) sempre più veloce. [FATTO]
+- **Colpo subito**: deve sentirsi e deve dire **da dove** arriva. [IN CORSO]
 
 ## 7. Ordine di sviluppo
 

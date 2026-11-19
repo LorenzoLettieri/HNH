@@ -10,6 +10,7 @@
 //     waits a little, then drains down to the red one: the strip between the
 //     two shows HOW MUCH that hit cost you (a fighting-game trick).
 import { tuning } from '../sim/config';
+import { heartbeat } from './lowHealth';
 import './fonts'; // the number is written in Rye
 
 // --- Tuning ---
@@ -19,11 +20,6 @@ const GHOST_HOLD = 0.45;
 const GHOST_DRAIN = 0.8;
 /** How fast the red fill catches up with the real value (higher = snappier). */
 const FILL_SPEED = 20;
-/** Below this fraction of health the number starts throbbing. */
-const LOW_HEALTH = 0.35;
-/** Heartbeats per second: when it starts (at LOW_HEALTH) and at (almost) zero health. */
-const BEAT_HZ_CALM = 1.1;
-const BEAT_HZ_PANIC = 2.8;
 /** Size of the "bump" of each beat (0.08 = 8% bigger); the red also lights up. */
 const BEAT_SCALE = 0.08;
 /** Seconds and size of the number's jolt when you get hit. */
@@ -39,7 +35,6 @@ let ghostValue = 1; // ghost, 0..1
 let ghostWait = 0; // seconds before the ghost starts draining
 let lastHealth = tuning.playerMaxHealth;
 let hitTime = 0; // seconds left of the number's jolt
-let beatPhase = 0; // 0..1, where we are in the current heartbeat
 
 export function updateHealthPlate(health: number, dt: number): void {
   const max = tuning.playerMaxHealth;
@@ -69,16 +64,9 @@ export function updateHealthPlate(health: number, dt: number): void {
 
   number.textContent = String(Math.ceil(health));
 
-  // Heartbeat, only at low health: the rate grows as health drops. We advance
-  // a phase instead of computing sin(time * rate): with a changing rate that
-  // would jump around (the same trick as the style letter's blinking).
-  let beat = 0;
-  if (frac < LOW_HEALTH) {
-    const panic = 1 - frac / LOW_HEALTH; // 0 at the threshold, 1 at zero health
-    beatPhase = (beatPhase + (BEAT_HZ_CALM + (BEAT_HZ_PANIC - BEAT_HZ_CALM) * panic) * dt) % 1;
-    // "Lub-dub": two short bumps close together, the second one smaller, then rest.
-    beat = pulse(beatPhase, 0, 1) + pulse(beatPhase, 0.18, 0.6);
-  } else beatPhase = 0;
+  // Heartbeat (only at low health): the same one as the blood on the screen
+  // edges and the sound, owned by lowHealth.ts.
+  const beat = heartbeat();
   // The CSS mixes the dark red with a bright one by this amount (color-mix).
   number.style.setProperty('--lit', String(Math.min(1, beat)));
 
@@ -87,10 +75,4 @@ export function updateHealthPlate(health: number, dt: number): void {
   hitTime = Math.max(0, hitTime - dt);
   const t = hitTime / HIT_TIME;
   number.style.transform = `scale(${1 + HIT_SCALE * t * t + BEAT_SCALE * beat})`;
-}
-
-/** A half sine wave lasting 1/8 of the beat, starting at `start`, as tall as `height`. */
-function pulse(phase: number, start: number, height: number): number {
-  const t = (phase - start) * 8;
-  return t > 0 && t < 1 ? Math.sin(t * Math.PI) * height : 0;
 }

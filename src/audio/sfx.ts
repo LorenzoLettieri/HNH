@@ -486,6 +486,11 @@ export function playPlayerHurt(): void {
   thump({ start: 0.02, duration: 0.15, volume: 0.25, from: 220, to: 150 }); // "ugh"
 }
 
+/** One heartbeat thump (low health): a very low, soft sine "boom", felt more than heard. */
+export function playHeartbeat(volume: number): void {
+  thump({ duration: 0.16, volume: 0.55 * volume, from: 75, to: 38 });
+}
+
 /**
  * Church bell: the same "ring" as the targets (inharmonic partials), much
  * lower and with a long decay. Tolled `times` times, `gap` seconds apart.
