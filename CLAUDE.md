@@ -96,7 +96,7 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `weapons/`: **l'arma in mano (viewmodel)**
     - `viewmodel.ts`: scena/camera dell'arma, **posa, rinculo, ondeggiamento, bob, ricarica, lampo, calcio** (`viewmodelSettings`)
     - `revolverModel.ts`: modello procedurale del revolver (canna, tamburo, cane, calcio)
-    - `boot.ts`: **stivale del calcio** (gamba a blocchi con sperone, texture, **pose dell'animazione**: `HIDDEN`/`OUT`, tempi di tenuta e ritorno)
+    - `boot.ts`: **gamba sinistra del calcio** (stivale da cowboy a blocchi: gambale con cuciture, punta, tacco, sperone; texture; **angolo della caviglia** `FOOT_ANGLE`; **pose dell'animazione** `HIDDEN`/`OUT` con posizione e rotazioni, tempi di tenuta e ritorno)
     - `hands.ts`: **mani a blocchi** (guanti, maniche) e **keyframe del fanning** della mano sinistra
   - `hud.ts`: barra della salute, vignetta rossa, **numero dell'ondata, punteggio, scritte di inizio/fine ondata e conto alla rovescia**, riepilogo alla morte
   - `projectiles.ts`: **palle di fuoco nemiche** (sprite pixel art luminoso, scia di braci, scintille e suono all'impatto)
