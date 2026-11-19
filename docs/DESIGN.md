@@ -71,6 +71,8 @@ finale unico, "HIGH NOON". [DA DECIDERE: nomi definitivi]
   4/3/3: 40% **proiettili** (+12, revolver), 30% **cartucce** (+4, doppietta), 30% **medikit** (+25 salute).
   Munizioni **separate apposta**: se per un po' non cadono cartucce sei costretto a cambiare stile. Si raccolgono passandoci
   sopra; se non ti servono restano a terra. **Spariscono dopo 10 s** (lampeggiano negli ultimi 3).
+  Aspetto: sprite pixel art che galleggiano sopra una pozza di luce del loro colore (ottone =
+  proiettili, rosso = cartucce, verde = tonico/medikit), visibili anche di notte; suono diverso per tipo.
 
 ---
 
