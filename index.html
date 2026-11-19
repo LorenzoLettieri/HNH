@@ -99,6 +99,30 @@
         position: fixed; inset: 0; pointer-events: none; opacity: 0;
         background: radial-gradient(ellipse at center, transparent 30%, var(--tint, #fc4) 100%);
       }
+      /* HIGH NOON tint, two layers (src/render/highNoon.ts animates their variables, 0..1).
+         They sit between the canvas and the HUD text (they come first in the page), so the
+         numbers stay readable. Two elements because the blend mode is per element; NOT
+         wrapped in a parent with opacity: that would isolate them from the canvas below. */
+      /* 1. Heat: "overlay" blending tints the picture keeping its contrast (darks stay dark,
+            lights get hot), like a color grade. --heat = how much. */
+      #high-noon-heat {
+        --heat: 0;
+        position: fixed; inset: 0; pointer-events: none; mix-blend-mode: overlay;
+        background: radial-gradient(ellipse at center,
+          rgba(255, 200, 120, calc(var(--heat) * 0.5)) 0%,
+          rgba(255, 150, 50, calc(var(--heat) * 0.8)) 60%,
+          rgba(255, 90, 10, var(--heat)) 100%);
+      }
+      /* 2. Light: "screen" blending only ADDS light, like real light. --core = the middle
+            (the white flash at the start), --edge = the burning borders. */
+      #high-noon {
+        --core: 0; --edge: 0;
+        position: fixed; inset: 0; pointer-events: none; mix-blend-mode: screen;
+        background: radial-gradient(ellipse at center,
+          rgba(255, 240, 205, var(--core)) 0%,
+          rgba(255, 190, 90, calc(var(--core) * 0.6 + var(--edge) * 0.12)) 50%,
+          rgba(255, 110, 20, var(--edge)) 100%);
+      }
       #death {
         position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
         color: #ff3010; font: bold 64px monospace; letter-spacing: 8px; pointer-events: none; opacity: 0;
@@ -226,6 +250,8 @@
         </div>
       </div>
     </div>
+    <div id="high-noon-heat" hidden></div>
+    <div id="high-noon" hidden></div>
     <div id="hud"></div>
     <div id="crosshair"></div>
     <div id="hitmarker"></div>

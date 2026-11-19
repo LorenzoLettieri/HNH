@@ -88,7 +88,10 @@ stilosa riavvia la catena e il lampeggio si ferma. Niente barra del tempo: la ba
   (né guadagni né perdite, la catena non scade). Sul meter la barra diventa la **miccia** che si consuma e
   la lettera lampeggia nell'ultimo secondo e mezzo. Annuncio **provvisorio**: scritta "HIGH NOON" e tre
   rintocchi rapidi di campana.
-  [PROSSIMO] L'annuncio forte: tinta dello schermo, suono dedicato, la fine del climax.
+  **Passo 2** [FATTO]: **tinta dello schermo** (`src/render/highNoon.ts`). All'inizio un **lampo bianco
+  caldo**, come guardare il sole a mezzogiorno; per tutto il climax l'immagine è **calda** (tinta che
+  mantiene il contrasto) e i **bordi dello schermo ardono** pulsando; svanisce nell'ultimo mezzo secondo.
+  [PROSSIMO] Suono dedicato, la fine del climax.
 - [DA DECIDERE] Bonus di danno ai rank alti (forse superato dal climax).
 - [DA DECIDERE] Eventuale bonus di drop della salute ai rank alti.
 

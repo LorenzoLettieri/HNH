@@ -8,6 +8,7 @@ import type { PlayerState } from '../sim/player';
 import { playBell, playPickup, playPlayerHurt } from '../audio/sfx';
 import type { GameState } from '../sim/game';
 import { updateStyleMeter } from './styleMeter';
+import { updateHighNoon } from './highNoon';
 
 const healthFill = document.getElementById('health-fill')!;
 const damage = document.getElementById('damage')!;
@@ -78,6 +79,7 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
   }
 
   updateStyleMeter(game.style, dt);
+  updateHighNoon(game.style, events, dt);
 
   const health = player.health / tuning.playerMaxHealth;
   healthFill.style.width = `${health * 100}%`;
