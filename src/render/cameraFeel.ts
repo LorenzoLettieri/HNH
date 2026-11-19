@@ -2,7 +2,8 @@
 // physical. Purely cosmetic: they never touch the simulation.
 // - field of view widens with speed (the classic "sense of speed" trick);
 // - the camera tilts (rolls) a little when strafing, more while sliding;
-// - crouching lowers the eyes smoothly instead of snapping.
+// - crouching lowers the eyes smoothly instead of snapping;
+// - getting hit snaps the head away from the hit (a damped spring).
 import * as THREE from 'three';
 import { tuning } from '../sim/config';
 import type { PlayerState } from '../sim/player';
@@ -25,11 +26,49 @@ export const cameraFeelSettings = {
   fovRate: 6,
   rollRate: 10,
   eyeRate: 18,
+  /** Head snap when you get hit by hurtKickDamage damage, degrees (bigger hits: more, up to 2×). */
+  hurtKick: 4,
+  hurtKickDamage: 20,
+  /** The spring that brings the head back: stiffness and damping ratio (<1 = a small bounce). */
+  hurtStiffness: 250,
+  hurtDamping: 0.45,
 };
 
 let fov = cameraFeelSettings.baseFov;
 let roll = 0;
 let eyeHeight = tuning.eyeHeight;
+// Hit snap: one damped spring per axis (angle in radians and its speed).
+const snap = { pitch: 0, pitchVel: 0, roll: 0, rollVel: 0 };
+
+/**
+ * The player got hit from `angle` (screen angle: 0 = in front, +π/2 = right,
+ * ±π = behind; see damageIndicator.ts). The head is pushed AWAY from the hit:
+ * from the front it snaps back (looks up), from the right it tilts left.
+ * We don't set the angle, we give the spring a kick in SPEED: the spring then
+ * moves the head out and back by itself, with a natural curve.
+ */
+export function hurtKick(angle: number, damage: number): void {
+  const s = cameraFeelSettings;
+  const size = THREE.MathUtils.degToRad(s.hurtKick) * Math.min(2, damage / s.hurtKickDamage);
+  // For a damped spring kicked with speed v the head goes out by about v/ω × peak
+  // (ω = sqrt(stiffness), peak ≈ 0.57 with damping 0.45): solve for v.
+  const omega = Math.sqrt(s.hurtStiffness);
+  const v = (size * omega) / 0.57;
+  snap.pitchVel += Math.cos(angle) * v;
+  snap.rollVel += Math.sin(angle) * v;
+}
+
+/**
+ * One step of a damped spring: the force pulls toward 0 (stiffness × angle)
+ * and the damping resists the speed. Semi-implicit Euler: update the speed
+ * first, then move with the NEW speed (more stable than the other order).
+ */
+function stepSpring(angle: number, vel: number, dt: number): [number, number] {
+  const k = cameraFeelSettings.hurtStiffness;
+  const c = 2 * cameraFeelSettings.hurtDamping * Math.sqrt(k);
+  vel += (-k * angle - c * vel) * dt;
+  return [angle + vel * dt, vel];
+}
 
 /**
  * Moves `current` toward `target` by a fraction that depends on the frame
@@ -65,7 +104,15 @@ export function updateCameraFeel(
   let targetRoll = -THREE.MathUtils.clamp(sideways, -1, 1) * s.strafeRoll;
   if (player.sliding) targetRoll -= s.slideRoll * (sideways >= 0 ? 1 : -1);
   roll = approach(roll, THREE.MathUtils.degToRad(targetRoll), s.rollRate, dt);
-  camera.rotation.z = roll;
+  // Hit snap, on top of the view and the roll: only visual, aim is unaffected.
+  // Small substeps: a stiff spring with a long frame (a hitch) could explode.
+  for (let left = Math.min(dt, 0.1); left > 0; left -= 1 / 120) {
+    const h = Math.min(left, 1 / 120);
+    [snap.pitch, snap.pitchVel] = stepSpring(snap.pitch, snap.pitchVel, h);
+    [snap.roll, snap.rollVel] = stepSpring(snap.roll, snap.rollVel, h);
+  }
+  camera.rotation.z = roll + snap.roll;
+  camera.rotation.x += snap.pitch;
 
   // 3. Eye height: glide toward standing or crouched height.
   const targetEye = player.crouched ? tuning.crouchEyeHeight : tuning.eyeHeight;

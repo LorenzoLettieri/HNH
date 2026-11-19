@@ -286,6 +286,10 @@ export function createDebugPanel(options: {
   feel.number(cameraFeelSettings, 'fovRate', 1, 30, 0.5);
   feel.number(cameraFeelSettings, 'rollRate', 1, 30, 0.5);
   feel.number(cameraFeelSettings, 'eyeRate', 1, 40, 0.5);
+  feel.number(cameraFeelSettings, 'hurtKick', 0, 15, 0.5);
+  feel.number(cameraFeelSettings, 'hurtKickDamage', 5, 60, 1);
+  feel.number(cameraFeelSettings, 'hurtStiffness', 50, 800, 10);
+  feel.number(cameraFeelSettings, 'hurtDamping', 0.1, 1.5, 0.05);
   feel.button('Copy values', () => copyToClipboard(toSource(cameraFeelSettings)));
 
   // --- Post-processing ---

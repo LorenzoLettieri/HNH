@@ -119,6 +119,16 @@
       }
       /* ...and the colors draining out of the picture (opacity = how much). */
       #low-health-gray { position: fixed; inset: 0; pointer-events: none; background: #808080; mix-blend-mode: saturation; }
+      /* Damage direction (src/render/damageIndicator.ts): each .hurt-arc is a ring around
+         the crosshair with only its TOP border colored. Where a colored border meets a
+         transparent one the browser cuts it diagonally: a crescent with tapered ends,
+         for free. The TS rotates the ring to point at the hit. */
+      #hurt-arcs { position: fixed; left: 50%; top: 50%; pointer-events: none; }
+      .hurt-arc {
+        position: absolute; left: -120px; top: -120px; width: 240px; height: 240px; box-sizing: border-box;
+        border-radius: 50%; border: 10px solid transparent; border-top-color: #a8180c; opacity: 0;
+        filter: drop-shadow(0 0 2px #000) drop-shadow(0 0 8px rgba(160, 10, 0, 0.8));
+      }
       /* Flash when you collect a pickup: color from the --tint variable (set in hud.ts). */
       #pickup-flash {
         position: fixed; inset: 0; pointer-events: none; opacity: 0;
@@ -313,6 +323,7 @@
     <div id="hitmarker"></div>
     <div id="ammo-box"><div id="ammo-rounds"></div><div id="ammo-reserve"></div></div>
     <div id="damage"></div>
+    <div id="hurt-arcs"></div>
     <div id="pickup-flash"></div>
     <div id="health-plate">
       <div id="health-number"></div>

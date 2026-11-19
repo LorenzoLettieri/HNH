@@ -447,7 +447,8 @@ futuro **poligono di tiro / tutorial**.
 - **Basso a destra**: munizioni, colpi disegnati con forma diversa per arma + riserva. [FATTO]
 - **Vita bassa** (sotto il 35%): stile CoD, sangue scuro che entra dai bordi, immagine che perde colore,
   battito del cuore (visivo e sonoro) sempre più veloce. [FATTO]
-- **Colpo subito**: deve sentirsi e deve dire **da dove** arriva. [IN CORSO]
+- **Colpo subito**: deve sentirsi e deve dire **da dove** arriva: arco rosso intorno al mirino che punta
+  verso il colpo (anche mentre ti giri), la testa spinta via dal colpo (molla smorzata), lampo rosso. [FATTO]
 
 ## 7. Ordine di sviluppo
 

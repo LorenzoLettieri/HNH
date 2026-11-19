@@ -1,4 +1,5 @@
-// HUD: health plate (healthPlate.ts), red flash when you get hit, low health (lowHealth.ts),
+// HUD: health plate (healthPlate.ts), red flash, direction arc (damageIndicator.ts)
+// and head snap (cameraFeel.ts) when you get hit, low health (lowHealth.ts),
 // wave number, score, wave banners, the style meter (styleMeter.ts)
 // and the death summary.
 // Plain HTML/CSS elements (see index.html), updated from here.
@@ -11,6 +12,8 @@ import { updateStyleMeter } from './styleMeter';
 import { updateHighNoon } from './highNoon';
 import { updateHealthPlate } from './healthPlate';
 import { updateLowHealth } from './lowHealth';
+import { addHurtArc, screenAngle, updateHurtArcs } from './damageIndicator';
+import { hurtKick } from './cameraFeel';
 
 const damage = document.getElementById('damage')!;
 const pickupFlash = document.getElementById('pickup-flash')!;
@@ -40,6 +43,9 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
     if (e.type === 'playerHurt') {
       flash = 1;
       playPlayerHurt();
+      // Where it came from: an arc around the crosshair and the head snapping away.
+      addHurtArc(e.fromX, e.fromZ, e.damage);
+      hurtKick(screenAngle(player, e.fromX, e.fromZ), e.damage);
     }
     if (e.type === 'pickup') {
       // Doom's "bonus flash": the whole screen tinted for a moment, in the
@@ -89,6 +95,7 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
 
   // Red vignette: a flash on each hit (low health has its own effect, lowHealth.ts).
   flash = Math.max(0, flash - dt * 3);
+  updateHurtArcs(player, dt);
   damage.style.opacity = String(flash);
 
   pickupTime = Math.max(0, pickupTime - dt * 5); // gone in 0.2 s
