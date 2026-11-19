@@ -119,7 +119,7 @@ export function stepGame(
   for (const e of game.entities) {
     if (e.type === 'target') stepTarget(e);
     else if (e.type === 'eyebat') stepEyebat(e, game, world, dt, events);
-    else if (e.type === 'sharpshooter') stepSharpshooter(e, game, world, dt, events);
+    else if (e.type === 'sharpshooter') stepSharpshooter(e, game, world, graph, dt, events);
     else if (e.type === 'hound') stepHound(e, game.player, game.entities, world, graph, flow, dt, events);
     else if (e.type === 'bull') {
       // Asked here, not every tick: with no bulls around it's never computed (cached per goal).

@@ -305,6 +305,13 @@ export function createDebugPanel(options: {
   sharp.number(tuning, 'sharpshooterHitWidth', 0.3, 2, 0.05);
   sharp.number(tuning, 'sharpshooterHitHeight', 0.5, 3, 0.05);
   sharp.number(tuning, 'sharpshooterHeadHeight', 0.5, 2.5, 0.05);
+  sharp.number(tuning, 'sharpshooterWalkSpeed', 0.5, 10, 0.1);
+  sharp.number(tuning, 'sharpshooterClimbSpeed', 0.5, 8, 0.1);
+  sharp.number(tuning, 'sharpshooterRelocateTime', 0.5, 15, 0.5);
+  sharp.number(tuning, 'sharpshooterPerchMinRange', 0, 40, 1);
+  sharp.number(tuning, 'sharpshooterPerchMaxRange', 10, 80, 1);
+  sharp.number(tuning, 'sharpshooterPerchHeightBonus', 0, 10, 0.25);
+  sharp.number(tuning, 'sharpshooterMaxTravel', 10, 200, 5);
   sharp.button('Copy values', () => copyToClipboard(toSource(tuning)));
 
   // --- Camera feel ---

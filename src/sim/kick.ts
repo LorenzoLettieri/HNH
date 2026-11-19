@@ -129,11 +129,12 @@ export function knockBack(e: Entity, dirX: number, dirZ: number, speed: number, 
     e.stateTicks = 0;
   } else if (e.type === 'sharpshooter' && e.state !== 'dead') {
     // A light skeleton: it flies back (and keeps aiming: being kicked doesn't
-    // interrupt the laser, for now).
+    // interrupt the laser, for now). Kicked while climbing: it falls off the wall.
     e.vx = dirX * speed;
     e.vz = dirZ * speed;
     e.vy = lift;
     e.onGround = false;
+    e.climbTo = -1;
   } else if (e.type === 'bull') {
     // Too heavy: it takes the damage, but doesn't budge.
   } else if (e.type === 'eyebat') {

@@ -136,7 +136,7 @@ con un chiaro preavviso.
 | **Avvoltoio** | Volante, gira in cerchio e picchia in picchiata | Raggiunge ogni tetto, obbliga a guardare in alto |
 | **Malocchio** [FATTO] | Occhio-pipistrello volante: orbita attorno a te a distanza (10 m, 5 m più in alto) e spara proiettili lenti. **Pupilla = punto critico** (×3, come la testa del ghoul) | Il movimento diventa difesa; obbliga a guardare in alto e a mirare con precisione |
 | **Fuoco fatuo** | Volante a distanza, proiettili lenti (forse superato dal Malocchio) | Il movimento diventa difesa |
-| **Tiratore scelto** (sharpshooter) [IN CORSO: passi 1-2] | Scheletro col cappello da cowboy e una **Winchester** (la prossima arma del giocatore). Spara **da lontano** con un colpo velocissimo annunciato da un **laser rosso**; cerca di appostarsi sulle **alture**, arrampicandosi (dettagli sotto) | Punisce chi sta fermo o corre dritto in vista, premia chi rompe la linea di tiro o cambia direzione al momento giusto |
+| **Tiratore scelto** (sharpshooter) [IN CORSO: passi 1-3] | Scheletro col cappello da cowboy e una **Winchester** (la prossima arma del giocatore). Spara **da lontano** con un colpo velocissimo annunciato da un **laser rosso**; cerca di appostarsi sulle **alture**, arrampicandosi (dettagli sotto) | Punisce chi sta fermo o corre dritto in vista, premia chi rompe la linea di tiro o cambia direzione al momento giusto |
 | **Dinamitardo** | Lancia dinamite ad arco, lascia fiamme | Nega zone: ti costringe a spostarti |
 | **Toro** [FATTO, da tarare; suoni provvisori] | Grosso e resistente: ti punta (preavviso), poi **carica dritto** senza sterzare (dettagli sotto). Pesa **5** nelle ondate, dall'ondata 7 | Prima si schiva (cambio di direzione o salto), poi si uccide: meglio con un muro alle spalle |
 | **Boss** | Pattern complessi, ogni tot ondate | Picco di intensità |
@@ -295,8 +295,23 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
     Per ora **solo vista frontale** (non cammina e ti guarda sempre). La canna nella simulazione è stata
     avvicinata al corpo (da 0,55 a 0,1 m): lo sprite è piatto, e un punto mezzo metro davanti al cartone
     visto dall'alto non coincide più con la canna disegnata (parallasse).
-    **Da fare**: appostamento sulle alture con arrampicata (con le viste di lato e da dietro), ondate.
-    Da valutare: schegge d'osso al posto del sangue quando lo colpisci, fischio del proiettile che ti sfiora.
+  - **Passo 3** [FATTO]: **va ad appostarsi**. Appena nasce, e ogni volta che non ti vede per **3 s**, sceglie
+    una **postazione**: tra i posti che può raggiungere (camminando, saltando, arrampicandosi fino a 15 m, con
+    gli sfiatatoi) tiene quelli **tra 18 e 40 m da te** (più vicino lo raggiungi troppo facilmente, più lontano
+    esci dalla sua portata appena ti muovi), lontani almeno 6 m da quelli degli altri tiratori, e dà a ognuno un
+    **punteggio = 6 punti per metro di altezza sopra di te − il costo del cammino** (10 m più in alto valgono
+    60 m di strada in più). Dal migliore in giù, prende il primo **da cui ti vedrebbe**. Se non c'è niente di
+    meglio resta dov'è.
+    **Mentre si sposta non spara**: è il momento di raggiungerlo, e a metà di un muro è un bersaglio facile
+    (si arrampica a 2,4 m/s, cammina a 3,4: più lento di un ghoul).
+    Provato in simulazione (giocatore fermo, 8 tiratori dagli spawn della città): con il peso dell'altezza a 3
+    quasi tutti si fermavano in strada (camminare costava più che salire); con la distanza minima a 12 si
+    ammassavano tutti sul tetto più alto accanto a te. Con 6 e 18: tetti da 4 a 8 m, a 24–40 m, quasi tutti
+    arrivano; nessuno rimane bloccato a metà strada. Dagli angoli della mappa ci mette 15–20 s.
+    Per ora mentre cammina e si arrampica lo sprite resta quello di riposo (scivola).
+    **Da fare**: viste di lato e da dietro con camminata e arrampicata, ondate.
+    Da valutare: scappare quando ti avvicini, cambiare postazione dopo qualche colpo, schegge d'osso al
+    posto del sangue quando lo colpisci, fischio del proiettile che ti sfiora.
   - **Proiettili più veloci, collisione "a spazzata"**: a 90 m/s il proiettile fa 1,5 m per tick, quindi non
     basta controllare dov'è arrivato (ti passerebbe attraverso): si controlla tutto il segmento percorso
     nel tick contro la scatola del giocatore **ingrandita del raggio del proiettile** (somma di Minkowski).
