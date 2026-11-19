@@ -449,6 +449,14 @@ export const tuning = {
    * 0.9 m for ~0.35 s) and it passes under you: you can leap over it.
    */
   bullTrampleHeight: 0.9,
+  /**
+   * Other enemies in the way of a charge get run over too: damage (100 =
+   * a ghoul dies up to wave 19) and a throw (m/s, sideways out of its path
+   * and forward; and up). Lure it through the horde.
+   */
+  bullTrampleDamage: 100,
+  bullTrampleKnockback: 12,
+  bullTrampleLift: 6,
   /** After an overshoot it skids to a stop for this long, seconds. */
   bullSkidTime: 0.9,
   /**

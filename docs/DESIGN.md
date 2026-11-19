@@ -194,6 +194,9 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
     ostacolo basso: in carica non salta) resta **stordito 2,2 s** e **ogni colpo è critico** (×3:
     2 colpi di revolver). È la ricompensa della schivata con un muro dietro.
   - **Troppo pesante** per calcio e doppietta: prende il danno ma non si sposta.
+  - **Travolge anche gli altri nemici** (ghoul, cani, Malocchi bassi) che trova sulla traiettoria: 100 danni
+    (un ghoul muore fino all'ondata 19) e li lancia di lato. Si può **attirarlo attraverso l'orda**.
+    Quelle uccisioni non danno punti né drop (non sono colpi tuoi). [DA DECIDERE] premiarle?
   - Bot di prova in campo aperto (bersaglio a 8–20 m): **fermo, che corre dritto di lato, che scappa
     o che gli va incontro: preso**. **Cambia direzione** dopo il blocco (inverte, si ferma, scarta da
     fermo): **mancato**. **Salto**: funziona se parte quando il toro è a 5–7 m (finestra di ~0,15 s).

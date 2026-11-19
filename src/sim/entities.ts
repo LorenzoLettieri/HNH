@@ -136,6 +136,8 @@ export interface BullEntity extends EntityBase {
   chargeCooldownTicks: number;
   /** This charge already ran you over (it only hurts once per charge). */
   chargeHit: boolean;
+  /** Ids of the enemies this charge already ran over (each one only once per charge). */
+  trampled: number[];
   /** Navigation: the graph node it's standing on (-1 = unknown). */
   navNode: number;
 }
@@ -284,6 +286,7 @@ export function createBull(id: number, x: number, y: number, z: number, health =
     // First charge 1-2 s after spawning, staggered by id (deterministic).
     chargeCooldownTicks: secondsToTicks(1 + (id % 4) * 0.3),
     chargeHit: false,
+    trampled: [],
     navNode: -1,
   };
 }

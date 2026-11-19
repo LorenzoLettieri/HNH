@@ -24,10 +24,11 @@
 // too heavy. It doesn't climb or ride vents: if you're on a roof it waits below.
 import { moveAndCollide, overlapsAny } from './collision';
 import { secondsToTicks, tuning } from './config';
-import type { BullEntity, Entity } from './entities';
+import { damage, type BullEntity, type Entity } from './entities';
 import type { SimEvent } from './events';
 import { interceptTime } from './eyebat';
 import { jumpTo } from './ghoul';
+import { knockBack } from './kick';
 import { nearestNode, type FlowField, type NavGraph, type NavLink } from './nav';
 import { hurtPlayer, type PlayerState } from './player';
 import { raycastBoxes } from './raycast';
@@ -73,7 +74,7 @@ export function stepBull(
 
   if (b.state === 'approach') approach(b, player, dist, others, world, graph, flow, dt, events);
   else if (b.state === 'aim') aim(b, player, world, dt, events);
-  else charge(b, player, world, dt, events);
+  else charge(b, player, others, world, dt, events);
 }
 
 /** Walks toward you; when it has a straight line to you, starts aiming. */
@@ -206,12 +207,13 @@ function aim(b: BullEntity, player: PlayerState, world: World, dt: number, event
   if (b.stateTicks >= secondsToTicks(tuning.bullAimTime)) {
     setState(b, 'charge');
     b.chargeHit = false;
+    b.trampled = [];
     events.push({ type: 'bullCharge', entityId: b.id });
   }
 }
 
 /** Straight ahead at full speed. Ends against a wall (stunned) or past you (skid). */
-function charge(b: BullEntity, player: PlayerState, world: World, dt: number, events: SimEvent[]): void {
+function charge(b: BullEntity, player: PlayerState, others: Entity[], world: World, dt: number, events: SimEvent[]): void {
   // No acceleration curve and no steering: on the ground its velocity IS the
   // charge direction × speed. (In the air, off a ledge, it keeps flying.)
   if (b.onGround) {
@@ -241,6 +243,7 @@ function charge(b: BullEntity, player: PlayerState, world: World, dt: number, ev
     player.vy = Math.max(player.vy, tuning.bullChargeLift);
     events.push({ type: 'playerHurt', damage: tuning.bullChargeDamage, fromX: b.x, fromZ: b.z });
   }
+  trample(b, others, events);
 
   if (speedBefore > 1 && Math.hypot(b.vx, b.vz) < speedBefore * (1 - CRASH_SPEED_LOSS)) {
     setState(b, 'stunned');
@@ -252,6 +255,37 @@ function charge(b: BullEntity, player: PlayerState, world: World, dt: number, ev
   const ahead = (player.x - b.x) * b.dirX + (player.z - b.z) * b.dirZ;
   if (ahead < -tuning.bullOvershoot || b.stateTicks > secondsToTicks(tuning.bullChargeMaxTime)) {
     setState(b, 'skid');
+  }
+}
+
+/**
+ * Other enemies in the way get run over too: the bull doesn't care whose
+ * side they're on. Same test as for you (circle on the ground + heights),
+ * then damage and a throw via knockBack (the kick's), out of its path.
+ * The charge doesn't slow down. Each enemy only once per charge.
+ *
+ * The 'hit' event has byEnemy = true: the renderers show the blood and play
+ * the sounds, but it's not your hit (no hitmarker, score or drop: those only
+ * look at the events of your weapons).
+ */
+function trample(b: BullEntity, others: Entity[], events: SimEvent[]): void {
+  const reach = tuning.bullRadius + 0.8;
+  for (const o of others) {
+    if (o.type === 'target' || o.type === 'bull' || o.state === 'dead' || b.trampled.includes(o.id)) continue;
+    const dx = o.x - b.x;
+    const dz = o.z - b.z;
+    if (Math.hypot(dx, dz) > reach || o.y > b.y + tuning.bullHeight || o.y + 1.5 < b.y) continue;
+    b.trampled.push(o.id);
+    const killed = damage(o, tuning.bullTrampleDamage);
+    events.push({ type: 'hit', entityId: o.id, damage: tuning.bullTrampleDamage, killed, surface: 'flesh', headshot: false, byEnemy: true });
+    // Throw: forward along the charge, plus sideways toward the side it was on.
+    const side = dx * b.dirZ - dz * b.dirX >= 0 ? 1 : -1;
+    let tx = b.dirX + b.dirZ * side;
+    let tz = b.dirZ - b.dirX * side;
+    const len = Math.hypot(tx, tz);
+    tx /= len;
+    tz /= len;
+    knockBack(o, tx, tz, tuning.bullTrampleKnockback, tuning.bullTrampleLift);
   }
 }
 

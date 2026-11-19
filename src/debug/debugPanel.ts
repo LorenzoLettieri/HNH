@@ -255,6 +255,9 @@ export function createDebugPanel(options: {
   bull.number(tuning, 'bullChargeKnockback', 0, 40, 0.5);
   bull.number(tuning, 'bullChargeLift', 0, 20, 0.5);
   bull.number(tuning, 'bullTrampleHeight', 0, 2.5, 0.05);
+  bull.number(tuning, 'bullTrampleDamage', 0, 500, 5);
+  bull.number(tuning, 'bullTrampleKnockback', 0, 30, 0.5);
+  bull.number(tuning, 'bullTrampleLift', 0, 20, 0.5);
   bull.number(tuning, 'bullSkidTime', 0, 3, 0.05);
   bull.number(tuning, 'bullStunTime', 0, 6, 0.1);
   bull.number(tuning, 'bullChargeCooldown', 0, 8, 0.1);
