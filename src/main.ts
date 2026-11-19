@@ -29,7 +29,7 @@ import { createPickupRenderer } from './render/pickups';
 import { updateHud } from './render/hud';
 import { createNavDebug } from './render/navDebug';
 import { createHitboxDebug } from './render/hitboxDebug';
-import { getFlowField, getNavGraph } from './sim/nav';
+import { BIG_BODY, getFlowField, getNavGraph } from './sim/nav';
 import { createViewmodel } from './render/weapons/viewmodel';
 import type { SimEvent } from './sim/events';
 import { isEnemy } from './sim/entities';
@@ -120,6 +120,9 @@ const bulls = createBullRenderer(scene);
 const projectiles = createProjectileRenderer(scene);
 const pickups = createPickupRenderer(scene);
 const navDebug = createNavDebug(scene, getNavGraph(world));
+const navDebugBig = createNavDebug(scene, getNavGraph(world, BIG_BODY));
+/** N cycles: 0 = off, 1 = ghouls' graph, 2 = bulls' graph. */
+let navView = 0;
 const hitboxDebug = createHitboxDebug(scene);
 // The gun in your hand: its own scene and camera, drawn over the world.
 const viewmodel = createViewmodel();
@@ -151,7 +154,11 @@ window.addEventListener('keydown', (e) => {
     debugPanel.showAtmosphere(ATMOSPHERES[atmosphereIndex]);
   }
   if (e.code === 'KeyP') post.togglePixelArt();
-  if (e.code === 'KeyN') navDebug.toggle();
+  if (e.code === 'KeyN') {
+    navView = (navView + 1) % 3;
+    if (navView !== 2) navDebug.toggle(); // on at 1, off at 2
+    if (navView !== 1) navDebugBig.toggle(); // on at 2, off at 0
+  }
   if (e.code === 'KeyH') hitboxDebug.toggle();
   // Debug: B spawns an eye-bat in front of you (until they're in the waves).
   if (e.code === 'KeyB') spawnEyebatInFront(game);
@@ -320,6 +327,7 @@ renderer.setAnimationLoop((now: number) => {
   pickups.update(game.pickups, camera, now / 1000);
   updateHud(game, events, dt);
   navDebug.update(getFlowField(getNavGraph(world), game.navGoal));
+  navDebugBig.update(getFlowField(getNavGraph(world, BIG_BODY), game.navGoalBig));
   hitboxDebug.update(game.entities);
   // Ammo: one dot per round (revolver), one tall block per shell (shotgun).
   const [full, empty] = player.weapon === 'shotgun' ? ['▮', '▯'] : ['●', '○'];

@@ -2,7 +2,8 @@
 // those places (walk, jump, drop down, climb). Built automatically from the
 // level's boxes when the game starts.
 //
-//   nodes = points where a ghoul fits standing up, sampled every NODE_SPACING
+//   nodes = points where a body fits standing up (one graph per body SIZE,
+//           see NavBody: ghouls and bulls don't fit in the same places), sampled every few
 //           meters on top of every box (the ground is a box too);
 //   links = one-way connections "from node A you can reach node B by ...".
 //
@@ -33,12 +34,53 @@ export interface NavLink {
 export interface NavGraph {
   nodes: NavNode[];
   links: NavLink[][];
-  /** Spatial index: grid cell → nodes in it (any height). */
+  /** Spatial index: grid cell → nodes in it (any height). Cells are `spacing` wide. */
   cells: Map<string, number[]>;
+  /** Distance between sampled nodes, meters (the body's NavBody.spacing). */
+  spacing: number;
 }
 
-/** Distance between sampled nodes, meters. */
+/**
+ * The SIZE of whoever walks the graph. Where a body fits depends on how big
+ * it is: an alley 1 m wide is a road for a ghoul and a wall for a bull. So
+ * there is one graph per body size, built from the same boxes (like the
+ * "agent radius" of navigation meshes in game engines).
+ */
+export interface NavBody {
+  /** Half the width of the collider, meters. */
+  radius: number;
+  height: number;
+  /** Highest step it jumps up onto, meters. */
+  jumpHeight: number;
+  /** Can it climb walls and ride vents? */
+  climbs: boolean;
+  /**
+   * Distance between sampled nodes, meters. A wide body needs a finer grid:
+   * in a 2.5 m alley a bull fits only in the middle 1.2 m, and with 1.5 m
+   * between the columns of nodes there might be no column there at all.
+   */
+  spacing: number;
+}
+
+/** Distance between sampled nodes for ghoul-sized bodies, meters. */
 export const NODE_SPACING = 1.5;
+
+/** Ghouls (and hounds, which are smaller and don't climb: they skip those links). */
+export const SMALL_BODY: NavBody = {
+  get radius() { return tuning.ghoulRadius; },
+  get height() { return tuning.ghoulHeight; },
+  get jumpHeight() { return tuning.ghoulJumpHeight; },
+  climbs: true,
+  spacing: NODE_SPACING,
+};
+/** Bulls: wide and tall, no climbing. */
+export const BIG_BODY: NavBody = {
+  get radius() { return tuning.bullRadius; },
+  get height() { return tuning.bullHeight; },
+  get jumpHeight() { return tuning.bullJumpHeight; },
+  climbs: false,
+  spacing: 1,
+};
 /** Max height a ghoul climbs up a wall, meters. */
 export const MAX_CLIMB = 15;
 /** Max height it drops down from, meters. */
@@ -49,11 +91,12 @@ const MAX_GAP = 3.5;
 const CLIMB_COST = 2.5;
 
 const cellKey = (ix: number, iz: number) => `${ix},${iz}`;
-const cellOf = (v: number) => Math.floor(v / NODE_SPACING);
 
-export function buildNavGraph(boxes: Box[], props: Prop[] = []): NavGraph {
-  const r = tuning.ghoulRadius;
-  const h = tuning.ghoulHeight;
+export function buildNavGraph(boxes: Box[], props: Prop[] = [], body: NavBody = SMALL_BODY): NavGraph {
+  const r = body.radius;
+  const h = body.height;
+  const S = body.spacing;
+  const cellOf = (v: number) => Math.floor(v / S);
   const fits = (x: number, y: number, z: number, height = h) => !overlapsAny(x, y + 0.02, z, r, height, boxes);
 
   // --- 1. Nodes: sample the top face of every box ---
@@ -62,14 +105,14 @@ export function buildNavGraph(boxes: Box[], props: Prop[] = []): NavGraph {
   for (const b of boxes) {
     // A grid aligned to the world (not to each box), so neighboring boxes
     // at the same height produce nodes that line up.
-    const x0 = Math.ceil((b.minX + 0.1) / NODE_SPACING);
-    const x1 = Math.floor((b.maxX - 0.1) / NODE_SPACING);
-    const z0 = Math.ceil((b.minZ + 0.1) / NODE_SPACING);
-    const z1 = Math.floor((b.maxZ - 0.1) / NODE_SPACING);
+    const x0 = Math.ceil((b.minX + 0.1) / S);
+    const x1 = Math.floor((b.maxX - 0.1) / S);
+    const z0 = Math.ceil((b.minZ + 0.1) / S);
+    const z1 = Math.floor((b.maxZ - 0.1) / S);
     const xs: number[] = [];
     const zs: number[] = [];
-    for (let i = x0; i <= x1; i++) xs.push(i * NODE_SPACING);
-    for (let i = z0; i <= z1; i++) zs.push(i * NODE_SPACING);
+    for (let i = x0; i <= x1; i++) xs.push(i * S);
+    for (let i = z0; i <= z1; i++) zs.push(i * S);
     // Boxes smaller than the spacing (crates, barrels) get one node in the middle.
     if (xs.length === 0) xs.push((b.minX + b.maxX) / 2);
     if (zs.length === 0) zs.push((b.minZ + b.maxZ) / 2);
@@ -100,7 +143,7 @@ export function buildNavGraph(boxes: Box[], props: Prop[] = []): NavGraph {
 
   // --- 2. Links ---
   const links: NavLink[][] = nodes.map(() => []);
-  const reach = Math.ceil(MAX_GAP / NODE_SPACING) + 1;
+  const reach = Math.ceil(MAX_GAP / S) + 1;
   nodes.forEach((a, ia) => {
     const cx = cellOf(a.x);
     const cz = cellOf(a.z);
@@ -113,7 +156,7 @@ export function buildNavGraph(boxes: Box[], props: Prop[] = []): NavGraph {
           const dy = b.y - a.y;
 
           // WALK: neighbors on the same surface (8 directions), ground all along.
-          if (Math.abs(dy) < 0.35 && dist <= NODE_SPACING * 1.5) {
+          if (Math.abs(dy) < 0.35 && dist <= S * 1.5) {
             const midX = (a.x + b.x) / 2;
             const midZ = (a.z + b.z) / 2;
             if (supported(midX, Math.max(a.y, b.y), midZ) && clearPath(a, b, Math.max(a.y, b.y))) {
@@ -124,11 +167,11 @@ export function buildNavGraph(boxes: Box[], props: Prop[] = []): NavGraph {
 
           // JUMP up a step (crate, barrel, low wall), or across a gap at the
           // same height or a bit lower.
-          const stepUp = dy >= 0.35 && dy <= tuning.ghoulJumpHeight && dist <= 2.5;
+          const stepUp = dy >= 0.35 && dy <= body.jumpHeight && dist <= 2.5;
           // (A "gap" only if there's really nothing to walk on in between.)
           const gap =
             Math.abs(dy) < 0.35 &&
-            dist > NODE_SPACING * 1.5 &&
+            dist > S * 1.5 &&
             dist <= MAX_GAP &&
             !supported((a.x + b.x) / 2, Math.max(a.y, b.y), (a.z + b.z) / 2);
           if ((stepUp || gap) && clearPath(a, b, Math.max(a.y, b.y) + 0.3)) {
@@ -146,7 +189,7 @@ export function buildNavGraph(boxes: Box[], props: Prop[] = []): NavGraph {
           }
 
           // CLIMB up a wall: A at the foot of the wall, B on top near the edge.
-          if (dy > tuning.ghoulJumpHeight && dy <= MAX_CLIMB && dist <= 2.2) {
+          if (body.climbs && dy > body.jumpHeight && dy <= MAX_CLIMB && dist <= 2.2) {
             // Room to climb: the column above A, all the way up past B's height.
             if (fits(a.x, a.y, a.z, dy + h) && clearPath(a, b, b.y)) {
               links[ia].push({ to: ib, kind: 'climb', cost: dist + dy * CLIMB_COST });
@@ -160,9 +203,9 @@ export function buildNavGraph(boxes: Box[], props: Prop[] = []): NavGraph {
   // VENT: ride a steam vent. Where does it throw you? Instead of guessing,
   // we SIMULATE it: a virtual ghoul launched from the vent, same physics as
   // the game, tick by tick until it lands. The node there is the destination.
-  const graph = { nodes, links, cells };
+  const graph = { nodes, links, cells, spacing: S };
   for (const p of props) {
-    if (p.type !== 'vent') continue;
+    if (p.type !== 'vent' || !body.climbs) continue;
     const from = nearestNode(graph, p.x, p.y, p.z);
     const landing = simulateVentLaunch(p, boxes);
     const to = landing ? nearestNode(graph, landing.x, landing.y, landing.z) : -1;
@@ -177,15 +220,15 @@ export function buildNavGraph(boxes: Box[], props: Prop[] = []): NavGraph {
     }
   }
 
-  return { nodes, links, cells };
+  return graph;
 }
 
 /** The node closest to (x, y, z), within a couple of meters; -1 if none. */
 export function nearestNode(g: NavGraph, x: number, y: number, z: number): number {
   let best = -1;
   let bestD = Infinity;
-  const cx = cellOf(x);
-  const cz = cellOf(z);
+  const cx = Math.floor(x / g.spacing);
+  const cz = Math.floor(z / g.spacing);
   for (let dx = -1; dx <= 1; dx++) {
     for (let dz = -1; dz <= 1; dz++) {
       for (const id of g.cells.get(cellKey(cx + dx, cz + dz)) ?? []) {
@@ -297,13 +340,19 @@ class MinHeap {
 // The graph depends only on the level, and a flow field only on the graph +
 // the goal node: they're DERIVED data, not game state. We keep them in caches
 // (computed once, reused) instead of inside GameState.
-const graphs = new WeakMap<object, NavGraph>();
+// One cache per body size (the key of the outer map is the NavBody object).
+const graphs = new Map<NavBody, WeakMap<object, NavGraph>>();
 
-export function getNavGraph(world: { boxes: Box[]; props?: Prop[] }): NavGraph {
-  let g = graphs.get(world);
+export function getNavGraph(world: { boxes: Box[]; props?: Prop[] }, body: NavBody = SMALL_BODY): NavGraph {
+  let perWorld = graphs.get(body);
+  if (!perWorld) {
+    perWorld = new WeakMap();
+    graphs.set(body, perWorld);
+  }
+  let g = perWorld.get(world);
   if (!g) {
-    g = buildNavGraph(world.boxes, world.props);
-    graphs.set(world, g);
+    g = buildNavGraph(world.boxes, world.props, body);
+    perWorld.set(world, g);
   }
   return g;
 }

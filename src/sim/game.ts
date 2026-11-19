@@ -8,7 +8,7 @@ import { stepGhoul } from './ghoul';
 import { stepHound } from './hound';
 import { stepBull } from './bull';
 import { createWaveState, scoreHits, stepWaves, wavePressure, type Stats, type WaveState } from './waves';
-import { getFlowField, getNavGraph, nearestNode } from './nav';
+import { BIG_BODY, getFlowField, getNavGraph, nearestNode } from './nav';
 import type { SimEvent } from './events';
 import { createPlayer, respawn, stepPlayer, type PlayerState } from './player';
 import { stepWeapon } from './weapon';
@@ -27,6 +27,8 @@ export interface GameState {
   stats: Stats;
   /** Navigation goal: the graph node the player stands on (the ghouls go there). */
   navGoal: number;
+  /** The same, on the graph for big bodies (bulls): another graph, other node numbers. */
+  navGoalBig: number;
   /** Enemy projectiles in flight (fireballs...). */
   projectiles: Projectile[];
   /** Things on the ground to collect (enemy drops), see pickups.ts. */
@@ -49,6 +51,7 @@ export function createGame(world: World, seed = 1): GameState {
     wave: createWaveState(),
     stats: { kills: 0, score: 0 },
     navGoal: -1,
+    navGoalBig: -1,
     projectiles: [],
     pickups: [],
     rng: seed,
@@ -87,9 +90,12 @@ export function stepGame(
   // in mid-jump we keep the last known node.) Checked 4 times a second;
   // the flow field is recomputed only when that node changes.
   const graph = getNavGraph(world);
+  const bigGraph = getNavGraph(world, BIG_BODY);
   if (game.tick % 15 === 0 && game.player.onGround) {
     const node = nearestNode(graph, game.player.x, game.player.y, game.player.z);
     if (node >= 0) game.navGoal = node;
+    const big = nearestNode(bigGraph, game.player.x, game.player.y, game.player.z);
+    if (big >= 0) game.navGoalBig = big;
   }
   const flow = getFlowField(graph, game.navGoal);
   const pressure = wavePressure(game.wave.number);
@@ -98,7 +104,10 @@ export function stepGame(
     if (e.type === 'target') stepTarget(e);
     else if (e.type === 'eyebat') stepEyebat(e, game, world, dt, events);
     else if (e.type === 'hound') stepHound(e, game.player, game.entities, world, graph, flow, dt, events);
-    else if (e.type === 'bull') stepBull(e, game.player, game.entities, world, graph, flow, dt, events);
+    else if (e.type === 'bull') {
+      // Asked here, not every tick: with no bulls around it's never computed (cached per goal).
+      stepBull(e, game.player, game.entities, world, bigGraph, getFlowField(bigGraph, game.navGoalBig), dt, events);
+    }
     else if (e.state !== 'dead') stepGhoul(e, game.player, game.entities, world, graph, flow, dt, events, pressure);
   }
   game.projectiles = stepProjectiles(game.projectiles, game.player, world, dt, events);

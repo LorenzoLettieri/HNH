@@ -110,6 +110,12 @@ Stile: **sprite 2D** (tipo Doom), coerenti con il resto.
   torna a puntarti dritto. Distanza minima tra ghoul: 1,4 m (era 1).
   Col bot di prova (giro in tondo, ondata 30): ghoul entro 6 m in media da 0,5 a ~4.
 - I volanti usano uno steering 3D semplice che evita gli ostacoli.
+- **Un grafo per taglia** [FATTO]: dove passa un corpo dipende da quanto è grosso (un vicolo largo 1 m è una
+  strada per un ghoul e un muro per un toro). Stessi box, due grafi: **piccolo** (ghoul e cani, nodi ogni 1,5 m)
+  e **grande** (tori: raggio 0,65 m, alti 2,1 m, nodi ogni **1 m** così c'è sempre una fila di nodi nel mezzo
+  dei vicoli da 2,5 m; niente arrampicate né sfiatatoi). Ognuno ha il suo flow field. Grafo grande: ~7600 nodi,
+  ~0,3 s per costruirlo all'avvio; il suo flow field si calcola solo se c'è almeno un toro.
+  Tasto **N** due volte: mostra il grafo grande.
 
 ---
 
@@ -191,8 +197,7 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
   - Bot di prova in campo aperto (bersaglio a 8–20 m): **fermo, che corre dritto di lato, che scappa
     o che gli va incontro: preso**. **Cambia direzione** dopo il blocco (inverte, si ferma, scarta da
     fermo): **mancato**. **Salto**: funziona se parte quando il toro è a 5–7 m (finestra di ~0,15 s).
-  - [DA FARE] Il grafo di navigazione è tarato sulla taglia del ghoul: il toro (largo 1,3 m) a volte
-    s'incastra nei passaggi più stretti. Serve un grafo per i corpi grandi.
+  - **Grafo tutto suo** (vedi Navigazione): col grafo dei ghoul s'incastrava nei passaggi stretti.
 - **Calcio (melee)** [FATTO, da tarare]: F o tasto destro. Colpisce **tutto** in un cono davanti
   (1,6 m, ±45°), 25 danni (mezzo ghoul base: è uno strumento, non l'arma principale), e **spinge via**
   (13 m/s in avanti, 5 m/s in alto): il ghoul vola via, interrompe artigliata e balzo, e resta a terra
