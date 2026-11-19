@@ -97,7 +97,7 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `weapons/`: **l'arma in mano (viewmodel)**
     - `viewmodel.ts`: scena/camera dell'arma, **posa, rinculo, ondeggiamento, bob, ricarica, lampo, calcio** (`viewmodelSettings`)
     - `revolverModel.ts`: modello procedurale del revolver (canna, tamburo, cane, calcio)
-    - `boot.ts`: **gamba sinistra del calcio** (stivale da cowboy a blocchi: gambale con cuciture, punta, tacco, sperone; texture; **angolo della caviglia** `FOOT_ANGLE`; **pose dell'animazione** `HIDDEN`/`OUT` con posizione e rotazioni, tempi di tenuta e ritorno)
+    - `kickLeg.ts`: **gamba del calcio**: carica `public/models/leg.glb` (GLTFLoader), lo anima con `AnimationMixer` sincronizzando il fotogramma d'impatto con `kickWindup`
     - `hands.ts`: **mani a blocchi** (guanti, maniche) e **keyframe del fanning** della mano sinistra
   - `hud.ts`: barra della salute, vignetta rossa, **numero dell'ondata, punteggio, scritte di inizio/fine ondata e conto alla rovescia**, riepilogo alla morte
   - `projectiles.ts`: **palle di fuoco nemiche** (sprite pixel art luminoso, scia di braci, scintille e suono all'impatto)
@@ -117,7 +117,7 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
 - `tools/blender/`: **modelli 3D generati con script Python per Blender** (`bpy`, Blender senza interfaccia)
   - `setup.sh`: installazione una tantum (venv con `bpy` in `tools/blender/.venv`)
   - `lib.py`: mini-libreria di modellazione: **loft** (anelli di sezione uniti in un tubo), anelli ellittici, box/cilindri/stelle, **texture pixel art** (`Pixels`), materiali con filtro "Closest"
-  - `leg.py`: **gamba sinistra con stivale da cowboy** (jeans, gambale con cuciture, punta, tacco cubano, sperone, borchia), **scheletro** (anca → coscia → stinco → piede), **animazione del calcio** con IK poi "bakata", render di anteprima, export. Tabelle delle forme (`FOOT`, `SOLE_TOP`), pose del calcio (`key_foot`, `KICK_HIP`) e fotogrammi (`IMPACT_FRAME` ecc.) in cima
+  - `leg.py`: **gamba sinistra con stivale da cowboy**, **low-poly** (pochi lati per sezione, shading piatto, texture 8–32 px) (jeans, gambale con cuciture, punta, tacco cubano, sperone, borchia), **scheletro** (anca → coscia → stinco → piede), **animazione del calcio** con IK poi "bakata", render di anteprima, export. Tabelle delle forme (`FOOT`, `SOLE_TOP`), pose del calcio (`key_foot`, `KICK_HIP`) e fotogrammi (`IMPACT_FRAME` ecc.) in cima
   - `previews/`: render di anteprima (non nel repo)
 - `public/models/`: **modelli glTF (.glb) generati** da `tools/blender/` (nel repo, così il sito non ha bisogno di Blender)
 - `public/textures/`: texture PNG (servite così come sono da Vite su `/textures/...`)

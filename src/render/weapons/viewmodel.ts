@@ -13,7 +13,7 @@ import { directionFromAngles } from '../sky';
 import { PixelCanvas } from '../props/pixelCanvas';
 import { createRevolverModel } from './revolverModel';
 import { createHands, poseLeftHand } from './hands';
-import { createBoot, poseBoot } from './boot';
+import { createKickLeg } from './kickLeg';
 
 /** Mutable so the debug panel can change them. */
 export const viewmodelSettings = {
@@ -69,7 +69,7 @@ export interface Viewmodel {
   camera: THREE.PerspectiveCamera;
   onShot(): void;
   onReload(): void;
-  /** The kick started: swing the boot (see boot.ts). */
+  /** The kick started: play the leg animation (see kickLeg.ts). */
   onKick(): void;
   applyAtmosphere(a: Atmosphere): void;
   setAspect(aspect: number): void;
@@ -113,8 +113,8 @@ export function createViewmodel(): Viewmodel {
 
   // The kicking leg: directly in the scene (not in the holder), so the gun's
   // sway and bob don't shake it.
-  const boot = createBoot();
-  scene.add(boot);
+  const leg = createKickLeg();
+  scene.add(leg.root);
   let kickTime = Infinity; // seconds since the kick started (Infinity = none)
   let kickPunched = true; // the camera dip of this kick already happened
 
@@ -167,6 +167,7 @@ export function createViewmodel(): Viewmodel {
     onKick() {
       kickTime = 0;
       kickPunched = false;
+      leg.play();
     },
     applyAtmosphere(a) {
       ambient.color.set(a.ambientSky);
@@ -230,7 +231,7 @@ export function createViewmodel(): Viewmodel {
       // (the body twists when you kick). At the moment of contact, a small
       // camera dip: the "weight" of the impact.
       kickTime += dt;
-      const legOut = poseBoot(boot, kickTime);
+      const legOut = leg.update(dt);
       if (!kickPunched && kickTime >= tuning.kickWindup) {
         kickPunched = true;
         viewKick -= s.kickViewPunch;
