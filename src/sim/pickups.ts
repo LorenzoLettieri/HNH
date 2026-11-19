@@ -52,7 +52,7 @@ export function dropFromKills(game: GameState, world: World, events: SimEvent[])
     if (ev.type !== 'hit' || !ev.killed) continue;
     const enemy = game.entities.find((e) => e.id === ev.entityId);
     if (!enemy || enemy.type === 'target') continue; // steel targets drop nothing
-    // Chance = weight × dropChancePerWeight, capped. Ghoul 1 → 20%, eye-bat 2 → 40%, hound 3 → 60%.
+    // Chance = weight × dropChancePerWeight, capped. Ghoul 1 → 30%, eye-bat 2 → 60%, hound 3 → 80% (cap).
     const chance = Math.min(tuning.dropChanceMax, enemyCost(enemy) * tuning.dropChancePerWeight);
     if (random(game) >= chance) continue;
     const kind = pickKind(random(game));

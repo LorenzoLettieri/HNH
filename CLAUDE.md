@@ -72,7 +72,7 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `raycast.ts`: raggio contro i box (metodo degli "slab"): cosa colpisce un proiettile
   - `events.ts`: eventi della simulazione (**`fire`** = l'arma ha sparato, **`shot`** = un proiettile/pallino e dove è arrivato, **cambio arma**, colpo su un'entità, **calcio**, attacco del ghoul, carica/sparo del Malocchio, impatto di un proiettile, giocatore ferito/morto, colpo a vuoto, ricarica) per effetti e suoni
   - `collision.ts`: movimento con collisioni asse per asse contro i box, `overlapsAny` (c'è spazio?), `findWall` (muro vicino?)
-  - `player.ts`: stato del giocatore e `stepPlayer()` (salto e bhop facilitato, slide/accovacciata, wall jump stile Apex, attrito, accelerazione Quake + air control, gravità, sfiatatoi, respawn)
+  - `player.ts`: stato del giocatore e `stepPlayer()` (salto e bhop facilitato, slide/accovacciata (**in aria la postura resta quella con cui hai saltato**), wall jump stile Apex, attrito, accelerazione Quake + air control, gravità, sfiatatoi, respawn)
 - `src/debug/`: pannello di debug
   - `panel.ts`: mini-libreria DOM per i controlli (slider, checkbox, colori, "Copy values")
   - `debugPanel.ts`: **quali valori sono esposti nel pannello** e i loro range; in cima **"Waves"**: scegli un'ondata e "Go to this wave" per provarla subito (`jumpToWave` in `src/sim/waves.ts`), poi **"Style"**

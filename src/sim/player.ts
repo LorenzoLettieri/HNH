@@ -255,8 +255,15 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
  * - sliding and too slow                    → CROUCH (crouch-walking);
  * - crouch released                         → STAND UP, but only if there's room
  *                                             above (you might be under a beam).
+ * In the AIR nothing changes: you keep the stance you jumped with until you
+ * land. Crouching keeps the feet where they are and lowers the head, so
+ * toggling it mid-air (crouch going up, stand going down) moved the camera
+ * against gravity: the view barely dipped and you seemed to glide.
+ * Holding crouch before landing still works: it applies on the first tick
+ * on the ground (land → slide).
  */
 function updateCrouchAndSlide(p: PlayerState, crouchHeld: boolean, world: World): void {
+  if (!p.onGround) return;
   if (crouchHeld) {
     p.crouched = true;
     const speed = horizontalSpeed(p);
