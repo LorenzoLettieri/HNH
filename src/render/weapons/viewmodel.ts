@@ -32,8 +32,8 @@ export const viewmodelSettings = {
   sway: 0.5,
   /** Up-down/side bob while running. */
   bob: 0.012,
-  /** Duration of the left-hand fanning swipe, seconds (keep it ≤ the fire interval). */
-  fanDuration: 0.3,
+  /** Duration of the left-hand fanning swipe, seconds (if longer than the fire interval, fast shooting restarts it midway). */
+  fanDuration: 0.4,
 };
 
 /** Smoothly moves `current` toward `target` (same exponential easing as cameraFeel). */
