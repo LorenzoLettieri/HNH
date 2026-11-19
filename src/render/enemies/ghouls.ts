@@ -164,7 +164,7 @@ export function createGhoulRenderer(scene: THREE.Scene): GhoulRenderer {
       showFrame(v, crouching ? FRAMES.windup : FRAMES.swipe);
       // Crouch: the sprite squashes a bit, so the pose reads from far away.
       if (crouching) v.mesh.position.y -= 0.15;
-    } else if (e.state === 'recover') {
+    } else if (e.state === 'recover' || e.state === 'staggered') {
       showFrame(v, FRAMES.hurt); // sprawled after landing: shoot it now
     } else if (e.state === 'attack') {
       const progress = e.stateTicks / (tuning.ghoulAttackTime * 60);

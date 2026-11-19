@@ -37,6 +37,8 @@ export function buildCommand(tick: number): InputCommand {
   const crouch = isKeyDown('ShiftLeft') || isKeyDown('KeyC');
   const fire = isKeyDown('Mouse0') || wasPressed('Mouse0');
   const reload = isKeyDown('KeyR') || wasPressed('KeyR');
+  // F or the right mouse button: the boot.
+  const kick = isKeyDown('KeyF') || wasPressed('KeyF') || isKeyDown('Mouse2') || wasPressed('Mouse2');
   const respawn = isKeyDown('KeyK'); // K = "kill yourself" (debug)
-  return { tick, forward, strafe, jump, crouch, fire, reload, respawn, yaw: view.yaw, pitch: view.pitch };
+  return { tick, forward, strafe, jump, crouch, fire, kick, reload, respawn, yaw: view.yaw, pitch: view.pitch };
 }

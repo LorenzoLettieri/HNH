@@ -58,6 +58,10 @@ export function stepGhoul(
     stepLunge(g, player, world, dt, events, pressure);
     return;
   }
+  if (g.state === 'staggered') {
+    stepStaggered(g, world, dt);
+    return;
+  }
 
   // --- 1. Where is it on the graph, and where should it go? ---
   if (g.onGround) {
@@ -310,6 +314,31 @@ function stepLunge(g: GhoulEntity, player: PlayerState, world: World, dt: number
     const cooldown = tuning.ghoulLungeCooldown * lerp(1, tuning.peakLungeCooldownFactor, pressure);
     g.lungeCooldownTicks = secondsToTicks(cooldown + ((g.id * 7) % 16) * 0.1);
     g.attackCooldownTicks = 0;
+  }
+}
+
+/**
+ * Kicked (see kick.ts): no steering at all, it's just a falling body.
+ * Gravity + collisions, like a thrown ball; on the ground it slides to a stop
+ * (friction), and stays down for kickStun seconds after landing.
+ * The timer counts only on the ground: kicked off a roof, it doesn't get up
+ * in mid-air.
+ */
+function stepStaggered(g: GhoulEntity, world: World, dt: number): void {
+  if (g.onGround) {
+    const k = Math.min(1, 8 * dt);
+    g.vx -= g.vx * k;
+    g.vz -= g.vz * k;
+  } else {
+    g.stateTicks = 0; // still flying: the "down" timer hasn't started
+  }
+  g.vy -= tuning.gravity * dt;
+  const { landed } = moveAndCollide(g, tuning.ghoulRadius, tuning.ghoulHeight, world.boxes, dt);
+  g.onGround = landed;
+  if (g.onGround && g.stateTicks >= secondsToTicks(tuning.kickStun)) {
+    g.state = 'chase';
+    g.stateTicks = 0;
+    g.attackCooldownTicks = secondsToTicks(0.3); // a moment to get its bearings
   }
 }
 

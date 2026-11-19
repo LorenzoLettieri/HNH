@@ -37,9 +37,10 @@ export interface GhoulEntity extends EntityBase {
   onGround: boolean;
   /**
    * What it's doing: walking to you, swinging its claws, pouncing at you
-   * (crouch, then a leap), getting up after a pounce, or lying dead.
+   * (crouch, then a leap), getting up after a pounce, thrown by your kick
+   * (flying, then down for a moment), or lying dead.
    */
-  state: 'chase' | 'attack' | 'lunge' | 'recover' | 'dead';
+  state: 'chase' | 'attack' | 'lunge' | 'recover' | 'staggered' | 'dead';
   /** Ticks spent in the current state. */
   stateTicks: number;
   /** Ticks before it can attack again. */

@@ -3,7 +3,16 @@
 import * as THREE from 'three';
 import type { SimEvent } from '../sim/events';
 import { tuning } from '../sim/config';
-import { playDryFire, playHeadshot, playReload, playShot, playTargetDown, playTargetHit } from '../audio/sfx';
+import {
+  playDryFire,
+  playHeadshot,
+  playKickImpact,
+  playKickSwing,
+  playReload,
+  playShot,
+  playTargetDown,
+  playTargetHit,
+} from '../audio/sfx';
 import { createImpacts } from './impacts';
 import { spawnBlood, spawnSparks } from './particles';
 
@@ -71,6 +80,12 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
               else spawnSparks(point, normal, e.surface === 'metal' ? 18 : 10);
             }
             for (const f of fx.onShot) f();
+            break;
+          case 'kickStart':
+            playKickSwing();
+            break;
+          case 'kickLand':
+            if (e.hits > 0) playKickImpact(e.hits);
             break;
           case 'dryFire':
             playDryFire();

@@ -14,6 +14,8 @@ export interface InputCommand {
   crouch: boolean;
   /** Fire button held (left mouse). */
   fire: boolean;
+  /** Kick button held (melee). */
+  kick: boolean;
   /** Reload button held. */
   reload: boolean;
   /** Go back to the spawn point (debug/testing). */

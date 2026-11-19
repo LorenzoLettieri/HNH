@@ -49,6 +49,14 @@ export interface PlayerState {
   /** Ticks left until the reload finishes (0 = not reloading). */
   reloadTicks: number;
 
+  // --- Kick (see kick.ts) ---
+  /** Ticks since the kick started (0 = not kicking). The foot lands at kickWindup. */
+  kickTicks: number;
+  /** Ticks left before the next kick is allowed. */
+  kickCooldownTicks: number;
+  /** Was kick held during the previous tick? (one press = one kick) */
+  kickHeld: boolean;
+
   // --- Health ---
   /** No regeneration: health comes back only from pickups (future). */
   health: number;
@@ -79,6 +87,9 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     fireBufferTicks: 0,
     fireHeld: false,
     reloadTicks: 0,
+    kickTicks: 0,
+    kickCooldownTicks: 0,
+    kickHeld: false,
     health: tuning.playerMaxHealth,
   };
 }
@@ -349,6 +360,8 @@ export function respawn(p: PlayerState, world: World): void {
   p.health = tuning.playerMaxHealth;
   p.ammo = tuning.revolverAmmo;
   p.reloadTicks = 0;
+  p.kickTicks = 0;
+  p.kickCooldownTicks = 0;
 }
 
 /** Quake's friction: removes a slice of speed every tick, keeping the direction. */

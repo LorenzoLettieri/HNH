@@ -85,6 +85,15 @@ export function createDebugPanel(options: {
   gun.number(tuning, 'revolverAmmo', 1, 12, 1);
   gun.number(tuning, 'revolverDamage', 5, 200, 5);
   gun.number(tuning, 'headshotMultiplier', 1, 5, 0.25);
+  const kick = panel.folder('Kick (src/sim/config.ts, src/sim/kick.ts)');
+  kick.number(tuning, 'kickWindup', 0, 0.3, 0.01);
+  kick.number(tuning, 'kickCooldown', 0.1, 2, 0.05);
+  kick.number(tuning, 'kickRange', 0.3, 4, 0.1);
+  kick.number(tuning, 'kickAngle', 10, 90, 1);
+  kick.number(tuning, 'kickDamage', 0, 200, 5);
+  kick.number(tuning, 'kickKnockback', 0, 30, 0.5);
+  kick.number(tuning, 'kickLift', 0, 15, 0.5);
+  kick.number(tuning, 'kickStun', 0, 2, 0.05);
   gun.number(viewmodelSettings, 'fov', 30, 100, 1);
   gun.number(viewmodelSettings, 'x', -0.3, 0.3, 0.005);
   gun.number(viewmodelSettings, 'y', -0.3, 0.1, 0.005);

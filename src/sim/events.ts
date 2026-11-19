@@ -31,6 +31,10 @@ export type SimEvent =
   | { type: 'eyebatShot'; entityId: number; projectileId: number }
   /** A projectile hit the level or the player (where, and the surface normal). */
   | { type: 'projectileHit'; x: number; y: number; z: number; nx: number; ny: number; nz: number; player: boolean }
+  /** The kick starts (the leg swings: whoosh). */
+  | { type: 'kickStart' }
+  /** The foot lands: how many things it hit (0 = kicked the air). */
+  | { type: 'kickLand'; hits: number }
   | { type: 'dryFire' } // pulled the trigger with an empty cylinder
   | { type: 'reloadStart' }
   | { type: 'reloadEnd' };

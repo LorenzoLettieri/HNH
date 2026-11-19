@@ -147,6 +147,24 @@ export const tuning = {
   /** Max shooting distance, meters. */
   weaponRange: 200,
 
+  // --- Kick (melee, see kick.ts) ---
+  /** Seconds from the key press to the foot landing (a tiny wind-up: the leg has to get there). */
+  kickWindup: 0.08,
+  /** Seconds before you can kick again (counted from the press). */
+  kickCooldown: 0.55,
+  /** How far the foot reaches, meters, from the edge of your body to the edge of theirs. */
+  kickRange: 1.6,
+  /** Half-width of the cone in front of you, degrees: everything inside gets kicked (crowd control). */
+  kickAngle: 45,
+  /** Damage of a kick (half a basic ghoul: it's a tool, not your main weapon). */
+  kickDamage: 25,
+  /** Horizontal speed given to a kicked enemy, m/s. */
+  kickKnockback: 13,
+  /** Upward speed given to a kicked enemy, m/s: lifting it off its feet makes it fly. */
+  kickLift: 5,
+  /** A kicked ghoul stays down this long after landing, seconds (can't claw you). */
+  kickStun: 0.5,
+
   // --- Player health ---
   playerMaxHealth: 100,
 

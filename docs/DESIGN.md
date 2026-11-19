@@ -141,6 +141,10 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
   all'atterraggio. Ti ferisce se ti tocca in volo (20 danni). Atterrato resta **a terra 0,6 s**:
   è il momento di punirlo. Ricarica di 3–4,5 s. Resta un nemico che punisce le distrazioni:
   per chi lo vede arrivare è schivabile (salto, slide di lato).
+- **Calcio (melee)** [FATTO, da tarare]: F o tasto destro. Colpisce **tutto** in un cono davanti
+  (1,6 m, ±45°), 25 danni (mezzo ghoul base: è uno strumento, non l'arma principale), e **spinge via**
+  (13 m/s in avanti, 5 m/s in alto): il ghoul vola via, interrompe artigliata e balzo, e resta a terra
+  0,5 s. Si può calciare mentre si ricarica. Ricarica di 0,55 s.
 - **Niente rigenerazione della salute.** [DA DECIDERE] drop casuali dei nemici (medikit o simili).
 
 ## 4. La mappa [DECISO: cittadina all'aperto]

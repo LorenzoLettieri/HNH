@@ -10,6 +10,7 @@ import { getFlowField, getNavGraph, nearestNode } from './nav';
 import type { SimEvent } from './events';
 import { createPlayer, respawn, stepPlayer, type PlayerState } from './player';
 import { stepWeapon } from './weapon';
+import { stepKick } from './kick';
 import type { World } from './world';
 
 export interface GameState {
@@ -49,7 +50,7 @@ export function createGame(world: World, seed = 1): GameState {
 
 /**
  * One tick of the whole game, always in the same order:
- * 1. the player moves; 2. the player's weapon fires (and hits);
+ * 1. the player moves; 2. the player's weapon fires (and hits), the boot kicks;
  * 3. targets and enemies update; 4. enemy projectiles fly (and hit);
  * 5. the wave system spawns enemies.
  * Things that happened go into `events`.
@@ -70,6 +71,7 @@ export function stepGame(
   stepPlayer(game.player, cmd, world, dt);
   const firstNewEvent = events.length;
   stepWeapon(game.player, cmd, world, game.entities, events);
+  stepKick(game.player, cmd, world, game.entities, events);
   scoreHits(game.stats, events.slice(firstNewEvent));
 
   // Navigation: where's the player on the graph? (Only while standing:

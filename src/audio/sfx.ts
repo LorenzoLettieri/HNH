@@ -266,6 +266,25 @@ export function playGhoulDeath(where: Where): void {
   noiseBurst({ out, duration: 0.2, volume: 0.5, filter: 'lowpass', frequency: 900, frequencyEnd: 200 });
 }
 
+/** The leg swings: a short, low whoosh of air (lower and shorter than the claws). */
+export function playKickSwing(): void {
+  if (!ctx) return;
+  noiseBurst({ duration: 0.16, volume: 0.35, filter: 'bandpass', frequency: 300, frequencyEnd: 1100, q: 1.5 });
+}
+
+/**
+ * The boot connects: a heavy, dull THUD (a low sine dropping fast, like the
+ * shot's punch but without the crack) plus a short muffled slap of noise.
+ * More things hit = a bit louder.
+ */
+export function playKickImpact(hits: number): void {
+  if (!ctx) return;
+  const v = 0.9 + Math.random() * 0.2;
+  const loud = Math.min(1, 0.7 + hits * 0.1);
+  thump({ duration: 0.22, volume: loud, from: 110 * v, to: 35 });
+  noiseBurst({ duration: 0.09, volume: 0.6 * loud, filter: 'lowpass', frequency: 1400 * v, frequencyEnd: 250 });
+}
+
 /** The player gets hit: a heavy thud and a short grunt. */
 export function playPlayerHurt(): void {
   thump({ duration: 0.2, volume: 0.9, from: 140, to: 45 });
