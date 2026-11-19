@@ -27,6 +27,7 @@ import { createProjectileRenderer } from './render/projectiles';
 import { createPickupRenderer } from './render/pickups';
 import { updateHud } from './render/hud';
 import { updateAmmoHud } from './render/ammoHud';
+import { updateMoneyHud } from './render/moneyHud';
 import { updateThreats } from './render/threatIndicator';
 import { createNavDebug } from './render/navDebug';
 import { createHitboxDebug } from './render/hitboxDebug';
@@ -305,6 +306,7 @@ renderer.setAnimationLoop((now: number) => {
   navDebugBig.update(getFlowField(getNavGraph(world, BIG_BODY), game.navGoalBig));
   hitboxDebug.update(game.entities);
   updateAmmoHud(player);
+  updateMoneyHud(game.player.money, dt);
 
   updateFireLights(now / 1000);
   props.update(now / 1000);

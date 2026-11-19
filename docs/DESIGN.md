@@ -413,6 +413,10 @@ Punteggio e moneta sono **separati**:
 - **Passo 1** [FATTO]: monete nella simulazione (`player.money`, si azzera alla morte), sprite di una
   **piletta di monete d'oro** (due pile disordinate, niente moneta che gira alla Mario), pozza di
   luce dorata, "ka-ching", contatore provvisorio sotto le uccisioni.
+- **Passo 2** [FATTO]: **contatore nell'HUD**, in alto a destra sotto i punti: la stessa piletta del
+  raccoglibile e il numero in oro che **sale come un registratore di cassa** (non salta: i soldi che
+  "scorrono" sembrano di più). Sotto, un **"+N"** che somma tutto quello che raccogli di fila (le cinque
+  pilette di un toro = un "+50") e poi svanisce.
 
 [DA DECIDERE]
 - Listino: quali potenziamenti (danno, caricatore, ricarica, salute massima; **movimento**: wall jump
@@ -478,7 +482,7 @@ futuro **poligono di tiro / tutorial**.
 3. Fonti dal movimento (velocità, tempo in aria, wall jump) + premio calante per le azioni ripetute.
 4. **Climax HIGH NOON** (5 s di caricatore infinito). [FATTO: meccanica, tinta, suoni, fine]
 5. **Vildenaro**: monete lasciate dai nemici + contatore nell'HUD; lo Stile moltiplica punti e vildenaro.
-   [IN CORSO: passo 1 fatto (monete); poi contatore vero nell'HUD, poi moltiplicatore dello Stile]
+   [IN CORSO: monete e contatore fatti; poi moltiplicatore dello Stile]
 6. **Shop**: venditore (sprite), tasto E, menu che non mette in pausa, primo acquisto: la doppietta.
 7. Potenziamenti all'emporio.
 8. Lazo / rampino.

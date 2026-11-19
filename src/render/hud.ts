@@ -27,7 +27,6 @@ const waveHud = document.getElementById('wave')!;
 const waveBox = document.getElementById('wave-box')!;
 const scoreHud = document.getElementById('score')!;
 const killsHud = document.getElementById('kills')!;
-const moneyHud = document.getElementById('money')!;
 const enemiesHud = document.getElementById('enemies-left')!;
 const fpsHud = document.getElementById('fps')!;
 const speedHud = document.getElementById('speed')!;
@@ -139,7 +138,6 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
   waveHud.textContent = String(w.number);
   scoreHud.textContent = String(game.stats.score);
   killsHud.textContent = `${game.stats.kills} UCCISIONI`;
-  moneyHud.textContent = `${player.money} VILDENARO`; // provisional: the real counter is the next step
   // Enemies alive right now (corpses still on the ground don't count). A "+"
   // while the wave is still spawning: more are coming than you can see here.
   let alive = 0;

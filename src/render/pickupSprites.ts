@@ -157,6 +157,26 @@ function paintCoin(): PixelFrame {
   return f;
 }
 
+/**
+ * The coin pile as a small 2D canvas, for the HUD's vildenaro counter: the
+ * same pixels as the pickup on the ground, so the HUD and the world speak the
+ * same language ("that thing there = this number here"). CSS scales it up
+ * with `image-rendering: pixelated` (the HTML version of NearestFilter).
+ */
+export function coinIcon(): HTMLCanvasElement {
+  const f = paintCoin();
+  const n = PICKUP_FRAME;
+  const data = new ImageData(n, n);
+  for (let i = 0; i < n * n; i++) {
+    const c = f.color[i];
+    if (c !== -1) data.data.set([(c >> 16) & 255, (c >> 8) & 255, c & 255, 255], i * 4);
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = n;
+  canvas.getContext('2d')!.putImageData(data, 0, 0);
+  return canvas;
+}
+
 /** How much of its own color every pixel emits (the glowing ones emit all of it). */
 const SELF_LIGHT = 0.4;
 
