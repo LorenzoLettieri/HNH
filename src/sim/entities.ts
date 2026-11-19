@@ -84,9 +84,26 @@ export interface EyebatEntity extends EntityBase {
   shootCooldownTicks: number;
 }
 
-export type Entity = TargetEntity | GhoulEntity | EyebatEntity;
+/** The hellhound: a fast four-legged hunter. Position = feet. */
+export interface HoundEntity extends EntityBase {
+  type: 'hound';
+  vx: number;
+  vy: number;
+  vz: number;
+  onGround: boolean;
+  /** Running to you, biting, thrown by a kick/blast (flying, then down for a moment), or dead. */
+  state: 'chase' | 'bite' | 'staggered' | 'dead';
+  /** Ticks spent in the current state. */
+  stateTicks: number;
+  /** Ticks before it can bite again. */
+  biteCooldownTicks: number;
+  /** Navigation: the graph node it's standing on (-1 = unknown). */
+  navNode: number;
+}
+
+export type Entity = TargetEntity | GhoulEntity | EyebatEntity | HoundEntity;
 /** Everything that fights you (not the practice targets). */
-export type Enemy = GhoulEntity | EyebatEntity;
+export type Enemy = GhoulEntity | EyebatEntity | HoundEntity;
 
 export function isEnemy(e: Entity): e is Enemy {
   return e.type !== 'target';
@@ -181,6 +198,28 @@ export function createEyebat(id: number, x: number, y: number, z: number, health
   };
 }
 
+export function createHound(id: number, x: number, y: number, z: number, health = tuning.houndHealth): HoundEntity {
+  return {
+    id,
+    type: 'hound',
+    x,
+    y,
+    z,
+    px: x,
+    py: y,
+    pz: z,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    health,
+    onGround: false,
+    state: 'chase',
+    stateTicks: 0,
+    biteCooldownTicks: 0,
+    navNode: -1,
+  };
+}
+
 export function isAlive(e: Entity): boolean {
   return e.health > 0;
 }
@@ -198,6 +237,9 @@ export function hitBox(e: Entity): Box {
   // Every shooter does this (generous hitboxes), it's not cheating.
   if (e.type === 'ghoul') {
     return box(e.x, e.y, e.z, tuning.ghoulHitWidth, tuning.ghoulHitHeight, tuning.ghoulHitWidth);
+  }
+  if (e.type === 'hound') {
+    return box(e.x, e.y, e.z, tuning.houndHitWidth, tuning.houndHitHeight, tuning.houndHitWidth);
   }
   if (e.type === 'eyebat') {
     // A cube around the eye, a bit bigger than the eye itself (it includes

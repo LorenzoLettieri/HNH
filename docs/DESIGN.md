@@ -74,7 +74,7 @@ con un chiaro preavviso.
 | Nemico (provvisorio) | Ruolo | Pressione |
 |---|---|---|
 | **Ghoul** | Carne da cannone (ispirato agli zombie di CoD Zombies): cammina verso di te, **scavalca gli ostacoli bassi e aggira quelli alti**; in futuro si arrampicherà | A terra non sei mai al sicuro; un muretto non basta |
-| **Segugio infernale** | Balzi lunghi e precisi, anche su piattaforme | Devi muoverti continuamente |
+| **Cane infernale** [IN CORSO] | Velocissimo (9,5 m/s: a piedi non lo semini, col bhop sì), cerca di **prenderti di sorpresa**. Pesa **3** nelle ondate, dall'ondata 5. Per ora: corre, salta, morde (15 danni, preavviso 0,25 s); non si arrampica | Devi muoverti continuamente e guardarti alle spalle |
 | **Avvoltoio** | Volante, gira in cerchio e picchia in picchiata | Raggiunge ogni tetto, obbliga a guardare in alto |
 | **Malocchio** [FATTO] | Occhio-pipistrello volante: orbita attorno a te a distanza (10 m, 5 m più in alto) e spara proiettili lenti. **Pupilla = punto critico** (×3, come la testa del ghoul) | Il movimento diventa difesa; obbliga a guardare in alto e a mirare con precisione |
 | **Fuoco fatuo** | Volante a distanza, proiettili lenti (forse superato dal Malocchio) | Il movimento diventa difesa |
@@ -240,7 +240,7 @@ si ricomincia dall'ondata 1.
 un **peso** (quanto è pericoloso), ogni ondata un **budget** di peso; a ogni spawn si pesca un tipo
 a caso tra quelli che il budget residuo si può permettere. Stesso budget, mix diverso in ogni
 partita. Il ghoul pesa **1**, il Malocchio **2** e compare **dall'ondata 3** (`eyebatFromWave`):
-le prime due ondate sono di soli ghoul, per scaldarsi. Un futuro bruto potrebbe pesare 5.
+le prime due ondate sono di soli ghoul, per scaldarsi. Il cane infernale pesa **3** e compare dall'ondata 5. Un futuro bruto potrebbe pesare 5.
 Il caso usa un generatore con **seed** (deterministico: stesso seed = stessa partita).
 
 | Ondata | Budget (peso) | Corridori (tra i ghoul) | Salute (ghoul = Malocchio) |

@@ -34,6 +34,8 @@ export type SimEvent =
   | { type: 'waveEnd'; wave: number }
   | { type: 'ghoulAttack'; entityId: number }
   | { type: 'ghoulLunge'; entityId: number } // starts crouching for a pounce (the warning)
+  /** A hound opens its jaws: the bite lands in houndBiteWindup seconds. */
+  | { type: 'houndBite'; entityId: number }
   /** An eye-bat starts charging a shot (the warning: glow + whine). */
   | { type: 'eyebatCharge'; entityId: number }
   /** An eye-bat fires: a projectile leaves its eye. */

@@ -6,7 +6,7 @@ import { createDebugPanel } from './debug/debugPanel';
 import { buildCommand, updateLook, view } from './controls';
 import { TICK_DT } from './sim/config';
 import { copyPlayer, createPlayer, horizontalSpeed } from './sim/player';
-import { createGame, spawnEyebatInFront, stepGame } from './sim/game';
+import { createGame, spawnEyebatInFront, spawnHoundInFront, stepGame } from './sim/game';
 import { jumpToWave } from './sim/waves';
 import { currentAmmo, magazineSize } from './sim/weapon';
 import { DEFAULT_LEVEL, LEVELS } from './levels';
@@ -22,6 +22,7 @@ import { createWeaponFx } from './render/weaponFx';
 import { createTargets } from './render/targets';
 import { createGhoulRenderer } from './render/enemies/ghouls';
 import { createEyebatRenderer } from './render/enemies/eyebats';
+import { createHoundRenderer } from './render/enemies/hounds';
 import { createProjectileRenderer } from './render/projectiles';
 import { updateHud } from './render/hud';
 import { createNavDebug } from './render/navDebug';
@@ -112,6 +113,7 @@ const weaponFx = createWeaponFx(scene);
 const targets = createTargets(scene, game.entities);
 const ghouls = createGhoulRenderer(scene);
 const eyebats = createEyebatRenderer(scene);
+const hounds = createHoundRenderer(scene);
 const projectiles = createProjectileRenderer(scene);
 const navDebug = createNavDebug(scene, getNavGraph(world));
 const hitboxDebug = createHitboxDebug(scene);
@@ -149,6 +151,8 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyH') hitboxDebug.toggle();
   // Debug: B spawns an eye-bat in front of you (until they're in the waves).
   if (e.code === 'KeyB') spawnEyebatInFront(game);
+  // G: a hellhound.
+  if (e.code === 'KeyG') spawnHoundInFront(game);
   if (e.code === 'Backquote') {
     debugPanel.toggle();
     document.exitPointerLock();
@@ -302,6 +306,7 @@ renderer.setAnimationLoop((now: number) => {
   targets.update(dt);
   ghouls.update(game.entities, events, camera, alpha, dt);
   eyebats.update(game.entities, events, camera, alpha, dt);
+  hounds.update(game.entities, events, camera, alpha, dt);
   projectiles.update(game.projectiles, events, camera, alpha, dt);
   updateHud(game, events, dt);
   navDebug.update(getFlowField(getNavGraph(world), game.navGoal));

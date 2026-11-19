@@ -194,6 +194,21 @@ export function createDebugPanel(options: {
   eyebat.number(tuning, 'eyebatProjectileDamage', 1, 100, 1);
   eyebat.button('Copy values', () => copyToClipboard(toSource(tuning)));
 
+  // --- Hellhound ---
+  const hound = panel.folder('Hellhound (src/sim/config.ts) — G to spawn');
+  hound.number(tuning, 'houndHealth', 10, 500, 5);
+  hound.number(tuning, 'houndCost', 1, 10, 1);
+  hound.number(tuning, 'houndFromWave', 1, 30, 1);
+  hound.number(tuning, 'houndSpeed', 1, 20, 0.1);
+  hound.number(tuning, 'houndAccel', 1, 30, 0.5);
+  hound.number(tuning, 'houndHitWidth', 0.3, 2.5, 0.05);
+  hound.number(tuning, 'houndHitHeight', 0.3, 2.5, 0.05);
+  hound.number(tuning, 'houndJumpHeight', 0, 2, 0.05);
+  hound.number(tuning, 'houndBiteRange', 0.5, 3, 0.05);
+  hound.number(tuning, 'houndBiteDamage', 1, 100, 1);
+  hound.number(tuning, 'houndBiteCooldown', 0.1, 5, 0.1);
+  hound.button('Copy values', () => copyToClipboard(toSource(tuning)));
+
   // --- Camera feel ---
   const feel = panel.folder('Camera feel (src/render/cameraFeel.ts)');
   feel.number(cameraFeelSettings, 'baseFov', 50, 110, 1);

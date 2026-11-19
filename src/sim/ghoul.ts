@@ -391,6 +391,17 @@ function clearLine(g: GhoulEntity, player: PlayerState, dist: number, world: Wor
   return raycastBoxes(g.x, g.y + chest, g.z, dx / d, dy / d, dz / d, d, world.boxes) === null;
 }
 
+/** What jumpTo needs from a body: position, velocity, feet. (Ghouls and hounds both have them.) */
+interface JumpingBody {
+  x: number;
+  y: number;
+  z: number;
+  vx: number;
+  vy: number;
+  vz: number;
+  onGround: boolean;
+}
+
 /**
  * A jump that lands on `t`: ballistics, the physics of a thrown ball.
  * 1. Pick how high to go: a bit above the higher of start and target.
@@ -398,7 +409,7 @@ function clearLine(g: GhoulEntity, player: PlayerState, dist: number, world: Wor
  * 3. Flight time = time to go up + time to fall down to the target's height.
  * 4. Horizontal speed = distance / flight time: it lands right on it.
  */
-function jumpTo(g: GhoulEntity, t: NavNode): void {
+export function jumpTo(g: JumpingBody, t: NavNode): void {
   const G = tuning.gravity;
   const dy = t.y - g.y;
   const peak = Math.max(dy, 0) + 0.7;

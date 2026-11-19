@@ -300,6 +300,45 @@ export const tuning = {
   /** Weight in the waves' budget (how much trouble it is; see src/sim/waves.ts). */
   ghoulCost: 1,
 
+  // --- Hellhound (fast ground enemy; AI in src/sim/hound.ts) ---
+  /** Health: the same as the ghoul (same breakpoints). Its danger is speed, not toughness. */
+  houndHealth: 50,
+  /**
+   * Running speed, m/s. FASTER than you on foot (maxGroundSpeed 8): on the
+   * ground you can't outrun it, with bunny hops / slides (10-13) you can.
+   */
+  houndSpeed: 9.5,
+  /** How quickly it reaches that speed (1/s, like ghoulAccel): a dog turns fast. */
+  houndAccel: 10,
+  /** Half the width of its COLLIDER, meters (slim: it fits through alleys). */
+  houndRadius: 0.35,
+  /** Collider height, meters: a big dog, about half your height. */
+  houndHeight: 1.0,
+  /** HITBOX width and height (what bullets hit), meters: generous, like the ghoul's. */
+  houndHitWidth: 1.2,
+  houndHitHeight: 1.2,
+  /** Max height of an obstacle it hops over, meters (a bit more than the ghoul: it's a jumper). */
+  houndJumpHeight: 1.2,
+  /** Bites when you're closer than this, meters. */
+  houndBiteRange: 1.3,
+  /**
+   * The bite's wind-up, seconds: it opens its jaws (and snarls), the teeth
+   * close at the end. Short, but enough to dodge it if you're moving away.
+   */
+  houndBiteWindup: 0.25,
+  /** Damage of a bite (less than a claw: it's quick and bites often). */
+  houndBiteDamage: 15,
+  /** Seconds between two bites. */
+  houndBiteCooldown: 1,
+  /** Push given to the player by a bite, m/s. */
+  houndBiteKnockback: 3,
+  /** How long a dead hound lies on the ground before disappearing, seconds. */
+  houndCorpseTime: 3,
+  /** Weight in the waves' budget (see src/sim/waves.ts): 3, more than a ghoul (1) and an eye-bat (2). */
+  houndCost: 3,
+  /** First wave where hounds can appear. */
+  houndFromWave: 5,
+
   // --- Malocchio (flying eye-bat; AI in src/sim/eyebat.ts) ---
   /**
    * Health: the SAME as the ghoul, so it follows the same breakpoints (see

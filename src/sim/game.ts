@@ -1,10 +1,11 @@
 // The whole game state in one object, and the one function that advances it
 // by one tick. Main loop (and one day the server) only talk to this.
 import type { InputCommand } from './command';
-import { createEntities, createEyebat, isEnemy, stepTarget, type Entity } from './entities';
+import { createEntities, createEyebat, createHound, isEnemy, stepTarget, type Entity } from './entities';
 import { stepEyebat } from './eyebat';
 import { stepProjectiles, type Projectile } from './projectiles';
 import { stepGhoul } from './ghoul';
+import { stepHound } from './hound';
 import { createWaveState, scoreHits, stepWaves, wavePressure, type Stats, type WaveState } from './waves';
 import { getFlowField, getNavGraph, nearestNode } from './nav';
 import type { SimEvent } from './events';
@@ -88,6 +89,7 @@ export function stepGame(
   for (const e of game.entities) {
     if (e.type === 'target') stepTarget(e);
     else if (e.type === 'eyebat') stepEyebat(e, game, world, dt, events);
+    else if (e.type === 'hound') stepHound(e, game.player, game.entities, world, graph, flow, dt, events);
     else if (e.state !== 'dead') stepGhoul(e, game.player, game.entities, world, graph, flow, dt, events, pressure);
   }
   game.projectiles = stepProjectiles(game.projectiles, game.player, world, dt, events);
@@ -115,4 +117,12 @@ export function spawnEyebatInFront(game: GameState): void {
   const x = p.x - Math.sin(p.yaw) * 8;
   const z = p.z - Math.cos(p.yaw) * 8;
   game.entities.push(createEyebat(game.nextEntityId++, x, p.y + 4, z));
+}
+
+/** Debug: spawns a hellhound 8 m in front of the player (G key). */
+export function spawnHoundInFront(game: GameState): void {
+  const p = game.player;
+  const x = p.x - Math.sin(p.yaw) * 8;
+  const z = p.z - Math.cos(p.yaw) * 8;
+  game.entities.push(createHound(game.nextEntityId++, x, p.y + 0.5, z));
 }

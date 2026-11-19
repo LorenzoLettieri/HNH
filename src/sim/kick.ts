@@ -120,6 +120,13 @@ export function knockBack(e: Entity, dirX: number, dirZ: number, speed: number, 
     e.climbTo = -1; // knocked off the wall
     e.state = 'staggered'; // interrupts claws and pounces too
     e.stateTicks = 0;
+  } else if (e.type === 'hound' && e.state !== 'dead') {
+    e.vx = dirX * speed;
+    e.vz = dirZ * speed;
+    e.vy = lift;
+    e.onGround = false;
+    e.state = 'staggered'; // interrupts the bite too
+    e.stateTicks = 0;
   } else if (e.type === 'eyebat') {
     // It flies: no lift needed. Its steering brings it back in a moment
     // (or, if the hit killed it, it falls while flying away).
