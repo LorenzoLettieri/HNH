@@ -1,13 +1,15 @@
 // Pickups: things lying on the ground that you collect by walking over them.
-// For now they only come from killed enemies ("drops"), and there are two kinds:
-// - AMMO: a box with spare rounds for BOTH weapons (one kind, no choice to
-//   think about mid-fight);
+// For now they only come from killed enemies ("drops"), and there are three kinds:
+// - BULLETS: spare rounds for the revolver;
+// - SHELLS: spare shells for the shotgun;
 // - MEDKIT: health (the only way to heal: there's no regeneration).
+// Ammo is split ON PURPOSE: if the shells don't come for a while, you're
+// forced to play with the revolver (and the other way around).
 //
 // Drops are GENERIC, not a loot table per enemy: the chance of a drop grows
 // with the enemy's weight (the same `*Cost` the waves use), so a hound (3)
 // drops something more often than a ghoul (1). Then a second roll decides
-// ammo or medkit.
+// what: a "weighted" choice (see pickKind).
 //
 // Drops VANISH after a while: one more reason to keep moving (and to dive
 // into the fight to grab them).
@@ -20,9 +22,13 @@ import type { GameState } from './game';
 import { random } from './random';
 import { raycastBoxes } from './raycast';
 import { enemyCost } from './waves';
+import type { WeaponId } from './weapon';
 import type { World } from './world';
 
-export type PickupKind = 'ammo' | 'medkit';
+export type PickupKind = 'bullets' | 'shells' | 'medkit';
+
+/** Which weapon's pockets each kind of ammo fills. */
+const AMMO_FOR: Record<Exclude<PickupKind, 'medkit'>, WeaponId> = { bullets: 'revolver', shells: 'shotgun' };
 
 export interface Pickup {
   /** Unique (shares the counter with the entities): the renderer keeps one mesh per id. */
@@ -49,7 +55,7 @@ export function dropFromKills(game: GameState, world: World, events: SimEvent[])
     // Chance = weight × dropChancePerWeight, capped. Ghoul 1 → 20%, eye-bat 2 → 40%, hound 3 → 60%.
     const chance = Math.min(tuning.dropChanceMax, enemyCost(enemy) * tuning.dropChancePerWeight);
     if (random(game) >= chance) continue;
-    const kind: PickupKind = random(game) < tuning.dropMedkitShare ? 'medkit' : 'ammo';
+    const kind = pickKind(random(game));
     const floor = floorBelow(enemy, world);
     if (floor === null) continue; // died over a pit: the drop would fall forever
     game.pickups.push({
@@ -61,6 +67,29 @@ export function dropFromKills(game: GameState, world: World, events: SimEvent[])
       ticksLeft: secondsToTicks(tuning.dropLifetime),
     });
   }
+}
+
+/**
+ * Weighted random choice. Each kind has a weight (dropWeight* in config.ts):
+ * line them up one after the other, like segments on a ruler of total length
+ * = sum of the weights, throw a dart (`roll` × total) and see which segment
+ * it lands in. Bullets 4, shells 3, medkit 3 → 40%, 30%, 30%. Weights instead
+ * of percentages: you can change one without having to fix the others to
+ * make 100. (Loot tables in every game work like this.)
+ */
+function pickKind(roll: number): PickupKind {
+  const weights: [PickupKind, number][] = [
+    ['bullets', tuning.dropWeightBullets],
+    ['shells', tuning.dropWeightShells],
+    ['medkit', tuning.dropWeightMedkit],
+  ];
+  const total = weights.reduce((sum, [, w]) => sum + w, 0);
+  let dart = roll * total;
+  for (const [kind, w] of weights) {
+    if (dart < w) return kind;
+    dart -= w;
+  }
+  return weights[weights.length - 1][0]; // only reached if every weight is 0
 }
 
 /**
@@ -100,11 +129,11 @@ function collect(game: GameState, kind: PickupKind): boolean {
     p.health = Math.min(tuning.playerMaxHealth, p.health + tuning.medkitHeal);
     return true;
   }
-  // Ammo: rounds for each weapon, up to what the pockets hold.
-  const revolverMax = tuning.revolverReserveMax;
-  const shotgunMax = tuning.shotgunReserveMax;
-  if (p.reserve.revolver >= revolverMax && p.reserve.shotgun >= shotgunMax) return false;
-  p.reserve.revolver = Math.min(revolverMax, p.reserve.revolver + tuning.ammoPickupBullets);
-  p.reserve.shotgun = Math.min(shotgunMax, p.reserve.shotgun + tuning.ammoPickupShells);
+  // Ammo: rounds for one weapon, up to what its pockets hold.
+  const weapon = AMMO_FOR[kind];
+  const max = weapon === 'shotgun' ? tuning.shotgunReserveMax : tuning.revolverReserveMax;
+  if (p.reserve[weapon] >= max) return false;
+  const amount = kind === 'shells' ? tuning.ammoPickupShells : tuning.ammoPickupBullets;
+  p.reserve[weapon] = Math.min(max, p.reserve[weapon] + amount);
   return true;
 }

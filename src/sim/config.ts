@@ -170,17 +170,22 @@ export const tuning = {
   dropChancePerWeight: 0.2,
   /** The drop chance never goes above this (heavy enemies of the future). */
   dropChanceMax: 0.8,
-  /** Of the drops, the fraction that are medkits (the rest is ammo). */
-  dropMedkitShare: 0.3,
+  /**
+   * What a drop is: WEIGHTS, not percentages (see pickKind in pickups.ts).
+   * 4/3/3 = 40% bullets, 30% shells, 30% medkits. Set one to 0 to never drop it.
+   */
+  dropWeightBullets: 4,
+  dropWeightShells: 3,
+  dropWeightMedkit: 3,
   /** Seconds a drop stays on the ground before vanishing. */
   dropLifetime: 10,
   /** How close (horizontally) you must pass to collect it, meters. */
   pickupRadius: 1.0,
   /** Health a medkit gives back. */
   medkitHeal: 25,
-  /** Spare bullets in an ammo box. */
+  /** Revolver bullets in a 'bullets' drop. */
   ammoPickupBullets: 12,
-  /** Spare shells in an ammo box. */
+  /** Shotgun shells in a 'shells' drop. */
   ammoPickupShells: 4,
   /** Pellets per shot (a fixed pattern: center + inner ring + outer ring). */
   shotgunPellets: 12,

@@ -16,7 +16,7 @@ const SPIN = 2;
 /** Seconds before vanishing in which it blinks (the warning: hurry up). */
 const BLINK_TIME = 3;
 /** Colors: ammo = brass, medkit = bright red. Emissive so they stand out in the dark. */
-const COLORS: Record<PickupKind, number> = { ammo: 0xd8a040, medkit: 0xe02020 };
+const COLORS: Record<PickupKind, number> = { bullets: 0xd8a040, shells: 0x40a0d8, medkit: 0xe02020 };
 
 export interface PickupRenderer {
   update(pickups: Pickup[], time: number): void;
