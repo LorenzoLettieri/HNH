@@ -25,6 +25,7 @@ import { createHoundRenderer } from './render/enemies/hounds';
 import { createBullRenderer } from './render/enemies/bulls';
 import { createProjectileRenderer } from './render/projectiles';
 import { createPickupRenderer } from './render/pickups';
+import { createVendorRenderer } from './render/vendors';
 import { updateHud } from './render/hud';
 import { updateAmmoHud } from './render/ammoHud';
 import { updateMoneyHud } from './render/moneyHud';
@@ -120,6 +121,7 @@ const hounds = createHoundRenderer(scene);
 const bulls = createBullRenderer(scene);
 const projectiles = createProjectileRenderer(scene);
 const pickups = createPickupRenderer(scene);
+const vendors = createVendorRenderer(scene, world);
 const navDebug = createNavDebug(scene, getNavGraph(world));
 const navDebugBig = createNavDebug(scene, getNavGraph(world, BIG_BODY));
 /** N cycles: 0 = off, 1 = ghouls' graph, 2 = bulls' graph. */
@@ -300,6 +302,7 @@ renderer.setAnimationLoop((now: number) => {
   bulls.update(game.entities, events, camera, alpha, dt);
   projectiles.update(game.projectiles, events, camera, alpha, dt);
   pickups.update(game.pickups, camera, now / 1000);
+  vendors.update(camera, now / 1000);
   updateHud(game, events, dt);
   updateThreats(game.entities, player, camera, dt);
   navDebug.update(getFlowField(getNavGraph(world), game.navGoal));

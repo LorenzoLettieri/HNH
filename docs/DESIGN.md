@@ -399,12 +399,21 @@ Punteggio e moneta sono **separati**:
 - Uno o più, in una parte della mappa. Si comprano le **armi** (si parte col solo revolver; la
   doppietta si compra) e i **potenziamenti**.
 - **Venditore**: un **NPC disegnato come sprite** (stile Doom, come i nemici), a tema. I nemici lo
-  ignorano. [DA DECIDERE] aspetto (idea: mercante infernale col cilindro e un braccio meccanico d'ottone).
+  ignorano. **Aspetto** [FATTO]: mercante infernale pallido col cilindro, finanziera rosso sangue, panciotto
+  senape con la catena d'oro, occhi accesi, ghigno coi denti d'oro e un **braccio meccanico d'ottone**
+  (ingranaggio al gomito, pistone, artiglio a tre dita che tamburella spazientito sul bancone).
 - **Menu che NON mette in pausa**: ti avvicini al venditore, premi **E** e il menu si apre sopra il
   gioco mentre l'orda continua ad arrivare. **Sempre aperto, anche a metà ondata**: chi vuole comprare
   durante il round deve farlo in fretta. Funziona uguale in multiplayer (lì il tempo non si può fermare).
-- [PROPOSTO] Usare edifici che esistono già: **armeria** (armi) ed **emporio** (potenziamenti: ci si
-  entra già, e c'è un bancone con la lanterna). Lo shop non è un rifugio: i ghoul ti seguono dentro.
+- **Armeria** [FATTO: passo 1, il posto]: al **piano di sopra del GUNSMITH** (sud-est, tra la torre est e
+  il magazzino), che ora ha due piani. **Niente scale: ci si arriva col parkour.** La via più semplice:
+  gradini di casse → tetto del magazzino (6,3 m) → salto verso ovest sul **balcone** (4,3 m) → porta.
+  Il balcone finisce con un muro di testa: un salto troppo lungo ci sbatte contro e ricadi sul balcone
+  (verificato col giocatore simulato, anche a piena velocità). Altre vie: dal tetto della banca o dalla
+  torre est sul tetto del gunsmith (7,8 m) e giù sul balcone (frenando in aria); finestra a ovest per chi
+  sale a wall jump. Dentro: bancone, lanterna, rastrelliera, il venditore dietro il bancone.
+- [PROPOSTO] **Emporio** per i potenziamenti (ci si entra già, e c'è un bancone con la lanterna).
+  Lo shop non è un rifugio: i ghoul ti seguono dentro.
 - **Menu col mouse libero** [DECISO], come il buy menu di CS:GO: premendo E il cursore si libera e si
   clicca; intanto non miri. Tecnico: oggi il gioco va in pausa quando il mouse non è catturato
   (Pointer Lock), quindi il menu dello shop sarà un'eccezione a quella regola.
@@ -498,6 +507,7 @@ futuro **poligono di tiro / tutorial**.
 5. **Vildenaro**: monete lasciate dai nemici + contatore nell'HUD; lo Stile moltiplica punti e vildenaro.
    [FATTO: monete, contatore, moltiplicatore]
 6. **Shop**: venditore (sprite), tasto E, menu che non mette in pausa, primo acquisto: la doppietta.
+   [IN CORSO: armeria e venditore fatti; poi tasto E e menu, poi l'acquisto della doppietta]
 7. Potenziamenti all'emporio.
 8. Lazo / rampino.
 
