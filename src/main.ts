@@ -27,6 +27,7 @@ import { createProjectileRenderer } from './render/projectiles';
 import { createPickupRenderer } from './render/pickups';
 import { updateHud } from './render/hud';
 import { updateAmmoHud } from './render/ammoHud';
+import { updateThreats } from './render/threatIndicator';
 import { createNavDebug } from './render/navDebug';
 import { createHitboxDebug } from './render/hitboxDebug';
 import { BIG_BODY, getFlowField, getNavGraph } from './sim/nav';
@@ -299,6 +300,7 @@ renderer.setAnimationLoop((now: number) => {
   projectiles.update(game.projectiles, events, camera, alpha, dt);
   pickups.update(game.pickups, camera, now / 1000);
   updateHud(game, events, dt);
+  updateThreats(game.entities, player, camera, dt);
   navDebug.update(getFlowField(getNavGraph(world), game.navGoal));
   navDebugBig.update(getFlowField(getNavGraph(world, BIG_BODY), game.navGoalBig));
   hitboxDebug.update(game.entities);
