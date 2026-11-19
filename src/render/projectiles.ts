@@ -11,7 +11,7 @@
 import * as THREE from 'three';
 import type { SimEvent } from '../sim/events';
 import type { Projectile } from '../sim/projectiles';
-import { playFireballHit } from '../audio/sfx';
+import { playFireballHit, playRicochet } from '../audio/sfx';
 import { spawnSparks } from './particles';
 import { soundAt } from './soundPosition';
 
@@ -86,6 +86,8 @@ export function createProjectileRenderer(scene: THREE.Scene): ProjectileRenderer
         normal.set(e.nx, e.ny, e.nz);
         if (e.kind === 'bullet') {
           spawnSparks(point, normal, 8);
+          // Missed you and hit a wall: the western ricochet. (Hitting you, you hear the hurt sound.)
+          if (!e.player) playRicochet(soundAt(camera, e.x, e.y, e.z));
         } else {
           spawnSparks(point, normal, 25);
           playFireballHit(soundAt(camera, e.x, e.y, e.z));

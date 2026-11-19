@@ -29,10 +29,17 @@ import { raycastBoxes } from './raycast';
 import type { World } from './world';
 
 /**
- * How far in front of its body the muzzle is, meters (along the aim): the
- * laser and the bullet start at the tip of the rifle, not inside its ribs.
+ * How far in front of its body the muzzle is, meters (along the aim).
+ *
+ * Small on purpose: the sharpshooter is drawn as a flat sprite that faces
+ * you (a cardboard cutout), and when it aims at you the muzzle you SEE is
+ * painted on that cardboard. A point 0.55 m in front of the cardboard would
+ * line up with the painted muzzle only seen straight on: from a roof or from
+ * below, perspective shifts it (parallax) and the laser would come out of its
+ * belly. 0.1 m keeps the two together from any angle, and keeps the muzzle
+ * inside its collider (never inside a wall it stands against).
  */
-const MUZZLE_FORWARD = 0.55;
+const MUZZLE_FORWARD = 0.1;
 /** On the ground it stops quickly (pushed by a kick, it slides a bit), 1/s. */
 const GROUND_FRICTION = 8;
 

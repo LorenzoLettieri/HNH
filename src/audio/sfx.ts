@@ -659,6 +659,136 @@ export function playFireballHit(where: Where): void {
 }
 
 /**
+ * Sharpshooter starts aiming: the rifle goes to the shoulder (a rustle and a
+ * dry "tok" of wood on bone) and the laser sight turns on with a thin
+ * electric WHINE that rises for the whole aim (`duration`). The fast vibrato
+ * (30 Hz on the pitch) makes it buzz like a wire instead of whistle.
+ *
+ * Unlike the other warnings this one can be cut short: if you hide, it gives
+ * up. So it returns a function that stops it, a "handle" to a sound that is
+ * already playing. The stop goes through a gain of its own in series
+ * (stopGain): fading THAT one out leaves the whine's own envelope untouched,
+ * so we don't have to undo ramps already scheduled on it.
+ */
+export function playSharpshooterAim(where: Where, duration: number): () => void {
+  const out = placeSound(where);
+  if (!ctx || !out) return () => {};
+  const audio = ctx;
+  const t0 = audio.currentTime;
+  const end = t0 + duration + 0.1;
+  noiseBurst({ out, duration: 0.12, volume: 0.35, filter: 'bandpass', frequency: 900, frequencyEnd: 1800, q: 1.5 }); // rustle
+  noiseBurst({ out, start: 0.1, duration: 0.04, volume: 0.5, filter: 'bandpass', frequency: 1300, q: 5 }); // tok
+
+  const whine = audio.createOscillator(); // a sine: thin and pure, like a beam of light
+  whine.frequency.setValueAtTime(1000, t0);
+  whine.frequency.exponentialRampToValueAtTime(1600, t0 + duration);
+  const vibrato = audio.createOscillator();
+  vibrato.frequency.value = 30;
+  const vibratoDepth = audio.createGain();
+  vibratoDepth.gain.value = 14;
+  vibrato.connect(vibratoDepth).connect(whine.frequency);
+  const env = audio.createGain();
+  env.gain.setValueAtTime(0.001, t0);
+  env.gain.exponentialRampToValueAtTime(0.05, t0 + 0.15);
+  env.gain.exponentialRampToValueAtTime(0.13, t0 + duration);
+  env.gain.exponentialRampToValueAtTime(0.001, end);
+  const stopGain = audio.createGain();
+  whine.connect(env).connect(stopGain).connect(out);
+  whine.start(t0);
+  vibrato.start(t0);
+  whine.stop(end);
+  vibrato.stop(end);
+
+  let stopped = false;
+  return () => {
+    const now = audio.currentTime;
+    if (stopped || now >= end) return;
+    stopped = true;
+    // A fast fade (time constant 20 ms) rather than a cut: an instant jump to 0 clicks.
+    stopGain.gain.setTargetAtTime(0, now, 0.02);
+    whine.stop(now + 0.15);
+    vibrato.stop(now + 0.15);
+  };
+}
+
+/**
+ * The Winchester's lever, cla-CLACK: thrown down (a sharp metal clack and the
+ * tinkle of the spent shell) and snapped back up at `upAt` seconds (a heavier
+ * clack: a new round goes in), then the shell bouncing on the ground. It plays
+ * at the LOCK, so it's the sound that means "MOVE, NOW": the shot follows.
+ */
+export function playLeverAction(where: Where, upAt: number): void {
+  const out = placeSound(where);
+  if (!out) return;
+  noiseBurst({ out, duration: 0.04, volume: 0.7, filter: 'bandpass', frequency: 2400, q: 3 }); // cla-
+  thump({ out, duration: 0.04, volume: 0.25, from: 600, to: 300 });
+  noiseBurst({ out, start: 0.05, duration: 0.05, volume: 0.25, filter: 'bandpass', frequency: 5600, q: 9 }); // the shell flies out
+  noiseBurst({ out, start: upAt, duration: 0.06, volume: 0.9, filter: 'bandpass', frequency: 1500, q: 2 }); // -CLACK
+  thump({ out, start: upAt, duration: 0.06, volume: 0.4, from: 380, to: 160 });
+  noiseBurst({ out, start: upAt + 0.18, duration: 0.03, volume: 0.12, filter: 'bandpass', frequency: 6200, q: 10 }); // it lands
+}
+
+/**
+ * The sharpshooter's shot. A rifle is SHARPER than the revolver (faster
+ * bullet, longer barrel): more high crack, less boom. And it shoots from afar,
+ * so the long echo rolling off the canyon walls matters: you hear the place.
+ */
+export function playRifleShot(where: Where): void {
+  const out = placeSound(where);
+  if (!out) return;
+  const v = 0.92 + Math.random() * 0.16;
+  noiseBurst({ out, duration: 0.05, volume: 1.0, filter: 'highpass', frequency: 3000 * v }); // crack
+  noiseBurst({ out, duration: 0.25, volume: 0.8, filter: 'lowpass', frequency: 3500 * v, frequencyEnd: 300 }); // blast
+  thump({ out, duration: 0.18, volume: 0.6, from: 200 * v, to: 55 });
+  noiseBurst({ out, start: 0.25, duration: 0.6, volume: 0.25, filter: 'lowpass', frequency: 1100, frequencyEnd: 150 }); // echo
+  noiseBurst({ out, start: 0.6, duration: 0.8, volume: 0.12, filter: 'lowpass', frequency: 700, frequencyEnd: 120 }); // and farther
+}
+
+/**
+ * A bullet glances off a wall: the western "PTIIING". A sine whistle whose
+ * pitch FALLS (the bullet spins away, and moving away from you its sound
+ * drops: a Doppler effect, roughly), over the short smack of the impact.
+ */
+export function playRicochet(where: Where): void {
+  const out = placeSound(where);
+  if (!ctx || !out) return;
+  const t0 = ctx.currentTime;
+  const f0 = 2600 + Math.random() * 1200;
+  const dur = 0.3 + Math.random() * 0.15;
+  const osc = ctx.createOscillator();
+  osc.frequency.setValueAtTime(f0, t0);
+  osc.frequency.exponentialRampToValueAtTime(f0 * 0.45, t0 + dur);
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0.001, t0);
+  env.gain.exponentialRampToValueAtTime(0.22, t0 + 0.015);
+  env.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+  osc.connect(env).connect(out);
+  osc.start(t0);
+  osc.stop(t0 + dur);
+  noiseBurst({ out, duration: 0.08, volume: 0.5, filter: 'bandpass', frequency: 2500, q: 1.5 }); // smack
+}
+
+/**
+ * A skeleton collapses: a cascade of dry "toks" (bone on bone: very short
+ * noise through a narrow bandpass = hard and woody, each at a different
+ * pitch), quieter as it settles; the dull thud of the pile landing and the
+ * metal clank of the rifle. Random timing is fine: it's not gameplay.
+ */
+export function playBoneClatter(where: Where): void {
+  const out = placeSound(where);
+  if (!out) return;
+  let t = 0;
+  for (let i = 0; i < 12; i++) {
+    t += 0.025 + Math.random() * 0.06;
+    const volume = 0.55 * (1 - i / 14);
+    noiseBurst({ out, start: t, duration: 0.03, volume, filter: 'bandpass', frequency: 1400 + Math.random() * 1800, q: 6 });
+  }
+  thump({ out, start: 0.12, duration: 0.15, volume: 0.45, from: 140, to: 60 }); // the pile lands
+  noiseBurst({ out, start: 0.22, duration: 0.12, volume: 0.35, filter: 'bandpass', frequency: 3200, q: 7 }); // the rifle: clank
+  thump({ out, start: 0.22, duration: 0.05, volume: 0.25, from: 500, to: 300 });
+}
+
+/**
  * Turns the canyon echo on or off (HIGH NOON). Smoothly: setTargetAtTime
  * glides the volume towards the target (a sudden jump would click). Turning
  * it off only stops NEW sound from going in: the repeats already in the loop

@@ -136,7 +136,7 @@ con un chiaro preavviso.
 | **Avvoltoio** | Volante, gira in cerchio e picchia in picchiata | Raggiunge ogni tetto, obbliga a guardare in alto |
 | **Malocchio** [FATTO] | Occhio-pipistrello volante: orbita attorno a te a distanza (10 m, 5 m più in alto) e spara proiettili lenti. **Pupilla = punto critico** (×3, come la testa del ghoul) | Il movimento diventa difesa; obbliga a guardare in alto e a mirare con precisione |
 | **Fuoco fatuo** | Volante a distanza, proiettili lenti (forse superato dal Malocchio) | Il movimento diventa difesa |
-| **Tiratore scelto** (sharpshooter) [IN CORSO: passo 1] | Scheletro col cappello da cowboy e una **Winchester** (la prossima arma del giocatore). Spara **da lontano** con un colpo velocissimo annunciato da un **laser rosso**; cerca di appostarsi sulle **alture**, arrampicandosi (dettagli sotto) | Punisce chi sta fermo o corre dritto in vista, premia chi rompe la linea di tiro o cambia direzione al momento giusto |
+| **Tiratore scelto** (sharpshooter) [IN CORSO: passi 1-2] | Scheletro col cappello da cowboy e una **Winchester** (la prossima arma del giocatore). Spara **da lontano** con un colpo velocissimo annunciato da un **laser rosso**; cerca di appostarsi sulle **alture**, arrampicandosi (dettagli sotto) | Punisce chi sta fermo o corre dritto in vista, premia chi rompe la linea di tiro o cambia direzione al momento giusto |
 | **Dinamitardo** | Lancia dinamite ad arco, lascia fiamme | Nega zone: ti costringe a spostarti |
 | **Toro** [FATTO, da tarare; suoni provvisori] | Grosso e resistente: ti punta (preavviso), poi **carica dritto** senza sterzare (dettagli sotto). Pesa **5** nelle ondate, dall'ondata 7 | Prima si schiva (cambio di direzione o salto), poi si uccide: meglio con un muro alle spalle |
 | **Boss** | Pattern complessi, ogni tot ondate | Picco di intensità |
@@ -282,8 +282,21 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
     direzione al blocco: mancato sempre**; correre in tondo: preso ~1 volta su 4.
   - Il laser e la scia **ignorano la nebbia**: un avviso deve leggersi anche a 50 m.
   - **Passo 1** [FATTO]: simulazione, laser, scia, segnaposto fatto di scatole (tasto **L** per farlo apparire).
-    Per ora sta fermo dove nasce. **Da fare**: sprite pixel art e suoni (leva della Winchester al blocco,
-    sparo), appostamento sulle alture con arrampicata, ondate.
+    Per ora sta fermo dove nasce.
+  - **Passo 2** [FATTO]: **sprite pixel art** (scheletro pistolero: cappello, bandana rossa, cartucciera, fondina,
+    stivali con speroni, Winchester col castello d'ottone) e **suoni**. La **posa dice lo stato**: a riposo il
+    fucile è di traverso sul petto (laser spento, "non ora"); in mira è alla spalla e **ti guarda dentro la canna**
+    (anello di ferro con il puntino rosso al centro, disegnato più grande del vero perché si legga da 40 m) e
+    l'occhio che mira arde; al blocco **tira la leva** (cla-CLACK: è il suono che vuol dire "muoviti"); sparo
+    con rinculo, lampo e braci; da morto **crolla in un mucchio d'ossa** (il cappello resta sospeso un istante).
+    Suoni: fucile alla spalla e **ronzio del laser** per tutta la mira (si interrompe se rinuncia), leva, sparo
+    secco con eco lunga, **rimbalzo "ptiiing"** quando il colpo ti manca e prende un muro, ossa che crollano.
+    I suoni di preavviso e lo sparo sono più forti di quanto direbbe la distanza: deve sentirsi da 50 m.
+    Per ora **solo vista frontale** (non cammina e ti guarda sempre). La canna nella simulazione è stata
+    avvicinata al corpo (da 0,55 a 0,1 m): lo sprite è piatto, e un punto mezzo metro davanti al cartone
+    visto dall'alto non coincide più con la canna disegnata (parallasse).
+    **Da fare**: appostamento sulle alture con arrampicata (con le viste di lato e da dietro), ondate.
+    Da valutare: schegge d'osso al posto del sangue quando lo colpisci, fischio del proiettile che ti sfiora.
   - **Proiettili più veloci, collisione "a spazzata"**: a 90 m/s il proiettile fa 1,5 m per tick, quindi non
     basta controllare dov'è arrivato (ti passerebbe attraverso): si controlla tutto il segmento percorso
     nel tick contro la scatola del giocatore **ingrandita del raggio del proiettile** (somma di Minkowski).

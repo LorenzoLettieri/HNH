@@ -1,19 +1,35 @@
-// Draws the sharpshooters. For now a PLACEHOLDER made of boxes (bone body,
-// skull, hat, rifle): the pixel-art sprite comes in the next step. What's
-// already final is the LASER: a red line from the muzzle along the aim,
-// with a glowing dot where it touches a surface.
+// Draws the sharpshooters: a pixel-art sprite each (sharpshooterSprite.ts),
+// a billboard always turned toward the camera around the vertical axis, like
+// the ghouls. One view for now, the front: it doesn't walk, and it always
+// faces you (it aims at you).
 //
-// The laser reads the simulation, it doesn't invent anything: the direction
-// is the entity's aim (aimX/Y/Z), and how far the line goes is a raycast
-// against the level boxes (the same function the bullets use). So what you
-// see is exactly where the bullet will go.
+// The frame comes from the simulation's state, so the shot cycle
+// (src/sim/sharpshooter.ts) is readable from its pose:
+//   idle → rifle across the chest, laser off: "not now"
+//   aim  → rifle at the shoulder, pointed at you, the aiming eye burning
+//   lock → lever thrown (cla-CLACK), then aimed again: MOVE
+//   shot → recoil, a muzzle flash, a puff of embers
+//   dead → collapses into a pile of bones (the hat stays up for an instant)
+//
+// And the LASER: a red line from the muzzle along the aim, with a glowing dot
+// where it touches a surface. It reads the simulation, it doesn't invent
+// anything: the direction is the entity's aim (aimX/Y/Z), and how far the
+// line goes is a raycast against the level boxes (the same function the
+// bullets use). So what you see is exactly where the bullet will go.
 import * as THREE from 'three';
 import { tuning } from '../../sim/config';
 import type { Entity, SharpshooterEntity } from '../../sim/entities';
+import type { SimEvent } from '../../sim/events';
 import { raycastBoxes } from '../../sim/raycast';
 import { muzzlePosition } from '../../sim/sharpshooter';
 import type { World } from '../../sim/world';
+import { playBoneClatter, playLeverAction, playRifleShot, playSharpshooterAim, type Where } from '../../audio/sfx';
 import { addHeightFog } from '../heightFog';
+import { spawnSnort } from '../particles';
+import { soundAt } from '../soundPosition';
+import { FRAMES, FRAME_H, FRAME_W, sharpshooterSheet } from './sharpshooterSprite';
+
+const PIXELS_PER_METER = 32;
 
 // --- Laser tuning ---
 /** Brightness at the start of the aim and at its end (HDR: above 1 goes into the bloom). */
@@ -25,36 +41,90 @@ const LOCK_BRIGHT = 5;
 const LOCK_DIM = 1.2;
 /** Size of the dot on the surface, meters. */
 const DOT_SIZE = 0.22;
-/** How quickly the corpse falls over (radians per second). */
-const FALL_SPEED = 6;
+
+// --- Animation ---
+/** Idle: seconds per frame of the sway (two frames). */
+const IDLE_FRAME_TIME = 0.5;
+/**
+ * At the lock the lever frame shows for this long, seconds: lever down, then
+ * up again. The sound's second clack is played at the same moment (it's
+ * passed to playLeverAction), so eyes and ears agree.
+ */
+const LEVER_TIME = 0.13;
+/** After a shot: the recoil frame, seconds. */
+const RECOIL_TIME = 0.15;
+/** Dying: seconds per frame of the collapse (the last frame, the pile, stays). */
+const DEATH_FRAME_TIME = 0.1;
+/** How long the red tint shows after a hit, seconds. */
+const HURT_TIME = 0.12;
+/** Glow of the eyes and of the laser in the bore (HDR): calm, at the end of the aim, locked. */
+const GLOW_CALM = 1.5;
+const GLOW_AIM = 4;
+const GLOW_LOCK = 8;
+/** Muzzle flash: how long, how big (meters), how bright (HDR). */
+const FLASH_TIME = 0.06;
+const FLASH_SIZE = 0.8;
+const FLASH_BRIGHTNESS = 6;
+/** Embers blown out of the barrel by the shot (black powder, from hell). */
+const SHOT_EMBERS = 10;
+/**
+ * Its sounds are warnings from far away (it shoots from up to 55 m): played
+ * this much louder than the distance alone would give.
+ */
+const WARNING_BOOST = 1.6;
 
 interface SharpshooterView {
-  body: THREE.Group;
-  head: THREE.Group;
-  rifle: THREE.Group;
+  mesh: THREE.Mesh;
+  material: THREE.MeshStandardMaterial;
+  map: THREE.Texture;
+  glowMap: THREE.Texture;
   laser: THREE.Line;
   laserMaterial: THREE.LineBasicMaterial;
   dot: THREE.Sprite;
   dotMaterial: THREE.SpriteMaterial;
-  fallAngle: number;
+  flash: THREE.Sprite;
+  flashMaterial: THREE.SpriteMaterial;
+  hurtTime: number;
+  recoilTime: number;
+  flashTime: number;
+  /** Stops the laser's whine (it plays while aiming, and stops early if it gives up). */
+  stopWhine: (() => void) | null;
 }
 
 export interface SharpshooterRenderer {
-  update(entities: Entity[], camera: THREE.Camera, alpha: number, dt: number): void;
+  /** `alpha`: interpolation between the previous and current tick (0..1). */
+  update(entities: Entity[], events: SimEvent[], camera: THREE.Camera, alpha: number, dt: number): void;
 }
 
 /** A soft round dot, 8×8 pixels: white core, red edge. */
 function dotTexture(): THREE.CanvasTexture {
-  const n = 8;
+  return pixelTexture(8, (d) => (d > 3.6 ? null : d < 1.5 ? '#ffd0c8' : '#ff2010'));
+}
+
+/** A muzzle flash, 9×9 pixels: a white-hot core and four spikes of yellow-orange fire (a star). */
+function flashTexture(): THREE.CanvasTexture {
+  return pixelTexture(9, (d, dx, dy) => {
+    const spike = Math.min(Math.abs(dx), Math.abs(dy)) < 0.6; // on the horizontal or vertical axis
+    if (d < 1.2) return '#fffbe8';
+    if (d < 2.4) return '#ffd860';
+    if (spike && d < 4.6) return d < 3.4 ? '#ffb030' : '#e05010';
+    return null;
+  });
+}
+
+/** A tiny round-ish texture: `paint` gets each pixel's distance from the center (and its offset) and returns a color or nothing. */
+function pixelTexture(n: number, paint: (d: number, dx: number, dy: number) => string | null): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = n;
   canvas.height = n;
   const g = canvas.getContext('2d')!;
   for (let y = 0; y < n; y++) {
     for (let x = 0; x < n; x++) {
-      const d = Math.hypot(x + 0.5 - n / 2, y + 0.5 - n / 2);
-      if (d > 3.6) continue;
-      g.fillStyle = d < 1.5 ? '#ffd0c8' : '#ff2010';
+      const dx = x + 0.5 - n / 2;
+      const dy = y + 0.5 - n / 2;
+      const color = paint(Math.hypot(dx, dy), dx, dy);
+      if (!color) continue;
+      g.fillStyle = color;
       g.fillRect(x, y, 1, 1);
     }
   }
@@ -66,38 +136,39 @@ function dotTexture(): THREE.CanvasTexture {
 }
 
 export function createSharpshooterRenderer(scene: THREE.Scene, world: World): SharpshooterRenderer {
-  const bone = new THREE.MeshStandardMaterial({ color: 0xd8ccb0, roughness: 1 });
-  const leather = new THREE.MeshStandardMaterial({ color: 0x3a2618, roughness: 1 });
-  const iron = new THREE.MeshStandardMaterial({ color: 0x2a2a2e, roughness: 0.6, metalness: 0.5 });
-  for (const m of [bone, leather, iron]) addHeightFog(m);
+  const sheet = sharpshooterSheet();
+  const width = FRAME_W / PIXELS_PER_METER;
+  const height = FRAME_H / PIXELS_PER_METER;
+  // The quad stands on its bottom edge: the boots are at the origin.
+  const geometry = new THREE.PlaneGeometry(width, height);
+  geometry.translate(0, height / 2, 0);
+  const white = new THREE.Color(1, 1, 1);
+  const hurtTint = new THREE.Color(1, 0.55, 0.5);
   const dotMap = dotTexture();
+  const flashMap = flashTexture();
   const views = new Map<number, SharpshooterView>();
-
-  function part(material: THREE.Material, w: number, h: number, d: number, x: number, y: number, z: number): THREE.Mesh {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
-    mesh.position.set(x, y, z);
-    mesh.castShadow = true;
-    return mesh;
-  }
+  // Scratch vectors for the particle calls (no new objects every frame).
+  const point = new THREE.Vector3();
+  const dir = new THREE.Vector3();
 
   function create(): SharpshooterView {
-    // The body group turns around Y to face where it aims; its local +Z is "forward".
-    const body = new THREE.Group();
-    body.rotation.order = 'YXZ'; // turn first, then fall over (around its own X)
-    body.add(part(bone, 0.12, 0.85, 0.12, -0.12, 0.42, 0)); // legs
-    body.add(part(bone, 0.12, 0.85, 0.12, 0.12, 0.42, 0));
-    body.add(part(bone, 0.44, 0.6, 0.22, 0, 1.15, 0)); // ribcage
-    const head = new THREE.Group(); // skull + hat: hidden after a headshot
-    head.add(part(bone, 0.26, 0.28, 0.26, 0, 1.6, 0));
-    head.add(part(leather, 0.62, 0.04, 0.62, 0, 1.76, 0)); // brim
-    head.add(part(leather, 0.3, 0.2, 0.3, 0, 1.88, 0)); // crown
-    body.add(head);
-    // The rifle pivots up/down at the shoulder (its own group, inside the body).
-    const rifle = new THREE.Group();
-    rifle.position.set(0, tuning.sharpshooterMuzzleHeight, 0);
-    rifle.add(part(iron, 0.06, 0.08, 0.95, 0, 0, 0.1));
-    body.add(rifle);
-    scene.add(body);
+    // Own copies of the textures (same image): each one shows its own frame.
+    const map = sheet.color.clone();
+    const glowMap = sheet.glow.clone();
+    const material = new THREE.MeshStandardMaterial({
+      map,
+      alphaTest: 0.5, // hard pixel edges, no transparency sorting
+      emissive: 0xff2a10, // the eyes and the laser in the bore: red, like the laser
+      emissiveMap: glowMap,
+      emissiveIntensity: GLOW_CALM,
+      roughness: 1,
+    });
+    addHeightFog(material);
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.castShadow = true;
+    // The shadow is drawn from a separate depth render: same texture and alphaTest, or it'd be a rectangle.
+    mesh.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map, alphaTest: 0.5 });
+    scene.add(mesh);
 
     // The laser: a Line with two points (muzzle, end), updated every frame.
     // A WebGL line is always 1 pixel wide: with our low-resolution render
@@ -121,7 +192,76 @@ export function createSharpshooterRenderer(scene: THREE.Scene, world: World): Sh
     dot.scale.setScalar(DOT_SIZE);
     scene.add(dot);
 
-    return { body, head, rifle, laser, laserMaterial, dot, dotMaterial, fallAngle: 0 };
+    // The muzzle flash: a sprite (always faces the camera), additive, only for a few frames.
+    const flashMaterial = new THREE.SpriteMaterial({ map: flashMap, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
+    flashMaterial.color.setScalar(FLASH_BRIGHTNESS);
+    const flash = new THREE.Sprite(flashMaterial);
+    flash.scale.setScalar(FLASH_SIZE);
+    flash.visible = false;
+    scene.add(flash);
+
+    return {
+      mesh,
+      material,
+      map,
+      glowMap,
+      laser,
+      laserMaterial,
+      dot,
+      dotMaterial,
+      flash,
+      flashMaterial,
+      hurtTime: 0,
+      recoilTime: 0,
+      flashTime: 0,
+      stopWhine: null,
+    };
+  }
+
+  function showFrame(v: SharpshooterView, frame: number): void {
+    v.map.offset.x = frame / sheet.frameCount;
+    v.glowMap.offset.x = frame / sheet.frameCount;
+  }
+
+  function stopWhine(v: SharpshooterView): void {
+    v.stopWhine?.();
+    v.stopWhine = null;
+  }
+
+  /** A warning heard from afar: louder than plain distance would make it. */
+  function warning(where: Where): Where {
+    return { volume: Math.min(1, where.volume * WARNING_BOOST), pan: where.pan };
+  }
+
+  function onEvent(e: SimEvent, byId: Map<number, Entity>, camera: THREE.Camera): void {
+    if (e.type !== 'sharpshooterAim' && e.type !== 'sharpshooterLock' && e.type !== 'sharpshooterShot' && e.type !== 'hit') return;
+    const s = byId.get(e.entityId);
+    if (!s || s.type !== 'sharpshooter') return;
+    const v = views.get(s.id);
+    if (!v) return;
+    const where = soundAt(camera, s.x, s.y + tuning.sharpshooterMuzzleHeight, s.z);
+    if (e.type === 'sharpshooterAim') {
+      stopWhine(v); // (never two at once)
+      v.stopWhine = playSharpshooterAim(where, tuning.sharpshooterAimTime);
+    } else if (e.type === 'sharpshooterLock') {
+      stopWhine(v);
+      playLeverAction(warning(where), LEVER_TIME);
+    } else if (e.type === 'sharpshooterShot') {
+      playRifleShot(warning(where));
+      v.recoilTime = RECOIL_TIME;
+      v.flashTime = FLASH_TIME;
+      v.flashMaterial.rotation = Math.random() * Math.PI; // every flash a bit different
+      const [mx, my, mz] = muzzlePosition(s);
+      point.set(mx, my, mz);
+      dir.set(s.aimX, s.aimY, s.aimZ);
+      spawnSnort(point, dir, SHOT_EMBERS);
+    } else {
+      v.hurtTime = HURT_TIME;
+      if (e.killed) {
+        stopWhine(v);
+        playBoneClatter(where);
+      }
+    }
   }
 
   function updateLaser(v: SharpshooterView, e: SharpshooterEntity, time: number): void {
@@ -157,45 +297,82 @@ export function createSharpshooterRenderer(scene: THREE.Scene, world: World): Sh
     }
   }
 
+  function draw(v: SharpshooterView, e: SharpshooterEntity, camera: THREE.Camera, alpha: number, dt: number, time: number): void {
+    const m = v.mesh;
+    m.position.set(e.px + (e.x - e.px) * alpha, e.py + (e.y - e.py) * alpha, e.pz + (e.z - e.pz) * alpha);
+    // Cylindrical billboard: turn around Y only, to face the camera.
+    m.rotation.y = Math.atan2(camera.position.x - m.position.x, camera.position.z - m.position.z);
+    v.hurtTime -= dt;
+    v.recoilTime -= dt;
+    v.flashTime -= dt;
+    v.material.color.copy(v.hurtTime > 0 ? hurtTint : white);
+    // The whine belongs to the aim: gave up, locked or dead = silence.
+    if (e.state !== 'aim') stopWhine(v);
+
+    const t = e.stateTicks / 60; // seconds in the current state
+    if (e.state === 'dead') {
+      v.material.emissiveIntensity = 0; // the embers in its eyes go out
+      const frames = e.headless ? FRAMES.deathHeadless : FRAMES.death;
+      showFrame(v, frames[Math.min(frames.length - 1, Math.floor(t / DEATH_FRAME_TIME))]);
+      // In its last second, the pile sinks into the ground before it's removed.
+      const remaining = tuning.sharpshooterCorpseTime - t;
+      if (remaining < 1) m.position.y -= (1 - remaining) * 0.4;
+    } else if (v.recoilTime > 0) {
+      showFrame(v, FRAMES.recoil);
+      v.material.emissiveIntensity = GLOW_AIM;
+    } else if (e.state === 'lock') {
+      showFrame(v, t < LEVER_TIME ? FRAMES.lever : FRAMES.aim);
+      v.material.emissiveIntensity = GLOW_LOCK;
+    } else if (e.state === 'aim') {
+      showFrame(v, FRAMES.aim);
+      const progress = Math.min(1, t / tuning.sharpshooterAimTime);
+      v.material.emissiveIntensity = GLOW_CALM + (GLOW_AIM - GLOW_CALM) * progress;
+    } else {
+      // Idle: a slow sway, out of step from one skeleton to the next (the id shifts the phase).
+      showFrame(v, FRAMES.idle[Math.floor(time / IDLE_FRAME_TIME + e.id * 0.5) % 2]);
+      v.material.emissiveIntensity = GLOW_CALM;
+    }
+
+    updateLaser(v, e, time);
+    v.flash.visible = v.flashTime > 0 && e.state !== 'dead';
+    if (v.flash.visible) {
+      const [mx, my, mz] = muzzlePosition(e);
+      v.flash.position.set(mx, my, mz);
+    }
+  }
+
+  function remove(id: number, v: SharpshooterView): void {
+    stopWhine(v);
+    scene.remove(v.mesh, v.laser, v.dot, v.flash);
+    v.material.dispose();
+    (v.mesh.customDepthMaterial as THREE.Material).dispose();
+    v.map.dispose();
+    v.glowMap.dispose();
+    v.laser.geometry.dispose();
+    v.laserMaterial.dispose();
+    v.dotMaterial.dispose();
+    v.flashMaterial.dispose();
+    views.delete(id);
+  }
+
   return {
-    update(entities, _camera, alpha, dt) {
+    update(entities, events, camera, alpha, dt) {
       const time = performance.now() / 1000;
+      // Views first (a sharpshooter can start aiming on its very first tick),
+      // then the events, then drawing.
       const seen = new Set<number>();
       for (const e of entities) {
         if (e.type !== 'sharpshooter') continue;
         seen.add(e.id);
-        let v = views.get(e.id);
-        if (!v) {
-          v = create();
-          views.set(e.id, v);
-        }
-        v.body.position.set(e.px + (e.x - e.px) * alpha, e.py + (e.y - e.py) * alpha, e.pz + (e.z - e.pz) * alpha);
-        // Turn to face the aim. Rotating around Y by θ takes local +Z to
-        // (sin θ, 0, cos θ): so θ = atan2(x, z) of the direction we want.
-        v.body.rotation.y = Math.atan2(e.aimX, e.aimZ);
-        // Rifle pitch: rotating around X by φ takes +Z to (0, −sin φ, cos φ).
-        v.rifle.rotation.x = -Math.asin(Math.max(-1, Math.min(1, e.aimY)));
-        v.head.visible = !e.headless;
-        if (e.state === 'dead') {
-          v.fallAngle = Math.min(Math.PI / 2, v.fallAngle + dt * FALL_SPEED);
-          v.body.rotation.x = -v.fallAngle; // falls backward
-        } else {
-          v.body.rotation.x = 0;
-        }
-        updateLaser(v, e, time);
+        if (!views.has(e.id)) views.set(e.id, create());
+      }
+      const byId = new Map(entities.map((e) => [e.id, e]));
+      for (const ev of events) onEvent(ev, byId, camera);
+      for (const e of entities) {
+        if (e.type === 'sharpshooter') draw(views.get(e.id)!, e, camera, alpha, dt, time);
       }
       // Removed from the simulation (old corpses): clean up.
-      for (const [id, v] of views) {
-        if (seen.has(id)) continue;
-        scene.remove(v.body, v.laser, v.dot);
-        v.body.traverse((o) => {
-          if (o instanceof THREE.Mesh) o.geometry.dispose();
-        });
-        v.laser.geometry.dispose();
-        v.laserMaterial.dispose();
-        v.dotMaterial.dispose();
-        views.delete(id);
-      }
+      for (const [id, v] of views) if (!seen.has(id)) remove(id, v);
     },
   };
 }
