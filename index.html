@@ -83,12 +83,43 @@
       /* Headshot: gold and bigger. */
       #hitmarker.head { --c: #ffd030; width: 34px; height: 34px; margin: -17px 0 0 -17px; animation-duration: 0.45s; }
       @keyframes hitmarker { from { opacity: 1; } to { opacity: 0; } }
-      /* Health bar, bottom-left above the debug text. */
-      #health {
-        position: fixed; left: 16px; bottom: 58px; width: 200px; height: 14px;
-        background: #2a1008; border: 2px solid #120604; pointer-events: none;
+      /* --- Health plate, bottom-left (src/render/healthPlate.ts) ---
+         A dark wooden plate with a brass rim and four rivets. No rounded corners:
+         hard edges and hard shadows fit the pixel-art picture. */
+      #health-plate {
+        position: fixed; left: 20px; bottom: 20px; display: flex; align-items: center; gap: 10px;
+        padding: 6px 16px 6px 12px; pointer-events: none; font-family: 'Rye', Georgia, serif;
+        background:
+          /* rivets: one small radial gradient per corner (light spot = shine on the dome) */
+          radial-gradient(circle at 40% 40%, #ffe9a8 0 1px, #b08a40 1.5px 2.5px, #3a2408 3px, transparent 3.5px) top 3px left 3px / 8px 8px no-repeat,
+          radial-gradient(circle at 40% 40%, #ffe9a8 0 1px, #b08a40 1.5px 2.5px, #3a2408 3px, transparent 3.5px) top 3px right 3px / 8px 8px no-repeat,
+          radial-gradient(circle at 40% 40%, #ffe9a8 0 1px, #b08a40 1.5px 2.5px, #3a2408 3px, transparent 3.5px) bottom 3px left 3px / 8px 8px no-repeat,
+          radial-gradient(circle at 40% 40%, #ffe9a8 0 1px, #b08a40 1.5px 2.5px, #3a2408 3px, transparent 3.5px) bottom 3px right 3px / 8px 8px no-repeat,
+          /* wood grain: thin uneven horizontal stripes over a dark brown gradient */
+          repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.18) 0 1px, transparent 1px 4px, rgba(255, 200, 140, 0.05) 4px 5px, transparent 5px 7px),
+          linear-gradient(to bottom, #4a2c16, #2e1a0c);
+        /* brass rim: a border plus box-shadows (a light edge inside, a black outline
+           outside, then the hard drop shadow) */
+        border: 3px solid #a07c3a;
+        box-shadow: inset 0 0 0 1px #e8c878, inset 0 -3px 0 1px rgba(0, 0, 0, 0.35),
+          0 0 0 2px #120604, 4px 5px 0 2px #000;
       }
-      #health-fill { height: 100%; width: 100%; background: linear-gradient(#e04020, #a01808); }
+      /* The heart is an 11 × 10 px canvas: shown 3× bigger, without smoothing. */
+      #health-heart { width: 33px; height: 30px; image-rendering: pixelated; }
+      #health-number {
+        min-width: 2.2em; text-align: right; font-size: 30px; line-height: 1;
+        color: #f4dca0; text-shadow: 2px 0 0 #120604, -2px 0 0 #120604, 0 2px 0 #120604, 0 -2px 0 #120604, 3px 3px 0 #000;
+      }
+      #health-plate.low #health-number { color: #ff4020; }
+      /* The gauge: a brass-rimmed tube; the ghost (pale) lies under the fill (red). */
+      #health-gauge {
+        position: relative; width: 150px; height: 12px; background: #1a0a04;
+        border: 2px solid #a07c3a; box-shadow: 0 0 0 2px #120604, inset 0 2px 0 rgba(0, 0, 0, 0.6);
+      }
+      #health-ghost, #health-fill { position: absolute; inset: 0; transform-origin: left; }
+      #health-ghost { background: #f0c890; }
+      /* Red liquid: light on top, dark at the bottom, plus a thin shine line. */
+      #health-fill { background: linear-gradient(to bottom, #ff7050 0 2px, #d02414 2px 60%, #7a0c06); }
       /* Red vignette: transparent in the middle, red at the edges. */
       #damage {
         position: fixed; inset: 0; pointer-events: none; opacity: 0;
@@ -190,10 +221,11 @@
         background: linear-gradient(to bottom, var(--top), var(--mid) 50%, var(--bottom));
       }
 
+      /* Debug readout (speed, style numbers, performance), top-left, small. */
       #hud {
-        white-space: pre; /* the readout has two lines */
-        position: fixed; left: 12px; bottom: 10px; color: #f0c080;
-        font: bold 18px monospace; pointer-events: none;
+        white-space: pre; /* the readout has several lines */
+        position: fixed; left: 12px; top: 10px; color: #f0c080;
+        font: bold 12px monospace; pointer-events: none; text-shadow: 1px 1px 0 #000;
       }
     </style>
   </head>
@@ -258,7 +290,11 @@
     <div id="ammo"></div>
     <div id="damage"></div>
     <div id="pickup-flash"></div>
-    <div id="health"><div id="health-fill"></div></div>
+    <div id="health-plate">
+      <canvas id="health-heart"></canvas>
+      <div id="health-number"></div>
+      <div id="health-gauge"><div id="health-ghost"></div><div id="health-fill"></div></div>
+    </div>
     <div id="death">SEI MORTO</div>
     <div id="death-stats"></div>
     <div id="wave"></div>
