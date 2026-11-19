@@ -436,7 +436,7 @@ futuro **poligono di tiro / tutorial**.
 
 ---
 
-## 6b. HUD [IN CORSO]
+## 6b. HUD [FATTO]
 - **Stile "sangue e cenere"**: niente cornici né targhe (risultavano comiche), elementi appoggiati
   sullo schermo come in Prodeus, colori presi dalla scena (rosso sangue secco, ottone opaco, cenere),
   leggibili grazie a una macchia scura sfumata negli angoli e a ombre sfocate, non a contorni da fumetto.
@@ -445,6 +445,9 @@ futuro **poligono di tiro / tutorial**.
 - **In alto**: a sinistra l'**ondata** (numero rosso, come il conteggio dei round di CoD Zombies),
   a destra **punti e uccisioni**. [FATTO]
 - **Basso a destra**: munizioni, colpi disegnati con forma diversa per arma + riserva. [FATTO]
+- **Al centro**: scritte delle ondate (titolo rosso sangue con animazione a timbro, riga color cenere),
+  HIGH NOON color ferro rovente, conto alla rovescia; **morte**: sipario scuro con le statistiche
+  e un rintocco funebre, che nasconde il ritorno all'ondata 1. [FATTO]
 - **Vita bassa** (sotto il 35%): stile CoD, sangue scuro che entra dai bordi, immagine che perde colore,
   battito del cuore (visivo e sonoro) sempre più veloce. [FATTO]
 - **Colpo subito**: deve sentirsi e deve dire **da dove** arriva: arco rosso intorno al mirino che punta

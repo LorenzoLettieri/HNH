@@ -170,15 +170,23 @@
           rgba(255, 190, 90, calc(var(--core) * 0.6 + var(--edge) * 0.12)) 50%,
           rgba(255, 110, 20, var(--edge)) 100%);
       }
+      /* --- Death screen (src/render/hud.ts): a dark curtain over the game, which
+         restarts from wave 1 behind it. Opacity from the TS; the title sinks slowly
+         into place (animation restarted at every death, .show). */
       #death {
-        position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-        color: #ff3010; font: bold 64px monospace; letter-spacing: 8px; pointer-events: none; opacity: 0;
-        text-shadow: 4px 4px 0 #000;
+        position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 28px; pointer-events: none; opacity: 0; font-family: 'Rye', Georgia, serif;
+        z-index: 1; /* above every HUD element (they have none), below menu (5) and debug panel (10) */
+        background: radial-gradient(ellipse at center, rgba(30, 0, 0, 0.78), rgba(0, 0, 0, 0.96) 75%);
       }
-      #death-stats {
-        position: fixed; left: 0; right: 0; top: 60%; text-align: center; pointer-events: none; opacity: 0;
-        color: #f0c080; font: bold 22px monospace; text-shadow: 2px 2px 0 #000;
+      #death-title {
+        font-size: 84px; letter-spacing: 6px; color: #9a1c10;
+        text-shadow: 0 0 2px #000, 3px 3px 0 #000, 0 0 30px rgba(120, 0, 0, 0.8);
       }
+      #death.show #death-title { animation: death-sink 2.5s ease-out; }
+      @keyframes death-sink { from { transform: scale(1.25); opacity: 0; } 30% { opacity: 1; } to { transform: scale(1); } }
+      #death-stats { display: flex; gap: 56px; text-align: center; }
+      .death-stat div:last-child { font-size: 40px; color: #c8b8a0; text-shadow: 0 0 2px #000, 2px 2px 0 #000; }
       /* --- Top corners: wave (left) and score (right), same "blood and ash" look ---
          A dark smudge behind each top corner, like the bottom ones. */
       #hud-smudge-top-left { left: -120px; top: -80px; bottom: auto; }
@@ -193,13 +201,29 @@
       }
       #score-box { position: fixed; right: 28px; top: 16px; text-align: right; pointer-events: none; font-family: 'Rye', Georgia, serif; }
       #score { font-size: 28px; line-height: 1.1; color: #c8b8a0; text-shadow: 0 0 2px #000, 2px 2px 0 #000, 0 0 12px rgba(0, 0, 0, 0.9); }
-      /* Center banner: "ONDATA 3", "ONDATA SUPERATA", countdown. */
+      /* --- Center banner (src/render/hud.ts): "ONDATA 3", "ONDATA SUPERATA", HIGH NOON,
+         the countdown. A big title in dried-blood red and a small line in ash. The title
+         lands like a stamp (animation restarted from the TS with the .stamp class). */
       #banner {
-        position: fixed; left: 0; right: 0; top: 22%; text-align: center; pointer-events: none; opacity: 0;
-        color: #d02010; font: bold 24px Georgia, 'Times New Roman', serif; letter-spacing: 4px;
-        text-shadow: 3px 3px 0 #000; white-space: pre-line; /* "\n" = second line, smaller */
+        position: fixed; left: 0; right: 0; top: 20%; display: flex; flex-direction: column; align-items: center;
+        pointer-events: none; opacity: 0; font-family: 'Rye', Georgia, serif; text-align: center;
       }
-      #banner::first-line { font-size: 56px; }
+      #banner-title {
+        font-size: 60px; line-height: 1.1; letter-spacing: 3px; color: #9a1c10;
+        text-shadow: 0 0 2px #000, 3px 3px 0 #000, 0 0 16px rgba(0, 0, 0, 0.9);
+      }
+      #banner-sub { font-size: 17px; letter-spacing: 3px; color: #8a7a62; text-shadow: 2px 2px 0 #000, 0 0 10px #000; }
+      #banner-sub:empty { display: none; }
+      /* Countdown: the small line on top ("PROSSIMA ONDATA TRA"), the digit below. */
+      #banner.countdown { flex-direction: column-reverse; }
+      /* HIGH NOON: white-hot iron, like the top rank of the style meter. */
+      #banner.hot #banner-title { color: #fff0c8; text-shadow: 0 0 2px #000, 3px 3px 0 #000, 0 0 22px rgba(255, 160, 40, 0.9); }
+      #banner-title.stamp { animation: banner-stamp 0.3s ease-out; }
+      @keyframes banner-stamp {
+        from { transform: scale(1.7); opacity: 0; }
+        60% { transform: scale(0.95); opacity: 1; }
+        to { transform: scale(1); }
+      }
       /* --- Ammo, bottom-right (src/render/ammoHud.ts) ---
          The rounds are empty <i> elements: the shape is all CSS. A gradient with hard
          stops (no blending between colors) paints the parts, like pixel art:
@@ -357,11 +381,17 @@
       <div id="health-number"></div>
       <div id="health-gauge"><div id="health-ghost"></div><div id="health-fill"></div></div>
     </div>
-    <div id="death">SEI MORTO</div>
-    <div id="death-stats"></div>
+    <div id="death">
+      <div id="death-title">SEI MORTO</div>
+      <div id="death-stats">
+        <div class="death-stat"><div class="hud-label">ONDATA</div><div id="death-wave"></div></div>
+        <div class="death-stat"><div class="hud-label">UCCISIONI</div><div id="death-kills"></div></div>
+        <div class="death-stat"><div class="hud-label">PUNTI</div><div id="death-score"></div></div>
+      </div>
+    </div>
     <div id="wave-box" hidden><div class="hud-label">ONDATA</div><div id="wave"></div></div>
     <div id="score-box"><div class="hud-label">PUNTI</div><div id="score"></div><div id="kills" class="hud-label"></div></div>
-    <div id="banner"></div>
+    <div id="banner"><div id="banner-title"></div><div id="banner-sub"></div></div>
     <div id="style-meter">
       <div id="style-letter"></div>
       <div id="style-name"></div>
