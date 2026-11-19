@@ -24,6 +24,7 @@ import { createGhoulRenderer } from './render/enemies/ghouls';
 import { createEyebatRenderer } from './render/enemies/eyebats';
 import { createHoundRenderer } from './render/enemies/hounds';
 import { createProjectileRenderer } from './render/projectiles';
+import { createPickupRenderer } from './render/pickups';
 import { updateHud } from './render/hud';
 import { createNavDebug } from './render/navDebug';
 import { createHitboxDebug } from './render/hitboxDebug';
@@ -115,6 +116,7 @@ const ghouls = createGhoulRenderer(scene);
 const eyebats = createEyebatRenderer(scene);
 const hounds = createHoundRenderer(scene);
 const projectiles = createProjectileRenderer(scene);
+const pickups = createPickupRenderer(scene);
 const navDebug = createNavDebug(scene, getNavGraph(world));
 const hitboxDebug = createHitboxDebug(scene);
 // The gun in your hand: its own scene and camera, drawn over the world.
@@ -308,6 +310,7 @@ renderer.setAnimationLoop((now: number) => {
   eyebats.update(game.entities, events, camera, alpha, dt);
   hounds.update(game.entities, events, camera, alpha, dt);
   projectiles.update(game.projectiles, events, camera, alpha, dt);
+  pickups.update(game.pickups, now / 1000);
   updateHud(game, events, dt);
   navDebug.update(getFlowField(getNavGraph(world), game.navGoal));
   hitboxDebug.update(game.entities);

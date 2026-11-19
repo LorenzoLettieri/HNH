@@ -86,6 +86,16 @@ export function createDebugPanel(options: {
   gun.number(tuning, 'revolverReserveMax', 0, 200, 1);
   gun.number(tuning, 'revolverDamage', 5, 200, 5);
   gun.number(tuning, 'headshotMultiplier', 1, 5, 0.25);
+  const drops = panel.folder('Drops (src/sim/config.ts + pickups.ts)');
+  drops.number(tuning, 'dropChancePerWeight', 0, 1, 0.05);
+  drops.number(tuning, 'dropChanceMax', 0, 1, 0.05);
+  drops.number(tuning, 'dropMedkitShare', 0, 1, 0.05);
+  drops.number(tuning, 'dropLifetime', 1, 60, 1);
+  drops.number(tuning, 'pickupRadius', 0.3, 3, 0.1);
+  drops.number(tuning, 'medkitHeal', 5, 100, 5);
+  drops.number(tuning, 'ammoPickupBullets', 0, 36, 1);
+  drops.number(tuning, 'ammoPickupShells', 0, 12, 1);
+
   const sg = panel.folder('Shotgun (src/sim/config.ts + render/weapons/viewmodel.ts, shotgunView.ts)');
   sg.number(tuning, 'shotgunPellets', 1, 30, 1);
   sg.number(tuning, 'shotgunSpread', 0, 20, 0.5);

@@ -123,8 +123,8 @@ const ROSTER: EnemyType[] = [
   },
 ];
 
-/** How much an enemy weighs (for the "alive at the same time" limit). */
-function costOf(e: Enemy): number {
+/** How much an enemy weighs (for the "alive at the same time" limit, and the drop chance in pickups.ts). */
+export function enemyCost(e: Enemy): number {
   if (e.type === 'ghoul') return tuning.ghoulCost;
   if (e.type === 'eyebat') return tuning.eyebatCost;
   return tuning.houndCost;
@@ -147,7 +147,7 @@ export function stepWaves(game: GameState, world: World, events: SimEvent[]): vo
   const w = game.wave;
   // Weight alive right now (with every enemy weighing 1: how many are alive).
   let alive = 0;
-  for (const e of game.entities) if (isEnemy(e) && e.state !== 'dead') alive += costOf(e);
+  for (const e of game.entities) if (isEnemy(e) && e.state !== 'dead') alive += enemyCost(e);
 
   if (w.phase === 'break') {
     w.breakTicks--;

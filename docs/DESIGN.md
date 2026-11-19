@@ -65,7 +65,11 @@ finale unico, "HIGH NOON". [DA DECIDERE: nomi definitivi]
 - **Munizioni di riserva** [FATTO, da tarare]: ogni arma ha i colpi caricati e quelli **in tasca**;
   la ricarica sposta dalla tasca all'arma. Si parte con 36 proiettili (max 72) e 12 cartucce (max 24).
   Tasca vuota = click a vuoto, niente ricarica (resta il calcio). Anche il revolver è finito.
-  [DA DECIDERE] come si ricaricano le tasche: drop dei nemici e/o munizioni sulla mappa.
+  Le tasche si riempiono coi **drop dei nemici** (sotto); [DA DECIDERE] munizioni fisse sulla mappa.
+- **Drop dei nemici** [FATTO, da tarare]: niente loot table per nemico, una regola sola: probabilità
+  = **peso del nemico × 20%** (ghoul 20%, Malocchio 40%, cane 60%, max 80%). Del drop, 30% **medikit**
+  (+25 salute), 70% **munizioni** (+12 proiettili e +4 cartucce insieme). Si raccolgono passandoci
+  sopra; se non ti servono restano a terra. **Spariscono dopo 10 s** (lampeggiano negli ultimi 3).
 
 ---
 
@@ -170,7 +174,7 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
   (1,6 m, ±45°), 25 danni (mezzo ghoul base: è uno strumento, non l'arma principale), e **spinge via**
   (13 m/s in avanti, 5 m/s in alto): il ghoul vola via, interrompe artigliata e balzo, e resta a terra
   0,5 s. Si può calciare mentre si ricarica. Ricarica di 0,55 s.
-- **Niente rigenerazione della salute.** [DA DECIDERE] drop casuali dei nemici (medikit o simili).
+- **Niente rigenerazione della salute.** La salute torna coi **medikit** lasciati dai nemici (vedi Stile → Risorse).
 
 ## 4. La mappa [DECISO: cittadina all'aperto]
 

@@ -4,6 +4,7 @@
 // (On a future server, the same events would be sent to the clients.)
 
 import type { WeaponId } from './weapon';
+import type { PickupKind } from './pickups';
 
 export type SimEvent =
   /** A weapon fired (sound, flash, recoil). For the shotgun, `barrel` is 0 = right, 1 = left. */
@@ -50,4 +51,6 @@ export type SimEvent =
   | { type: 'kickLand'; hits: number }
   | { type: 'dryFire' } // pulled the trigger with an empty cylinder
   | { type: 'reloadStart'; weapon: WeaponId }
-  | { type: 'reloadEnd' };
+  | { type: 'reloadEnd' }
+  /** You collected a pickup (sound, flash on the HUD). */
+  | { type: 'pickup'; kind: PickupKind; x: number; y: number; z: number };

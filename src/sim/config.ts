@@ -164,6 +164,24 @@ export const tuning = {
   shotgunReserveMax: 24,
   /** Debug: reloading doesn't use up the reserve. */
   infiniteAmmo: false,
+
+  // --- Drops and pickups (see pickups.ts) ---
+  /** Drop chance per point of enemy weight (ghoulCost 1 → 20%, eyebatCost 2 → 40%, houndCost 3 → 60%). */
+  dropChancePerWeight: 0.2,
+  /** The drop chance never goes above this (heavy enemies of the future). */
+  dropChanceMax: 0.8,
+  /** Of the drops, the fraction that are medkits (the rest is ammo). */
+  dropMedkitShare: 0.3,
+  /** Seconds a drop stays on the ground before vanishing. */
+  dropLifetime: 10,
+  /** How close (horizontally) you must pass to collect it, meters. */
+  pickupRadius: 1.0,
+  /** Health a medkit gives back. */
+  medkitHeal: 25,
+  /** Spare bullets in an ammo box. */
+  ammoPickupBullets: 12,
+  /** Spare shells in an ammo box. */
+  ammoPickupShells: 4,
   /** Pellets per shot (a fixed pattern: center + inner ring + outer ring). */
   shotgunPellets: 12,
   /** Half-angle of the outer ring of the pattern, degrees (7° = ~1.2 m wide at 10 m). */

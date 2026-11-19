@@ -12,6 +12,7 @@ import type { SimEvent } from './events';
 import { createPlayer, respawn, stepPlayer, type PlayerState } from './player';
 import { stepWeapon } from './weapon';
 import { stepKick } from './kick';
+import { dropFromKills, stepPickups, type Pickup } from './pickups';
 import type { World } from './world';
 
 export interface GameState {
@@ -26,6 +27,8 @@ export interface GameState {
   navGoal: number;
   /** Enemy projectiles in flight (fireballs...). */
   projectiles: Projectile[];
+  /** Things on the ground to collect (enemy drops), see pickups.ts. */
+  pickups: Pickup[];
   /** State of the seeded random generator (see random.ts): what the waves spawn. */
   rng: number;
 }
@@ -45,6 +48,7 @@ export function createGame(world: World, seed = 1): GameState {
     stats: { kills: 0, score: 0 },
     navGoal: -1,
     projectiles: [],
+    pickups: [],
     rng: seed,
   };
 }
@@ -53,7 +57,7 @@ export function createGame(world: World, seed = 1): GameState {
  * One tick of the whole game, always in the same order:
  * 1. the player moves; 2. the player's weapon fires (and hits), the boot kicks;
  * 3. targets and enemies update; 4. enemy projectiles fly (and hit);
- * 5. the wave system spawns enemies.
+ * 5. the wave system spawns enemies; 6. pickups age and get collected.
  * Things that happened go into `events`.
  */
 export function stepGame(
@@ -73,7 +77,9 @@ export function stepGame(
   const firstNewEvent = events.length;
   stepWeapon(game.player, cmd, world, game.entities, events);
   stepKick(game.player, cmd, world, game.entities, events);
-  scoreHits(game.stats, events.slice(firstNewEvent));
+  const playerHits = events.slice(firstNewEvent);
+  scoreHits(game.stats, playerHits);
+  dropFromKills(game, world, playerHits);
 
   // Navigation: where's the player on the graph? (Only while standing:
   // in mid-jump we keep the last known node.) Checked 4 times a second;
@@ -94,6 +100,7 @@ export function stepGame(
   }
   game.projectiles = stepProjectiles(game.projectiles, game.player, world, dt, events);
   stepWaves(game, world, events);
+  stepPickups(game, events);
 
   // Dead: game over, CoD style. Report how far you got, then start over from
   // wave 1: back to the spawn, the horde is cleared, stats reset.
@@ -102,6 +109,7 @@ export function stepGame(
     respawn(game.player, world);
     game.entities = game.entities.filter((e) => !isEnemy(e));
     game.projectiles = [];
+    game.pickups = [];
     game.wave = createWaveState();
     game.stats = { kills: 0, score: 0 };
   }
