@@ -14,8 +14,10 @@ export type SimEvent =
       normal: { x: number; y: number; z: number } | null;
       /** Id of the entity hit, if the bullet hit one (instead of the level). */
       entityId: number | null;
+      /** What was hit, for the right effect: wall (hole + sparks), steel, or flesh (blood). */
+      surface: 'level' | 'metal' | 'flesh' | null;
     }
-  | { type: 'hit'; entityId: number; damage: number; killed: boolean }
+  | { type: 'hit'; entityId: number; damage: number; killed: boolean; surface: 'metal' | 'flesh' }
   | { type: 'dryFire' } // pulled the trigger with an empty cylinder
   | { type: 'reloadStart' }
   | { type: 'reloadEnd' };

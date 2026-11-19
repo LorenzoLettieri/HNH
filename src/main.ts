@@ -16,6 +16,7 @@ import { createProps } from './render/props';
 import { createPostProcess } from './render/postprocess';
 import { createWeaponFx } from './render/weaponFx';
 import { createTargets } from './render/targets';
+import { createGhoulRenderer } from './render/enemies/ghouls';
 import { createViewmodel } from './render/weapons/viewmodel';
 import type { SimEvent } from './sim/events';
 import { initAudio } from './audio/sfx';
@@ -94,6 +95,7 @@ createFireLights(scene, props.fires);
 createParticles(scene, props.fires, props.vents);
 const weaponFx = createWeaponFx(scene);
 const targets = createTargets(scene, game.entities);
+const ghouls = createGhoulRenderer(scene);
 // The gun in your hand: its own scene and camera, drawn over the world.
 const viewmodel = createViewmodel();
 viewmodel.setAspect(window.innerWidth / window.innerHeight);
@@ -230,6 +232,7 @@ renderer.setAnimationLoop((now: number) => {
   weaponFx.update(frameTime);
   targets.handle(events);
   targets.update(frameTime);
+  ghouls.update(game.entities, events, camera, alpha, frameTime);
   ammoHud.textContent = player.reloadTicks > 0
     ? 'RELOADING'
     : '●'.repeat(player.ammo) + '○'.repeat(Math.max(0, 6 - player.ammo));

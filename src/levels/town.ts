@@ -149,6 +149,16 @@ export const town: World = {
   // Steel practice targets. `rotation` = where the plate faces (same as ?look=):
   // 0 = north, 90 = west, 180 = south, -90 = east. Some are on the rooftops,
   // to give a reason to climb.
+  // Where the ghouls crawl in from: the corners and sides of the canyon.
+  enemySpawns: [
+    { x: -36, y: 0, z: -36 },
+    { x: 36, y: 0, z: -36 },
+    { x: -36, y: 0, z: 36 },
+    { x: 36, y: 0, z: 36 },
+    { x: 0, y: 0, z: -38 },
+    { x: -38, y: 0, z: 8 },
+    { x: 38, y: 0, z: 18 },
+  ],
   targets: [
     { x: -3, y: 0, z: 27, rotation: 180 }, // near the spawn, facing it
     { x: 3, y: 0, z: 27, rotation: 180 },

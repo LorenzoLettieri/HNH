@@ -67,8 +67,13 @@ const fragmentShader = /* glsl */ `
   uniform vec3 color;
   varying float vAlpha;
   void main() {
-    // Additive blending: we output "how much light to add".
-    gl_FragColor = vec4(color * vAlpha, 1.0);
+    #ifdef NORMAL_BLEND
+      // Normal blending: an opaque-ish color on top (blood can't "add light").
+      gl_FragColor = vec4(color, min(vAlpha, 1.0));
+    #else
+      // Additive blending: we output "how much light to add".
+      gl_FragColor = vec4(color * vAlpha, 1.0);
+    #endif
   }
 `;
 
@@ -82,7 +87,7 @@ interface PointsLayer {
   commit(count: number): void;
 }
 
-function createPointsLayer(capacity: number): PointsLayer {
+function createPointsLayer(capacity: number, additive = true): PointsLayer {
   const positions = new Float32Array(capacity * 3);
   const sizes = new Float32Array(capacity);
   const alphas = new Float32Array(capacity);
@@ -100,7 +105,8 @@ function createPointsLayer(capacity: number): PointsLayer {
       pixelsPerMeterAt1m: { value: 500 },
       fadeDistance: { value: 30 },
     },
-    blending: THREE.AdditiveBlending,
+    blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending,
+    defines: additive ? {} : { NORMAL_BLEND: '' },
     // Particles write depth: the god rays treat "no depth" as open sky, and a
     // bright firefly in front of the moon would otherwise cast its own ray.
     depthWrite: true,
@@ -155,56 +161,110 @@ let steamCount = 0;
 let steamSpawnDebt = 0;
 let vents: THREE.Vector3[] = [];
 
-// --- Sparks ----------------------------------------------------------------------
-const sparks = createPointsLayer(SPARK_MAX);
-const sparkVel = new Float32Array(SPARK_MAX * 3);
-const sparkAge = new Float32Array(SPARK_MAX);
-let sparkCount = 0;
+// --- Bursts (sparks, blood) --------------------------------------------------------
+// A "burst" is a short-lived spray of particles from an impact point: they
+// fly out around the surface normal, fall with gravity and fade out.
+// Same code for sparks (bright, additive, they bloom) and blood (dark, opaque).
+interface BurstOptions {
+  max: number;
+  life: number; // seconds
+  size: number; // meters
+  speed: number; // m/s
+  gravity: number; // m/s²
+  color: number;
+  brightness: number; // > 1 = HDR, blooms
+  additive: boolean;
+}
 
-/**
- * Bursts of sparks at a bullet impact. They fly out around the surface
- * normal (a "cone" of random directions bouncing off the wall), then fall.
- */
-export function spawnSparks(point: THREE.Vector3, normal: THREE.Vector3, count = 10): void {
-  for (let n = 0; n < count && sparkCount < SPARK_MAX; n++) {
-    const i = sparkCount++;
-    const ix = i * 3;
-    sparks.positions[ix] = point.x;
-    sparks.positions[ix + 1] = point.y;
-    sparks.positions[ix + 2] = point.z;
-    // Normal + random vector = a random direction biased away from the surface.
-    const speed = SPARK_SPEED * (0.4 + Math.random());
-    sparkVel[ix] = (normal.x + (Math.random() - 0.5) * 1.6) * speed;
-    sparkVel[ix + 1] = (normal.y + (Math.random() - 0.5) * 1.6 + 0.4) * speed;
-    sparkVel[ix + 2] = (normal.z + (Math.random() - 0.5) * 1.6) * speed;
-    sparkAge[i] = Math.random() * 0.1;
-    sparks.sizes[i] = SPARK_SIZE;
+class Burst {
+  readonly layer: PointsLayer;
+  private vel: Float32Array;
+  private age: Float32Array;
+  private count = 0;
+
+  constructor(private o: BurstOptions) {
+    this.layer = createPointsLayer(o.max, o.additive);
+    this.vel = new Float32Array(o.max * 3);
+    this.age = new Float32Array(o.max);
+    this.layer.material.uniforms.color.value.set(o.color).multiplyScalar(o.brightness);
+  }
+
+  spawn(point: THREE.Vector3, normal: THREE.Vector3, count: number): void {
+    const p = this.layer.positions;
+    for (let n = 0; n < count && this.count < this.o.max; n++) {
+      const i = this.count++;
+      const ix = i * 3;
+      p[ix] = point.x;
+      p[ix + 1] = point.y;
+      p[ix + 2] = point.z;
+      // Normal + random vector = a random direction biased away from the surface.
+      const speed = this.o.speed * (0.4 + Math.random());
+      this.vel[ix] = (normal.x + (Math.random() - 0.5) * 1.6) * speed;
+      this.vel[ix + 1] = (normal.y + (Math.random() - 0.5) * 1.6 + 0.4) * speed;
+      this.vel[ix + 2] = (normal.z + (Math.random() - 0.5) * 1.6) * speed;
+      this.age[i] = Math.random() * 0.1;
+      this.layer.sizes[i] = this.o.size * (0.6 + Math.random() * 0.8);
+    }
+  }
+
+  update(dt: number): void {
+    const p = this.layer.positions;
+    for (let i = 0; i < this.count; i++) {
+      this.age[i] += dt;
+      if (this.age[i] >= this.o.life) {
+        // Swap-remove: move the last particle into this slot.
+        this.count--;
+        const last = this.count;
+        for (let k = 0; k < 3; k++) {
+          p[i * 3 + k] = p[last * 3 + k];
+          this.vel[i * 3 + k] = this.vel[last * 3 + k];
+        }
+        this.age[i] = this.age[last];
+        this.layer.sizes[i] = this.layer.sizes[last];
+        i--;
+        continue;
+      }
+      const ix = i * 3;
+      this.vel[ix + 1] -= this.o.gravity * dt;
+      p[ix] += this.vel[ix] * dt;
+      p[ix + 1] += this.vel[ix + 1] * dt;
+      p[ix + 2] += this.vel[ix + 2] * dt;
+      this.layer.alphas[i] = 1 - this.age[i] / this.o.life;
+    }
+    this.layer.commit(this.count);
   }
 }
 
-function updateSparks(dt: number): void {
-  const p = sparks.positions;
-  for (let i = 0; i < sparkCount; i++) {
-    sparkAge[i] += dt;
-    if (sparkAge[i] >= SPARK_LIFE) {
-      sparkCount--;
-      const last = sparkCount;
-      for (let k = 0; k < 3; k++) {
-        p[i * 3 + k] = p[last * 3 + k];
-        sparkVel[i * 3 + k] = sparkVel[last * 3 + k];
-      }
-      sparkAge[i] = sparkAge[last];
-      i--;
-      continue;
-    }
-    const ix = i * 3;
-    sparkVel[ix + 1] -= 15 * dt; // gravity
-    p[ix] += sparkVel[ix] * dt;
-    p[ix + 1] += sparkVel[ix + 1] * dt;
-    p[ix + 2] += sparkVel[ix + 2] * dt;
-    sparks.alphas[i] = 1 - sparkAge[i] / SPARK_LIFE;
-  }
-  sparks.commit(sparkCount);
+const sparks = new Burst({
+  max: SPARK_MAX,
+  life: SPARK_LIFE,
+  size: SPARK_SIZE,
+  speed: SPARK_SPEED,
+  gravity: 15,
+  color: 0xffb040,
+  brightness: SPARK_BRIGHTNESS,
+  additive: true,
+});
+
+const blood = new Burst({
+  max: 400,
+  life: 0.7,
+  size: 0.07,
+  speed: 3.5,
+  gravity: 12,
+  color: 0x5a0806,
+  brightness: 1,
+  additive: false,
+});
+
+/** Sparks at a bullet impact on metal or stone. */
+export function spawnSparks(point: THREE.Vector3, normal: THREE.Vector3, count = 10): void {
+  sparks.spawn(point, normal, count);
+}
+
+/** Blood spray when a bullet hits flesh. */
+export function spawnBlood(point: THREE.Vector3, normal: THREE.Vector3, count = 14): void {
+  blood.spawn(point, normal, count);
 }
 
 export function createParticles(
@@ -213,8 +273,7 @@ export function createParticles(
   levelVents: THREE.Vector3[] = [],
 ): void {
   vents = levelVents;
-  scene.add(steam.points, sparks.points);
-  sparks.material.uniforms.color.value.set(0xffb040).multiplyScalar(SPARK_BRIGHTNESS);
+  scene.add(steam.points, sparks.layer.points, blood.layer.points);
   steam.material.uniforms.color.value.set(0xe8dccc);
   fires = levelFires;
   totalEmberRate = fires.reduce((sum, f) => sum + f.emberRate, 0);
@@ -260,12 +319,14 @@ export function updateParticles(
   dust.material.uniforms.pixelsPerMeterAt1m.value = ppm;
   embers.material.uniforms.pixelsPerMeterAt1m.value = ppm;
   steam.material.uniforms.pixelsPerMeterAt1m.value = ppm;
-  sparks.material.uniforms.pixelsPerMeterAt1m.value = ppm;
+  sparks.layer.material.uniforms.pixelsPerMeterAt1m.value = ppm;
+  blood.layer.material.uniforms.pixelsPerMeterAt1m.value = ppm;
 
   updateDust(dt, time, camera.position);
   updateEmbers(dt, time);
   updateSteam(dt);
-  updateSparks(dt);
+  sparks.update(dt);
+  blood.update(dt);
 }
 
 function updateDust(dt: number, time: number, cam: THREE.Vector3): void {

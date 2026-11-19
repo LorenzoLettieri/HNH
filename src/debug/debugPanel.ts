@@ -87,6 +87,18 @@ export function createDebugPanel(options: {
   gun.number(sfxSettings, 'volume', 0, 1, 0.05);
   gun.button('Copy viewmodel values', () => copyToClipboard(toSource(viewmodelSettings)));
 
+  // --- Ghouls ---
+  const ghoul = panel.folder('Ghoul (src/sim/config.ts)');
+  ghoul.number(tuning, 'ghoulMaxAlive', 0, 40, 1);
+  ghoul.number(tuning, 'ghoulSpawnInterval', 0.1, 10, 0.1);
+  ghoul.number(tuning, 'ghoulSpeed', 0.5, 10, 0.1);
+  ghoul.number(tuning, 'ghoulAccel', 1, 20, 0.5);
+  ghoul.number(tuning, 'ghoulHealth', 10, 500, 5);
+  ghoul.number(tuning, 'ghoulJumpHeight', 0, 2, 0.05);
+  ghoul.number(tuning, 'ghoulSeparation', 0, 3, 0.05);
+  ghoul.number(tuning, 'ghoulAttackRange', 0.5, 3, 0.05);
+  ghoul.button('Copy values', () => copyToClipboard(toSource(tuning)));
+
   // --- Camera feel ---
   const feel = panel.folder('Camera feel (src/render/cameraFeel.ts)');
   feel.number(cameraFeelSettings, 'baseFov', 50, 110, 1);

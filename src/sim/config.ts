@@ -147,6 +147,31 @@ export const tuning = {
   targetHealth: 100,
   /** Seconds before a knocked-down target stands up again. */
   targetRespawnTime: 3,
+
+  // --- Ghoul (basic horde enemy) ---
+  ghoulHealth: 100,
+  /** Walking speed, m/s (the player runs at 8: you can always outrun them). */
+  ghoulSpeed: 3.6,
+  /** How quickly it reaches its speed / turns (per second). */
+  ghoulAccel: 6,
+  ghoulRadius: 0.35,
+  ghoulHeight: 1.8,
+  /** Obstacles up to this height are hopped over, meters. */
+  ghoulJumpHeight: 1.1,
+  /** Ghouls closer than this push each other apart, meters. */
+  ghoulSeparation: 1,
+  /** Starts an attack when the player is closer than this, meters. */
+  ghoulAttackRange: 1.4,
+  /** Duration of the attack animation, seconds. */
+  ghoulAttackTime: 0.7,
+  /** Pause between attacks, seconds. */
+  ghoulAttackCooldown: 0.6,
+  /** How long a dead ghoul lies on the ground before disappearing, seconds. */
+  ghoulCorpseTime: 4,
+  /** Max ghouls alive at once (0 = no ghouls). */
+  ghoulMaxAlive: 6,
+  /** Seconds between two spawns. */
+  ghoulSpawnInterval: 2,
 };
 
 /** Converts a duration in seconds to a whole number of ticks. */

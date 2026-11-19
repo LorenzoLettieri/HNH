@@ -1,7 +1,9 @@
 // The whole game state in one object, and the one function that advances it
 // by one tick. Main loop (and one day the server) only talk to this.
 import type { InputCommand } from './command';
-import { createEntities, stepEntities, type Entity } from './entities';
+import { createEntities, stepTarget, type Entity } from './entities';
+import { stepGhoul } from './ghoul';
+import { stepSpawner } from './spawner';
 import type { SimEvent } from './events';
 import { createPlayer, stepPlayer, type PlayerState } from './player';
 import { stepWeapon } from './weapon';
@@ -11,20 +13,27 @@ export interface GameState {
   tick: number;
   player: PlayerState;
   entities: Entity[];
+  /** Ids are never reused: the renderer recognizes entities by id. */
+  nextEntityId: number;
+  spawnCooldownTicks: number;
 }
 
 export function createGame(world: World): GameState {
+  const entities = createEntities(world);
   return {
     tick: 0,
     player: createPlayer(world.spawn.x, world.spawn.y, world.spawn.z),
-    entities: createEntities(world),
+    entities,
+    nextEntityId: entities.length + 1,
+    spawnCooldownTicks: 0,
   };
 }
 
 /**
  * One tick of the whole game, always in the same order:
  * 1. the player moves; 2. the player's weapon fires (and hits);
- * 3. everything else updates. Things that happened go into `events`.
+ * 3. targets and enemies update; 4. the spawner adds/removes enemies.
+ * Things that happened go into `events`.
  */
 export function stepGame(
   game: GameState,
@@ -33,8 +42,18 @@ export function stepGame(
   dt: number,
   events: SimEvent[],
 ): void {
+  // Remember where every entity was, for the renderer's interpolation.
+  for (const e of game.entities) {
+    e.px = e.x;
+    e.py = e.y;
+    e.pz = e.z;
+  }
   stepPlayer(game.player, cmd, world, dt);
   stepWeapon(game.player, cmd, world, game.entities, events);
-  stepEntities(game.entities);
+  for (const e of game.entities) {
+    if (e.type === 'target') stepTarget(e);
+    else if (e.state !== 'dead') stepGhoul(e, game.player, game.entities, world, dt);
+  }
+  stepSpawner(game, world);
   game.tick++;
 }

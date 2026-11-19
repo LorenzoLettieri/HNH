@@ -45,6 +45,7 @@ export function createTargets(scene: THREE.Scene, entities: Entity[]): Targets {
   const hingeY = TARGET_PLATE_HEIGHT - TARGET_PLATE_RADIUS;
 
   for (const e of entities) {
+    if (e.type !== 'target') continue;
     // The group's rotation.y = yaw turns local -Z toward the direction the
     // plate faces (the same convention as the player's view).
     const group = new THREE.Group();

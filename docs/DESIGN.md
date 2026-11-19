@@ -73,7 +73,7 @@ con un chiaro preavviso.
 
 | Nemico (provvisorio) | Ruolo | Pressione |
 |---|---|---|
-| **Ghoul** | Carne da cannone: corre, **salta e si arrampica** | A terra non sei mai al sicuro; un muretto non basta |
+| **Ghoul** | Carne da cannone (ispirato agli zombie di CoD Zombies): cammina verso di te, **scavalca gli ostacoli bassi e aggira quelli alti**; in futuro si arrampicherà | A terra non sei mai al sicuro; un muretto non basta |
 | **Segugio infernale** | Balzi lunghi e precisi, anche su piattaforme | Devi muoverti continuamente |
 | **Avvoltoio** | Volante, gira in cerchio e picchia in picchiata | Raggiunge ogni tetto, obbliga a guardare in alto |
 | **Fuoco fatuo** | Volante a distanza, proiettili lenti | Il movimento diventa difesa |
@@ -151,6 +151,10 @@ Elementi indipendenti dalla scelta:
 "Perk-a-Cola" sparse per la mappa (a tema: santuari / altari del diavolo)?
 
 ---
+
+### Bersagli d'acciaio [DECISO: tenerli]
+I bersagli di prova (piatti d'acciaio su palo, 3 colpi, si rialzano) restano: serviranno per un
+futuro **poligono di tiro / tutorial**.
 
 ## 6. Armi (bozza)
 

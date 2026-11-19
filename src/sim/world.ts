@@ -58,6 +58,8 @@ export interface World {
   props: Prop[];
   /** Practice targets. Optional: not every level has them. */
   targets?: TargetSpawn[];
+  /** Where enemies come into the level from. */
+  enemySpawns?: { x: number; y: number; z: number }[];
   /** Where the player (re)appears, feet position. */
   spawn: { x: number; y: number; z: number };
 }

@@ -82,10 +82,17 @@ function fire(p: PlayerState, world: World, entities: Entity[], events: SimEvent
     to,
     normal: hit ? { x: hit.nx, y: hit.ny, z: hit.nz } : null,
     entityId: target ? target.id : null,
+    surface: !hit ? null : !target ? 'level' : target.type === 'ghoul' ? 'flesh' : 'metal',
   });
 
   if (target) {
     const killed = damage(target, tuning.revolverDamage);
-    events.push({ type: 'hit', entityId: target.id, damage: tuning.revolverDamage, killed });
+    events.push({
+      type: 'hit',
+      entityId: target.id,
+      damage: tuning.revolverDamage,
+      killed,
+      surface: target.type === 'ghoul' ? 'flesh' : 'metal',
+    });
   }
 }

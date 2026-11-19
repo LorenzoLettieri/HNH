@@ -5,7 +5,7 @@ import type { SimEvent } from '../sim/events';
 import { tuning } from '../sim/config';
 import { playDryFire, playReload, playShot, playTargetDown, playTargetHit } from '../audio/sfx';
 import { createImpacts } from './impacts';
-import { spawnSparks } from './particles';
+import { spawnBlood, spawnSparks } from './particles';
 
 /** How long the muzzle flash lights up the surroundings, seconds. */
 const FLASH_DURATION = 0.07;
@@ -61,8 +61,9 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
               point.set(e.to.x, e.to.y, e.to.z);
               normal.set(e.normal.x, e.normal.y, e.normal.z);
               // No holes on entities: they move (the hole would float in the air).
-              if (e.entityId === null) impacts.add(point, normal);
-              spawnSparks(point, normal, e.entityId === null ? 10 : 18);
+              if (e.surface === 'level') impacts.add(point, normal);
+              if (e.surface === 'flesh') spawnBlood(point, normal);
+              else spawnSparks(point, normal, e.surface === 'metal' ? 18 : 10);
             }
             for (const f of fx.onShot) f();
             break;
@@ -76,8 +77,10 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
           case 'reloadEnd':
             break;
           case 'hit':
-            if (e.killed) playTargetDown();
-            else playTargetHit();
+            if (e.surface === 'metal') {
+              if (e.killed) playTargetDown();
+              else playTargetHit();
+            }
             showHitmarker(e.killed);
             break;
         }

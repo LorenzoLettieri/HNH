@@ -46,9 +46,11 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
 - `src/input.ts`: input grezzo (tasti e tasti del mouse premuti, pressioni brevi "memorizzate", movimento mouse, Pointer Lock)
 - `src/controls.ts`: sensibilità mouse (`controlSettings`), angoli di vista, **mappatura tasti** (WASD, Spazio, Shift/C = accovacciati/slide, click = spara, R = ricarica, K = respawn) → `InputCommand` (T = cambia atmosfera, P = pixel art on/off, tasto sotto Esc = pannello debug, in `main.ts`)
 - `src/sim/`: simulazione pura (niente Three.js/DOM)
-  - `config.ts`: **valori di tuning** (oggetto `tuning`, modificabile dal pannello debug) (tick rate, altezza occhi, dimensioni giocatore, movimento a terra, gravità/salto/coyote/buffer, movimento e controllo in aria, aiuti al bhop, accovacciata, slide, wall jump, **revolver**, bersagli)
+  - `config.ts`: **valori di tuning** (oggetto `tuning`, modificabile dal pannello debug) (tick rate, altezza occhi, dimensioni giocatore, movimento a terra, gravità/salto/coyote/buffer, movimento e controllo in aria, aiuti al bhop, accovacciata, slide, wall jump, **revolver**, bersagli, **ghoul**)
   - `game.ts`: **stato di gioco unico** (`GameState`: giocatore + entità) e `stepGame()` (un tick di tutto il gioco)
-  - `entities.ts`: **entità colpibili** (per ora i bersagli): salute, danno, hitbox, respawn
+  - `entities.ts`: **entità colpibili** (bersagli, ghoul): dati, salute, danno, hitbox
+  - `ghoul.ts`: **IA del ghoul** (inseguimento, salto degli ostacoli bassi, aggiramento, separazione, attacco)
+  - `spawner.ts`: generatore di ghoul (quanti vivi, ogni quanto, punti di spawn lontani dal giocatore)
   - `command.ts`: tipo `InputCommand` (cosa vuole fare il giocatore in un tick)
   - `world.ts`: tipi del livello (`Box` AABB, `Prop` decorazioni, `TargetSpawn` bersagli, `World`) e helper `box()`
   - `props.ts`: **box di collisione invisibili dei props** (barile, palo del cartello, torcia) e zona di lancio degli sfiatatoi
@@ -62,7 +64,7 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `debugPanel.ts`: **quali valori sono esposti nel pannello** e i loro range
 - `src/levels/`: **i livelli** (dati puri)
   - `index.ts`: elenco dei livelli e livello di default
-  - `town.ts`: **la cittadina** (mappa principale, greybox): edifici, torri, ponte, piattaforme sospese, sfiatatoi, **bersagli** (`targets`); percorsi descritti in cima al file
+  - `town.ts`: **la cittadina** (mappa principale, greybox): edifici, torri, ponte, piattaforme sospese, sfiatatoi, **bersagli** (`targets`), **punti di spawn dei nemici** (`enemySpawns`); percorsi descritti in cima al file
   - `testArena.ts`: arena di prova 40×40 (piattaforma, scale, corridoio, colonne, casse, trave bassa per lo slide) + **props** (lista `props` in cima al file)
 - `src/render/`: effetti puramente visivi (non toccano la simulazione)
   - `landingDip.ts`: abbassamento camera all'atterraggio (intensità, recupero)
@@ -79,13 +81,16 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
     - `common.ts`: mattoncini comuni (materiale, box texturizzati, fiamma animata)
     - `index.ts`: costruisce tutti i props di un livello
   - `postprocess.ts`: **pipeline di post-processing** (`postSettings`: risoluzione pixel, livelli di colore, dithering, bloom, god rays)
-  - `particles.ts`: **particelle** (polvere/lucciole, braci, vapore, scintille degli impatti)
+  - `particles.ts`: **particelle** (polvere/lucciole, braci, vapore, scintille e sangue degli impatti)
   - `heightFog.ts`: nebbia al suolo (patch dello shader della nebbia di Three.js)
   - `weapons/`: **l'arma in mano (viewmodel)**
     - `viewmodel.ts`: scena/camera dell'arma, **posa, rinculo, ondeggiamento, bob, ricarica, lampo** (`viewmodelSettings`)
     - `revolverModel.ts`: modello procedurale del revolver (canna, tamburo, cane, calcio)
     - `hands.ts`: **mani a blocchi** (guanti, maniche) e **keyframe del fanning** della mano sinistra
   - `weaponFx.ts`: effetti degli spari (lampo di luce, fori, scintille, suoni)
+  - `enemies/`: **i nemici**
+    - `ghoulSprite.ts`: **sprite del ghoul** disegnato pixel per pixel (palette, pose dei fotogrammi)
+    - `ghouls.ts`: disegno dei ghoul (billboard verso la camera, fotogramma per stato, caduta da morti)
   - `targets.ts`: **bersagli** (modello, oscillazione a molla quando colpiti, caduta e rialzata)
   - `impacts.ts`: fori di proiettile sulle superfici (decal, dimensione, quanti ne restano)
   - `materials.ts`: **quale texture usa ogni materiale** (`LOOKS`), densità dei pixel, mesh dei box
