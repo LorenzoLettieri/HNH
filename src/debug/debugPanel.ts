@@ -294,6 +294,8 @@ export function createDebugPanel(options: {
   // --- Sharpshooter ---
   const sharp = panel.folder('Sharpshooter (src/sim/config.ts) — L to spawn');
   sharp.number(tuning, 'sharpshooterHealth', 10, 500, 5);
+  sharp.number(tuning, 'sharpshooterCost', 1, 15, 1);
+  sharp.number(tuning, 'sharpshooterFromWave', 1, 40, 1);
   sharp.number(tuning, 'sharpshooterRange', 10, 100, 1);
   sharp.number(tuning, 'sharpshooterAimTime', 0.2, 4, 0.05);
   sharp.number(tuning, 'sharpshooterLockTime', 0, 1.5, 0.05);

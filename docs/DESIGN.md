@@ -136,7 +136,7 @@ con un chiaro preavviso.
 | **Avvoltoio** | Volante, gira in cerchio e picchia in picchiata | Raggiunge ogni tetto, obbliga a guardare in alto |
 | **Malocchio** [FATTO] | Occhio-pipistrello volante: orbita attorno a te a distanza (10 m, 5 m più in alto) e spara proiettili lenti. **Pupilla = punto critico** (×3, come la testa del ghoul) | Il movimento diventa difesa; obbliga a guardare in alto e a mirare con precisione |
 | **Fuoco fatuo** | Volante a distanza, proiettili lenti (forse superato dal Malocchio) | Il movimento diventa difesa |
-| **Tiratore scelto** (sharpshooter) [IN CORSO: passi 1-3] | Scheletro col cappello da cowboy e una **Winchester** (la prossima arma del giocatore). Spara **da lontano** con un colpo velocissimo annunciato da un **laser rosso**; cerca di appostarsi sulle **alture**, arrampicandosi (dettagli sotto) | Punisce chi sta fermo o corre dritto in vista, premia chi rompe la linea di tiro o cambia direzione al momento giusto |
+| **Tiratore scelto** (sharpshooter) [FATTO, da tarare] | Scheletro col cappello da cowboy e una **Winchester** (la prossima arma del giocatore). Spara **da lontano** con un colpo velocissimo annunciato da un **laser rosso**; cerca di appostarsi sulle **alture**, arrampicandosi (dettagli sotto). Pesa **4** nelle ondate, dall'ondata 6 | Punisce chi sta fermo o corre dritto in vista, premia chi rompe la linea di tiro o cambia direzione al momento giusto |
 | **Dinamitardo** | Lancia dinamite ad arco, lascia fiamme | Nega zone: ti costringe a spostarti |
 | **Toro** [FATTO, da tarare; suoni provvisori] | Grosso e resistente: ti punta (preavviso), poi **carica dritto** senza sterzare (dettagli sotto). Pesa **5** nelle ondate, dall'ondata 7 | Prima si schiva (cambio di direzione o salto), poi si uccide: meglio con un muro alle spalle |
 | **Boss** | Pattern complessi, ogni tot ondate | Picco di intensità |
@@ -316,7 +316,11 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
     guarda il muro, quindi di solito lo vedi da dietro; dall'alto (sei sul tetto che sta scalando) lo vedi
     di fronte che guarda su. Di lato ha la mira e la leva col fucile di profilo, e laser e lampo partono
     dalla punta della canna disegnata (sempre sulla linea del proiettile).
-    **Da fare**: ondate.
+  - **Passo 5** [FATTO, da provare in partita]: **nelle ondate**, appena sotto il toro: pesa **4** (cane 3,
+    toro 5) e compare **dall'ondata 6** (cane 5, toro 7). Salute a gradini come gli altri. Prova senza
+    browser (ondate 6-12, giocatore immortale che gira in tondo): compaiono insieme agli altri, passano
+    circa un quarto del tempo a spostarsi (metà se ti muovi molto) e il resto appostati; nessun rallentamento
+    (tick peggiore 4-6 ms, a parte la costruzione dei grafi al primo tick).
     Da valutare: schegge d'osso al posto del sangue quando lo colpisci, fischio del proiettile che ti sfiora.
   - **Proiettili più veloci, collisione "a spazzata"**: a 90 m/s il proiettile fa 1,5 m per tick, quindi non
     basta controllare dov'è arrivato (ti passerebbe attraverso): si controlla tutto il segmento percorso

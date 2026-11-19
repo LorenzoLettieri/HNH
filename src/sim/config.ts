@@ -659,8 +659,13 @@ export const tuning = {
   sharpshooterHeadHeight: 1.55,
   /** How long a dead sharpshooter lies on the ground before disappearing, seconds. */
   sharpshooterCorpseTime: 3,
-  /** Weight in the waves' budget (src/sim/waves.ts), and for the drop chance. */
-  sharpshooterCost: 3,
+  /**
+   * Weight in the waves' budget (src/sim/waves.ts), and for the drop chance:
+   * a bit less than the bull (5), more than the hound (3).
+   */
+  sharpshooterCost: 4,
+  /** First wave where sharpshooters can appear: between the hound (5) and the bull (7). */
+  sharpshooterFromWave: 6,
 
   // --- Enemy projectiles (src/sim/projectiles.ts) ---
   /** Radius of an enemy projectile, meters (for hitting the player). */

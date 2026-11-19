@@ -7,7 +7,7 @@
 // among those the remaining budget can afford. Same budget, different mix in
 // every game. A future tough enemy (a brute worth 5) just gets a higher cost.
 import { secondsToTicks, tuning } from './config';
-import { createBull, createEyebat, createGhoul, createHound, isEnemy, type Enemy, type GhoulEntity } from './entities';
+import { createBull, createEyebat, createGhoul, createHound, createSharpshooter, isEnemy, type Enemy, type GhoulEntity } from './entities';
 import { random, randomInt } from './random';
 import type { SimEvent } from './events';
 import type { GameState } from './game';
@@ -125,6 +125,13 @@ const ROSTER: EnemyType[] = [
     cost: () => tuning.bullCost,
     fromWave: () => tuning.bullFromWave,
     spawn: (game, id, x, y, z) => createBull(id, x, y, z, healthForWave(tuning.bullHealth, game.wave.number)),
+  },
+  {
+    cost: () => tuning.sharpshooterCost,
+    fromWave: () => tuning.sharpshooterFromWave,
+    // Born without a perch: the first thing it does is pick one and walk there (sharpshooter.ts).
+    spawn: (game, id, x, y, z) =>
+      createSharpshooter(id, x, y, z, healthForWave(tuning.sharpshooterHealth, game.wave.number)),
   },
 ];
 
