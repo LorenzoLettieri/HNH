@@ -55,8 +55,11 @@ finale unico, "HIGH NOON". [DA DECIDERE: nomi definitivi]
 - Subire danni: perdi punti di stile.
 
 ### A cosa serve
-- **Moltiplicatore** su anime/XP raccolte e punteggio.
-- Bonus di danno ai rank alti.
+- **Moltiplicatore** sul **punteggio** e sul **vildenaro** guadagnato (la moneta: vedi §5, Economia).
+- **Climax "HIGH NOON"** [PROPOSTO]: quando raggiungi il rank massimo, per **5 s** le armi non consumano
+  i colpi del caricatore (niente ricarica: spari e basta). Va annunciato forte (scritta, suono, tinta
+  dello schermo, magari la campana della chiesa). [DA DECIDERE] cosa succede allo stile dopo i 5 s.
+- [DA DECIDERE] Bonus di danno ai rank alti (forse superato dal climax).
 - [DA DECIDERE] Eventuale bonus di drop della salute ai rank alti.
 
 ### Risorse dall'aggressività [PROPOSTO]
@@ -328,18 +331,35 @@ Il caso usa un generatore con **seed** (deterministico: stesso seed = stessa par
   i tuoi occhi e il punto), tra 15 e 40 m, e nel 70% dei casi **davanti a te** (entro 60° dalla
   direzione in cui corri). Girare in tondo non vuol più dire trascinarsi l'orda dietro: ti porta
   dritto nella prossima.
-- **Punteggio** stile CoD: 10 per colpo, 100 per uccisione.
-  [DA DECIDERE] cosa si compra con i punti (armi, potenziamenti, "santuari" sulla mappa).
+- **Punteggio** stile CoD: 10 per colpo, 100 per uccisione. **Non si spende**: misura solo quanto
+  hai giocato bene (riepilogo alla morte, in futuro record e classifica).
 
-Elementi indipendenti dalla scelta:
-- I nemici lasciano **anime** (XP/valuta) da raccogliere passandoci sopra; svaniscono dopo
-  qualche secondo → altro motivo per muoversi.
-- **Potenziamenti** che includono anche il **movimento** (wall jump extra, doppio salto, scatto,
-  slide più lungo, lazo più lungo).
+### Economia: il vildenaro [DECISO]
+Punteggio e moneta sono **separati**:
+- **Punteggio**: quanto hai giocato bene.
+- **Vildenaro**: la moneta della partita. Si spende negli **shop** per **comprare armi e potenziamenti**.
+- **Lo Stile moltiplica entrambi**: chi si muove bene fa più punti *e* diventa più forte prima.
+  È un effetto valanga voluto (pilastro "movimento come potere").
+
+**Shop** [DECISO: uno o più, in una parte della mappa]
+- Si comprano le **armi** (si parte col solo revolver; la doppietta si compra) e i **potenziamenti**.
+- [PROPOSTO] Usare edifici che esistono già: **armeria** (armi) ed **emporio** (potenziamenti: ci si
+  entra già, e c'è un bancone con la lanterna).
+- [PROPOSTO] Acquisto **nel mondo**, come i "wall buy" di CoD Zombies: guardi l'oggetto sul bancone,
+  compare il prezzo, premi **E**. Niente menu che mette in pausa: funziona uguale in multiplayer, e lo
+  shop non diventa un rifugio (i ghoul ti seguono dentro).
+
+[DA DECIDERE]
+- Come si guadagna il vildenaro: **monete lasciate dai nemici** da raccogliere passandoci sopra
+  (prendono il posto delle vecchie "anime": altro motivo per muoversi, si riusa il sistema dei
+  raccoglibili) oppure **accredito diretto** a ogni colpo/uccisione (più semplice).
+- Shop aperto **sempre** o **solo tra un'ondata e l'altra** (oggi la pausa è di 8 s: andrebbe allungata)?
+- Listino: quali potenziamenti (danno, caricatore, ricarica, salute massima; **movimento**: wall jump
+  extra, doppio salto, scatto, slide più lungo, lazo più lungo) e prezzi che crescono.
+- Si comprano anche le munizioni?
+
+Altro, indipendente dallo shop:
 - **Eventi sulla mappa** che spostano il giocatore (altari da attivare, forzieri sui punti alti).
-
-[DA DECIDERE] Tra un'ondata e l'altra: negozio? scelta di potenziamenti? macchinette tipo
-"Perk-a-Cola" sparse per la mappa (a tema: santuari / altari del diavolo)?
 
 ---
 
@@ -357,7 +377,8 @@ futuro **poligono di tiro / tutorial**.
   **Contraccolpo che non frena mai**: sparare indietro ti dà un piccolo boost in avanti, sparare dove stai
   andando non ti rallenta; in aria, sparare verso il basso ti spinge su (annulla la caduta: shotgun jump),
   sparare in alto non ti schiaccia a terra.
-  Per ora **tutte le armi sono disponibili da subito**; poi arriverà un negozio.
+  Per ora **tutte le armi sono disponibili da subito**; poi si compreranno negli **shop** col vildenaro
+  (si parte col solo revolver).
 - **Lazo / rampino** — mobilità (aggancio a punti della mappa) e utilità (tirare a sé i nemici?).
 
 ---
@@ -369,6 +390,16 @@ futuro **poligono di tiro / tutorial**.
 3. **Due nemici prototipo**: avvoltoio (volante) e ghoul che salta (grafo di navigazione).
 4. **Loop minimo**: ondate, anime, salute dalle uccisioni, meter dello stile.
 5. Altri nemici, potenziamenti, lazo, boss.
+
+### Prossimi passi [PROPOSTO, novembre 2026]
+1. **Stile**: punti e decadimento nella simulazione (visibili nel pannello debug).
+2. Barra e rank dello stile nell'HUD.
+3. Fonti dal movimento (velocità, tempo in aria, wall jump) + premio calante per le azioni ripetute.
+4. **Climax HIGH NOON** (5 s di caricatore infinito).
+5. **Vildenaro**: guadagno + contatore nell'HUD; lo Stile moltiplica punti e vildenaro.
+6. Interazione col mondo (tasto E) + primo acquisto: la doppietta all'armeria.
+7. Potenziamenti all'emporio.
+8. Lazo / rampino.
 
 ---
 
