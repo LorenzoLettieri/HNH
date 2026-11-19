@@ -32,7 +32,15 @@
       #menu .back { margin-top: 20px; }
       /* One setting = label, slider, number box on a row. */
       .setting { display: grid; grid-template-columns: auto 1fr 70px; gap: 10px; align-items: center; text-align: left; }
-      .setting input[type='range'] { accent-color: #d02010; }
+      .setting input[type='range'], .setting input[type='checkbox'] { accent-color: #d02010; }
+      /* On/off rows: label on the left, checkbox in the last column. */
+      .setting.toggle { margin-top: 8px; }
+      .setting.toggle input[type='checkbox'] { grid-column: 3; justify-self: start; width: 18px; height: 18px; margin: 0; }
+      /* Section headings inside a menu page (Mouse, Audio). */
+      #menu h3 {
+        margin: 18px 0 8px; text-align: left; color: #d02010; letter-spacing: 2px;
+        font: bold 15px Georgia, 'Times New Roman', serif; border-bottom: 1px solid #5a3a20;
+      }
       .setting input[type='number'] {
         width: 70px; box-sizing: border-box; background: #2a1810; color: inherit;
         border: 1px solid #5a3a20; font: 16px monospace; padding: 2px 4px;
@@ -274,12 +282,28 @@
 
         <div class="menu-page" data-page="settings" hidden>
           <h2>Impostazioni</h2>
+          <h3>Mouse</h3>
           <label class="setting">
             <span>Sensibilità mouse</span>
             <input type="range" id="set-sens" min="0.5" max="15" step="0.1" />
             <input type="number" id="set-sens-num" step="0.01" />
           </label>
-          <p class="hint">Stessa scala di Quake e Counter-Strike: a parità di DPI del mouse puoi usare lo stesso valore. Salvata nel browser.</p>
+          <p class="hint">Stessa scala di Quake e Counter-Strike: a parità di DPI del mouse puoi usare lo stesso valore.</p>
+          <h3>Audio</h3>
+          <label class="setting">
+            <span>Volume</span>
+            <input type="range" id="set-volume" min="0" max="100" step="1" />
+            <input type="number" id="set-volume-num" min="0" max="100" step="1" />
+          </label>
+          <label class="setting toggle">
+            <span>Fischio nelle orecchie</span>
+            <input type="checkbox" id="set-ear-ringing" />
+          </label>
+          <label class="setting toggle">
+            <span>Audio ovattato quando sei colpito</span>
+            <input type="checkbox" id="set-hit-muffle" />
+          </label>
+          <p class="hint">Fischio e audio ovattato rendono più pesanti i colpi subiti: spegnili se ti danno fastidio. Le impostazioni sono salvate nel browser.</p>
           <button class="back" data-goto="main">Indietro</button>
         </div>
 

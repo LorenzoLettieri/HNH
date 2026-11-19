@@ -4,7 +4,7 @@
 // Pages: "main" (Gioca, Impostazioni, Comandi), "settings", "controls".
 // Every page is a <div class="menu-page" data-page="..."> and every button
 // with data-goto="..." switches to that page: like a tiny client-side router.
-import { SENSITIVITY_MAX, SENSITIVITY_MIN, setSensitivity, settings } from './settings';
+import { SENSITIVITY_MAX, SENSITIVITY_MIN, set, settings, type Settings } from './settings';
 
 export interface Menu {
   /** Shows the menu (back on the main page) or hides it. */
@@ -33,40 +33,63 @@ export function createMenu(options: { onPlay: () => void }): Menu {
     if (e.code === 'Escape' && overlay.style.display !== 'none') showPage('main');
   });
 
-  // --- Sensitivity: slider + number box, kept in sync -----------------------
-  // The slider covers the common range, the box accepts any value in
-  // [MIN, MAX] with finer steps. Both write through setSensitivity(), which
-  // applies and saves; then we copy the (clamped) result back into both.
-  const slider = document.getElementById('set-sens') as HTMLInputElement;
-  const box = document.getElementById('set-sens-num') as HTMLInputElement;
-  box.min = String(SENSITIVITY_MIN);
-  box.max = String(SENSITIVITY_MAX);
-  const showSensitivity = (): void => {
-    slider.value = String(settings.sensitivity);
-    box.value = String(settings.sensitivity);
-  };
-  slider.addEventListener('input', () => {
-    setSensitivity(slider.valueAsNumber);
-    box.value = String(settings.sensitivity);
-  });
-  // 'input' fires on every keystroke: while typing "5." the value is not a
-  // number yet, so we just skip it. 'change' fires when you leave the box
-  // (or press Enter): then we rewrite it with the clamped value.
-  box.addEventListener('input', () => {
-    if (Number.isFinite(box.valueAsNumber)) {
-      setSensitivity(box.valueAsNumber);
-      slider.value = String(settings.sensitivity);
-    }
-  });
-  box.addEventListener('change', showSensitivity);
-  showSensitivity();
+  // --- Settings controls --------------------------------------------------
+  // Every control writes through set() (applies + saves) and every refresh
+  // reads `settings` back, so the menu always shows the real (clamped) value.
+  const refreshers: (() => void)[] = [];
+  const refreshAll = (): void => refreshers.forEach((r) => r());
+
+  /**
+   * A slider + a number box for the same number setting, kept in sync.
+   * The slider covers the common range, the box accepts any valid value
+   * (set() clamps it) with finer steps.
+   */
+  function bindNumber(sliderId: string, boxId: string, key: 'sensitivity' | 'volume'): void {
+    const slider = document.getElementById(sliderId) as HTMLInputElement;
+    const box = document.getElementById(boxId) as HTMLInputElement;
+    const show = (): void => {
+      slider.value = String(settings[key]);
+      box.value = String(settings[key]);
+    };
+    slider.addEventListener('input', () => {
+      set(key, slider.valueAsNumber);
+      box.value = String(settings[key]);
+    });
+    // 'input' fires on every keystroke: while typing "5." the value is not a
+    // number yet, so we just skip it. 'change' fires when you leave the box
+    // (or press Enter): then we rewrite it with the clamped value.
+    box.addEventListener('input', () => {
+      if (Number.isFinite(box.valueAsNumber)) {
+        set(key, box.valueAsNumber);
+        slider.value = String(settings[key]);
+      }
+    });
+    box.addEventListener('change', show);
+    refreshers.push(show);
+  }
+
+  /** A checkbox for an on/off setting. */
+  function bindToggle(id: string, key: { [K in keyof Settings]: Settings[K] extends boolean ? K : never }[keyof Settings]): void {
+    const box = document.getElementById(id) as HTMLInputElement;
+    box.addEventListener('change', () => set(key, box.checked));
+    refreshers.push(() => (box.checked = settings[key]));
+  }
+
+  const sensBox = document.getElementById('set-sens-num') as HTMLInputElement;
+  sensBox.min = String(SENSITIVITY_MIN);
+  sensBox.max = String(SENSITIVITY_MAX);
+  bindNumber('set-sens', 'set-sens-num', 'sensitivity');
+  bindNumber('set-volume', 'set-volume-num', 'volume');
+  bindToggle('set-ear-ringing', 'earRinging');
+  bindToggle('set-hit-muffle', 'hitMuffle');
+  refreshAll();
 
   return {
     setOpen(open) {
       overlay.style.display = open ? 'flex' : 'none';
       if (open) {
         showPage('main');
-        showSensitivity();
+        refreshAll();
       }
     },
     markStarted() {

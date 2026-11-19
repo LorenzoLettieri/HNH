@@ -29,8 +29,25 @@ const MUFFLE_OPEN = 20000;
 const MUFFLE_CLOSED = 350;
 const MUFFLE_RECOVER = 0.7;
 
-/** Master volume, 0..1. */
-export const sfxSettings = { volume: 0.5 };
+/**
+ * Audio settings, set by the "Impostazioni" menu (src/settings.ts, saved in
+ * localStorage). Change the volume with setVolume(), which applies it.
+ */
+export const sfxSettings = {
+  /** Master volume as a gain (0..1), already on the loudness curve: see settings.ts. */
+  volume: 0.5,
+  /** Ringing in the ears after hard hits. */
+  earRinging: true,
+  /** The world goes muffled for a moment when you get hit. */
+  hitMuffle: true,
+};
+
+/** Sets the master volume (gain 0..1) and applies it right away. */
+export function setVolume(gain: number): void {
+  sfxSettings.volume = gain;
+  // A short ramp instead of a jump: dragging a slider in big steps would click.
+  if (ctx) master.gain.setTargetAtTime(gain, ctx.currentTime, 0.02);
+}
 
 /**
  * Browsers only allow audio after a user gesture (click/key), so we create
@@ -141,7 +158,6 @@ function thump(options: {
 /** Revolver shot: a sharp crack, a heavy low boom, and a short echo tail. */
 export function playShot(): void {
   if (!ctx) return;
-  master.gain.value = sfxSettings.volume;
   // Pitch varies a little at every shot: identical sounds feel robotic.
   const v = 0.9 + Math.random() * 0.2;
   noiseBurst({ duration: 0.08, volume: 0.9, filter: 'highpass', frequency: 1800 * v }); // crack
@@ -158,7 +174,6 @@ export function playShot(): void {
  */
 export function playShotgun(): void {
   if (!ctx) return;
-  master.gain.value = sfxSettings.volume;
   const v = 0.92 + Math.random() * 0.16;
   noiseBurst({ duration: 0.1, volume: 0.8, filter: 'highpass', frequency: 1200 * v }); // crack
   noiseBurst({ duration: 0.55, volume: 1.2, filter: 'lowpass', frequency: 1600 * v, frequencyEnd: 120 }); // blast
@@ -511,14 +526,13 @@ export function playKickImpact(hits: number): void {
  */
 export function playPlayerHurt(strength: number): void {
   if (!ctx) return;
-  master.gain.value = sfxSettings.volume;
   const v = 0.6 + 0.4 * strength;
   thump({ out: master, duration: 0.4, volume: 1.1 * v, from: 120, to: 30 }); // body blow
   noiseBurst({ out: master, duration: 0.11, volume: 0.9 * v, filter: 'bandpass', frequency: 1400, frequencyEnd: 400, q: 1.5 }); // smack
   noiseBurst({ out: master, duration: 0.035, volume: 0.4 * v, filter: 'highpass', frequency: 3500 }); // crack
   thump({ out: master, start: 0.03, duration: 0.16, volume: 0.3 * v, from: 230, to: 140 }); // "ugh"
   // Ringing in the ears: a thin high sine, fading slowly. Only for hard hits.
-  if (strength >= 0.5) {
+  if (strength >= 0.5 && sfxSettings.earRinging) {
     const t0 = ctx.currentTime;
     const osc = ctx.createOscillator();
     osc.frequency.value = 3600;
@@ -533,6 +547,7 @@ export function playPlayerHurt(strength: number): void {
   // The world goes dull: close the filter at once (lower = more muffled for
   // harder hits), then open it back up. Exponential ramp: frequencies are
   // heard on a log scale, so it sounds like a steady "opening".
+  if (!sfxSettings.hitMuffle) return;
   const t0 = ctx.currentTime;
   const closed = MUFFLE_CLOSED * (2.5 - 1.5 * strength);
   muffle.frequency.cancelScheduledValues(t0);
@@ -636,7 +651,6 @@ export function setCanyonEcho(on: boolean): void {
  */
 export function playHighNoon(): void {
   if (!ctx) return;
-  master.gain.value = sfxSettings.volume;
   ring(82, 6, 0.55); // the bell
   thump({ duration: 0.7, volume: 0.9, from: 140, to: 35 }); // the clapper's strike
 
@@ -674,7 +688,6 @@ export function playHighNoon(): void {
  */
 export function playQuench(): void {
   if (!ctx) return;
-  master.gain.value = sfxSettings.volume;
   noiseBurst({ duration: 0.12, volume: 0.35, filter: 'highpass', frequency: 3000 }); // ts
   noiseBurst({ duration: 1.5, volume: 0.45, filter: 'bandpass', frequency: 6000, frequencyEnd: 1200, q: 0.8 }); // steam
   thump({ duration: 0.3, volume: 0.3, from: 90, to: 45 }); // splash
