@@ -192,6 +192,35 @@ export const tuning = {
   /** Speed of the "runners" (fast ghouls, from wave 4), m/s. */
   ghoulRunnerSpeed: 5.4,
 
+  // --- Malocchio (flying eye-bat; AI in src/sim/eyebat.ts) ---
+  /**
+   * Health: 2 body shots, 1 in the pupil (50 × 3 = 150). Breakpoints, see
+   * docs/DESIGN.md: it's a "hit the pupil" enemy, not a sponge.
+   */
+  eyebatHealth: 100,
+  /** Radius of the round body (the eye), meters. Its hitbox is a cube this wide ×2. */
+  eyebatRadius: 0.4,
+  /**
+   * Critical spot: a bullet passing closer than this to the CENTER of the eye
+   * hits the pupil (×headshotMultiplier). The pupil always faces you, so
+   * "close to the center, as seen from you" = "in the pupil". Meters.
+   */
+  eyebatPupilRadius: 0.15,
+  /** Cruising speed, m/s (slower than you: you can always get away). */
+  eyebatSpeed: 6,
+  /** How quickly it reaches its speed / turns (per second). Low = floaty, drifting flight. */
+  eyebatAccel: 2.5,
+  /** Distance it likes to keep from the player, horizontally, meters. */
+  eyebatOrbitDistance: 10,
+  /** Height it likes to keep above the player's feet, meters. */
+  eyebatHoverHeight: 5,
+  /** How fast it circles around you, radians/second (direction depends on the id). */
+  eyebatOrbitSpeed: 0.35,
+  /** Eye-bats closer than this push each other apart, meters. */
+  eyebatSeparation: 2.5,
+  /** How long a dead eye-bat lies on the ground before disappearing, seconds. */
+  eyebatCorpseTime: 3,
+
   // --- Waves (CoD-zombies style; the curve is in src/sim/waves.ts) ---
   /** Turn off to roam the map without enemies. */
   wavesEnabled: true,

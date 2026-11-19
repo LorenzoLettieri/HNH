@@ -4,7 +4,7 @@ import { createDebugPanel } from './debug/debugPanel';
 import { buildCommand, updateLook, view } from './controls';
 import { TICK_DT } from './sim/config';
 import { copyPlayer, createPlayer, horizontalSpeed } from './sim/player';
-import { createGame, stepGame } from './sim/game';
+import { createGame, spawnEyebatInFront, stepGame } from './sim/game';
 import { DEFAULT_LEVEL, LEVELS } from './levels';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
 import { updateCameraFeel } from './render/cameraFeel';
@@ -17,11 +17,13 @@ import { createPostProcess } from './render/postprocess';
 import { createWeaponFx } from './render/weaponFx';
 import { createTargets } from './render/targets';
 import { createGhoulRenderer } from './render/enemies/ghouls';
+import { createEyebatRenderer } from './render/enemies/eyebats';
 import { updateHud } from './render/hud';
 import { createNavDebug } from './render/navDebug';
 import { getFlowField, getNavGraph } from './sim/nav';
 import { createViewmodel } from './render/weapons/viewmodel';
 import type { SimEvent } from './sim/events';
+import { isEnemy } from './sim/entities';
 import { initAudio } from './audio/sfx';
 import { applyParticles, createParticles, updateParticles } from './render/particles';
 import { applyHeightFog } from './render/heightFog';
@@ -99,6 +101,7 @@ createParticles(scene, props.fires, props.vents);
 const weaponFx = createWeaponFx(scene);
 const targets = createTargets(scene, game.entities);
 const ghouls = createGhoulRenderer(scene);
+const eyebats = createEyebatRenderer(scene);
 const navDebug = createNavDebug(scene, getNavGraph(world));
 // The gun in your hand: its own scene and camera, drawn over the world.
 const viewmodel = createViewmodel();
@@ -129,6 +132,8 @@ window.addEventListener('keydown', (e) => {
   }
   if (e.code === 'KeyP') post.togglePixelArt();
   if (e.code === 'KeyN') navDebug.toggle();
+  // Debug: B spawns an eye-bat in front of you (until they're in the waves).
+  if (e.code === 'KeyB') spawnEyebatInFront(game);
   if (e.code === 'Backquote') {
     debugPanel.toggle();
     document.exitPointerLock();
@@ -192,12 +197,12 @@ let lastTime = performance.now();
 // - calls: draw calls, how many separate "draw this" requests went to the GPU.
 renderer.info.autoReset = false;
 const perf = { sim: 0, render: 0, calls: 0, fps: 60 };
-function perfText(frameTime: number, ghouls: number): string {
+function perfText(frameTime: number, enemies: number): string {
   // Smoothed fps (exponential average), otherwise the number jitters unreadably.
   if (frameTime > 0) perf.fps += (1 / frameTime - perf.fps) * 0.05;
   return (
     `${perf.fps.toFixed(0)} fps  sim ${perf.sim.toFixed(2)} ms  render ${perf.render.toFixed(2)} ms  ` +
-    `${perf.calls} draw calls  ${ghouls} ghouls`
+    `${perf.calls} draw calls  ${enemies} enemies`
   );
 }
 
@@ -251,7 +256,7 @@ renderer.setAnimationLoop((now: number) => {
   const state = player.sliding ? 'SLIDE' : player.onGround ? (player.crouched ? 'CROUCH' : 'GROUND') : 'AIR';
   hud.textContent =
     `${horizontalSpeed(player).toFixed(1)} m/s  ${state}  walljumps ${player.wallJumpsLeft}\n` +
-    perfText(frameTime, game.entities.filter((e) => e.type === 'ghoul').length);
+    perfText(frameTime, game.entities.filter(isEnemy).length);
 
   // Weapon events of this frame → effects and sounds.
   weaponFx.handle(events, camera);
@@ -259,6 +264,7 @@ renderer.setAnimationLoop((now: number) => {
   targets.handle(events);
   targets.update(frameTime);
   ghouls.update(game.entities, events, camera, alpha, frameTime);
+  eyebats.update(game.entities, events, camera, alpha, frameTime);
   updateHud(game, events, frameTime);
   navDebug.update(getFlowField(getNavGraph(world), game.navGoal));
   ammoHud.textContent = player.reloadTicks > 0

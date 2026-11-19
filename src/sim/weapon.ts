@@ -6,7 +6,7 @@ import type { SimEvent } from './events';
 import { currentEyeHeight, type PlayerState } from './player';
 import { raycastBoxes } from './raycast';
 import type { World } from './world';
-import { damage, hitBox, isAlive, type Entity } from './entities';
+import { damage, hitBox, isAlive, isEnemy, type Entity, type EyebatEntity } from './entities';
 
 export function stepWeapon(
   p: PlayerState,
@@ -73,9 +73,15 @@ function fire(p: PlayerState, world: World, entities: Entity[], events: SimEvent
   const hit = hitEntity ? entityHit : levelHit;
   const target = hitEntity ? living[entityHit.index] : null;
 
-  // Headshot: the bullet hit the top of the ghoul (its head and hat).
-  // Checking the height of the impact point is enough: no second hitbox.
-  const headshot = target !== null && target.type === 'ghoul' && hit!.y - target.y > tuning.ghoulHeadHeight;
+  // Critical hit ("headshot" in the events, so the gold hitmarker and the
+  // sound work for every enemy):
+  // - ghoul: the bullet hit the top of it (head and hat). Checking the
+  //   height of the impact point is enough: no second hitbox.
+  // - eye-bat: the bullet passed through the pupil (see pupilHit).
+  const headshot =
+    target !== null &&
+    ((target.type === 'ghoul' && hit!.y - target.y > tuning.ghoulHeadHeight) ||
+      (target.type === 'eyebat' && pupilHit(target, ox, oy, oz, dx, dy, dz)));
 
   const to = hit
     ? { x: hit.x, y: hit.y, z: hit.z }
@@ -86,7 +92,7 @@ function fire(p: PlayerState, world: World, entities: Entity[], events: SimEvent
     to,
     normal: hit ? { x: hit.nx, y: hit.ny, z: hit.nz } : null,
     entityId: target ? target.id : null,
-    surface: !hit ? null : !target ? 'level' : target.type === 'ghoul' ? 'flesh' : 'metal',
+    surface: !hit ? null : !target ? 'level' : isEnemy(target) ? 'flesh' : 'metal',
     headshot,
   });
 
@@ -94,13 +100,38 @@ function fire(p: PlayerState, world: World, entities: Entity[], events: SimEvent
     const amount = tuning.revolverDamage * (headshot ? tuning.headshotMultiplier : 1);
     const killed = damage(target, amount);
     if (killed && headshot && target.type === 'ghoul') target.headless = true;
+    if (killed && headshot && target.type === 'eyebat') target.popped = true;
     events.push({
       type: 'hit',
       entityId: target.id,
       damage: amount,
       killed,
-      surface: target.type === 'ghoul' ? 'flesh' : 'metal',
+      surface: isEnemy(target) ? 'flesh' : 'metal',
       headshot,
     });
   }
+}
+
+/**
+ * Did the bullet go through the eye-bat's pupil?
+ *
+ * The sprite always faces the camera, so the pupil is always the point of the
+ * eye closest to the center as seen from the shooter. That turns the question
+ * into: how close does the bullet's line pass to the center of the eye?
+ *
+ * Point-to-line distance: take the vector from the gun to the center (oc),
+ * project it on the shot direction (t = oc · dir, how far along the line the
+ * center is), and measure what's left over (the part of oc perpendicular to
+ * the line). If that's smaller than the pupil, it's a critical hit.
+ */
+function pupilHit(b: EyebatEntity, ox: number, oy: number, oz: number, dx: number, dy: number, dz: number): boolean {
+  const r = tuning.eyebatRadius;
+  const ocx = b.x - ox;
+  const ocy = b.y + r - oy; // b.y is the bottom of the body: + r = its center
+  const ocz = b.z - oz;
+  const t = ocx * dx + ocy * dy + ocz * dz;
+  const px = ocx - dx * t;
+  const py = ocy - dy * t;
+  const pz = ocz - dz * t;
+  return Math.hypot(px, py, pz) < tuning.eyebatPupilRadius;
 }

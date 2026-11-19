@@ -76,7 +76,8 @@ con un chiaro preavviso.
 | **Ghoul** | Carne da cannone (ispirato agli zombie di CoD Zombies): cammina verso di te, **scavalca gli ostacoli bassi e aggira quelli alti**; in futuro si arrampicherà | A terra non sei mai al sicuro; un muretto non basta |
 | **Segugio infernale** | Balzi lunghi e precisi, anche su piattaforme | Devi muoverti continuamente |
 | **Avvoltoio** | Volante, gira in cerchio e picchia in picchiata | Raggiunge ogni tetto, obbliga a guardare in alto |
-| **Fuoco fatuo** | Volante a distanza, proiettili lenti | Il movimento diventa difesa |
+| **Malocchio** [IN CORSO] | Occhio-pipistrello volante: orbita attorno a te a distanza (10 m, 5 m più in alto) e spara proiettili lenti. **Pupilla = punto critico** (×3, come la testa del ghoul) | Il movimento diventa difesa; obbliga a guardare in alto e a mirare con precisione |
+| **Fuoco fatuo** | Volante a distanza, proiettili lenti (forse superato dal Malocchio) | Il movimento diventa difesa |
 | **Pistolero scheletro** | A distanza, colpo istantaneo **annunciato** (luccichio + click) | Punisce chi sta fermo in vista, premia chi rompe la linea di tiro |
 | **Dinamitardo** | Lancia dinamite ad arco, lascia fiamme | Nega zone: ti costringe a spostarti |
 | **Toro / Bruto** | Lento, corazzato, carica devastante | Si schiva di lato o si scavalca |
@@ -112,6 +113,9 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
 
 - La difficoltà delle prime ondate viene da **quantità, velocità, direzioni, tipi di nemico**;
   la salute alta arriva solo molto tardi. Nemici resistenti = **miniboss** (eventi, non la norma).
+- **Malocchio**: 100 di salute = **2 colpi al corpo, 1 nella pupilla**. Il critico si calcola
+  come distanza tra la traiettoria del proiettile e il centro dell'occhio (lo sprite guarda
+  sempre verso di te, quindi il centro visto da te è la pupilla): raggio 0,15 m.
 - **Niente rigenerazione della salute.** [DA DECIDERE] drop casuali dei nemici (medikit o simili).
 
 ## 4. La mappa [DECISO: cittadina all'aperto]

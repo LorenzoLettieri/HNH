@@ -100,7 +100,7 @@ export function createGhoulRenderer(scene: THREE.Scene): GhoulRenderer {
           const v = views.get(e.entityId);
           if (v) v.hurtTime = HURT_TIME;
           const g = byId.get(e.entityId);
-          if (g && e.killed) playGhoulDeath(where(camera, g.x, g.y + 1.5, g.z));
+          if (g && g.type === 'ghoul' && e.killed) playGhoulDeath(where(camera, g.x, g.y + 1.5, g.z));
         }
         if (e.type === 'ghoulAttack') {
           const g = byId.get(e.entityId);

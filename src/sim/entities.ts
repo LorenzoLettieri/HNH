@@ -56,7 +56,29 @@ export interface GhoulEntity extends EntityBase {
   climbTicks: number;
 }
 
-export type Entity = TargetEntity | GhoulEntity;
+/** The "Malocchio": a flying eyeball with bat wings. Position = bottom of its body. */
+export interface EyebatEntity extends EntityBase {
+  type: 'eyebat';
+  vx: number;
+  vy: number;
+  vz: number;
+  /** Killed by a shot in the pupil: the eye bursts (for the death animation). */
+  popped: boolean;
+  /** Flying around you, or dead (falling, then lying on the ground). */
+  state: 'fly' | 'dead';
+  /** Ticks spent in the current state. */
+  stateTicks: number;
+  /** Which way it circles around the player (+1 / -1). */
+  orbitSide: number;
+}
+
+export type Entity = TargetEntity | GhoulEntity | EyebatEntity;
+/** Everything that fights you (not the practice targets). */
+export type Enemy = GhoulEntity | EyebatEntity;
+
+export function isEnemy(e: Entity): e is Enemy {
+  return e.type !== 'target';
+}
 
 /** Height of the target plate's center above the base, meters. */
 export const TARGET_PLATE_HEIGHT = 1.5;
@@ -119,6 +141,27 @@ export function createGhoul(
   };
 }
 
+export function createEyebat(id: number, x: number, y: number, z: number, health = tuning.eyebatHealth): EyebatEntity {
+  return {
+    id,
+    type: 'eyebat',
+    x,
+    y,
+    z,
+    px: x,
+    py: y,
+    pz: z,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    health,
+    popped: false,
+    state: 'fly',
+    stateTicks: 0,
+    orbitSide: id % 2 === 0 ? 1 : -1, // deterministic, like the ghoul's detour side
+  };
+}
+
 export function isAlive(e: Entity): boolean {
   return e.health > 0;
 }
@@ -132,6 +175,12 @@ export function hitBox(e: Entity): Box {
   if (e.type === 'ghoul') {
     const r = tuning.ghoulRadius;
     return box(e.x, e.y, e.z, r * 2, tuning.ghoulHeight, r * 2);
+  }
+  if (e.type === 'eyebat') {
+    // A cube around the eye. The wings are NOT in it: shooting a thin wing
+    // and getting a kill would feel wrong, and missing "through" it is fine.
+    const r = tuning.eyebatRadius;
+    return box(e.x, e.y, e.z, r * 2, r * 2, r * 2);
   }
   const r = TARGET_PLATE_RADIUS;
   return box(e.x, e.y + TARGET_PLATE_HEIGHT - r, e.z, r * 2, r * 2, r * 2);

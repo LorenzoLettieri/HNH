@@ -106,6 +106,18 @@ export function createDebugPanel(options: {
   ghoul.number(tuning, 'ghoulAttackRange', 0.5, 3, 0.05);
   ghoul.button('Copy values', () => copyToClipboard(toSource(tuning)));
 
+  // --- Eye-bat ---
+  const eyebat = panel.folder('Malocchio / eye-bat (src/sim/config.ts) — B to spawn');
+  eyebat.number(tuning, 'eyebatHealth', 10, 500, 5);
+  eyebat.number(tuning, 'eyebatPupilRadius', 0.02, 0.4, 0.01);
+  eyebat.number(tuning, 'eyebatSpeed', 0.5, 15, 0.1);
+  eyebat.number(tuning, 'eyebatAccel', 0.5, 10, 0.1);
+  eyebat.number(tuning, 'eyebatOrbitDistance', 2, 30, 0.5);
+  eyebat.number(tuning, 'eyebatHoverHeight', 0, 15, 0.5);
+  eyebat.number(tuning, 'eyebatOrbitSpeed', 0, 2, 0.05);
+  eyebat.number(tuning, 'eyebatSeparation', 0, 6, 0.1);
+  eyebat.button('Copy values', () => copyToClipboard(toSource(tuning)));
+
   // --- Camera feel ---
   const feel = panel.folder('Camera feel (src/render/cameraFeel.ts)');
   feel.number(cameraFeelSettings, 'baseFov', 50, 110, 1);

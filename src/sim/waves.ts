@@ -1,7 +1,7 @@
 // Waves, CoD-zombies style: wave 1, 2, 3... each with more ghouls, tougher
 // and faster, and a short breather in between. Also keeps the score.
 import { secondsToTicks, tuning } from './config';
-import { createGhoul, type GhoulEntity } from './entities';
+import { createGhoul, isEnemy, type GhoulEntity } from './entities';
 import type { SimEvent } from './events';
 import type { GameState } from './game';
 import type { World } from './world';
@@ -60,16 +60,17 @@ export function ghoulHealthForWave(n: number): number {
 const MIN_SPAWN_DISTANCE = 15;
 
 export function stepWaves(game: GameState, world: World, events: SimEvent[]): void {
-  // Dead ghouls lie on the ground for a while, then are removed from the list.
-  const corpseTicks = secondsToTicks(tuning.ghoulCorpseTime);
+  // Dead enemies lie on the ground for a while, then are removed from the list.
+  // (The eye-bat counts its own stateTicks in stepEyebat: it keeps falling while dead.)
+  const corpseTicks = { ghoul: secondsToTicks(tuning.ghoulCorpseTime), eyebat: secondsToTicks(tuning.eyebatCorpseTime) };
   game.entities = game.entities.filter(
-    (e) => !(e.type === 'ghoul' && e.state === 'dead' && e.stateTicks > corpseTicks),
+    (e) => !(isEnemy(e) && e.state === 'dead' && e.stateTicks > corpseTicks[e.type]),
   );
   for (const e of game.entities) if (e.type === 'ghoul' && e.state === 'dead') e.stateTicks++;
 
   if (!tuning.wavesEnabled) return;
   const w = game.wave;
-  const alive = game.entities.filter((e) => e.type === 'ghoul' && e.state !== 'dead').length;
+  const alive = game.entities.filter((e) => isEnemy(e) && e.state !== 'dead').length;
 
   if (w.phase === 'break') {
     w.breakTicks--;

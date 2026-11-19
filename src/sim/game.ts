@@ -1,7 +1,8 @@
 // The whole game state in one object, and the one function that advances it
 // by one tick. Main loop (and one day the server) only talk to this.
 import type { InputCommand } from './command';
-import { createEntities, stepTarget, type Entity } from './entities';
+import { createEntities, createEyebat, isEnemy, stepTarget, type Entity } from './entities';
+import { stepEyebat } from './eyebat';
 import { stepGhoul } from './ghoul';
 import { createWaveState, scoreHits, stepWaves, type Stats, type WaveState } from './waves';
 import { getFlowField, getNavGraph, nearestNode } from './nav';
@@ -71,6 +72,7 @@ export function stepGame(
 
   for (const e of game.entities) {
     if (e.type === 'target') stepTarget(e);
+    else if (e.type === 'eyebat') stepEyebat(e, game.player, game.entities, world, dt);
     else if (e.state !== 'dead') stepGhoul(e, game.player, game.entities, world, graph, flow, dt, events);
   }
   stepWaves(game, world, events);
@@ -80,9 +82,20 @@ export function stepGame(
   if (game.player.health <= 0) {
     events.push({ type: 'playerDied', wave: game.wave.number, kills: game.stats.kills, score: game.stats.score });
     respawn(game.player, world);
-    game.entities = game.entities.filter((e) => e.type !== 'ghoul');
+    game.entities = game.entities.filter((e) => !isEnemy(e));
     game.wave = createWaveState();
     game.stats = { kills: 0, score: 0 };
   }
   game.tick++;
+}
+
+/**
+ * Debug: spawns an eye-bat in front of the player, up in the air.
+ * (Until it's part of the waves, this is how you get one to shoot at.)
+ */
+export function spawnEyebatInFront(game: GameState): void {
+  const p = game.player;
+  const x = p.x - Math.sin(p.yaw) * 8;
+  const z = p.z - Math.cos(p.yaw) * 8;
+  game.entities.push(createEyebat(game.nextEntityId++, x, p.y + 4, z));
 }
