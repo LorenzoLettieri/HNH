@@ -406,12 +406,15 @@ Punteggio e moneta sono **separati**:
   gioco mentre l'orda continua ad arrivare. **Sempre aperto, anche a metà ondata**: chi vuole comprare
   durante il round deve farlo in fretta. Funziona uguale in multiplayer (lì il tempo non si può fermare).
 - **Armeria** [FATTO: passo 1, il posto]: al **piano di sopra del GUNSMITH** (sud-est, tra la torre est e
-  il magazzino), che ora ha due piani. **Niente scale: ci si arriva col parkour.** La via più semplice:
-  gradini di casse → tetto del magazzino (6,3 m) → salto verso ovest sul **balcone** (4,3 m) → porta.
-  Il balcone finisce con un muro di testa: un salto troppo lungo ci sbatte contro e ricadi sul balcone
-  (verificato col giocatore simulato, anche a piena velocità). Altre vie: dal tetto della banca o dalla
-  torre est sul tetto del gunsmith (7,8 m) e giù sul balcone (frenando in aria); finestra a ovest per chi
-  sale a wall jump. Dentro: bancone, lanterna, rastrelliera, il venditore dietro il bancone.
+  il magazzino), che ora ha due piani e una pianta più grande (8 × 7 m, dentro 7,4 × 6,4). **Niente
+  scale: ci si arriva col parkour**, ma **entrare e uscire non deve essere la parte difficile**: tre
+  entrate larghe. **Est**: una scala di casse lungo il muro fino alla porta di carico. **Sud**: gradini
+  di casse → tetto del magazzino (6,3 m) → salto di 1,2 m verso ovest sul **balcone** (profondo 1,8 m;
+  frena in aria, il salto è corto) → porta larga. **Ovest**: un finestrone basso (davanzale a 0,5 m), per
+  chi scende dalla torre est o sale a wall jump. Dal tetto del gunsmith (8 m: dalla banca o dalla torre)
+  si scende anche sul balcone. Dentro: bancone lungo la parete nord, lanterna, due rastrelliere, il
+  venditore dietro il bancone. (Primo tentativo troppo piccolo, 6 × 5 m con una finestra stretta: bocciato
+  in playtest.)
 - [PROPOSTO] **Emporio** per i potenziamenti (ci si entra già, e c'è un bancone con la lanterna).
   Lo shop non è un rifugio: i ghoul ti seguono dentro.
 - **Menu col mouse libero** [DECISO], come il buy menu di CS:GO: premendo E il cursore si libera e si
