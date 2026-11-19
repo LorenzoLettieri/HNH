@@ -40,12 +40,38 @@ RENDER = '--no-render' not in sys.argv
 
 FPS = 60
 
-# --- Skeleton, rest pose (standing, leg straight down) -----------------------
+# --- Proportions: the two knobs to play with ---------------------------------
+LEG_STRETCH = 1.2  # leg length ×: a longer leg makes the kick land further from you
+BOOT_SCALE = 0.8   # boot size ×
+
+# --- Skeleton in "design space": the shapes below are drawn around these -----
+# (rest pose: standing, leg straight down). The proportions are applied AFTER
+# building, as two scale transforms (see BOOT_MATRIX / LEG_MATRIX): all the
+# numbers in the shape tables can stay as they are.
 HIP = Vector((-0.25, 0.0, -0.75))
-KNEE = Vector((-0.25, 0.012, -1.2))
-ANKLE = Vector((-0.25, 0.0, -1.63))
-TOE = Vector((-0.25, 0.24, -1.73))
+KNEE_D = Vector((-0.25, 0.012, -1.2))
+ANKLE_D = Vector((-0.25, 0.0, -1.63))
+TOE_D = Vector((-0.25, 0.24, -1.73))
 GROUND = -1.76
+
+
+def scale_about(center, sx, sy, sz):
+    """Scale matrix around a point: move the point to the origin, scale, move back."""
+    c = Vector(center)
+    return Matrix.Translation(c) @ Matrix.Diagonal((sx, sy, sz, 1.0)) @ Matrix.Translation(-c)
+
+
+# 1. The boot shrinks around the ankle. Its height is divided by LEG_STRETCH
+#    because step 2 will stretch it back: the net effect is a uniform BOOT_SCALE.
+BOOT_MATRIX = scale_about(ANKLE_D, BOOT_SCALE, BOOT_SCALE, BOOT_SCALE / LEG_STRETCH)
+# 2. The whole leg stretches downward from the hip (the leg is vertical in the
+#    rest pose, so scaling Z = making it longer, not thicker).
+LEG_MATRIX = scale_about(HIP, 1, 1, LEG_STRETCH)
+
+# The real skeleton, after the two transforms.
+KNEE = LEG_MATRIX @ KNEE_D
+ANKLE = LEG_MATRIX @ ANKLE_D
+TOE = LEG_MATRIX @ BOOT_MATRIX @ TOE_D
 
 # --- Kick timing (frames at 60 fps) ------------------------------------------
 # IMPACT_FRAME / 60 must match tuning.kickWindup (0.08 s ≈ frame 5): the game
@@ -182,12 +208,13 @@ def build_meshes():
     jeans_rings, jeans_w = [], []
     for z, rx, ry in [(-0.6, 0.09, 0.092), (-0.75, 0.088, 0.09), (-0.9, 0.08, 0.082), (-1.03, 0.072, 0.074),
                       (-1.12, 0.066, 0.068), (-1.17, 0.064, 0.066), (-1.2, 0.063, 0.066), (-1.23, 0.064, 0.067),
-                      (-1.28, 0.064, 0.066), (-1.34, 0.06, 0.062), (-1.42, 0.055, 0.057)]:
+                      (-1.28, 0.062, 0.064), (-1.34, 0.058, 0.06), (-1.40, 0.048, 0.05), (-1.46, 0.045, 0.047),
+                      (-1.52, 0.042, 0.044)]:  # the last ones go down inside the (smaller) boot
         # The knee sticks out a little forward.
-        y = 0.012 * max(0.0, 1 - abs(z - KNEE.z) / 0.08)
+        y = 0.012 * max(0.0, 1 - abs(z - KNEE_D.z) / 0.08)
         jeans_rings.append(lib.ellipse_ring((HIP.x, y, z), (1, 0, 0), (0, 1, 0), rx, ry, n=6))
         # Skin weights: thigh above the knee, shin below, a blend around it.
-        k = min(1.0, max(0.0, (KNEE.z + 0.06 - z) / 0.12))  # 0 above, 1 below
+        k = min(1.0, max(0.0, (KNEE_D.z + 0.06 - z) / 0.12))  # 0 above, 1 below
         jeans_w.append({'thigh': 1 - k, 'shin': k} if 0 < k < 1 else ({'thigh': 1.0} if k == 0 else {'shin': 1.0}))
     parts.append(lib.assign(lib.loft('jeans', jeans_rings, jeans_w, v_scale=2.0, cap_start=True), m_jeans))
 
@@ -258,6 +285,10 @@ def build_meshes():
     parts.append(lib.assign(lib.cylinder_mesh('concho', (HIP.x - hw * 1.07 - 0.003, 0.042, concho_z), 0.015, 0.006, 'foot',
                                               rotation=(0, math.radians(90), 0), vertices=6), m_brass))
 
+    # Proportions: everything but the jeans (parts[0]) is the boot.
+    for o in parts[1:]:
+        o.data.transform(BOOT_MATRIX)
+
     # One object: fewer things to manage in the game (the materials stay separate).
     bpy.ops.object.select_all(action='DESELECT')
     for o in parts:
@@ -266,6 +297,7 @@ def build_meshes():
     bpy.ops.object.join()
     leg = bpy.context.active_object
     leg.name = 'Leg'
+    leg.data.transform(LEG_MATRIX)
     # FLAT shading: every face has its own normal, so the facets show. That's
     # the retro low-poly look (smooth shading would make it look like clay).
     bpy.ops.object.shade_flat()
@@ -338,7 +370,10 @@ def key_hip(rig, frame, pos):
     """Moves the whole leg: the hip is the root of the skeleton. (Viewmodel cheat, see KICK_HIP.)"""
     pb = rig.pose.bones['hip']
     rest = rig.data.bones['hip'].matrix_local
-    pb.matrix = Matrix.Translation(Vector(pos)) @ rest.to_3x3().to_4x4()
+    # A bone's matrix is placed by its HEAD; the hip bone's head sits 10 cm
+    # above the hip joint (its tail), so offset by the same amount.
+    head = Vector(pos) + (rest.translation - HIP)
+    pb.matrix = Matrix.Translation(head) @ rest.to_3x3().to_4x4()
     bpy.context.view_layer.update()
     pb.keyframe_insert('location', frame=frame)
 
@@ -361,10 +396,10 @@ def animate(rig):
                        (RECHAMBER_FRAME, half), (END_FRAME, HIP)):
         key_hip(rig, frame, hip)
     key_foot(rig, 0, ANKLE, (0, 0, 0))                                 # standing (below the screen)
-    key_foot(rig, CHAMBER_FRAME, (-0.26, 0.1, -0.86), (25, 0, -10))    # knee up, foot pulled in
-    key_foot(rig, IMPACT_FRAME, (-0.07, 0.45, -0.24), (65, 0, -15))   # BOOM: leg out, toe up, sole forward
-    key_foot(rig, HOLD_FRAME, (-0.06, 0.49, -0.23), (68, 0, -15))     # pushing through
-    key_foot(rig, RECHAMBER_FRAME, (-0.25, 0.12, -0.84), (30, 0, -10)) # knee back in
+    key_foot(rig, CHAMBER_FRAME, (-0.26, 0.14, -0.9), (25, 0, -10))    # knee up, foot pulled in
+    key_foot(rig, IMPACT_FRAME, (-0.06, 0.63, -0.26), (65, 0, -15))   # BOOM: leg out, toe up, sole forward
+    key_foot(rig, HOLD_FRAME, (-0.05, 0.68, -0.25), (68, 0, -15))     # pushing through
+    key_foot(rig, RECHAMBER_FRAME, (-0.25, 0.16, -0.88), (30, 0, -10)) # knee back in
     key_foot(rig, END_FRAME, ANKLE, (0, 0, 0))                         # foot back down
 
     # Bake: turn IK + constraints into plain per-frame rotations of the real bones.
@@ -453,8 +488,8 @@ def main():
         cam.location = (-0.25, -0.6, -1.45)
         cam.rotation_euler = (Vector((-0.25, 0.08, -1.66)) - Vector(cam.location)).to_track_quat('-Z', 'Y').to_euler()
         render(os.path.join(PREVIEW_DIR, 'leg_rest_back.png'), 0)
-        cam.location = (-0.95, 0.15, -1.55)
-        cam.rotation_euler = (Vector((-0.25, 0.08, -1.62)) - Vector(cam.location)).to_track_quat('-Z', 'Y').to_euler()
+        cam.location = (-2.2, 0.05, -1.25)  # far to the side: the whole leg, to judge the proportions
+        cam.rotation_euler = (Vector((-0.25, 0.05, -1.3)) - Vector(cam.location)).to_track_quat('-Z', 'Y').to_euler()
         render(os.path.join(PREVIEW_DIR, 'leg_rest_side.png'), 0)
 
 

@@ -117,7 +117,7 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
 - `tools/blender/`: **modelli 3D generati con script Python per Blender** (`bpy`, Blender senza interfaccia)
   - `setup.sh`: installazione una tantum (venv con `bpy` in `tools/blender/.venv`)
   - `lib.py`: mini-libreria di modellazione: **loft** (anelli di sezione uniti in un tubo), anelli ellittici, box/cilindri/stelle, **texture pixel art** (`Pixels`), materiali con filtro "Closest"
-  - `leg.py`: **gamba sinistra con stivale da cowboy**, **low-poly** (pochi lati per sezione, shading piatto, texture 8–32 px) (jeans, gambale con cuciture, punta, tacco cubano, sperone, borchia), **scheletro** (anca → coscia → stinco → piede), **animazione del calcio** con IK poi "bakata", render di anteprima, export. Tabelle delle forme (`FOOT`, `SOLE_TOP`), pose del calcio (`key_foot`, `KICK_HIP`) e fotogrammi (`IMPACT_FRAME` ecc.) in cima
+  - `leg.py`: **gamba sinistra con stivale da cowboy**, **low-poly** (pochi lati per sezione, shading piatto, texture 8–32 px) (jeans, gambale con cuciture, punta, tacco cubano, sperone, borchia), **scheletro** (anca → coscia → stinco → piede), **animazione del calcio** con IK poi "bakata", render di anteprima, export. **Proporzioni** (`LEG_STRETCH` = lunghezza gamba, `BOOT_SCALE` = grandezza stivale), tabelle delle forme (`FOOT`, `SOLE_TOP`), pose del calcio (`key_foot`, `KICK_HIP`) e fotogrammi (`IMPACT_FRAME` ecc.) in cima
   - `previews/`: render di anteprima (non nel repo)
 - `public/models/`: **modelli glTF (.glb) generati** da `tools/blender/` (nel repo, così il sito non ha bisogno di Blender)
 - `public/textures/`: texture PNG (servite così come sono da Vite su `/textures/...`)
