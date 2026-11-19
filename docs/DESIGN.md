@@ -308,10 +308,16 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
     quasi tutti si fermavano in strada (camminare costava più che salire); con la distanza minima a 12 si
     ammassavano tutti sul tetto più alto accanto a te. Con 6 e 18: tetti da 4 a 8 m, a 24–40 m, quasi tutti
     arrivano; nessuno rimane bloccato a metà strada. Dagli angoli della mappa ci mette 15–20 s.
-    Per ora mentre cammina e si arrampica lo sprite resta quello di riposo (scivola).
-    **Da fare**: viste di lato e da dietro con camminata e arrampicata, ondate.
-    Da valutare: scappare quando ti avvicini, cambiare postazione dopo qualche colpo, schegge d'osso al
-    posto del sangue quando lo colpisci, fischio del proiettile che ti sfiora.
+  - **Tattica** [DECISO]: cambia postazione **solo quando non ti vede più** per un po' (3 s). Niente fuga
+    quando ti avvicini, niente "spara e cambia posto": se lo raggiungi, è tuo.
+  - **Passo 4** [FATTO]: **tre viste** (fronte, lato, retro) scelte dall'angolo tra dove guarda e la camera,
+    con camminata (4 fotogrammi) e arrampicata (2). Mentre si muove porta la **Winchester a tracolla sulla
+    schiena**: a colpo d'occhio sai che in quel momento non può spararti (in mano = può). Arrampicandosi
+    guarda il muro, quindi di solito lo vedi da dietro; dall'alto (sei sul tetto che sta scalando) lo vedi
+    di fronte che guarda su. Di lato ha la mira e la leva col fucile di profilo, e laser e lampo partono
+    dalla punta della canna disegnata (sempre sulla linea del proiettile).
+    **Da fare**: ondate.
+    Da valutare: schegge d'osso al posto del sangue quando lo colpisci, fischio del proiettile che ti sfiora.
   - **Proiettili più veloci, collisione "a spazzata"**: a 90 m/s il proiettile fa 1,5 m per tick, quindi non
     basta controllare dov'è arrivato (ti passerebbe attraverso): si controlla tutto il segmento percorso
     nel tick contro la scatola del giocatore **ingrandita del raggio del proiettile** (somma di Minkowski).

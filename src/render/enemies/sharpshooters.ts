@@ -1,10 +1,18 @@
 // Draws the sharpshooters: a pixel-art sprite each (sharpshooterSprite.ts),
-// a billboard always turned toward the camera around the vertical axis, like
-// the ghouls. One view for now, the front: it doesn't walk, and it always
-// faces you (it aims at you).
+// a billboard always turned toward the camera around the vertical axis, with
+// THREE VIEWS picked from the angle, like the hound and the bull:
 //
-// The frame comes from the simulation's state, so the shot cycle
-// (src/sim/sharpshooter.ts) is readable from its pose:
+//   rel = (where it faces) − (direction from it to the camera)
+//   cos(rel) ≈  1 → it faces you        → FRONT view
+//   cos(rel) ≈ -1 → it faces away       → BACK view
+//   otherwise     → SIDE view, mirrored when it faces the left of the screen
+//
+// Where it faces is the simulation's aim: where it walks, the wall it climbs,
+// you when it waits and aims.
+//
+// The frame comes from the simulation's state, so what it's doing is
+// readable from its pose (src/sim/sharpshooter.ts):
+//   move → walking or climbing, the Winchester slung on its back: it can't shoot
 //   idle → rifle across the chest, laser off: "not now"
 //   aim  → rifle at the shoulder, pointed at you, the aiming eye burning
 //   lock → lever thrown (cla-CLACK), then aimed again: MOVE
@@ -21,15 +29,31 @@ import { tuning } from '../../sim/config';
 import type { Entity, SharpshooterEntity } from '../../sim/entities';
 import type { SimEvent } from '../../sim/events';
 import { raycastBoxes } from '../../sim/raycast';
-import { muzzlePosition } from '../../sim/sharpshooter';
+import { MUZZLE_FORWARD, muzzlePosition } from '../../sim/sharpshooter';
 import type { World } from '../../sim/world';
 import { playBoneClatter, playLeverAction, playRifleShot, playSharpshooterAim, type Where } from '../../audio/sfx';
 import { addHeightFog } from '../heightFog';
 import { spawnSnort } from '../particles';
 import { soundAt } from '../soundPosition';
-import { FRAMES, FRAME_H, FRAME_W, sharpshooterSheet } from './sharpshooterSprite';
+import { FRAMES, FRAME_H, FRAME_W, SIDE_MUZZLE_X, sharpshooterSheet } from './sharpshooterSprite';
 
 const PIXELS_PER_METER = 32;
+
+// --- Views ---
+/** Within this angle of "straight at / away from the camera", show the front / back view. */
+const FRONT_ANGLE = (35 * Math.PI) / 180;
+/** How fast its facing follows where it walks (1/s): smooths out the wobble at corners. */
+const TURN_RATE = 10;
+/**
+ * In the side view the rifle sticks out in front of it: the laser and the
+ * flash start at the tip you see, this many meters ahead of the body (still
+ * on the bullet's line: the bullet starts at the sim's muzzle, further back).
+ */
+const SIDE_MUZZLE_REACH = (SIDE_MUZZLE_X - FRAME_W / 2) / PIXELS_PER_METER;
+/** Walking: animation frames per meter (a 4-frame cycle ≈ 1.6 m, two steps). */
+const WALK_FRAMES_PER_METER = 2.5;
+/** Climbing: seconds per frame (one hand up, then the other). */
+const CLIMB_FRAME_TIME = 0.18;
 
 // --- Laser tuning ---
 /** Brightness at the start of the aim and at its end (HDR: above 1 goes into the bloom). */
@@ -89,6 +113,12 @@ interface SharpshooterView {
   flashTime: number;
   /** Stops the laser's whine (it plays while aiming, and stops early if it gives up). */
   stopWhine: (() => void) | null;
+  /** Direction it faces (radians, the player's yaw convention): smoothed while walking. */
+  yaw: number;
+  /** Which view was shown last (the laser and the flash start where the muzzle is drawn). */
+  view: 'front' | 'side' | 'back';
+  /** Distance walked, converted into animation frames. */
+  walkPhase: number;
 }
 
 export interface SharpshooterRenderer {
@@ -215,12 +245,32 @@ export function createSharpshooterRenderer(scene: THREE.Scene, world: World): Sh
       recoilTime: 0,
       flashTime: 0,
       stopWhine: null,
+      yaw: 0,
+      view: 'front',
+      walkPhase: 0,
     };
   }
 
-  function showFrame(v: SharpshooterView, frame: number): void {
-    v.map.offset.x = frame / sheet.frameCount;
-    v.glowMap.offset.x = frame / sheet.frameCount;
+  /**
+   * Shows one frame of the sheet. A NEGATIVE repeat mirrors it for free (see
+   * hounds.ts): the texture is read right to left, starting from the frame's
+   * right edge. The frames are centered on the body, so it stays in place.
+   */
+  function showFrame(v: SharpshooterView, frame: number, mirror = false): void {
+    const n = sheet.frameCount;
+    for (const t of [v.map, v.glowMap]) {
+      t.repeat.x = (mirror ? -1 : 1) / n;
+      t.offset.x = (mirror ? frame + 1 : frame) / n;
+    }
+  }
+
+  /**
+   * Where the muzzle is DRAWN, as a distance along the aim from the sim's
+   * muzzle: 0 from the front (the muzzle is painted on the sprite's center),
+   * the rifle's length in the side view. Always on the bullet's line.
+   */
+  function muzzleTipOffset(v: SharpshooterView): number {
+    return v.view === 'side' ? SIDE_MUZZLE_REACH - MUZZLE_FORWARD : 0;
   }
 
   function stopWhine(v: SharpshooterView): void {
@@ -252,7 +302,8 @@ export function createSharpshooterRenderer(scene: THREE.Scene, world: World): Sh
       v.flashTime = FLASH_TIME;
       v.flashMaterial.rotation = Math.random() * Math.PI; // every flash a bit different
       const [mx, my, mz] = muzzlePosition(s);
-      point.set(mx, my, mz);
+      const tip = muzzleTipOffset(v);
+      point.set(mx + s.aimX * tip, my + s.aimY * tip, mz + s.aimZ * tip);
       dir.set(s.aimX, s.aimY, s.aimZ);
       spawnSnort(point, dir, SHOT_EMBERS);
     } else {
@@ -281,13 +332,16 @@ export function createSharpshooterRenderer(scene: THREE.Scene, world: World): Sh
     v.dotMaterial.color.setScalar(k);
 
     // From the muzzle (the same point the simulation fires from) along the
-    // aim, until it hits a box or reaches the rifle's range.
+    // aim, until it hits a box or reaches the rifle's range. The visible line
+    // starts at the muzzle you SEE (further along in the side view: see
+    // muzzleTipOffset), but it's the same line.
     const [mx, my, mz] = muzzlePosition(e);
     const range = tuning.sharpshooterRange * 1.5;
     const hit = raycastBoxes(mx, my, mz, e.aimX, e.aimY, e.aimZ, range, world.boxes);
     const len = hit ? hit.distance : range;
+    const start = Math.min(muzzleTipOffset(v), len);
     const pos = v.laser.geometry.attributes.position as THREE.BufferAttribute;
-    pos.setXYZ(0, mx, my, mz);
+    pos.setXYZ(0, mx + e.aimX * start, my + e.aimY * start, mz + e.aimZ * start);
     pos.setXYZ(1, mx + e.aimX * len, my + e.aimY * len, mz + e.aimZ * len);
     pos.needsUpdate = true;
     if (hit) {
@@ -301,7 +355,8 @@ export function createSharpshooterRenderer(scene: THREE.Scene, world: World): Sh
     const m = v.mesh;
     m.position.set(e.px + (e.x - e.px) * alpha, e.py + (e.y - e.py) * alpha, e.pz + (e.z - e.pz) * alpha);
     // Cylindrical billboard: turn around Y only, to face the camera.
-    m.rotation.y = Math.atan2(camera.position.x - m.position.x, camera.position.z - m.position.z);
+    const toCamera = Math.atan2(camera.position.x - m.position.x, camera.position.z - m.position.z);
+    m.rotation.y = toCamera;
     v.hurtTime -= dt;
     v.recoilTime -= dt;
     v.flashTime -= dt;
@@ -309,35 +364,73 @@ export function createSharpshooterRenderer(scene: THREE.Scene, world: World): Sh
     // The whine belongs to the aim: gave up, locked or dead = silence.
     if (e.state !== 'aim') stopWhine(v);
 
+    // Facing. Walking: smoothed, turning the shortest way round (its velocity
+    // wobbles at corners). Otherwise exactly the sim's aim: what you see is
+    // where the rifle points.
+    const target = Math.atan2(e.aimX, e.aimZ);
+    if (e.state === 'move' && e.climbTo < 0) {
+      const diff = Math.atan2(Math.sin(target - v.yaw), Math.cos(target - v.yaw));
+      v.yaw += diff * Math.min(1, TURN_RATE * dt);
+    } else if (e.state !== 'dead') {
+      v.yaw = target;
+    }
+    const rel = v.yaw - toCamera;
+    const cosRel = Math.cos(rel);
+    v.view = cosRel > Math.cos(FRONT_ANGLE) ? 'front' : cosRel < -Math.cos(FRONT_ANGLE) ? 'back' : 'side';
+    const mirror = v.view === 'side' && Math.sin(rel) < 0;
+    v.walkPhase += Math.hypot(e.vx, e.vz) * dt * WALK_FRAMES_PER_METER;
+    const view = FRAMES[v.view];
+
     const t = e.stateTicks / 60; // seconds in the current state
     if (e.state === 'dead') {
       v.material.emissiveIntensity = 0; // the embers in its eyes go out
       const frames = e.headless ? FRAMES.deathHeadless : FRAMES.death;
-      showFrame(v, frames[Math.min(frames.length - 1, Math.floor(t / DEATH_FRAME_TIME))]);
+      showFrame(v, frames[Math.min(frames.length - 1, Math.floor(t / DEATH_FRAME_TIME))]); // the same from every side
       // In its last second, the pile sinks into the ground before it's removed.
       const remaining = tuning.sharpshooterCorpseTime - t;
       if (remaining < 1) m.position.y -= (1 - remaining) * 0.4;
-    } else if (v.recoilTime > 0) {
-      showFrame(v, FRAMES.recoil);
-      v.material.emissiveIntensity = GLOW_AIM;
-    } else if (e.state === 'lock') {
-      showFrame(v, t < LEVER_TIME ? FRAMES.lever : FRAMES.aim);
-      v.material.emissiveIntensity = GLOW_LOCK;
-    } else if (e.state === 'aim') {
-      showFrame(v, FRAMES.aim);
-      const progress = Math.min(1, t / tuning.sharpshooterAimTime);
-      v.material.emissiveIntensity = GLOW_CALM + (GLOW_AIM - GLOW_CALM) * progress;
-    } else {
-      // Idle: a slow sway, out of step from one skeleton to the next (the id shifts the phase).
-      showFrame(v, FRAMES.idle[Math.floor(time / IDLE_FRAME_TIME + e.id * 0.5) % 2]);
+    } else if (e.climbTo >= 0) {
+      // Up a wall: one hand, then the other.
+      showFrame(v, view.climb[Math.floor(e.climbTicks / (CLIMB_FRAME_TIME * 60)) % 2], mirror);
       v.material.emissiveIntensity = GLOW_CALM;
+    } else if (e.state === 'move') {
+      // The walk cycle advances with the distance covered, not with time:
+      // pushed against something, it stops "walking" (no skating feet).
+      showFrame(v, view.walk[Math.floor(v.walkPhase) % view.walk.length], mirror);
+      v.material.emissiveIntensity = GLOW_CALM;
+    } else {
+      // Standing: the shot cycle. It faces you, so this is almost always the
+      // front; the side view has the rifle at the shoulder too (if you get
+      // round it while it aims); from behind, a plain standing frame.
+      const standing = v.view === 'back' ? FRAMES.back.walk[1] : FRAMES.side.walk[1];
+      let frame: number;
+      if (v.recoilTime > 0) {
+        frame = v.view === 'front' ? FRAMES.front.recoil : v.view === 'side' ? FRAMES.side.aim : standing;
+        v.material.emissiveIntensity = GLOW_AIM;
+      } else if (e.state === 'lock') {
+        const lever = t < LEVER_TIME;
+        if (v.view === 'front') frame = lever ? FRAMES.front.lever : FRAMES.front.aim;
+        else if (v.view === 'side') frame = lever ? FRAMES.side.lever : FRAMES.side.aim;
+        else frame = standing;
+        v.material.emissiveIntensity = GLOW_LOCK;
+      } else if (e.state === 'aim') {
+        frame = v.view === 'front' ? FRAMES.front.aim : v.view === 'side' ? FRAMES.side.aim : standing;
+        const progress = Math.min(1, t / tuning.sharpshooterAimTime);
+        v.material.emissiveIntensity = GLOW_CALM + (GLOW_AIM - GLOW_CALM) * progress;
+      } else {
+        // Idle: a slow sway, out of step from one skeleton to the next (the id shifts the phase).
+        frame = v.view === 'front' ? FRAMES.front.idle[Math.floor(time / IDLE_FRAME_TIME + e.id * 0.5) % 2] : standing;
+        v.material.emissiveIntensity = GLOW_CALM;
+      }
+      showFrame(v, frame, mirror);
     }
 
     updateLaser(v, e, time);
     v.flash.visible = v.flashTime > 0 && e.state !== 'dead';
     if (v.flash.visible) {
       const [mx, my, mz] = muzzlePosition(e);
-      v.flash.position.set(mx, my, mz);
+      const tip = muzzleTipOffset(v);
+      v.flash.position.set(mx + e.aimX * tip, my + e.aimY * tip, mz + e.aimZ * tip);
     }
   }
 
@@ -364,7 +457,11 @@ export function createSharpshooterRenderer(scene: THREE.Scene, world: World): Sh
       for (const e of entities) {
         if (e.type !== 'sharpshooter') continue;
         seen.add(e.id);
-        if (!views.has(e.id)) views.set(e.id, create());
+        if (!views.has(e.id)) {
+          const v = create();
+          v.yaw = Math.atan2(e.aimX, e.aimZ); // no spin on the first frame
+          views.set(e.id, v);
+        }
       }
       const byId = new Map(entities.map((e) => [e.id, e]));
       for (const ev of events) onEvent(ev, byId, camera);

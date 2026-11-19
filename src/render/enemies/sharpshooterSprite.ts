@@ -3,36 +3,51 @@
 // cartridges, a holster, boots with spurs, and a Winchester with a brass
 // receiver (the "Yellow Boy").
 //
-// For now only the FRONT view: it doesn't walk yet, and it always turns to
-// face you (it aims at you). Side and back views come with climbing.
+// THREE VIEWS, like the hound and the bull: FRONT, SIDE (facing right; the
+// renderer mirrors it for the left) and BACK, picked by the renderer from
+// the angle between where it faces and the camera (see sharpshooters.ts).
+// While it walks or climbs the Winchester is SLUNG ON ITS BACK: one look
+// tells you it can't shoot right now (in its hands = it can).
 //
-// One frame is 40 × 70 px: at our 32 px/m it's 1.25 × 2.19 m, the same
-// texel density as the level. Some pixels must match the simulation
+// One frame is 60 × 70 px: at our 32 px/m it's 1.9 × 2.19 m, the same texel
+// density as the level. That wide only for the side view, where the rifle
+// sticks out a meter in front of it; the front and back views are painted 40
+// px wide and centered (widen()). Some pixels must match the simulation
 // (src/sim/config.ts); in rows from the top, row = 70 − height × 32:
 //   hat top    ≈ 2.15 m (sharpshooterHitHeight)     → row 2
 //   chin       ≈ 1.55 m (sharpshooterHeadHeight)    → row 19: above it = critical
 //   muzzle       1.45 m (sharpshooterMuzzleHeight)  → rows 23-24, in the center
 //                column: when it aims at you the laser comes out of the barrel you see
 //
-// Frames, left to right:
-//   0-1: idle (rifle across the chest, laser off: "not now"; the two frames sway)
-//   2: aim (rifle at the shoulder, pointed at YOU: you look down the barrel)
-//   3: lever (the lock: lever thrown, a spent shell flying)   4: recoil
-//   5-7: death (knees give way → falls apart → a pile of bones)
-//   8-10: the same, headless (after a headshot)
+// Frames (see FRAMES for the numbers):
+//   front: idle (rifle across the chest, laser off: "not now"; two frames that sway),
+//          aim (rifle at the shoulder, pointed at YOU: you look down the barrel),
+//          lever (the lock: lever thrown, a spent shell flying), recoil,
+//          walk (4), climb (2: seen from above, looking up at you)
+//   side:  walk (4), aim, lever, climb (2)
+//   back:  walk (4), climb (2: the usual way you see it climb, from the wall's side)
+//   death (knees give way → falls apart → a pile of bones), and the same headless
+//   (after a headshot): the same from every side.
 import { seededRandom } from '../props/pixelCanvas';
 import { buildSheet, PixelFrame, type SpriteSheet } from './spriteSheet';
 
-export const FRAME_W = 40;
+export const FRAME_W = 60;
 export const FRAME_H = 70;
+/** Width the front and back views are painted at, before being centered in FRAME_W. */
+const NARROW_W = 40;
 export const FRAMES = {
-  idle: [0, 1],
-  aim: 2,
-  lever: 3,
-  recoil: 4,
+  front: { idle: [0, 1], aim: 2, lever: 3, recoil: 4, walk: [11, 12, 13, 14], climb: [29, 30] },
+  side: { walk: [15, 16, 17, 18], aim: 19, lever: 20, climb: [27, 28] },
+  back: { walk: [21, 22, 23, 24], climb: [25, 26] },
   death: [5, 6, 7],
   deathHeadless: [8, 9, 10],
 };
+/**
+ * Column of the muzzle's tip in the side aim frames. The renderer starts the
+ * laser (and the flash) there in the side view: (SIDE_MUZZLE_X − FRAME_W/2)
+ * pixels in front of the body, along the aim.
+ */
+export const SIDE_MUZZLE_X = 57;
 
 const C = {
   outline: 0x120a08,
@@ -76,38 +91,44 @@ type Eyes = 'calm' | 'aim' | 'dying' | 'out';
 
 // --- Body parts. Every bone is 2 px wide: a bone "at x" covers columns x−1 and x. ---
 
-/** A bone: lit from the left (the light column), like the rest of the sprite. */
-function bone(f: PixelFrame, x0: number, y0: number, x1: number, y1: number): void {
-  f.limb(x0, y0, x1, y1, 2, C.bone, C.boneLight);
+/**
+ * A bone: lit from the left (the light column), like the rest of the sprite.
+ * `far` = on the other side of the body (the far arm or leg in the side view):
+ * darker, so near and far limbs don't melt together.
+ */
+function bone(f: PixelFrame, x0: number, y0: number, x1: number, y1: number, far = false): void {
+  f.limb(x0, y0, x1, y1, 2, far ? C.ribDark : C.bone, far ? C.boneDark : C.boneLight);
 }
 
 /** A joint (knee, elbow): a knob a bit wider than the bone. */
-function joint(f: PixelFrame, x: number, y: number): void {
-  f.rect(x - 2, y - 1, 4, 2, C.bone);
-  f.set(x - 2, y - 1, C.boneLight);
-  f.set(x + 1, y, C.boneDark);
+function joint(f: PixelFrame, x: number, y: number, far = false): void {
+  f.rect(x - 2, y - 1, 4, 2, far ? C.ribDark : C.bone);
+  f.set(x - 2, y - 1, far ? C.boneDark : C.boneLight);
+  f.set(x + 1, y, far ? C.cavity : C.boneDark);
 }
 
 /** A bony hand, 3 × 3 around (x, y), with its shadow. Drawn after the rifle: it wraps around it. */
-function hand(f: PixelFrame, x: number, y: number): void {
-  f.rect(x, y, 3, 3, C.cavity);
-  f.rect(x - 1, y - 1, 3, 3, C.bone);
-  f.set(x - 1, y - 1, C.boneLight);
-  f.set(x + 1, y + 1, C.boneDark);
+function hand(f: PixelFrame, x: number, y: number, far = false): void {
+  if (!far) f.rect(x, y, 3, 3, C.cavity);
+  f.rect(x - 1, y - 1, 3, 3, far ? C.ribDark : C.bone);
+  f.set(x - 1, y - 1, far ? C.boneDark : C.boneLight);
+  f.set(x + 1, y + 1, far ? C.cavity : C.boneDark);
 }
 
 /**
  * Upper arm, forearm and the elbow between them (the hand comes later, see
  * hand()). Bone in front of bone would melt into one shape, so the arm first
  * paints a dark copy of itself one pixel down-right: a drop shadow that
- * detaches it from the ribs behind it.
+ * detaches it from the ribs behind it. (A far arm is behind the body: no shadow.)
  */
-function arm(f: PixelFrame, shoulder: Pt, elbow: Pt, wrist: Pt): void {
-  f.limb(shoulder[0] + 1, shoulder[1] + 1, elbow[0] + 1, elbow[1] + 1, 2, C.cavity, C.cavity);
-  f.limb(elbow[0] + 1, elbow[1] + 1, wrist[0] + 1, wrist[1] + 1, 2, C.cavity, C.cavity);
-  bone(f, shoulder[0], shoulder[1], elbow[0], elbow[1]);
-  bone(f, elbow[0], elbow[1], wrist[0], wrist[1]);
-  joint(f, elbow[0], elbow[1]);
+function arm(f: PixelFrame, shoulder: Pt, elbow: Pt, wrist: Pt, far = false): void {
+  if (!far) {
+    f.limb(shoulder[0] + 1, shoulder[1] + 1, elbow[0] + 1, elbow[1] + 1, 2, C.cavity, C.cavity);
+    f.limb(elbow[0] + 1, elbow[1] + 1, wrist[0] + 1, wrist[1] + 1, 2, C.cavity, C.cavity);
+  }
+  bone(f, shoulder[0], shoulder[1], elbow[0], elbow[1], far);
+  bone(f, elbow[0], elbow[1], wrist[0], wrist[1], far);
+  joint(f, elbow[0], elbow[1], far);
 }
 
 /** The skull, 10 px wide and 13 tall (15 with the jaw dropped). (sx, sy) = top-left corner. */
@@ -240,15 +261,22 @@ function bandolier(f: PixelFrame, x0: number, y0: number, x1: number, y1: number
   }
 }
 
-/** Gun belt (with the holster on its right hip, our left) and the pelvis under it. y = the belt's top row. */
-function hips(f: PixelFrame, x: number, y: number): void {
+/**
+ * Gun belt (with the holster on its right hip) and the pelvis under it.
+ * y = the belt's top row. From the front its right hip is on our left; seen
+ * from behind (`back`), on our right, and there's no buckle.
+ */
+function hips(f: PixelFrame, x: number, y: number, back = false): void {
   f.rect(x - 7, y, 14, 2, C.leather);
   f.rect(x - 7, y + 1, 14, 1, C.leatherDark);
-  f.rect(x - 2, y, 4, 2, C.brass); // buckle
-  f.set(x - 2, y, C.brassLight);
-  f.rect(x - 10, y + 1, 3, 6, C.leather); // holster...
-  f.rect(x - 10, y + 1, 1, 6, C.leatherDark);
-  f.rect(x - 10, y - 1, 2, 2, C.wood); // ...and the revolver's grip
+  if (!back) {
+    f.rect(x - 2, y, 4, 2, C.brass); // buckle
+    f.set(x - 2, y, C.brassLight);
+  }
+  const hx = back ? x + 7 : x - 10;
+  f.rect(hx, y + 1, 3, 6, C.leather); // holster...
+  f.rect(back ? hx + 2 : hx, y + 1, 1, 6, C.leatherDark);
+  f.rect(back ? hx + 1 : hx, y - 1, 2, 2, C.wood); // ...and the revolver's grip
   // Pelvis: the two wings, the arch under them, the sacrum in the middle.
   f.rect(x - 7, y + 2, 5, 1, C.bone);
   f.rect(x + 2, y + 2, 5, 1, C.bone);
@@ -282,6 +310,158 @@ function bootLying(f: PixelFrame, x: number, y: number, toeLeft: boolean): void 
   f.rect(x, y + 4, 9, 1, C.leatherDark); // sole
   f.rect(x + (toeLeft ? 8 : 0), y, 1, 4, C.leatherDark); // the opening
   f.set(x + (toeLeft ? 4 : 4), y + 5, C.brassLight); // spur
+}
+
+// --- Seen from behind ----------------------------------------------------------------
+
+/** A boot from behind: the shaft, the tall heel, and the spur sticking out in the middle. */
+function bootBack(f: PixelFrame, x0: number, y: number): void {
+  f.rect(x0, y, 4, 9, C.leather);
+  f.rect(x0, y, 4, 1, C.leatherDark); // the opening
+  f.rect(x0, y + 1, 1, 8, C.hatLight); // light from the left
+  f.rect(x0, y + 6, 4, 3, C.leatherDark); // the heel
+  f.rect(x0 - 1, y + 9, 6, 1, C.leatherDark); // sole
+  f.rect(x0 + 1, y + 7, 2, 1, C.brassLight); // spur
+}
+
+/** The back of the skull: a round cranium, no face; the jaw's corners at the sides. */
+function skullBack(f: PixelFrame, sx: number, sy: number): void {
+  f.rect(sx + 2, sy, 6, 1, C.bone);
+  f.rect(sx + 1, sy + 1, 8, 1, C.bone);
+  f.rect(sx, sy + 2, 10, 7, C.bone);
+  f.rect(sx + 1, sy + 9, 8, 1, C.bone);
+  f.rect(sx + 3, sy + 10, 4, 1, C.boneDark); // the base, where the spine goes in
+  f.rect(sx, sy + 2, 1, 6, C.boneLight);
+  f.rect(sx + 9, sy + 3, 1, 6, C.boneDark);
+  f.rect(sx + 1, sy + 10, 1, 2, C.boneDark); // jaw corners
+  f.rect(sx + 8, sy + 10, 1, 2, C.boneDark);
+  for (const [dx, dy] of [[6, 3], [5, 4], [6, 5], [7, 6]]) f.set(sx + dx, sy + dy, C.boneDark); // a crack
+}
+
+/** From behind: the ribs, with the spine (instead of the sternum) and the two shoulder blades on top. */
+function ribcageBack(f: PixelFrame, x: number, y: number): void {
+  ribcage(f, x, y);
+  for (let r = y; r <= y + 10; r++) f.rect(x - 1, r, 2, 1, (r - y) % 2 ? C.boneDark : C.bone);
+  for (let r = y + 1; r <= y + 10; r += 2) f.rect(x - 2, r, 4, 1, C.bone);
+  // Shoulder blades: two flat triangles on the upper back.
+  f.triangle(x - 8, y + 1, x - 3, y + 1, x - 4, y + 7, C.bone);
+  f.triangle(x + 7, y + 1, x + 2, y + 1, x + 3, y + 7, C.bone);
+  f.set(x - 8, y + 1, C.boneLight);
+  f.set(x + 3, y + 6, C.boneDark);
+}
+
+/** The bandana's knot at the back of the neck, with its two short tails. */
+function bandanaBack(f: PixelFrame, x: number, y: number): void {
+  f.rect(x - 3, y, 6, 1, C.bandana);
+  f.rect(x - 1, y, 2, 2, C.bandanaDark); // the knot
+  f.set(x - 2, y + 2, C.bandana);
+  f.set(x - 3, y + 3, C.bandanaDark);
+  f.set(x + 1, y + 2, C.bandana);
+  f.set(x + 2, y + 3, C.bandanaDark);
+}
+
+// --- In profile (facing right) --------------------------------------------------------
+
+/** The skull in profile, facing right: 9 px deep, 13 tall. (sx, sy) = top-left corner. */
+function skullSide(f: PixelFrame, sx: number, sy: number, eyes: Eyes): void {
+  f.rect(sx + 2, sy, 5, 1, C.bone);
+  f.rect(sx + 1, sy + 1, 7, 1, C.bone);
+  f.rect(sx, sy + 2, 9, 6, C.bone); // cranium
+  f.rect(sx + 1, sy + 8, 8, 1, C.bone); // the back of the head curves in under it...
+  f.rect(sx + 4, sy + 9, 5, 1, C.bone); // ...the face goes on: cheekbone and upper teeth
+  f.rect(sx, sy + 2, 1, 6, C.boneLight); // light from the left (the back of the head)
+  f.rect(sx + 1, sy + 8, 3, 1, C.boneDark);
+  f.rect(sx + 5, sy + 4, 3, 3, C.socket); // eye socket, near the front
+  f.set(sx + 8, sy + 7, C.socket); // nose: a notch in the profile
+  f.set(sx + 2, sy + 6, C.socket); // ear hole
+  for (const x of [sx + 5, sx + 7]) f.set(x, sy + 9, C.socket); // upper teeth
+  if (eyes === 'calm' || eyes === 'aim') {
+    f.set(sx + 6, sy + 5, C.eye, true);
+    if (eyes === 'aim') {
+      for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) f.set(sx + 6 + dx, sy + 5 + dy, C.eye, true);
+    }
+  }
+  // Jaw: from under the ear forward to the chin.
+  f.rect(sx + 3, sy + 10, 6, 2, C.bone);
+  f.rect(sx + 6, sy + 12, 3, 1, C.bone); // chin
+  for (const x of [sx + 6, sx + 8]) f.set(x, sy + 10, C.socket); // lower teeth
+  f.rect(sx + 3, sy + 11, 2, 1, C.boneDark);
+}
+
+/**
+ * Ribcage in profile, facing right. x = the shoulder's column, y = the
+ * collarbone's row. Spine at the back (x−4), sternum at the front (x+4), and
+ * the ribs between them, sloping down toward the front.
+ */
+function ribcageSide(f: PixelFrame, x: number, y: number): void {
+  for (let r = y + 1; r <= y + 10; r++) {
+    const back = x - 2 + (r > y + 7 ? 1 : 0);
+    const front = x + 4 - (r < y + 3 ? 1 : 0) - (r > y + 8 ? 1 : 0);
+    f.rect(back, r, front - back + 1, 1, C.cavity);
+  }
+  for (let k = 0; k < 5; k++) {
+    const r = y + 1 + k * 2;
+    f.limb(x - 3, r, x + 4, r + 2, 1, C.rib, C.rib);
+  }
+  f.rect(x + 4, y + 2, 1, 7, C.bone); // sternum
+  f.rect(x - 1, y, 5, 1, C.bone); // collarbone...
+  f.rect(x - 1, y, 2, 2, C.bone); // ...and the shoulder
+  f.set(x - 1, y, C.boneLight);
+}
+
+/** The whole spine in profile, from the neck down to the pelvis: a gentle S, vertebra by vertebra. */
+function spineSide(f: PixelFrame, x: number, y0: number, y1: number): void {
+  for (let r = y0; r <= y1; r++) {
+    const cx = x + (r > y0 + 12 ? 1 : 0); // the lower back curves forward
+    f.rect(cx, r, 2, 1, (r - y0) % 2 ? C.boneDark : C.bone);
+  }
+}
+
+/** Belt in profile (buckle at the front, holster on the near hip), and the pelvis under it. y = the belt's top row. */
+function hipsSide(f: PixelFrame, x: number, y: number): void {
+  f.rect(x - 3, y + 2, 7, 2, C.bone); // hip bone
+  f.rect(x + 1, y + 4, 3, 1, C.bone); // pubis, toward the front
+  f.set(x - 3, y + 2, C.boneLight);
+  f.set(x, y + 3, C.socket);
+  f.rect(x - 4, y, 10, 2, C.leather);
+  f.rect(x - 4, y + 1, 10, 1, C.leatherDark);
+  f.rect(x + 4, y, 2, 2, C.brass); // buckle
+  f.rect(x - 2, y + 1, 3, 6, C.leather); // holster...
+  f.rect(x - 2, y + 1, 1, 6, C.leatherDark);
+  f.rect(x - 3, y - 1, 2, 2, C.wood); // ...the revolver's grip pointing back
+}
+
+/** The bandana in profile: knotted at the back of the neck, the triangle hanging under the jaw. */
+function bandanaSide(f: PixelFrame, x: number, y: number): void {
+  f.rect(x - 1, y, 5, 1, C.bandana);
+  f.rect(x + 1, y + 1, 3, 1, C.bandana);
+  f.rect(x + 2, y + 2, 2, 1, C.bandanaDark);
+  f.set(x + 3, y + 3, C.bandanaDark);
+  f.set(x - 2, y + 1, C.bandanaDark); // the knot's tail
+}
+
+/** A boot in profile, toe to the right. (ax, ay) = the ankle (top of the shaft); 10 rows tall. */
+function bootSide(f: PixelFrame, ax: number, ay: number, far: boolean): void {
+  const c = far ? C.leatherDark : C.leather;
+  const d = far ? C.hatDark : C.leatherDark;
+  f.rect(ax - 2, ay, 4, 6, c); // shaft
+  f.rect(ax - 2, ay, 4, 1, d); // the opening
+  f.rect(ax - 2, ay + 6, 6, 1, c); // foot...
+  f.rect(ax - 2, ay + 7, 7, 2, c); // ...pointed toe forward
+  f.rect(ax - 2, ay + 9, 2, 1, d); // heel
+  f.rect(ax + 1, ay + 9, 4, 1, d); // sole (a gap under the arch)
+  if (!far) {
+    f.rect(ax - 1, ay + 1, 1, 5, C.hatLight);
+    f.set(ax - 3, ay + 8, C.brassLight); // spur, at the back of the heel
+  }
+}
+
+/** A leg in profile: thigh, knee, shin, boot. `far` = the other leg, behind, darker. */
+function legSide(f: PixelFrame, hip: Pt, knee: Pt, ankle: Pt, far: boolean): void {
+  bone(f, hip[0], hip[1], knee[0], knee[1], far);
+  bone(f, knee[0], knee[1], ankle[0], ankle[1], far);
+  joint(f, knee[0], knee[1], far);
+  bootSide(f, ankle[0], ankle[1], far);
 }
 
 /**
@@ -358,7 +538,7 @@ type Grip = 'port' | 'aim' | 'lever' | 'recoil';
 
 /** Standing: idle (port arms) or with the rifle shouldered. `bob` lowers the upper body (idle sway). */
 function paintStanding(grip: Grip, bob: number): PixelFrame {
-  const f = new PixelFrame(FRAME_W, FRAME_H);
+  const f = new PixelFrame(NARROW_W, FRAME_H);
   const b = bob;
   const aiming = grip !== 'port';
   // Aiming, the head leans onto the stock (one pixel to its right, one down);
@@ -424,7 +604,7 @@ function boneDust(f: PixelFrame, seed: number, x: number, y: number, w: number, 
  * instant), 1 = falling apart, 2 = a pile of bones on the ground.
  */
 function paintDeath(stage: 0 | 1 | 2, headless: boolean): PixelFrame {
-  const f = new PixelFrame(FRAME_W, FRAME_H);
+  const f = new PixelFrame(NARROW_W, FRAME_H);
   if (stage === 0) {
     boot(f, 14, 60, -1);
     boot(f, 22, 60, 1);
@@ -497,20 +677,240 @@ function paintDeath(stage: 0 | 1 | 2, headless: boolean): PixelFrame {
   return f;
 }
 
-/** All the frames, in sheet order. Pure data: no DOM, so a preview script can paint them too. */
+// --- Walking and climbing: front and back -------------------------------------------
+
+/** A pose for the front and back views with the rifle slung: walking and climbing. */
+interface UprightPose {
+  /** The upper body lowered by this many px (the bounce of the walk). */
+  bob: number;
+  /** Each foot lifted by this many px (walking: the foot that steps; climbing: the knee pulled up). L = our left. */
+  liftL: number;
+  liftR: number;
+  /** Knee pushed outward by this many px (climbing: frog legs against the wall). */
+  kneeOutL: number;
+  kneeOutR: number;
+  /** Elbows and hands (the bob is added for you). */
+  elbowL: Pt;
+  handL: Pt;
+  elbowR: Pt;
+  handR: Pt;
+}
+
+/**
+ * Front or back with the Winchester slung on its back. Painted NARROW_W wide,
+ * with the same body as paintStanding. From the front the rifle is BEHIND the
+ * body (painted first, the body covers its middle: you see the muzzle over a
+ * shoulder and the butt under a hip); from behind it's ON TOP, across the back.
+ */
+function paintUpright(view: 'front' | 'back', p: UprightPose): PixelFrame {
+  const f = new PixelFrame(NARROW_W, FRAME_H);
+  const b = p.bob;
+  const bobbed = (q: Pt): Pt => [q[0], q[1] + b];
+  if (view === 'front') rifleSide(f, 31, 46 + b, 8, 13 + b);
+  // Legs: a lifted foot is higher, and its knee comes up (and out, climbing).
+  const legs: [number, number, number, -1 | 1][] = [
+    [16, p.liftL, p.kneeOutL, -1],
+    [24, p.liftR, p.kneeOutR, 1],
+  ];
+  for (const [x, lift, out, side] of legs) {
+    const foot = 60 - lift;
+    const kx = x + side * out;
+    const ky = 54 - lift;
+    bone(f, kx, ky + 1, x, foot);
+    bone(f, x, 43 + b, kx, ky);
+    joint(f, kx, ky);
+    if (view === 'front') boot(f, x - 2, foot, side);
+    else bootBack(f, x - 2, foot);
+  }
+  hips(f, 20, 37 + b, view === 'back');
+  spine(f, 20, 32 + b, 36 + b);
+  if (view === 'front') {
+    ribcage(f, 20, 21 + b);
+    bandolier(f, 26, 22 + b, 14, 36 + b);
+    bandana(f, 20, 20 + b);
+    skull(f, 15, 7 + b, 'calm');
+  } else {
+    ribcageBack(f, 20, 21 + b);
+    rifleSide(f, 9, 46 + b, 32, 13 + b);
+    bandanaBack(f, 20, 20 + b);
+    skullBack(f, 15, 7 + b);
+  }
+  hat(f, 10, 7 + b);
+  arm(f, [12, 22 + b], bobbed(p.elbowL), bobbed(p.handL));
+  arm(f, [28, 22 + b], bobbed(p.elbowR), bobbed(p.handR));
+  hand(f, ...bobbed(p.handL));
+  hand(f, ...bobbed(p.handR));
+  f.outline(C.outline);
+  return f;
+}
+
+/**
+ * Walk cycle, front and back: step with the left foot (the right hand swings
+ * forward: arms go opposite to legs), pass (both feet down, the body a pixel
+ * lower), step with the right, pass.
+ */
+const WALK: UprightPose[] = [
+  { bob: 0, liftL: 3, liftR: 0, kneeOutL: 0, kneeOutR: 0, elbowL: [10, 30], handL: [9, 37], elbowR: [30, 29], handR: [29, 35] },
+  { bob: 1, liftL: 0, liftR: 0, kneeOutL: 0, kneeOutR: 0, elbowL: [10, 30], handL: [10, 37], elbowR: [30, 30], handR: [30, 37] },
+  { bob: 0, liftL: 0, liftR: 3, kneeOutL: 0, kneeOutR: 0, elbowL: [10, 29], handL: [11, 35], elbowR: [30, 30], handR: [31, 37] },
+  { bob: 1, liftL: 0, liftR: 0, kneeOutL: 0, kneeOutR: 0, elbowL: [10, 30], handL: [10, 37], elbowR: [30, 30], handR: [30, 37] },
+];
+
+/** Climbing, front and back: one hand high and the opposite knee pulled up, then the other side. */
+const CLIMB: UprightPose[] = [
+  { bob: 0, liftL: 8, liftR: 0, kneeOutL: 5, kneeOutR: 0, elbowL: [7, 15], handL: [9, 6], elbowR: [32, 19], handR: [32, 13] },
+  { bob: 0, liftL: 0, liftR: 8, kneeOutL: 0, kneeOutR: 5, elbowL: [8, 19], handL: [8, 13], elbowR: [33, 15], handR: [31, 6] },
+];
+
+// --- Walking, aiming and climbing: in profile ------------------------------------------
+
+/** A pose for the side view (facing right). The "far" limbs are on the other side of the body: behind it, darker. */
+interface SidePose {
+  /** The whole body lowered by this many px (legs spread = a bit lower). */
+  bob: number;
+  nearKnee: Pt;
+  nearAnkle: Pt;
+  farKnee: Pt;
+  farAnkle: Pt;
+  nearElbow: Pt;
+  nearHand: Pt;
+  farElbow: Pt;
+  farHand: Pt;
+  /** The rifle slung on its back, at the shoulder, or at the shoulder with the lever thrown. */
+  grip: 'slung' | 'aim' | 'lever';
+}
+
+/**
+ * In profile, facing right. The order is what gives depth: far leg and far
+ * arm, then the body, then the rifle, then near leg and near arm on top.
+ */
+function paintSide(p: SidePose): PixelFrame {
+  const f = new PixelFrame(FRAME_W, FRAME_H);
+  const b = p.bob;
+  const x = FRAME_W / 2; // the body's center column
+  const hip: Pt = [x, 42 + b];
+  const shoulder: Pt = [x, 22 + b];
+  const aiming = p.grip !== 'slung';
+  if (!aiming) rifleSide(f, x - 5, 40 + b, x - 11, 6 + b); // slung: behind the back, the muzzle up past the hat
+  legSide(f, hip, p.farKnee, p.farAnkle, true);
+  arm(f, shoulder, p.farElbow, p.farHand, true);
+  hand(f, ...p.farHand, true);
+  spineSide(f, x - 4, 19 + b, 38 + b);
+  hipsSide(f, x, 37 + b);
+  ribcageSide(f, x, 21 + b);
+  bandanaSide(f, x - 1, 20 + b);
+  // Aiming, the head leans forward and down onto the stock: the eye behind the sights.
+  const sx = aiming ? x - 2 : x - 4;
+  const sy = (aiming ? 9 : 7) + b;
+  skullSide(f, sx, sy, aiming ? 'aim' : 'calm');
+  hat(f, sx - 5, sy);
+  if (aiming) {
+    // Shouldered, level, the bore at 1.45 m (rows 23-24), the muzzle at SIDE_MUZZLE_X.
+    rifleSide(f, x - 3, 24, SIDE_MUZZLE_X, 23);
+    if (p.grip === 'lever') {
+      f.rect(x + 5, 26, 1, 4, C.iron); // the lever thrown open
+      f.rect(x + 9, 26, 1, 4, C.iron);
+      f.rect(x + 5, 30, 5, 1, C.iron);
+      f.set(x + 11, 16, C.brassLight); // the spent shell, flying
+      f.set(x + 12, 15, C.brass);
+    }
+  }
+  legSide(f, hip, p.nearKnee, p.nearAnkle, false);
+  arm(f, shoulder, p.nearElbow, p.nearHand);
+  hand(f, ...p.nearHand);
+  f.outline(C.outline);
+  return f;
+}
+
+/**
+ * Walk cycle in profile: contact (legs apart, the body a pixel lower), passing
+ * (one leg straight under the body, the other swinging forward with the foot
+ * up), and the same with the legs swapped. Arms swing opposite to the legs.
+ */
+const SIDE_WALK: SidePose[] = [
+  {
+    bob: 1, grip: 'slung',
+    nearKnee: [33, 52], nearAnkle: [35, 60], farKnee: [28, 52], farAnkle: [25, 60],
+    nearElbow: [28, 31], nearHand: [26, 37], farElbow: [32, 31], farHand: [35, 36],
+  },
+  {
+    bob: 0, grip: 'slung',
+    nearKnee: [30, 52], nearAnkle: [30, 60], farKnee: [32, 50], farAnkle: [28, 56],
+    nearElbow: [30, 30], nearHand: [31, 37], farElbow: [30, 30], farHand: [30, 37],
+  },
+  {
+    bob: 1, grip: 'slung',
+    nearKnee: [28, 52], nearAnkle: [25, 60], farKnee: [33, 52], farAnkle: [35, 60],
+    nearElbow: [32, 31], nearHand: [35, 36], farElbow: [28, 31], farHand: [26, 37],
+  },
+  {
+    bob: 0, grip: 'slung',
+    nearKnee: [32, 50], nearAnkle: [28, 56], farKnee: [30, 52], farAnkle: [30, 60],
+    nearElbow: [30, 30], nearHand: [31, 37], farElbow: [30, 30], farHand: [30, 37],
+  },
+];
+
+/** Aiming in profile: feet apart, rifle level at the shoulder, far hand under the forend, near hand on the grip. */
+const SIDE_AIM: SidePose = {
+  bob: 0, grip: 'aim',
+  nearKnee: [32, 52], nearAnkle: [34, 60], farKnee: [28, 52], farAnkle: [25, 60],
+  nearElbow: [28, 29], nearHand: [37, 27], farElbow: [35, 28], farHand: [44, 26],
+};
+/** The lock in profile: the near hand down on the open lever. */
+const SIDE_LEVER: SidePose = { ...SIDE_AIM, grip: 'lever', nearElbow: [29, 30], nearHand: [37, 31] };
+
+/** Climbing in profile, the wall on the right: one hand high and that knee pulled up, then the other side. */
+const SIDE_CLIMB: SidePose[] = [
+  {
+    bob: 0, grip: 'slung',
+    nearKnee: [35, 46], nearAnkle: [33, 53], farKnee: [31, 52], farAnkle: [31, 60],
+    nearElbow: [34, 16], nearHand: [37, 10], farElbow: [34, 26], farHand: [37, 19],
+  },
+  {
+    bob: 0, grip: 'slung',
+    nearKnee: [31, 52], nearAnkle: [31, 60], farKnee: [35, 46], farAnkle: [33, 53],
+    nearElbow: [34, 26], nearHand: [37, 19], farElbow: [34, 16], farHand: [37, 10],
+  },
+];
+
+/** Centers a frame painted NARROW_W wide into a FRAME_W one: a sheet needs all its frames the same size. */
+function widen(f: PixelFrame): PixelFrame {
+  const out = new PixelFrame(FRAME_W, FRAME_H);
+  const dx = (FRAME_W - f.width) / 2;
+  for (let y = 0; y < f.height; y++) {
+    for (let x = 0; x < f.width; x++) {
+      const c = f.get(x, y);
+      if (c !== -1) out.set(x + dx, y, c, f.glow[y * f.width + x] === 1);
+    }
+  }
+  return out;
+}
+
+/** All the frames, in sheet order (see FRAMES). Pure data: no DOM, so a preview script can paint them too. */
 export function paintSharpshooterFrames(): PixelFrame[] {
-  return [
-    paintStanding('port', 0),
+  const front = [
+    paintStanding('port', 0), // 0-1
     paintStanding('port', 1),
-    paintStanding('aim', 0),
-    paintStanding('lever', 0),
-    paintStanding('recoil', 0),
-    paintDeath(0, false),
+    paintStanding('aim', 0), // 2
+    paintStanding('lever', 0), // 3
+    paintStanding('recoil', 0), // 4
+    paintDeath(0, false), // 5-7
     paintDeath(1, false),
     paintDeath(2, false),
-    paintDeath(0, true),
+    paintDeath(0, true), // 8-10
     paintDeath(1, true),
     paintDeath(2, true),
+  ];
+  return [
+    ...front.map(widen),
+    ...WALK.map((p) => widen(paintUpright('front', p))), // 11-14
+    ...SIDE_WALK.map(paintSide), // 15-18
+    paintSide(SIDE_AIM), // 19
+    paintSide(SIDE_LEVER), // 20
+    ...WALK.map((p) => widen(paintUpright('back', p))), // 21-24
+    ...CLIMB.map((p) => widen(paintUpright('back', p))), // 25-26
+    ...SIDE_CLIMB.map(paintSide), // 27-28
+    ...CLIMB.map((p) => widen(paintUpright('front', p))), // 29-30
   ];
 }
 

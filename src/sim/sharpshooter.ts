@@ -44,7 +44,7 @@ import type { World } from './world';
  * belly. 0.1 m keeps the two together from any angle, and keeps the muzzle
  * inside its collider (never inside a wall it stands against).
  */
-const MUZZLE_FORWARD = 0.1;
+export const MUZZLE_FORWARD = 0.1;
 /** On the ground it stops quickly (pushed by a kick, it slides a bit), 1/s. */
 const GROUND_FRICTION = 8;
 /** Walking: how quickly it reaches its speed or turns (1/s, like ghoulAccel). */
@@ -312,6 +312,14 @@ function stepMove(s: SharpshooterEntity, game: GameState, world: World, graph: N
       s.climbFrom = s.navNode;
       s.climbTo = link.to;
       s.climbTicks = 0;
+      // Facing the wall (from the foot of it toward the top): the renderer
+      // picks the view from this, so you see its back if the wall faces you.
+      const d = Math.hypot(t.x - here.x, t.z - here.z);
+      if (d > 0.01) {
+        s.aimX = (t.x - here.x) / d;
+        s.aimY = 0;
+        s.aimZ = (t.z - here.z) / d;
+      }
       return;
     } else if (link.kind === 'vent' && link.via && Math.hypot(link.via.x - s.x, link.via.z - s.z) < 0.25) {
       const vent = ventUnder(world.props, s.x, s.y, s.z);
