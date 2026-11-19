@@ -98,7 +98,7 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
     - `viewmodel.ts`: scena/camera dell'arma, **posa, rinculo, ondeggiamento, bob, ricarica, lampo, calcio** (`viewmodelSettings`)
     - `revolverModel.ts`: modello procedurale del revolver (canna, tamburo, cane, calcio)
     - `kickLeg.ts`: **gamba del calcio**: carica `public/models/leg.glb` (GLTFLoader), lo anima con `AnimationMixer` sincronizzando il fotogramma d'impatto con `kickWindup`
-    - `hands.ts`: **mani a blocchi** (guanti, maniche) e **keyframe del fanning** della mano sinistra
+    - `hands.ts`: **braccia** (carica `public/models/arms.glb`: braccio destro sull'impugnatura, sinistro mosso come un blocco) e **keyframe del fanning** della mano sinistra
   - `hud.ts`: barra della salute, vignetta rossa, **numero dell'ondata, punteggio, scritte di inizio/fine ondata e conto alla rovescia**, riepilogo alla morte
   - `projectiles.ts`: **palle di fuoco nemiche** (sprite pixel art luminoso, scia di braci, scintille e suono all'impatto)
   - `soundPosition.ts`: volume e panning di un suono in base alla posizione rispetto alla camera
@@ -119,6 +119,7 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `setup.sh`: installazione una tantum (venv con `bpy` in `tools/blender/.venv`)
   - `lib.py`: mini-libreria di modellazione: **loft** (anelli di sezione uniti in un tubo), anelli ellittici, box/cilindri/stelle, **texture pixel art** (`Pixels`), materiali con filtro "Closest"
   - `leg.py`: **gamba sinistra con stivale da cowboy**, **low-poly** (pochi lati per sezione, shading piatto, texture 8–32 px) (jeans, gambale con cuciture, punta, tacco cubano, sperone, borchia), **scheletro** (anca → coscia → stinco → piede), **animazione del calcio** con IK poi "bakata", render di anteprima, export. **Proporzioni** (`LEG_STRETCH` = lunghezza gamba, `BOOT_SCALE` = grandezza stivale), tabelle delle forme (`FOOT`, `SOLE_TOP`), pose del calcio (`key_foot`, `KICK_HIP`) e fotogrammi (`IMPACT_FRAME` ecc.) in cima
+  - `arms.py`: **braccia** (guanti con dita a 3 falangi e polsino a gauntlet, maniche dello spolverino), scheletro con dita, **posa**: mano destra stretta sull'impugnatura (IK per polso/gomito, `curl` per le dita), mano sinistra aperta con l'origine al centro del palmo; la posa viene "congelata" come posa di riposo. Proporzioni della mano (`PALM_*`, `FINGERS`, `THUMB`) e posizione dell'impugnatura (`GRIP_*`) in cima
   - `previews/`: render di anteprima (non nel repo)
 - `public/models/`: **modelli glTF (.glb) generati** da `tools/blender/` (nel repo, così il sito non ha bisogno di Blender)
 - `public/textures/`: texture PNG (servite così come sono da Vite su `/textures/...`)

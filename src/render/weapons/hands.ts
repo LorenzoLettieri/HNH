@@ -1,81 +1,46 @@
-// Blocky hands (Minecraft style): leather gloves and the sleeves of a duster
-// coat, all made of boxes. The right hand holds the revolver's grip; the left
-// hand "fans" the hammer at every shot — the classic western gunslinger move.
+// The gunslinger's arms: leather gloves with gauntlet cuffs and the sleeves of
+// a duster coat. A real model with a skeleton, made in Blender by
+// tools/blender/arms.py and exported as public/models/arms.glb.
+// The right hand is wrapped around the revolver's grip; the left hand "fans"
+// the hammer at every shot — the classic western gunslinger move. For now the
+// left arm is moved as a whole by the keyframes below (the skeleton is in the
+// file, ready for real animations: fingers, reload...).
 import * as THREE from 'three';
-import { PixelCanvas, seededRandom, shade } from '../props/pixelCanvas';
-
-/** Worn leather glove. */
-function gloveTexture(): THREE.Texture {
-  const c = new PixelCanvas(8, 8);
-  const rand = seededRandom(31);
-  c.fill(0x6a4428);
-  c.noise(rand, 0.25);
-  for (let x = 0; x < 8; x++) c.set(x, 0, shade(0x6a4428, 0.6)); // seam at the cuff
-  c.set(2, 4, 0x8a6040);
-  c.set(5, 2, 0x8a6040); // scuffs
-  return c.toTexture();
-}
-
-/** Dusty coat sleeve, with a darker cuff band. */
-function sleeveTexture(): THREE.Texture {
-  const c = new PixelCanvas(8, 16);
-  const rand = seededRandom(32);
-  c.fill(0x4a4038);
-  c.noise(rand, 0.2);
-  for (let y = 0; y < 16; y += 4) for (let x = 0; x < 8; x++) if (rand() < 0.3) c.set(x, y, 0x3a3028); // fabric folds
-  for (let x = 0; x < 8; x++) {
-    c.set(x, 0, 0x2a2420);
-    c.set(x, 1, 0x2a2420); // cuff
-  }
-  return c.toTexture();
-}
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 export interface Hands {
   /** Goes inside the gun's group: holds the grip, recoils with the gun. */
   right: THREE.Group;
-  /** Goes inside the viewmodel holder: moved by the fanning animation. */
+  /** Goes inside the viewmodel holder: moved by the fanning animation (origin = palm center). */
   left: THREE.Group;
 }
 
+/**
+ * Returns the two groups right away; the models are added inside them when
+ * the file has loaded (asynchronous, like fetch()).
+ * The model's coordinates are already the holder's (see arms.py), so the
+ * right arm just goes in at the origin of the gun's group.
+ */
 export function createHands(): Hands {
-  const glove = new THREE.MeshStandardMaterial({ map: gloveTexture(), roughness: 0.8 });
-  const sleeve = new THREE.MeshStandardMaterial({ map: sleeveTexture(), roughness: 1 });
-  const box = (sx: number, sy: number, sz: number, m: THREE.Material) =>
-    new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), m);
-
-  // --- Right hand, wrapped around the grip (grip is tilted back by 0.35 rad) ---
   const right = new THREE.Group();
-  right.position.set(0, -0.03, 0.032);
-  right.rotation.x = 0.35; // same angle as the grip
-  const palm = box(0.034, 0.06, 0.05, glove); // fist around the grip
-  palm.position.set(0.004, 0, 0.004);
-  right.add(palm);
-  const thumb = box(0.012, 0.012, 0.03, glove); // thumb resting on the frame
-  thumb.position.set(-0.016, 0.03, -0.012);
-  right.add(thumb);
-  // Forearm: goes back and down, out of the screen.
-  const rightArm = box(0.048, 0.048, 0.3, sleeve);
-  rightArm.position.set(0.012, -0.03, 0.17);
-  rightArm.rotation.x = -0.45;
-  right.add(rightArm);
-
-  // --- Left hand: flat palm (facing down) + forearm going back-left ---
   const left = new THREE.Group();
-  const leftPalm = box(0.05, 0.018, 0.07, glove);
-  left.add(leftPalm);
-  const leftThumb = box(0.012, 0.012, 0.03, glove);
-  leftThumb.position.set(0.028, -0.004, 0.005);
-  left.add(leftThumb);
-  // The forearm must leave the screen toward the bottom-left, like an arm
-  // coming from off-camera. A box is built along Z; rotating it around X
-  // tilts its back end DOWN, around Y swings it to the LEFT.
-  // Nearly horizontal: rotating around Y by ~-1.25 rad turns the box (built
-  // along Z) so its far end points LEFT; a small X tilt lowers it a bit.
-  const leftArm = box(0.04, 0.04, 0.24, sleeve);
-  leftArm.position.set(-0.115, -0.025, 0.04);
-  leftArm.rotation.set(0.2, -1.25, 0);
-  left.add(leftArm);
-
+  new GLTFLoader().load(`${import.meta.env.BASE_URL}models/arms.glb`, (gltf) => {
+    gltf.scene.traverse((o) => {
+      if (!(o instanceof THREE.Mesh)) return;
+      // Skinned meshes: don't let Three.js skip them because of a stale bounding box.
+      o.frustumCulled = false;
+      const m = o.material as THREE.MeshStandardMaterial;
+      if (m.map) {
+        m.map.magFilter = THREE.NearestFilter;
+        m.map.minFilter = THREE.NearestFilter;
+        m.map.generateMipmaps = false;
+      }
+    });
+    const armR = gltf.scene.getObjectByName('Arm_R');
+    const armL = gltf.scene.getObjectByName('Arm_L');
+    if (armR) right.add(armR);
+    if (armL) left.add(armL);
+  });
   return { right, left };
 }
 
