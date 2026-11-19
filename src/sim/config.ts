@@ -591,6 +591,23 @@ export const tuning = {
    * running), when you're moving. 0 = anywhere. High = laps lead you into the horde.
    */
   spawnAheadChance: 0.7,
+
+  // --- Style meter (src/sim/style.ts) ---
+  /**
+   * Seconds you have to do something stylish again before the chain BREAKS
+   * and the style drops to zero at once. Short = harsh, long = forgiving.
+   */
+  styleChainTime: 3,
+  /** Style points to climb one rank: D → C → B → A → S → SS → HIGH NOON (6 steps = 1200). */
+  styleRankPoints: 200,
+  /** Style points for every hit on an enemy (a shotgun blast counts once per enemy). */
+  styleHit: 5,
+  /** Extra style points for a kill (a one-shot kill = styleHit + styleKill). */
+  styleKill: 40,
+  /** Extra style points if the kill was a headshot (on top of styleKill). */
+  styleHeadshotKill: 30,
+  /** Style points lost per point of damage taken (ghoul claw 20 → 60 points). */
+  styleHurtPerDamage: 3,
 };
 
 /** Converts a duration in seconds to a whole number of ticks. */

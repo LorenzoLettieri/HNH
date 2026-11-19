@@ -8,6 +8,7 @@ import { TICK_DT, tuning } from './sim/config';
 import { copyPlayer, createPlayer, horizontalSpeed } from './sim/player';
 import { createGame, spawnBullInFront, spawnEyebatInFront, spawnHoundInFront, dropPickupsInFront, stepGame } from './sim/game';
 import { jumpToWave } from './sim/waves';
+import { STYLE_RANKS, styleRank } from './sim/style';
 import { currentAmmo, magazineSize } from './sim/weapon';
 import { DEFAULT_LEVEL, LEVELS } from './levels';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
@@ -310,8 +311,15 @@ renderer.setAnimationLoop((now: number) => {
   sky.position.copy(camera.position);
 
   const state = player.sliding ? 'SLIDE' : player.onGround ? (player.crouched ? 'CROUCH' : 'GROUND') : 'AIR';
+  // Style meter, raw numbers for tuning (the real meter is drawn by render/styleMeter.ts).
+  const style = game.style;
+  const styleText =
+    style.chainTicks > 0
+      ? `style ${STYLE_RANKS[styleRank(style.points)].letter}  ${style.points} pts  chain ${(style.chainTicks * TICK_DT).toFixed(1)} s`
+      : 'style -';
   hud.textContent =
     `${horizontalSpeed(player).toFixed(1)} m/s  ${state}  walljumps ${player.wallJumpsLeft}\n` +
+    `${styleText}\n` +
     perfText(frameTime, game.entities.filter(isEnemy).length);
 
   // Weapon events of this frame → effects and sounds.

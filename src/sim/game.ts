@@ -14,6 +14,7 @@ import { createPlayer, respawn, stepPlayer, type PlayerState } from './player';
 import { stepWeapon } from './weapon';
 import { stepKick } from './kick';
 import { dropFromKills, stepPickups, type Pickup } from './pickups';
+import { createStyle, stepStyle, type StyleState } from './style';
 import type { World } from './world';
 import { secondsToTicks, tuning } from './config';
 
@@ -25,6 +26,8 @@ export interface GameState {
   nextEntityId: number;
   wave: WaveState;
   stats: Stats;
+  /** The style meter (chain of stylish actions), see style.ts. */
+  style: StyleState;
   /** Navigation goal: the graph node the player stands on (the ghouls go there). */
   navGoal: number;
   /** The same, on the graph for big bodies (bulls): another graph, other node numbers. */
@@ -50,6 +53,7 @@ export function createGame(world: World, seed = 1): GameState {
     nextEntityId: entities.length + 1,
     wave: createWaveState(),
     stats: { kills: 0, score: 0 },
+    style: createStyle(),
     navGoal: -1,
     navGoalBig: -1,
     projectiles: [],
@@ -62,7 +66,8 @@ export function createGame(world: World, seed = 1): GameState {
  * One tick of the whole game, always in the same order:
  * 1. the player moves; 2. the player's weapon fires (and hits), the boot kicks;
  * 3. targets and enemies update; 4. enemy projectiles fly (and hit);
- * 5. the wave system spawns enemies; 6. pickups age and get collected.
+ * 5. the wave system spawns enemies; 6. pickups age and get collected;
+ * 7. the style meter reads everything that happened in the tick.
  * Things that happened go into `events`.
  */
 export function stepGame(
@@ -72,6 +77,8 @@ export function stepGame(
   dt: number,
   events: SimEvent[],
 ): void {
+  // Where this tick's events start: `events` may already hold earlier ticks of the same frame.
+  const tickEvents = events.length;
   // Remember where every entity was, for the renderer's interpolation.
   for (const e of game.entities) {
     e.px = e.x;
@@ -113,6 +120,8 @@ export function stepGame(
   game.projectiles = stepProjectiles(game.projectiles, game.player, world, dt, events);
   stepWaves(game, world, events);
   stepPickups(game, events);
+  // Last: it needs the whole tick (your hits come first, the enemies' hits on you later).
+  stepStyle(game.style, events, tickEvents);
 
   // Dead: game over, CoD style. Report how far you got, then start over from
   // wave 1: back to the spawn, the horde is cleared, stats reset.
@@ -124,6 +133,7 @@ export function stepGame(
     game.pickups = [];
     game.wave = createWaveState();
     game.stats = { kills: 0, score: 0 };
+    game.style = createStyle();
   }
   game.tick++;
 }

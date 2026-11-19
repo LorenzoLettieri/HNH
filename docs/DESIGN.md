@@ -49,14 +49,37 @@ finale unico, "HIGH NOON". [DA DECIDERE: nomi definitivi]
 - **Varietà**: armi diverse, nemici diversi, modi diversi. Ripetere la stessa azione rende sempre meno.
 - Schivate ravvicinate di proiettili (bonus "near miss").
 
-### Cosa lo fa scendere
-- Il tempo (decadimento costante, più veloce ai rank alti).
-- Stare fermi o lenti: il decadimento accelera.
-- Subire danni: perdi punti di stile.
+### Cosa lo fa scendere [DECISO: la catena si spezza]
+- Lo stile è una **catena**, come le combo di Tony Hawk: ogni azione che dà stile aggiunge punti e
+  **riavvia un timer** di pochi secondi (`styleChainTime`, 3 s). Se scade senza che tu abbia fatto
+  niente di stiloso, la catena **si spezza** e lo stile **torna a zero di colpo**. Niente calo graduale
+  (scartato: il modello DMC/ULTRAKILL, in cui la barra cala piano un rank alla volta).
+- Stare fermi o lenti, quando arriverà lo stile dal movimento, vuol dire non alimentare la catena.
+- Subire danni: perdi punti in proporzione al danno (`styleHurtPerDamage`), ma la catena non si spezza.
+- [DA DECIDERE] Timer più corto ai rank alti?
+
+### Stato [FATTO: passo 1]
+`src/sim/style.ts`: punti, catena e rank nella simulazione; per ora danno stile solo i colpi (5) e le
+uccisioni (+40, +30 se alla testa). Un rank ogni **200 punti** (HIGH NOON a 1200). Numeri grezzi nella
+riga di debug in alto a sinistra; valori nel pannello debug (cartella "Style").
+Prova: 25 uccisioni di fila, una al secondo = SS (1185 punti), a un passo da HIGH NOON.
+
+**A schermo** [FATTO: passo 2] (`src/render/styleMeter.ts`): sul lato destro, leggermente storta come un
+manifesto inchiodato, la **lettera del rank** in **Rye** (font western da "wanted", licenza OFL), il nome
+sotto e una **barra** col progresso dentro il rank (piena a HIGH NOON). I colori seguono il **metallo che si
+scalda nella forgia**: D grigio cenere, C rosso spento, B rosso, A arancio, S giallo, SS giallo chiaro,
+HIGH NOON bianco incandescente con l'alone che pulsa; l'alone cresce col rank. Appare quando parte una
+catena, sparisce quando si spezza (resta la lettera di prima mentre svanisce). Salire di rank = la lettera
+cala come un **timbro**; perdere un rank per i danni = la lettera **trema**.
+[DA DECIDERE] Mostrare anche il timer della catena (quanto manca prima che si spezzi).
 
 ### A cosa serve
-- **Moltiplicatore** su anime/XP raccolte e punteggio.
-- Bonus di danno ai rank alti.
+- **Moltiplicatore** sul **punteggio** e sul **vildenaro** guadagnato (la moneta: vedi §5, Economia).
+- **Climax "HIGH NOON"** [DECISO]: quando raggiungi il rank massimo, per **5 s** le armi non consumano
+  i colpi del caricatore (niente ricarica: spari e basta). Va annunciato forte (scritta, suono, tinta
+  dello schermo, magari la campana della chiesa). **Finito il climax lo stile si azzera**: si riparte
+  da D, quindi HIGH NOON è un evento da inseguire, non uno stato in cui restare.
+- [DA DECIDERE] Bonus di danno ai rank alti (forse superato dal climax).
 - [DA DECIDERE] Eventuale bonus di drop della salute ai rank alti.
 
 ### Risorse dall'aggressività [PROPOSTO]
@@ -333,18 +356,44 @@ Il caso usa un generatore con **seed** (deterministico: stesso seed = stessa par
   i tuoi occhi e il punto), tra 15 e 40 m, e nel 70% dei casi **davanti a te** (entro 60° dalla
   direzione in cui corri). Girare in tondo non vuol più dire trascinarsi l'orda dietro: ti porta
   dritto nella prossima.
-- **Punteggio** stile CoD: 10 per colpo, 100 per uccisione.
-  [DA DECIDERE] cosa si compra con i punti (armi, potenziamenti, "santuari" sulla mappa).
+- **Punteggio** stile CoD: 10 per colpo, 100 per uccisione. **Non si spende**: misura solo quanto
+  hai giocato bene (riepilogo alla morte, in futuro record e classifica).
 
-Elementi indipendenti dalla scelta:
-- I nemici lasciano **anime** (XP/valuta) da raccogliere passandoci sopra; svaniscono dopo
-  qualche secondo → altro motivo per muoversi.
-- **Potenziamenti** che includono anche il **movimento** (wall jump extra, doppio salto, scatto,
-  slide più lungo, lazo più lungo).
+### Economia: il vildenaro [DECISO]
+Punteggio e moneta sono **separati**:
+- **Punteggio**: quanto hai giocato bene.
+- **Vildenaro**: la moneta della partita. Si spende negli **shop** per **comprare armi e potenziamenti**.
+- **Lo Stile moltiplica entrambi**: chi si muove bene fa più punti *e* diventa più forte prima.
+  È un effetto valanga voluto (pilastro "movimento come potere").
+
+**Shop** [DECISO]
+- Uno o più, in una parte della mappa. Si comprano le **armi** (si parte col solo revolver; la
+  doppietta si compra) e i **potenziamenti**.
+- **Venditore**: un **NPC disegnato come sprite** (stile Doom, come i nemici), a tema. I nemici lo
+  ignorano. [DA DECIDERE] aspetto (idea: mercante infernale col cilindro e un braccio meccanico d'ottone).
+- **Menu che NON mette in pausa**: ti avvicini al venditore, premi **E** e il menu si apre sopra il
+  gioco mentre l'orda continua ad arrivare. **Sempre aperto, anche a metà ondata**: chi vuole comprare
+  durante il round deve farlo in fretta. Funziona uguale in multiplayer (lì il tempo non si può fermare).
+- [PROPOSTO] Usare edifici che esistono già: **armeria** (armi) ed **emporio** (potenziamenti: ci si
+  entra già, e c'è un bancone con la lanterna). Lo shop non è un rifugio: i ghoul ti seguono dentro.
+- **Menu col mouse libero** [DECISO], come il buy menu di CS:GO: premendo E il cursore si libera e si
+  clicca; intanto non miri. Tecnico: oggi il gioco va in pausa quando il mouse non è catturato
+  (Pointer Lock), quindi il menu dello shop sarà un'eccezione a quella regola.
+
+**Vildenaro come drop** [DECISO]
+- **Monete lasciate dai nemici**, raccolte passandoci sopra (prendono il posto delle vecchie "anime"):
+  altro motivo per muoversi. Si riusa il sistema dei raccoglibili, ma le monete si raccolgono
+  **sempre** (non c'è un massimo) e spariscono anche loro dopo un po'.
+- [DA DECIDERE] Quante monete per nemico (in base al peso?) e se lo Stile moltiplica il valore al
+  momento dell'uccisione o della raccolta.
+
+[DA DECIDERE]
+- Listino: quali potenziamenti (danno, caricatore, ricarica, salute massima; **movimento**: wall jump
+  extra, doppio salto, scatto, slide più lungo, lazo più lungo) e prezzi che crescono.
+- Si comprano anche le munizioni?
+
+Altro, indipendente dallo shop:
 - **Eventi sulla mappa** che spostano il giocatore (altari da attivare, forzieri sui punti alti).
-
-[DA DECIDERE] Tra un'ondata e l'altra: negozio? scelta di potenziamenti? macchinette tipo
-"Perk-a-Cola" sparse per la mappa (a tema: santuari / altari del diavolo)?
 
 ---
 
@@ -362,7 +411,8 @@ futuro **poligono di tiro / tutorial**.
   **Contraccolpo che non frena mai**: sparare indietro ti dà un piccolo boost in avanti, sparare dove stai
   andando non ti rallenta; in aria, sparare verso il basso ti spinge su (annulla la caduta: shotgun jump),
   sparare in alto non ti schiaccia a terra.
-  Per ora **tutte le armi sono disponibili da subito**; poi arriverà un negozio.
+  Per ora **tutte le armi sono disponibili da subito**; poi si compreranno negli **shop** col vildenaro
+  (si parte col solo revolver).
 - **Lazo / rampino** — mobilità (aggancio a punti della mappa) e utilità (tirare a sé i nemici?).
 
 ---
@@ -374,6 +424,16 @@ futuro **poligono di tiro / tutorial**.
 3. **Due nemici prototipo**: avvoltoio (volante) e ghoul che salta (grafo di navigazione).
 4. **Loop minimo**: ondate, anime, salute dalle uccisioni, meter dello stile.
 5. Altri nemici, potenziamenti, lazo, boss.
+
+### Prossimi passi [PROPOSTO, novembre 2026]
+1. **Stile**: punti e catena nella simulazione (numeri nella riga di debug). [FATTO]
+2. Barra e rank dello stile nell'HUD.
+3. Fonti dal movimento (velocità, tempo in aria, wall jump) + premio calante per le azioni ripetute.
+4. **Climax HIGH NOON** (5 s di caricatore infinito).
+5. **Vildenaro**: monete lasciate dai nemici + contatore nell'HUD; lo Stile moltiplica punti e vildenaro.
+6. **Shop**: venditore (sprite), tasto E, menu che non mette in pausa, primo acquisto: la doppietta.
+7. Potenziamenti all'emporio.
+8. Lazo / rampino.
 
 ---
 
