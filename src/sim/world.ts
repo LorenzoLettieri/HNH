@@ -42,6 +42,13 @@ export type Prop =
   | { type: 'grass'; x: number; z: number; radius: number; count: number };
 
 /** A practice target placed in the level (it becomes an entity at game start). */
+/** A point where enemies of the waves can appear (feet position). */
+export interface SpawnPoint {
+  x: number;
+  y: number;
+  z: number;
+}
+
 export interface TargetSpawn {
   x: number;
   y: number;
@@ -59,7 +66,7 @@ export interface World {
   /** Practice targets. Optional: not every level has them. */
   targets?: TargetSpawn[];
   /** Where enemies come into the level from. */
-  enemySpawns?: { x: number; y: number; z: number }[];
+  enemySpawns?: SpawnPoint[];
   /** Where the player (re)appears, feet position. */
   spawn: { x: number; y: number; z: number };
 }

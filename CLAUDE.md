@@ -53,10 +53,10 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `game.ts`: **stato di gioco unico** (`GameState`: giocatore, entità, **proiettili nemici**, ondata, statistiche) e `stepGame()` (un tick di tutto il gioco; game over alla morte)
   - `entities.ts`: **entità colpibili** (bersagli, ghoul, Malocchio): dati, salute, danno, hitbox
   - `ghoul.ts`: **IA del ghoul** (segue il flow field: cammina, salta con traiettoria balistica, si lascia cadere, **si arrampica**; da vicino inseguimento diretto con salto/aggiramento; separazione; artigliata senza fermarsi; **balzo** da 2–6 m con preavviso, tiro d'anticipo e recupero a terra)
-  - `eyebat.ts`: **IA del Malocchio** (occhio-pipistrello volante: orbita attorno al giocatore a distanza e quota fisse, steering 3D, separazione, sale sopra gli ostacoli; **sparo**: macchina a stati volo → carica (preavviso, rallenta) → palla di fuoco, solo con linea di vista; da morto cade)
+  - `eyebat.ts`: **IA del Malocchio** (occhio-pipistrello volante: orbita attorno al giocatore a distanza e quota fisse, steering 3D, separazione, sale sopra gli ostacoli; **sparo**: macchina a stati volo → carica (preavviso, rallenta) → palla di fuoco **mirata dove sarai** (intercettazione), solo con linea di vista; da morto cade)
   - `projectiles.ts`: **proiettili nemici** (palle di fuoco lente: movimento a ogni tick, collisione col livello lungo il segmento percorso, sfera contro il box del giocatore, danno e spinta)
   - `nav.ts`: **grafo di navigazione** generato dai box (nodi ogni 1,5 m, link cammina/salta/cadi/arrampicati/**sfiatatoio** (lancio simulato in anticipo), limiti di salto/caduta/arrampicata) e **flow field** (Dijkstra dal giocatore)
-  - `waves.ts`: **ondate stile CoD Zombies** con **budget di peso**: ogni nemico ha un costo (`ghoulCost`, `eyebatCost` in `config.ts`), ogni ondata un budget (`waveBudget`), e a ogni spawn si sceglie un tipo a caso tra quelli che il budget si può permettere. **`ROSTER`** = elenco dei nemici delle ondate (aggiungere un nemico = aggiungere una riga). Curva di difficoltà (budget, peso vivo insieme, **salute a gradini** `healthForWave`, corridori, intervallo di spawn) e **punteggio**
+  - `waves.ts`: **ondate stile CoD Zombies** con **budget di peso**: ogni nemico ha un costo (`ghoulCost`, `eyebatCost` in `config.ts`), ogni ondata un budget (`waveBudget`), e a ogni spawn si sceglie un tipo a caso tra quelli che il budget si può permettere. **`ROSTER`** = elenco dei nemici delle ondate (aggiungere un nemico = aggiungere una riga). Curva di difficoltà (budget, peso vivo insieme, **salute a gradini** `healthForWave`, corridori, intervallo di spawn), **scelta del punto di spawn** (`pickSpawn`: fuori vista e davanti al giocatore) e **punteggio**
   - `random.ts`: **numeri casuali con seed** (mulberry32): deterministici, stato salvato nel `GameState` (`rng`)
   - `command.ts`: tipo `InputCommand` (cosa vuole fare il giocatore in un tick)
   - `world.ts`: tipi del livello (`Box` AABB, `Prop` decorazioni, `TargetSpawn` bersagli, `World`) e helper `box()`
@@ -71,7 +71,7 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `debugPanel.ts`: **quali valori sono esposti nel pannello** e i loro range; in cima **"Waves"**: scegli un'ondata e "Go to this wave" per provarla subito (`jumpToWave` in `src/sim/waves.ts`)
 - `src/levels/`: **i livelli** (dati puri)
   - `index.ts`: elenco dei livelli e livello di default
-  - `town.ts`: **la cittadina** (mappa principale, greybox): edifici, torri, ponte, piattaforme sospese, sfiatatoi, **bersagli** (`targets`), **punti di spawn dei nemici** (`enemySpawns`); percorsi descritti in cima al file
+  - `town.ts`: **la cittadina** (mappa principale, greybox): edifici, torri, ponte, piattaforme sospese, sfiatatoi, **bersagli** (`targets`), **punti di spawn dei nemici** (`enemySpawns`, sparsi per tutta la mappa); percorsi descritti in cima al file
   - `testArena.ts`: arena di prova 40×40 (piattaforma, scale, corridoio, colonne, casse, trave bassa per lo slide) + **props** (lista `props` in cima al file)
 - `src/render/`: effetti puramente visivi (non toccano la simulazione)
   - `landingDip.ts`: abbassamento camera all'atterraggio (intensità, recupero)

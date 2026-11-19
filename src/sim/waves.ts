@@ -11,7 +11,9 @@ import { createEyebat, createGhoul, isEnemy, type Enemy, type GhoulEntity } from
 import { random, randomInt } from './random';
 import type { SimEvent } from './events';
 import type { GameState } from './game';
-import type { World } from './world';
+import type { SpawnPoint, World } from './world';
+import { raycastBoxes } from './raycast';
+import { currentEyeHeight } from './player';
 
 export interface WaveState {
   /** Current wave (0 = before the first one). */
@@ -97,9 +99,6 @@ function costOf(e: Enemy): number {
   return e.type === 'ghoul' ? tuning.ghoulCost : tuning.eyebatCost;
 }
 
-/** Spawn points closer than this to the player are skipped, meters. */
-const MIN_SPAWN_DISTANCE = 15;
-
 export function stepWaves(game: GameState, world: World, events: SimEvent[]): void {
   // Dead enemies lie on the ground for a while, then are removed from the list.
   // (The eye-bat counts its own stateTicks in stepEyebat: it keeps falling while dead.)
@@ -139,10 +138,9 @@ export function stepWaves(game: GameState, world: World, events: SimEvent[]): vo
     w.spawnCooldownTicks--;
     return;
   }
-  const points = (world.enemySpawns ?? []).filter(
-    (s) => Math.hypot(s.x - game.player.x, s.z - game.player.z) > MIN_SPAWN_DISTANCE,
-  );
-  if (w.budgetLeft === 0 || alive >= maxAlive(w.number) || points.length === 0) return;
+  if (w.budgetLeft === 0 || alive >= maxAlive(w.number)) return;
+  const s = pickSpawn(game, world);
+  if (!s) return;
 
   // Pick a random enemy type among those the remaining budget can afford.
   // (Random from the game's seeded generator: deterministic, see random.ts.)
@@ -152,10 +150,60 @@ export function stepWaves(game: GameState, world: World, events: SimEvent[]): vo
     return;
   }
   const type = affordable[randomInt(game, affordable.length)];
-  const s = points[randomInt(game, points.length)];
   game.entities.push(type.spawn(game, game.nextEntityId++, s.x, s.y, s.z));
   w.budgetLeft -= type.cost();
   w.spawnCooldownTicks = secondsToTicks(spawnInterval(w.number));
+}
+
+/**
+ * Where does the next enemy come from? Like CoD Zombies or Left 4 Dead,
+ * the spawns try to be in a place you can't see, and in FRONT of you:
+ * running in circles shouldn't mean dragging the whole horde behind you,
+ * it should lead you straight into the next one.
+ *
+ * It filters in layers, keeping a layer only if it isn't empty:
+ *   1. not too close (spawnMinDistance), preferably not too far (spawnMaxDistance)
+ *   2. hidden: a wall between your eyes and the spot (no enemies popping up in plain sight)
+ *   3. (spawnAheadChance of the time, if you're moving) ahead of you
+ * then picks at random among what's left.
+ */
+function pickSpawn(game: GameState, world: World): SpawnPoint | null {
+  const p = game.player;
+  const far = (world.enemySpawns ?? []).filter((s) => Math.hypot(s.x - p.x, s.z - p.z) > tuning.spawnMinDistance);
+  if (far.length === 0) return null;
+  let pool = prefer(far, (s) => Math.hypot(s.x - p.x, s.z - p.z) < tuning.spawnMaxDistance);
+  pool = prefer(pool, (s) => !visibleFromPlayer(game, s, world));
+
+  const speed = Math.hypot(p.vx, p.vz);
+  if (speed > 3 && random(game) < tuning.spawnAheadChance) {
+    // "Ahead" = the direction to the spot is close to the direction you're
+    // running: the dot product of the two unit vectors is the cosine of the
+    // angle between them (1 = straight ahead, 0 = to the side). > 0.5 = within 60°.
+    pool = prefer(pool, (s) => {
+      const d = Math.hypot(s.x - p.x, s.z - p.z);
+      return ((s.x - p.x) / d) * (p.vx / speed) + ((s.z - p.z) / d) * (p.vz / speed) > 0.5;
+    });
+  }
+  return pool[randomInt(game, pool.length)];
+}
+
+/** The items that pass the test... unless none do: then all of them (a preference, not a rule). */
+function prefer<T>(items: T[], test: (item: T) => boolean): T[] {
+  const kept = items.filter(test);
+  return kept.length > 0 ? kept : items;
+}
+
+/** Can the player see this spot? A ray from their eyes to its chest height. */
+function visibleFromPlayer(game: GameState, s: SpawnPoint, world: World): boolean {
+  const p = game.player;
+  const ex = p.x;
+  const ey = p.y + currentEyeHeight(p);
+  const ez = p.z;
+  const dx = s.x - ex;
+  const dy = s.y + 1.2 - ey;
+  const dz = s.z - ez;
+  const d = Math.hypot(dx, dy, dz);
+  return raycastBoxes(ex, ey, ez, dx / d, dy / d, dz / d, d, world.boxes) === null;
 }
 
 /**

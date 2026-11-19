@@ -106,6 +106,9 @@ export function createDebugPanel(options: {
   ghoul.number(tuning, 'waveHealthStep', 1, 30, 1);
   ghoul.number(tuning, 'ghoulHeadHeight', 0.8, 1.8, 0.05);
   ghoul.number(tuning, 'waveBreak', 0, 30, 0.5);
+  ghoul.number(tuning, 'spawnMinDistance', 0, 40, 1);
+  ghoul.number(tuning, 'spawnMaxDistance', 10, 100, 1);
+  ghoul.number(tuning, 'spawnAheadChance', 0, 1, 0.05);
   ghoul.number(tuning, 'ghoulRunnerSpeed', 1, 12, 0.1);
   ghoul.number(tuning, 'ghoulSpeed', 0.5, 10, 0.1);
   ghoul.number(tuning, 'ghoulAccel', 1, 20, 0.5);

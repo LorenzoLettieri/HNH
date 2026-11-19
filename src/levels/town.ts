@@ -149,8 +149,11 @@ export const town: World = {
   // Steel practice targets. `rotation` = where the plate faces (same as ?look=):
   // 0 = north, 90 = west, 180 = south, -90 = east. Some are on the rooftops,
   // to give a reason to climb.
-  // Where the ghouls crawl in from: the corners and sides of the canyon.
+  // Where the enemies crawl out from. Spread over the WHOLE town, not just
+  // the edges: the waves pick one ahead of you and out of sight (see
+  // pickSpawn in src/sim/waves.ts), so running laps leads you into a horde.
   enemySpawns: [
+    // Corners and sides of the canyon.
     { x: -36, y: 0, z: -36 },
     { x: 36, y: 0, z: -36 },
     { x: -36, y: 0, z: 36 },
@@ -158,6 +161,26 @@ export const town: World = {
     { x: 0, y: 0, z: -38 },
     { x: -38, y: 0, z: 8 },
     { x: 38, y: 0, z: 18 },
+    { x: 8, y: 0, z: -36 },
+    { x: 0, y: 0, z: 38 },
+    { x: -38, y: 0, z: -20 },
+    { x: -38, y: 0, z: 22 },
+    { x: 40, y: 0, z: -2 },
+    // Behind the buildings (north side).
+    { x: -20, y: 0, z: -30 },
+    { x: -14, y: 0, z: -30 },
+    { x: 0, y: 0, z: -25 },
+    { x: 30, y: 0, z: -26 },
+    // Behind the buildings (south side), near the towers and the cemetery.
+    { x: -18, y: 0, z: 26 },
+    { x: 14, y: 0, z: 34 },
+    { x: 24, y: 0, z: 30 },
+    // Cross Street (both ends), between the wagons, Main Street.
+    { x: -22, y: 0, z: 2 },
+    { x: 24, y: 0, z: 4 },
+    { x: 34, y: 0, z: 0 },
+    { x: 2, y: 0, z: -14 },
+    { x: 2, y: 0, z: 14 },
   ],
   targets: [
     { x: -3, y: 0, z: 27, rotation: 180 }, // near the spawn, facing it

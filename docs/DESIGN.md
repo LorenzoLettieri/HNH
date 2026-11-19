@@ -198,6 +198,11 @@ del Malocchio (es. 2) o aggiungere un'ondata minima di comparsa.
 
 - Peso vivo insieme: 6 + 2·ondata (max 24). La salute di tutti i nemici sale a gradini ogni 10 ondate. Intervallo di spawn: da 2 s a 0,5 s.
 - **Corridori** (dall'ondata 4): 5,4 m/s invece di 3,6, **occhi rossi**.
+- **Dove nascono i nemici** (stile CoD Zombies / Left 4 Dead): 24 punti di spawn sparsi per tutta la
+  cittadina (non solo ai bordi). A ogni spawn si preferisce un punto **fuori vista** (un muro tra
+  i tuoi occhi e il punto), tra 15 e 40 m, e nel 70% dei casi **davanti a te** (entro 60° dalla
+  direzione in cui corri). Girare in tondo non vuol più dire trascinarsi l'orda dietro: ti porta
+  dritto nella prossima.
 - **Punteggio** stile CoD: 10 per colpo, 100 per uccisione.
   [DA DECIDERE] cosa si compra con i punti (armi, potenziamenti, "santuari" sulla mappa).
 

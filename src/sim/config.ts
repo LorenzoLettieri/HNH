@@ -294,6 +294,15 @@ export const tuning = {
   waveFirstBreak: 4,
   /** Seconds of breather between waves. */
   waveBreak: 8,
+  /** Enemies never spawn closer than this to the player, meters. */
+  spawnMinDistance: 15,
+  /** Spawn points farther than this are used only if there's nothing closer, meters. */
+  spawnMaxDistance: 40,
+  /**
+   * Chance that a spawn is picked AHEAD of you (in the direction you're
+   * running), when you're moving. 0 = anywhere. High = laps lead you into the horde.
+   */
+  spawnAheadChance: 0.7,
 };
 
 /** Converts a duration in seconds to a whole number of ticks. */
