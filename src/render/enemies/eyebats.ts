@@ -10,8 +10,9 @@ import { tuning } from '../../sim/config';
 import type { Entity, EyebatEntity } from '../../sim/entities';
 import type { SimEvent } from '../../sim/events';
 import { addHeightFog } from '../heightFog';
+import { soundAt } from '../soundPosition';
 import { EYEBAT_FRAMES, EYEBAT_FRAME_H, EYEBAT_FRAME_W, eyebatSheet } from './eyebatSprite';
-import { playGhoulDeath, type Where } from '../../audio/sfx';
+import { playEyebatCharge, playFireball, playGhoulDeath } from '../../audio/sfx';
 
 const PIXELS_PER_METER = 32;
 /** Wing beats per second (one beat = the 4-frame cycle). */
@@ -20,6 +21,8 @@ const FLAPS_PER_SECOND = 5;
 const HURT_TIME = 0.15;
 /** Iris glow strength (HDR, blooms). */
 const IRIS_GLOW = 3;
+/** Iris glow at the end of a charge, right before the shot. */
+const CHARGE_GLOW = 14;
 
 interface EyebatView {
   mesh: THREE.Mesh;
@@ -65,29 +68,24 @@ export function createEyebatRenderer(scene: THREE.Scene): EyebatRenderer {
     v.glowMap.offset.x = frame / sheet.frameCount;
   }
 
-  const right = new THREE.Vector3();
-  function where(camera: THREE.Camera, x: number, y: number, z: number): Where {
-    const dx = x - camera.position.x;
-    const dy = y - camera.position.y;
-    const dz = z - camera.position.z;
-    const dist = Math.hypot(dx, dy, dz) || 1;
-    right.setFromMatrixColumn(camera.matrixWorld, 0);
-    return {
-      volume: Math.min(1, 2.5 / (1 + dist * 0.25)),
-      pan: (dx * right.x + dy * right.y + dz * right.z) / dist,
-    };
-  }
-
   return {
     update(entities, events, camera, alpha, dt) {
       const byId = new Map(entities.map((e) => [e.id, e]));
       for (const e of events) {
+        if (e.type === 'eyebatCharge' || e.type === 'eyebatShot') {
+          const b = byId.get(e.entityId);
+          if (!b) continue;
+          const where = soundAt(camera, b.x, b.y, b.z);
+          if (e.type === 'eyebatCharge') playEyebatCharge(where, tuning.eyebatChargeTime);
+          else playFireball(where);
+          continue;
+        }
         if (e.type !== 'hit') continue;
         const b = byId.get(e.entityId);
         if (!b || b.type !== 'eyebat') continue;
         const v = views.get(e.entityId);
         if (v) v.hurtTime = HURT_TIME;
-        if (e.killed) playGhoulDeath(where(camera, b.x, b.y, b.z));
+        if (e.killed) playGhoulDeath(soundAt(camera, b.x, b.y, b.z));
       }
 
       const seen = new Set<number>();
@@ -133,6 +131,18 @@ export function createEyebatRenderer(scene: THREE.Scene): EyebatRenderer {
       if (remaining < 1) v.mesh.position.y -= (1 - remaining) * 0.4;
       return;
     }
+    const material = v.mesh.material as THREE.MeshStandardMaterial;
+    if (e.state === 'charge') {
+      // The warning: pupil dilated, and the iris glows brighter and brighter
+      // (progress² = slow at first, then blazing right before the shot),
+      // flickering faster and faster.
+      const progress = Math.min(1, e.stateTicks / (tuning.eyebatChargeTime * 60));
+      const flicker = 0.85 + 0.15 * Math.sin(e.stateTicks * (0.5 + progress));
+      material.emissiveIntensity = (IRIS_GLOW + (CHARGE_GLOW - IRIS_GLOW) * progress * progress) * flicker;
+      showFrame(v, EYEBAT_FRAMES.charge);
+      return;
+    }
+    material.emissiveIntensity = IRIS_GLOW;
     if (v.hurtTime > 0) {
       showFrame(v, EYEBAT_FRAMES.hurt);
       return;

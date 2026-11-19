@@ -220,6 +220,26 @@ export const tuning = {
   eyebatSeparation: 2.5,
   /** How long a dead eye-bat lies on the ground before disappearing, seconds. */
   eyebatCorpseTime: 3,
+  /** It only shoots when you're closer than this (and in sight), meters. */
+  eyebatShootRange: 30,
+  /** Seconds between two shots (plus up to 1 s of variation, so a group doesn't fire in sync). */
+  eyebatShootInterval: 2.5,
+  /**
+   * Warning before the shot, seconds: the pupil dilates, the iris blazes and
+   * a whine rises. It slows down while charging: the best moment to hit the pupil.
+   */
+  eyebatChargeTime: 0.7,
+  /** Speed of its fireball, m/s. Slower than you (8 m/s): strafe and it misses. */
+  eyebatProjectileSpeed: 12,
+  eyebatProjectileDamage: 15,
+  /** Push given to the player by a fireball, m/s. */
+  eyebatProjectileKnockback: 3,
+
+  // --- Enemy projectiles (src/sim/projectiles.ts) ---
+  /** Radius of an enemy projectile, meters (for hitting the player). */
+  projectileRadius: 0.25,
+  /** Seconds before a projectile that hit nothing fizzles out. */
+  projectileLifetime: 5,
 
   // --- Waves (CoD-zombies style; the curve is in src/sim/waves.ts) ---
   /** Turn off to roam the map without enemies. */

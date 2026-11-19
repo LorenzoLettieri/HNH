@@ -7,10 +7,19 @@
 // plus a push away from other eye-bats, and a hop upward when something is
 // in the way. Collisions with the level use the same moveAndCollide as
 // everything else, so it slides along walls instead of going through them.
+//
+// Shooting is a tiny state machine:
+//   fly ──(cooldown over, you're in range and in sight)──▶ charge
+//   charge ──(after eyebatChargeTime)──▶ fires a fireball ──▶ fly
+// The charge is the WARNING (docs/DESIGN.md, "leggibilità"): you see the eye
+// blaze and hear the whine before the shot, so getting hit is your fault.
 import { moveAndCollide, overlapsAny } from './collision';
-import { tuning } from './config';
-import type { Entity, EyebatEntity } from './entities';
-import type { PlayerState } from './player';
+import { secondsToTicks, tuning } from './config';
+import type { EyebatEntity } from './entities';
+import type { SimEvent } from './events';
+import type { GameState } from './game';
+import { currentHeight, currentEyeHeight } from './player';
+import { raycastBoxes } from './raycast';
 import type { World } from './world';
 
 /** How far ahead (in seconds of flight) it looks for obstacles. */
@@ -18,13 +27,11 @@ const LOOKAHEAD = 0.5;
 /** Gravity on a dead eye-bat, m/s² (same feel as everything else falling). */
 const FALL_GRAVITY = 20;
 
-export function stepEyebat(
-  b: EyebatEntity,
-  player: PlayerState,
-  others: Entity[],
-  world: World,
-  dt: number,
-): void {
+/** While charging it slows down to this fraction of its speed (it "aims"). */
+const CHARGE_SLOWDOWN = 0.25;
+
+export function stepEyebat(b: EyebatEntity, game: GameState, world: World, dt: number, events: SimEvent[]): void {
+  const player = game.player;
   b.stateTicks++;
   const r = tuning.eyebatRadius;
   const size = r * 2;
@@ -63,7 +70,7 @@ export function stepEyebat(
   const dist = Math.hypot(wx, wy, wz);
   // "Arrive" behaviour: full speed when far, slower within 3 m, so it
   // doesn't overshoot and wobble around the goal.
-  const speed = tuning.eyebatSpeed * Math.min(1, dist / 3);
+  const speed = tuning.eyebatSpeed * Math.min(1, dist / 3) * (b.state === 'charge' ? CHARGE_SLOWDOWN : 1);
   if (dist > 0.001) {
     wx = (wx / dist) * speed;
     wy = (wy / dist) * speed;
@@ -71,7 +78,7 @@ export function stepEyebat(
   }
 
   // --- 3. Separation from other eye-bats (in 3D: they also stack up/down) --
-  for (const o of others) {
+  for (const o of game.entities) {
     if (o === b || o.type !== 'eyebat' || o.state === 'dead') continue;
     const ox = b.x - o.x;
     const oy = b.y - o.y;
@@ -86,12 +93,19 @@ export function stepEyebat(
   }
 
   // --- 4. Obstacle ahead? Fly over it. --------------------------------------
-  // Probe where we'd be in LOOKAHEAD seconds at the current velocity: if
+  // Probe a point ahead in the direction it WANTS to go (at least 1 m): if
   // that spot is inside a box, add a strong upward wish. Simple, and roofs
   // and walls are all boxes we can go over.
-  const aheadX = b.x + b.vx * LOOKAHEAD;
-  const aheadZ = b.z + b.vz * LOOKAHEAD;
-  if (overlapsAny(aheadX, b.y, aheadZ, r, size, world.boxes)) wy = Math.max(wy, tuning.eyebatSpeed);
+  // (Not along its current velocity: pressed against a wall, collisions
+  // zero the velocity, the probe would stay where it is and never see the
+  // wall. It would stay stuck there forever.)
+  const wishH = Math.hypot(wx, wz);
+  if (wishH > 0.001) {
+    const ahead = Math.max(1, wishH * LOOKAHEAD);
+    const aheadX = b.x + (wx / wishH) * ahead;
+    const aheadZ = b.z + (wz / wishH) * ahead;
+    if (overlapsAny(aheadX, b.y, aheadZ, r, size, world.boxes)) wy = Math.max(wy, tuning.eyebatSpeed);
+  }
 
   // --- 5. Steer: turn the velocity toward the wish, a bit each tick --------
   const k = Math.min(1, tuning.eyebatAccel * dt);
@@ -100,4 +114,67 @@ export function stepEyebat(
   b.vz += (wz - b.vz) * k;
 
   moveAndCollide(b, r, size, world.boxes, dt);
+
+  // --- 6. Shooting -----------------------------------------------------------
+  if (b.shootCooldownTicks > 0) b.shootCooldownTicks--;
+  if (b.state === 'fly' && b.shootCooldownTicks === 0 && player.health > 0 && canSee(b, game, world)) {
+    b.state = 'charge';
+    b.stateTicks = 0;
+    events.push({ type: 'eyebatCharge', entityId: b.id });
+  } else if (b.state === 'charge' && b.stateTicks >= secondsToTicks(tuning.eyebatChargeTime)) {
+    fire(b, game, events);
+    b.state = 'fly';
+    b.stateTicks = 0;
+    // Next shot: the interval plus 0-1 s of variation. "Random" but
+    // deterministic (from the id and the tick), like the rest of the sim.
+    const jitter = ((b.id * 37 + game.tick) % 60) / 60;
+    b.shootCooldownTicks = secondsToTicks(tuning.eyebatShootInterval + jitter);
+  }
+}
+
+/** Center of the eye (b.y is the bottom of the body). */
+function eyeY(b: EyebatEntity): number {
+  return b.y + tuning.eyebatRadius;
+}
+
+/** Are you in range, with no wall between its eye and yours? */
+function canSee(b: EyebatEntity, game: GameState, world: World): boolean {
+  const p = game.player;
+  const dx = p.x - b.x;
+  const dy = p.y + currentEyeHeight(p) - eyeY(b);
+  const dz = p.z - b.z;
+  const dist = Math.hypot(dx, dy, dz);
+  if (dist > tuning.eyebatShootRange || dist < 0.001) return false;
+  // Line of sight: a ray from its eye to yours. If it hits a box first, it can't see you.
+  return raycastBoxes(b.x, eyeY(b), b.z, dx / dist, dy / dist, dz / dist, dist, world.boxes) === null;
+}
+
+/**
+ * Fires a fireball at where you ARE now (your chest), without leading the
+ * shot. On purpose: if you keep moving it flies behind you. Standing still
+ * is what gets you hit, which is exactly the pressure we want (movement as defense).
+ */
+function fire(b: EyebatEntity, game: GameState, events: SimEvent[]): void {
+  const p = game.player;
+  const ty = p.y + currentHeight(p) * 0.6;
+  const dx = p.x - b.x;
+  const dy = ty - eyeY(b);
+  const dz = p.z - b.z;
+  const d = Math.hypot(dx, dy, dz) || 1;
+  const v = tuning.eyebatProjectileSpeed;
+  const id = game.nextEntityId++; // same counter as the entities: ids are unique game-wide
+  game.projectiles.push({
+    id,
+    x: b.x,
+    y: eyeY(b),
+    z: b.z,
+    px: b.x,
+    py: eyeY(b),
+    pz: b.z,
+    vx: (dx / d) * v,
+    vy: (dy / d) * v,
+    vz: (dz / d) * v,
+    ticksLeft: secondsToTicks(tuning.projectileLifetime),
+  });
+  events.push({ type: 'eyebatShot', entityId: b.id, projectileId: id });
 }

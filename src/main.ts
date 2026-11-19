@@ -18,6 +18,7 @@ import { createWeaponFx } from './render/weaponFx';
 import { createTargets } from './render/targets';
 import { createGhoulRenderer } from './render/enemies/ghouls';
 import { createEyebatRenderer } from './render/enemies/eyebats';
+import { createProjectileRenderer } from './render/projectiles';
 import { updateHud } from './render/hud';
 import { createNavDebug } from './render/navDebug';
 import { getFlowField, getNavGraph } from './sim/nav';
@@ -102,6 +103,7 @@ const weaponFx = createWeaponFx(scene);
 const targets = createTargets(scene, game.entities);
 const ghouls = createGhoulRenderer(scene);
 const eyebats = createEyebatRenderer(scene);
+const projectiles = createProjectileRenderer(scene);
 const navDebug = createNavDebug(scene, getNavGraph(world));
 // The gun in your hand: its own scene and camera, drawn over the world.
 const viewmodel = createViewmodel();
@@ -265,6 +267,7 @@ renderer.setAnimationLoop((now: number) => {
   targets.update(frameTime);
   ghouls.update(game.entities, events, camera, alpha, frameTime);
   eyebats.update(game.entities, events, camera, alpha, frameTime);
+  projectiles.update(game.projectiles, events, camera, alpha, frameTime);
   updateHud(game, events, frameTime);
   navDebug.update(getFlowField(getNavGraph(world), game.navGoal));
   ammoHud.textContent = player.reloadTicks > 0

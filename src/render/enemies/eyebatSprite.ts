@@ -8,12 +8,13 @@
 // with a pixel of margin). Frames, left to right:
 //   0-2: wing flap (up, middle, down: the cycle plays 0 1 2 1)   3: hurt
 //   4: dead (eyelid shut)   5: popped (killed by a shot in the pupil)
+//   6: charging a shot (pupil dilated, iris blazing)
 import { seededRandom } from '../props/pixelCanvas';
 import { buildSheet, PixelFrame, type SpriteSheet } from './spriteSheet';
 
 export const EYEBAT_FRAME_W = 64;
 export const EYEBAT_FRAME_H = 40;
-export const EYEBAT_FRAMES = { flap: [0, 1, 2, 1], hurt: 3, dead: 4, popped: 5 };
+export const EYEBAT_FRAMES = { flap: [0, 1, 2, 1], hurt: 3, dead: 4, popped: 5, charge: 6 };
 
 /** Center of the eye in the frame (pixels). */
 const CX = 32;
@@ -37,6 +38,7 @@ const C = {
   scleraShade: 0xb09c80,
   vein: 0xa01818,
   iris: 0xff6a18,
+  irisHot: 0xffd060,
   irisDark: 0xc0300c,
   pupil: 0x080404,
   highlight: 0xffffff,
@@ -49,7 +51,7 @@ interface Pose {
   /** Wing tips moved up (negative) or down (positive), pixels. */
   wing: number;
   /** What the eye looks like. */
-  eye: 'open' | 'hurt' | 'shut' | 'popped';
+  eye: 'open' | 'hurt' | 'charge' | 'shut' | 'popped';
 }
 
 function paintWing(f: PixelFrame, side: number, dy: number): void {
@@ -123,14 +125,15 @@ function paint(pose: Pose): PixelFrame {
     }
     for (let i = 0; i < 14; i++) f.set(CX - 12 + rand() * 25, CY - 12 + rand() * 26, C.blood);
   } else {
-    paintEye(f, rand, pose.eye === 'hurt');
+    paintEye(f, rand, pose.eye);
   }
 
   f.outline(C.outline);
   return f;
 }
 
-function paintEye(f: PixelFrame, rand: () => number, hurt: boolean): void {
+function paintEye(f: PixelFrame, rand: () => number, look: 'open' | 'hurt' | 'charge'): void {
+  const hurt = look === 'hurt';
   // White of the eye, shaded like a sphere: light top left, shadow at the rim.
   for (let y = -10; y <= 10; y++) {
     for (let x = -10; x <= 10; x++) {
@@ -154,12 +157,14 @@ function paintEye(f: PixelFrame, rand: () => number, hurt: boolean): void {
   }
   // Iris (glowing: it shines in the dark and blooms) and pupil.
   // Hurt: the pupil shrinks to a dot, like an eye hit by a bright light.
-  const pupil = hurt ? 1.5 : PUPIL_R;
+  // Charging: it dilates, and the iris turns to a bright ring of fire.
+  const pupil = hurt ? 1.5 : look === 'charge' ? 4.5 : PUPIL_R;
   for (let y = -7; y <= 7; y++) {
     for (let x = -7; x <= 7; x++) {
       const d = Math.hypot(x, y);
       if (d > IRIS_R) continue;
       if (d <= pupil) f.set(CX + x, CY + y, C.pupil);
+      else if (look === 'charge') f.set(CX + x, CY + y, d > IRIS_R - 0.8 ? C.iris : C.irisHot, true);
       else f.set(CX + x, CY + y, d > IRIS_R - 1.2 ? C.irisDark : C.iris, true);
     }
   }
@@ -175,6 +180,7 @@ const POSES: Pose[] = [
   { wing: -4, eye: 'hurt' },
   { wing: 10, eye: 'shut' }, // dead: wings hanging
   { wing: 10, eye: 'popped' },
+  { wing: -2, eye: 'charge' },
 ];
 
 let sheet: SpriteSheet | null = null;

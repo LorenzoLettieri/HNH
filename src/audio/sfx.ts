@@ -269,3 +269,49 @@ export function playHeadshot(kill: boolean): void {
   ring(1900, 0.35, kill ? 0.3 : 0.18);
   if (kill) noiseBurst({ start: 0.03, duration: 0.25, volume: 0.45, filter: 'lowpass', frequency: 1200, frequencyEnd: 250 });
 }
+
+/**
+ * Eye-bat charging a shot: a whine that rises in pitch and volume for the
+ * whole charge, with a fast tremolo (a second oscillator wobbling the volume).
+ * It's the audio half of the warning: you hear it even behind you.
+ */
+export function playEyebatCharge(where: Where, duration: number): void {
+  const out = placeSound(where);
+  if (!ctx || !out) return;
+  const t0 = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(220, t0);
+  osc.frequency.exponentialRampToValueAtTime(880, t0 + duration);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.001, t0);
+  gain.gain.exponentialRampToValueAtTime(0.35, t0 + duration);
+  gain.gain.exponentialRampToValueAtTime(0.001, t0 + duration + 0.05);
+  // Tremolo: an LFO (low-frequency oscillator, 18 Hz) added to the gain.
+  const lfo = ctx.createOscillator();
+  lfo.frequency.value = 18;
+  const lfoDepth = ctx.createGain();
+  lfoDepth.gain.value = 0.12;
+  lfo.connect(lfoDepth).connect(gain.gain);
+  osc.connect(gain).connect(out);
+  osc.start(t0);
+  lfo.start(t0);
+  osc.stop(t0 + duration + 0.06);
+  lfo.stop(t0 + duration + 0.06);
+}
+
+/** Eye-bat fires: a fiery whoosh with a low puff. */
+export function playFireball(where: Where): void {
+  const out = placeSound(where);
+  if (!out) return;
+  noiseBurst({ out, duration: 0.45, volume: 0.7, filter: 'bandpass', frequency: 1800, frequencyEnd: 300, q: 1.5 });
+  thump({ out, duration: 0.2, volume: 0.5, from: 220, to: 60 });
+}
+
+/** A fireball bursts against something: a crackling, sizzling pop. */
+export function playFireballHit(where: Where): void {
+  const out = placeSound(where);
+  if (!out) return;
+  noiseBurst({ out, duration: 0.3, volume: 0.8, filter: 'lowpass', frequency: 3000, frequencyEnd: 250 });
+  noiseBurst({ out, start: 0.05, duration: 0.4, volume: 0.25, filter: 'highpass', frequency: 4000 }); // sizzle
+}

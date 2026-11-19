@@ -116,6 +116,10 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
 - **Malocchio**: 100 di salute = **2 colpi al corpo, 1 nella pupilla**. Il critico si calcola
   come distanza tra la traiettoria del proiettile e il centro dell'occhio (lo sprite guarda
   sempre verso di te, quindi il centro visto da te è la pupilla): raggio 0,15 m.
+- **Sparo del Malocchio**: ogni ~2,5–3,5 s, solo se ti vede (entro 30 m). **Preavviso di 0,7 s**
+  (pupilla dilatata, iride sempre più accesa, sibilo crescente; intanto rallenta: è il momento
+  migliore per colpirgli la pupilla). Palla di fuoco a **12 m/s** (tu corri a 8+), 15 danni,
+  mirata dove sei **adesso**, senza anticipo: se ti muovi ti passa dietro, se stai fermo ti prende.
 - **Niente rigenerazione della salute.** [DA DECIDERE] drop casuali dei nemici (medikit o simili).
 
 ## 4. La mappa [DECISO: cittadina all'aperto]

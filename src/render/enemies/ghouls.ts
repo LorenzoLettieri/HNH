@@ -7,8 +7,9 @@ import { tuning } from '../../sim/config';
 import type { Entity, GhoulEntity } from '../../sim/entities';
 import type { SimEvent } from '../../sim/events';
 import { addHeightFog } from '../heightFog';
+import { soundAt } from '../soundPosition';
 import { FRAMES, FRAME_H, FRAME_W, GHOUL_FRAME_COUNT, ghoulSheet } from './ghoulSprite';
-import { playGhoulDeath, playGroan, playSwipe, type Where } from '../../audio/sfx';
+import { playGhoulDeath, playGroan, playSwipe } from '../../audio/sfx';
 
 const PIXELS_PER_METER = 32;
 /** Walk animation speed: frames per meter walked (feet must not "skate"). */
@@ -78,20 +79,6 @@ export function createGhoulRenderer(scene: THREE.Scene): GhoulRenderer {
     v.glowMap.offset.x = frame / GHOUL_FRAME_COUNT;
   }
 
-  const right = new THREE.Vector3();
-  /** How a sound at (x, z) is heard: quieter when far, panned left/right. */
-  function where(camera: THREE.Camera, x: number, y: number, z: number): Where {
-    const dx = x - camera.position.x;
-    const dy = y - camera.position.y;
-    const dz = z - camera.position.z;
-    const dist = Math.hypot(dx, dy, dz) || 1;
-    right.setFromMatrixColumn(camera.matrixWorld, 0); // the camera's "right" direction
-    return {
-      volume: Math.min(1, 2.5 / (1 + dist * 0.25)),
-      pan: (dx * right.x + dy * right.y + dz * right.z) / dist, // dot product, once more
-    };
-  }
-
   return {
     update(entities, events, camera, alpha, dt) {
       const byId = new Map(entities.map((e) => [e.id, e]));
@@ -100,11 +87,11 @@ export function createGhoulRenderer(scene: THREE.Scene): GhoulRenderer {
           const v = views.get(e.entityId);
           if (v) v.hurtTime = HURT_TIME;
           const g = byId.get(e.entityId);
-          if (g && g.type === 'ghoul' && e.killed) playGhoulDeath(where(camera, g.x, g.y + 1.5, g.z));
+          if (g && g.type === 'ghoul' && e.killed) playGhoulDeath(soundAt(camera, g.x, g.y + 1.5, g.z));
         }
         if (e.type === 'ghoulAttack') {
           const g = byId.get(e.entityId);
-          if (g) playSwipe(where(camera, g.x, g.y + 1.5, g.z));
+          if (g) playSwipe(soundAt(camera, g.x, g.y + 1.5, g.z));
         }
       }
 
@@ -122,7 +109,7 @@ export function createGhoulRenderer(scene: THREE.Scene): GhoulRenderer {
         // Groan now and then (random timing is fine here: it's not gameplay).
         v.groanIn -= dt;
         if (v.groanIn <= 0 && e.state !== 'dead') {
-          playGroan(where(camera, e.x, e.y + 1.5, e.z));
+          playGroan(soundAt(camera, e.x, e.y + 1.5, e.z));
           v.groanIn = 3 + Math.random() * 5;
         }
       }

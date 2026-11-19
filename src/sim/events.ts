@@ -24,6 +24,12 @@ export type SimEvent =
   | { type: 'waveStart'; wave: number }
   | { type: 'waveEnd'; wave: number }
   | { type: 'ghoulAttack'; entityId: number }
+  /** An eye-bat starts charging a shot (the warning: glow + whine). */
+  | { type: 'eyebatCharge'; entityId: number }
+  /** An eye-bat fires: a projectile leaves its eye. */
+  | { type: 'eyebatShot'; entityId: number; projectileId: number }
+  /** A projectile hit the level or the player (where, and the surface normal). */
+  | { type: 'projectileHit'; x: number; y: number; z: number; nx: number; ny: number; nz: number; player: boolean }
   | { type: 'dryFire' } // pulled the trigger with an empty cylinder
   | { type: 'reloadStart' }
   | { type: 'reloadEnd' };

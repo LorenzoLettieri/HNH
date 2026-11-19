@@ -47,11 +47,12 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
 - `src/input.ts`: input grezzo (tasti e tasti del mouse premuti, pressioni brevi "memorizzate", movimento mouse, Pointer Lock)
 - `src/controls.ts`: sensibilità mouse (`controlSettings`), angoli di vista, **mappatura tasti** (WASD, Spazio, Shift/C = accovacciati/slide, click = spara, R = ricarica, K = respawn) → `InputCommand` (T = cambia atmosfera, P = pixel art on/off, N = grafo IA, **B = fai apparire un Malocchio** (debug), tasto sotto Esc = pannello debug, in `main.ts`)
 - `src/sim/`: simulazione pura (niente Three.js/DOM)
-  - `config.ts`: **valori di tuning** (oggetto `tuning`, modificabile dal pannello debug) (tick rate, altezza occhi, salute, **ondate**, dimensioni giocatore, movimento a terra, gravità/salto/coyote/buffer, movimento e controllo in aria, aiuti al bhop, accovacciata, slide, wall jump, **revolver**, bersagli, **ghoul**, **Malocchio**)
-  - `game.ts`: **stato di gioco unico** (`GameState`: giocatore, entità, ondata, statistiche) e `stepGame()` (un tick di tutto il gioco; game over alla morte)
+  - `config.ts`: **valori di tuning** (oggetto `tuning`, modificabile dal pannello debug) (tick rate, altezza occhi, salute, **ondate**, dimensioni giocatore, movimento a terra, gravità/salto/coyote/buffer, movimento e controllo in aria, aiuti al bhop, accovacciata, slide, wall jump, **revolver**, bersagli, **ghoul**, **Malocchio** (anche sparo: carica, intervallo, velocità/danno della palla di fuoco), **proiettili nemici**)
+  - `game.ts`: **stato di gioco unico** (`GameState`: giocatore, entità, **proiettili nemici**, ondata, statistiche) e `stepGame()` (un tick di tutto il gioco; game over alla morte)
   - `entities.ts`: **entità colpibili** (bersagli, ghoul, Malocchio): dati, salute, danno, hitbox
   - `ghoul.ts`: **IA del ghoul** (segue il flow field: cammina, salta con traiettoria balistica, si lascia cadere, **si arrampica**; da vicino inseguimento diretto con salto/aggiramento; separazione; artigliata con finestra per schivare)
-  - `eyebat.ts`: **IA del Malocchio** (occhio-pipistrello volante: orbita attorno al giocatore a distanza e quota fisse, steering 3D, separazione, sale sopra gli ostacoli; da morto cade)
+  - `eyebat.ts`: **IA del Malocchio** (occhio-pipistrello volante: orbita attorno al giocatore a distanza e quota fisse, steering 3D, separazione, sale sopra gli ostacoli; **sparo**: macchina a stati volo → carica (preavviso, rallenta) → palla di fuoco, solo con linea di vista; da morto cade)
+  - `projectiles.ts`: **proiettili nemici** (palle di fuoco lente: movimento a ogni tick, collisione col livello lungo il segmento percorso, sfera contro il box del giocatore, danno e spinta)
   - `nav.ts`: **grafo di navigazione** generato dai box (nodi ogni 1,5 m, link cammina/salta/cadi/arrampicati/**sfiatatoio** (lancio simulato in anticipo), limiti di salto/caduta/arrampicata) e **flow field** (Dijkstra dal giocatore)
   - `waves.ts`: **ondate stile CoD Zombies** (curva di difficoltà: quanti ghoul, quanti vivi insieme, **salute a gradini** `ghoulHealthForWave`, corridori, intervallo di spawn) e **punteggio**
   - `command.ts`: tipo `InputCommand` (cosa vuole fare il giocatore in un tick)
@@ -59,7 +60,7 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `props.ts`: **box di collisione invisibili dei props** (barile, palo del cartello, torcia) e zona di lancio degli sfiatatoi
   - `weapon.ts`: revolver (sparo semi-automatico, munizioni, ricarica, hitscan, **colpo alla testa**, **colpo nella pupilla** del Malocchio)
   - `raycast.ts`: raggio contro i box (metodo degli "slab"): cosa colpisce un proiettile
-  - `events.ts`: eventi della simulazione (sparo, colpo su un'entità, attacco del ghoul, giocatore ferito/morto, colpo a vuoto, ricarica) per effetti e suoni
+  - `events.ts`: eventi della simulazione (sparo, colpo su un'entità, attacco del ghoul, carica/sparo del Malocchio, impatto di un proiettile, giocatore ferito/morto, colpo a vuoto, ricarica) per effetti e suoni
   - `collision.ts`: movimento con collisioni asse per asse contro i box, `overlapsAny` (c'è spazio?), `findWall` (muro vicino?)
   - `player.ts`: stato del giocatore e `stepPlayer()` (salto e bhop facilitato, slide/accovacciata, wall jump stile Apex, attrito, accelerazione Quake + air control, gravità, sfiatatoi, respawn)
 - `src/debug/`: pannello di debug
@@ -91,18 +92,20 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
     - `revolverModel.ts`: modello procedurale del revolver (canna, tamburo, cane, calcio)
     - `hands.ts`: **mani a blocchi** (guanti, maniche) e **keyframe del fanning** della mano sinistra
   - `hud.ts`: barra della salute, vignetta rossa, **numero dell'ondata, punteggio, scritte di inizio/fine ondata e conto alla rovescia**, riepilogo alla morte
+  - `projectiles.ts`: **palle di fuoco nemiche** (sprite pixel art luminoso, scia di braci, scintille e suono all'impatto)
+  - `soundPosition.ts`: volume e panning di un suono in base alla posizione rispetto alla camera
   - `weaponFx.ts`: effetti degli spari (lampo di luce, fori, scintille, suoni)
   - `enemies/`: **i nemici**
     - `spriteSheet.ts`: strumenti comuni per gli sprite (`PixelFrame`: pixel, rettangoli, arti, triangoli, contorno; `buildSheet`: sprite sheet + maschera di glow)
     - `eyebatSprite.ts`: **sprite del Malocchio** (palette, ali, occhio con iride luminosa e pupilla, fotogrammi)
-    - `eyebats.ts`: disegno dei Malocchi (billboard sferico, battito d'ali, morte)
+    - `eyebats.ts`: disegno dei Malocchi (billboard sferico, battito d'ali, **bagliore della carica**, suoni, morte)
     - `ghoulSprite.ts`: **sprite del ghoul** disegnato pixel per pixel (palette, pose dei fotogrammi)
     - `ghouls.ts`: disegno dei ghoul (billboard verso la camera, fotogramma per stato, caduta da morti)
   - `navDebug.ts`: vista del grafo di navigazione (tasto N): link colorati per tipo, nodi colorati per distanza dal giocatore
   - `targets.ts`: **bersagli** (modello, oscillazione a molla quando colpiti, caduta e rialzata)
   - `impacts.ts`: fori di proiettile sulle superfici (decal, dimensione, quanti ne restano)
   - `materials.ts`: **quale texture usa ogni materiale** (`LOOKS`), densità dei pixel, mesh dei box
-- `src/audio/sfx.ts`: **effetti sonori sintetizzati** con Web Audio (sparo, ricarica, "ding" dei bersagli, versi/artigliate/morte dei ghoul con panning stereo, giocatore ferito, **campana delle ondate**, volume)
+- `src/audio/sfx.ts`: **effetti sonori sintetizzati** con Web Audio (sparo, ricarica, "ding" dei bersagli, versi/artigliate/morte dei ghoul con panning stereo, **carica, sparo e impatto delle palle di fuoco del Malocchio**, giocatore ferito, **campana delle ondate**, volume)
 - `public/textures/`: texture PNG (servite così come sono da Vite su `/textures/...`)
 - `docs/DESIGN.md`: **documento di design** (decisioni di gameplay e domande aperte)
 - `CREDITS.md`: autori e licenze degli asset

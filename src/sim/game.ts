@@ -3,6 +3,7 @@
 import type { InputCommand } from './command';
 import { createEntities, createEyebat, isEnemy, stepTarget, type Entity } from './entities';
 import { stepEyebat } from './eyebat';
+import { stepProjectiles, type Projectile } from './projectiles';
 import { stepGhoul } from './ghoul';
 import { createWaveState, scoreHits, stepWaves, type Stats, type WaveState } from './waves';
 import { getFlowField, getNavGraph, nearestNode } from './nav';
@@ -21,6 +22,8 @@ export interface GameState {
   stats: Stats;
   /** Navigation goal: the graph node the player stands on (the ghouls go there). */
   navGoal: number;
+  /** Enemy projectiles in flight (fireballs...). */
+  projectiles: Projectile[];
 }
 
 export function createGame(world: World): GameState {
@@ -33,13 +36,15 @@ export function createGame(world: World): GameState {
     wave: createWaveState(),
     stats: { kills: 0, score: 0 },
     navGoal: -1,
+    projectiles: [],
   };
 }
 
 /**
  * One tick of the whole game, always in the same order:
  * 1. the player moves; 2. the player's weapon fires (and hits);
- * 3. targets and enemies update; 4. the wave system spawns enemies.
+ * 3. targets and enemies update; 4. enemy projectiles fly (and hit);
+ * 5. the wave system spawns enemies.
  * Things that happened go into `events`.
  */
 export function stepGame(
@@ -72,9 +77,10 @@ export function stepGame(
 
   for (const e of game.entities) {
     if (e.type === 'target') stepTarget(e);
-    else if (e.type === 'eyebat') stepEyebat(e, game.player, game.entities, world, dt);
+    else if (e.type === 'eyebat') stepEyebat(e, game, world, dt, events);
     else if (e.state !== 'dead') stepGhoul(e, game.player, game.entities, world, graph, flow, dt, events);
   }
+  game.projectiles = stepProjectiles(game.projectiles, game.player, world, dt, events);
   stepWaves(game, world, events);
 
   // Dead: game over, CoD style. Report how far you got, then start over from
@@ -83,6 +89,7 @@ export function stepGame(
     events.push({ type: 'playerDied', wave: game.wave.number, kills: game.stats.kills, score: game.stats.score });
     respawn(game.player, world);
     game.entities = game.entities.filter((e) => !isEnemy(e));
+    game.projectiles = [];
     game.wave = createWaveState();
     game.stats = { kills: 0, score: 0 };
   }

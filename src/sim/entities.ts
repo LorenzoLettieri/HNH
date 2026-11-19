@@ -64,12 +64,14 @@ export interface EyebatEntity extends EntityBase {
   vz: number;
   /** Killed by a shot in the pupil: the eye bursts (for the death animation). */
   popped: boolean;
-  /** Flying around you, or dead (falling, then lying on the ground). */
-  state: 'fly' | 'dead';
+  /** Flying around you, charging a shot (slowed down, glowing), or dead (falling, then lying on the ground). */
+  state: 'fly' | 'charge' | 'dead';
   /** Ticks spent in the current state. */
   stateTicks: number;
   /** Which way it circles around the player (+1 / -1). */
   orbitSide: number;
+  /** Ticks before it can start charging another shot. */
+  shootCooldownTicks: number;
 }
 
 export type Entity = TargetEntity | GhoulEntity | EyebatEntity;
@@ -159,6 +161,8 @@ export function createEyebat(id: number, x: number, y: number, z: number, health
     state: 'fly',
     stateTicks: 0,
     orbitSide: id % 2 === 0 ? 1 : -1, // deterministic, like the ghoul's detour side
+    // First shot after 1.5-2.7 s: a group spawned together doesn't open fire all at once.
+    shootCooldownTicks: secondsToTicks(1.5 + (id % 5) * 0.3),
   };
 }
 
