@@ -30,6 +30,7 @@ import { createShopMenu } from './render/shopMenu';
 import { shopInReach } from './sim/shop';
 import { updateHud } from './render/hud';
 import { updateAmmoHud } from './render/ammoHud';
+import { updateWeaponBar } from './render/weaponBar';
 import { updateMoneyHud } from './render/moneyHud';
 import { updateThreats } from './render/threatIndicator';
 import { createNavDebug } from './render/navDebug';
@@ -364,6 +365,7 @@ renderer.setAnimationLoop((now: number) => {
   navDebugBig.update(getFlowField(getNavGraph(world, BIG_BODY), game.navGoalBig));
   hitboxDebug.update(game.entities);
   updateAmmoHud(player);
+  updateWeaponBar(player);
   updateMoneyHud(game.player.money, dt);
 
   updateFireLights(now / 1000);
