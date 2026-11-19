@@ -62,6 +62,10 @@ finale unico, "HIGH NOON". [DA DECIDERE: nomi definitivi]
 ### Risorse dall'aggressività [PROPOSTO]
 - Niente rigenerazione della salute: la salute cade dai nemici uccisi.
 - Munizioni sparse per la mappa: chi resta fermo le finisce.
+- **Munizioni di riserva** [FATTO, da tarare]: ogni arma ha i colpi caricati e quelli **in tasca**;
+  la ricarica sposta dalla tasca all'arma. Si parte con 36 proiettili (max 72) e 12 cartucce (max 24).
+  Tasca vuota = click a vuoto, niente ricarica (resta il calcio). Anche il revolver è finito.
+  [DA DECIDERE] come si ricaricano le tasche: drop dei nemici e/o munizioni sulla mappa.
 
 ---
 

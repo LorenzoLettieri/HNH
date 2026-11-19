@@ -47,6 +47,12 @@ export interface PlayerState {
   ammo: number;
   /** Shells left in the shotgun's barrels. */
   shells: number;
+  /**
+   * Spare rounds in your pockets, per weapon: the reload moves them into the
+   * gun. A Record keyed by WeaponId (plain data, serializable): adding a
+   * weapon = adding a key.
+   */
+  reserve: Record<WeaponId, number>;
   /** Ticks left before the next shot is allowed. */
   fireCooldownTicks: number;
   /** Ticks left in which a recent click is still waiting to fire. */
@@ -93,6 +99,7 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     switchTicks: 0,
     ammo: tuning.revolverAmmo,
     shells: tuning.shotgunAmmo,
+    reserve: startingReserve(),
     fireCooldownTicks: 0,
     fireBufferTicks: 0,
     fireHeld: false,
@@ -105,7 +112,11 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
 }
 
 export function copyPlayer(from: PlayerState, to: PlayerState): void {
-  Object.assign(to, from); // fine because the state is flat: only numbers
+  Object.assign(to, from); // copies numbers and booleans...
+  // ...but `reserve` is an object: Object.assign would copy the REFERENCE, and
+  // both players would share the same pockets. Copy it by value (a shallow
+  // copy is enough: inside it there are only numbers).
+  to.reserve = { ...from.reserve };
 }
 
 /** Height of the player's collision box right now (shorter when crouched). */
@@ -360,6 +371,10 @@ function airSteer(p: PlayerState, wishX: number, wishZ: number, dt: number): voi
   }
 }
 
+function startingReserve(): Record<WeaponId, number> {
+  return { revolver: tuning.revolverReserveStart, shotgun: tuning.shotgunReserveStart };
+}
+
 export function respawn(p: PlayerState, world: World): void {
   p.x = world.spawn.x;
   p.y = world.spawn.y;
@@ -370,6 +385,7 @@ export function respawn(p: PlayerState, world: World): void {
   p.health = tuning.playerMaxHealth;
   p.ammo = tuning.revolverAmmo;
   p.shells = tuning.shotgunAmmo;
+  p.reserve = startingReserve();
   p.reloadTicks = 0;
   p.switchTicks = 0;
   p.kickTicks = 0;

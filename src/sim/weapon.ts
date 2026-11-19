@@ -7,6 +7,11 @@
 //   devastating up close, weak far away, and its recoil pushes YOU in the air.
 // The shared rules (one click = one shot, fire buffer, reload, switching) are
 // written once; only "what comes out of the barrel" differs.
+//
+// AMMO has two levels, like in Doom/Quake: the rounds IN the gun (cylinder,
+// barrels) and the spare ones in your pockets (`p.reserve`). Firing uses the
+// first, reloading moves the second into the first. The pockets are refilled
+// only by pickups: whoever stands still runs dry.
 import type { InputCommand } from './command';
 import { secondsToTicks, tuning } from './config';
 import type { SimEvent } from './events';
@@ -63,11 +68,16 @@ export function stepWeapon(
     events.push({ type: 'weaponSwitch', weapon: target });
   }
 
-  // Reloading: count down, then refill.
+  // Reloading: count down, then move rounds from the pockets into the gun.
+  // The rounds are taken only at the END: a reload interrupted by a weapon
+  // switch costs nothing (and gives nothing).
   if (p.reloadTicks > 0) {
     p.reloadTicks--;
     if (p.reloadTicks === 0) {
-      setCurrentAmmo(p, magazineSize(p.weapon));
+      const loaded = currentAmmo(p);
+      const moved = Math.min(magazineSize(p.weapon) - loaded, tuning.infiniteAmmo ? Infinity : p.reserve[p.weapon]);
+      setCurrentAmmo(p, loaded + moved);
+      if (!tuning.infiniteAmmo) p.reserve[p.weapon] -= moved;
       events.push({ type: 'reloadEnd' });
     }
   }
@@ -80,11 +90,18 @@ export function stepWeapon(
 
   const ammo = currentAmmo(p);
   const full = magazineSize(p.weapon);
+  // Nothing in the pockets = no reload. You hear the click and that's it:
+  // switch weapon, kick, or go find ammo.
+  const canReload = tuning.infiniteAmmo || p.reserve[p.weapon] > 0;
+  if (ammo === 0 && clicked && !canReload && p.reloadTicks === 0 && p.switchTicks === 0) {
+    events.push({ type: 'dryFire' });
+    p.fireBufferTicks = 0;
+  }
   // The shotgun reloads by itself when both barrels are empty (once the
   // second shot's cooldown is over): with 2 shells, pressing R every time
   // would be a chore. The revolver waits for R or a click on an empty cylinder.
   const autoReload = p.weapon === 'shotgun' && ammo === 0 && p.fireCooldownTicks === 0;
-  const wantsReload = (cmd.reload && ammo < full) || (ammo === 0 && clicked) || autoReload;
+  const wantsReload = canReload && ((cmd.reload && ammo < full) || (ammo === 0 && clicked) || autoReload);
   if (wantsReload && p.reloadTicks === 0 && p.switchTicks === 0) {
     if (ammo === 0 && clicked && !autoReload) events.push({ type: 'dryFire' });
     p.reloadTicks = secondsToTicks(reloadTime(p.weapon));

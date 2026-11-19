@@ -4,7 +4,7 @@ import { loadSettings } from './settings';
 import { createMenu } from './menu';
 import { createDebugPanel } from './debug/debugPanel';
 import { buildCommand, updateLook, view } from './controls';
-import { TICK_DT } from './sim/config';
+import { TICK_DT, tuning } from './sim/config';
 import { copyPlayer, createPlayer, horizontalSpeed } from './sim/player';
 import { createGame, spawnEyebatInFront, spawnHoundInFront, stepGame } from './sim/game';
 import { jumpToWave } from './sim/waves';
@@ -314,9 +314,13 @@ renderer.setAnimationLoop((now: number) => {
   // Ammo: one dot per round (revolver), one tall block per shell (shotgun).
   const [full, empty] = player.weapon === 'shotgun' ? ['▮', '▯'] : ['●', '○'];
   const ammo = currentAmmo(player);
-  ammoHud.textContent = player.reloadTicks > 0
+  // Then the spare rounds in your pockets ("∞" with the debug infinite ammo).
+  const spare = tuning.infiniteAmmo ? '∞' : String(player.reserve[player.weapon]);
+  ammoHud.textContent = (player.reloadTicks > 0
     ? 'RELOADING'
-    : full.repeat(ammo) + empty.repeat(Math.max(0, magazineSize(player.weapon) - ammo));
+    : full.repeat(ammo) + empty.repeat(Math.max(0, magazineSize(player.weapon) - ammo))) + ' ' + spare;
+  // Empty pockets: the number turns red (CSS class in index.html).
+  ammoHud.classList.toggle('dry', !tuning.infiniteAmmo && player.reserve[player.weapon] === 0);
 
   updateFireLights(now / 1000);
   props.update(now / 1000);

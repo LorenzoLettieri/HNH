@@ -137,6 +137,10 @@ export const tuning = {
   revolverFireBuffer: 0.12,
   /** Seconds to reload all 6 rounds. */
   revolverReloadTime: 1.1,
+  /** Spare bullets in your pockets at the start (the reload takes them from here). */
+  revolverReserveStart: 36,
+  /** Most spare bullets you can carry: pickups above this are wasted. */
+  revolverReserveMax: 72,
   /**
    * Damage per bullet. Health is designed in "shots to kill" (see the
    * breakpoint table in docs/DESIGN.md): 50 = one shot on a basic ghoul.
@@ -154,6 +158,12 @@ export const tuning = {
   shotgunFireInterval: 0.16,
   /** Seconds to break it open, swap both shells and snap it shut. Starts by itself when both barrels are empty. */
   shotgunReloadTime: 1.05,
+  /** Spare shells at the start. */
+  shotgunReserveStart: 12,
+  /** Most spare shells you can carry. */
+  shotgunReserveMax: 24,
+  /** Debug: reloading doesn't use up the reserve. */
+  infiniteAmmo: false,
   /** Pellets per shot (a fixed pattern: center + inner ring + outer ring). */
   shotgunPellets: 12,
   /** Half-angle of the outer ring of the pattern, degrees (7° = ~1.2 m wide at 10 m). */

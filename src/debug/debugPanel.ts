@@ -81,6 +81,9 @@ export function createDebugPanel(options: {
   gun.number(tuning, 'revolverFireBuffer', 0, 0.3, 0.01);
   gun.number(tuning, 'revolverReloadTime', 0.2, 3, 0.05);
   gun.number(tuning, 'revolverAmmo', 1, 12, 1);
+  gun.boolean(tuning, 'infiniteAmmo');
+  gun.number(tuning, 'revolverReserveStart', 0, 200, 1);
+  gun.number(tuning, 'revolverReserveMax', 0, 200, 1);
   gun.number(tuning, 'revolverDamage', 5, 200, 5);
   gun.number(tuning, 'headshotMultiplier', 1, 5, 0.25);
   const sg = panel.folder('Shotgun (src/sim/config.ts + render/weapons/viewmodel.ts, shotgunView.ts)');
@@ -93,6 +96,8 @@ export function createDebugPanel(options: {
   sg.number(tuning, 'shotgunHeadshotMultiplier', 1, 3, 0.1);
   sg.number(tuning, 'shotgunFireInterval', 0.05, 1, 0.01);
   sg.number(tuning, 'shotgunReloadTime', 0.3, 3, 0.05);
+  sg.number(tuning, 'shotgunReserveStart', 0, 60, 1);
+  sg.number(tuning, 'shotgunReserveMax', 0, 60, 1);
   sg.number(tuning, 'shotgunSelfPush', 0, 20, 0.5);
   sg.number(tuning, 'shotgunKnockbackRange', 0, 15, 0.5);
   sg.number(tuning, 'shotgunKnockback', 0, 40, 0.5);
