@@ -14,6 +14,7 @@ import { currentEyeHeight, type PlayerState } from './player';
 import { raycastBoxes } from './raycast';
 import type { World } from './world';
 import { damage, hitBox, isAlive, isEnemy, type Entity, type EyebatEntity } from './entities';
+import { knockBack } from './kick';
 
 export type WeaponId = 'revolver' | 'shotgun';
 /** Weapon slots, in order: key 1 = revolver, key 2 = shotgun. */
@@ -230,7 +231,7 @@ function fireShotgun(p: PlayerState, world: World, entities: Entity[], events: S
   const living = entities.filter(isAlive);
   // Damage is summed per entity and applied once at the end: one hitmarker,
   // one 'hit' event, one kill, even if 10 pellets hit the same ghoul.
-  const totals = new Map<Entity, { amount: number; headshot: boolean }>();
+  const totals = new Map<Entity, { amount: number; headshot: boolean; pellets: number; distance: number }>();
   const spread = Math.tan((tuning.shotgunSpread * Math.PI) / 180);
   const barrelTwist = p.shells === tuning.shotgunAmmo ? 0 : Math.PI / 7;
   for (const [ax, ay] of pelletPattern(tuning.shotgunPellets, barrelTwist)) {
@@ -248,23 +249,81 @@ function fireShotgun(p: PlayerState, world: World, entities: Entity[], events: S
       tuning.shotgunPelletDamage *
       falloff(hit.distance) *
       (hit.headshot ? tuning.shotgunHeadshotMultiplier : 1);
-    const t = totals.get(hit.target) ?? { amount: 0, headshot: false };
+    const t = totals.get(hit.target) ?? { amount: 0, headshot: false, pellets: 0, distance: Infinity };
     t.amount += amount;
     t.headshot ||= hit.headshot;
+    t.pellets++;
+    t.distance = Math.min(t.distance, hit.distance);
     totals.set(hit.target, t);
   }
-  for (const [target, t] of totals) applyGunDamage(target, Math.round(t.amount), t.headshot, events);
+  for (const [target, t] of totals) {
+    applyGunDamage(target, Math.round(t.amount), t.headshot, events);
+    blastBack(p, target, t.pellets, t.distance);
+  }
+  recoil(p, dx, dy, dz);
+}
 
-  // Recoil on the player, only in the air (on the ground it would just slow
-  // you down when you run at enemies). The push goes opposite to where you
-  // aim. If it pushes you UP, it first cancels the fall: that way a shot at
-  // your feet is a reliable mini double jump, not a weak brake.
-  if (!p.onGround && tuning.shotgunSelfPush > 0) {
-    const push = tuning.shotgunSelfPush;
-    if (-dy > 0) p.vy = Math.max(p.vy, 0);
-    p.vx -= dx * push;
-    p.vy -= dy * push;
-    p.vz -= dz * push;
+/**
+ * Point-blank knockback: an enemy that took the blast up close flies back,
+ * like a kick. The strength is the product of two fractions, each 0..1:
+ * - how close it was (1 at 0 m, 0 at shotgunKnockbackRange);
+ * - how many pellets hit it (all of them = 1): a grazing shot barely pushes.
+ * Below shotgunKnockbackMin: nothing. Otherwise every weak hit would put the
+ * ghoul in its 'staggered' state and you could stun-lock a crowd from afar.
+ */
+function blastBack(p: PlayerState, target: Entity, pellets: number, distance: number): void {
+  const closeness = 1 - distance / tuning.shotgunKnockbackRange;
+  const strength = Math.max(0, closeness) * Math.min(1, pellets / tuning.shotgunPellets);
+  if (strength < tuning.shotgunKnockbackMin) return;
+  // Direction: from you to it, flat on the ground.
+  const b = hitBox(target);
+  let kx = (b.minX + b.maxX) / 2 - p.x;
+  let kz = (b.minZ + b.maxZ) / 2 - p.z;
+  const len = Math.hypot(kx, kz);
+  if (len < 0.01) {
+    kx = -Math.sin(p.yaw); // right on top of you: where you look
+    kz = -Math.cos(p.yaw);
+  } else {
+    kx /= len;
+    kz /= len;
+  }
+  knockBack(target, kx, kz, tuning.shotgunKnockback * strength, tuning.shotgunKnockbackLift * strength);
+}
+
+/**
+ * The shotgun's recoil on YOU: a push opposite to where you aim, but only
+ * the parts of it that help you. Shooting where you're running must never
+ * slow you down (moving is the heart of the game), so:
+ * - HORIZONTAL: we split the push into the part along your current velocity
+ *   and the part sideways (a projection, with the dot product). If the part
+ *   along the velocity points backward (= a brake), we throw it away.
+ *   Shoot behind you: the push is all forward, a free boost. Shoot ahead:
+ *   nothing happens. Shoot sideways: a sideways nudge.
+ * - VERTICAL, only in the air: up yes (shooting at your feet; it first
+ *   cancels the fall, so it's a reliable mini double jump), down never
+ *   (shooting at an eye-bat above you must not slam you to the ground).
+ *   On the ground nothing vertical: no surprise launches.
+ */
+function recoil(p: PlayerState, dx: number, dy: number, dz: number): void {
+  const push = tuning.shotgunSelfPush;
+  if (push <= 0) return;
+  let px = -dx * push;
+  let pz = -dz * push;
+  const speed = Math.hypot(p.vx, p.vz);
+  if (speed > 0.1) {
+    const ux = p.vx / speed; // unit vector of where you're going
+    const uz = p.vz / speed;
+    const along = px * ux + pz * uz; // how much of the push is along it
+    if (along < 0) {
+      px -= ux * along; // remove the braking part, keep the sideways one
+      pz -= uz * along;
+    }
+  }
+  p.vx += px;
+  p.vz += pz;
+  const up = -dy * push;
+  if (!p.onGround && up > 0) {
+    p.vy = Math.max(p.vy, 0) + up;
   }
 }
 

@@ -100,21 +100,31 @@ function landKick(p: PlayerState, world: World, entities: Entity[], events: SimE
     const kLen = Math.hypot(kx, kz) || 1;
     kx /= kLen;
     kz /= kLen;
-    if (e.type === 'ghoul' && e.state !== 'dead') {
-      e.vx = kx * tuning.kickKnockback;
-      e.vz = kz * tuning.kickKnockback;
-      e.vy = tuning.kickLift;
-      e.onGround = false;
-      e.climbTo = -1; // kicked off the wall
-      e.state = 'staggered'; // interrupts claws and pounces too
-      e.stateTicks = 0;
-    } else if (e.type === 'eyebat') {
-      // It flies: no lift needed. Its steering brings it back in a moment
-      // (or, if the kick killed it, it falls while flying away).
-      e.vx = kx * tuning.kickKnockback;
-      e.vz = kz * tuning.kickKnockback;
-      e.vy += tuning.kickLift * 0.5;
-    }
+    knockBack(e, kx, kz, tuning.kickKnockback, tuning.kickLift);
   }
   events.push({ type: 'kickLand', hits });
+}
+
+/**
+ * Throws an enemy: horizontal speed along (dirX, dirZ) (a unit vector) and
+ * a lift upward. Shared by the kick and the point-blank shotgun blast.
+ * A ghoul lifted off its feet can't steer (its AI only accelerates on the
+ * ground), so it really flies, then stays down a moment ('staggered').
+ */
+export function knockBack(e: Entity, dirX: number, dirZ: number, speed: number, lift: number): void {
+  if (e.type === 'ghoul' && e.state !== 'dead') {
+    e.vx = dirX * speed;
+    e.vz = dirZ * speed;
+    e.vy = lift;
+    e.onGround = false;
+    e.climbTo = -1; // knocked off the wall
+    e.state = 'staggered'; // interrupts claws and pounces too
+    e.stateTicks = 0;
+  } else if (e.type === 'eyebat') {
+    // It flies: no lift needed. Its steering brings it back in a moment
+    // (or, if the hit killed it, it falls while flying away).
+    e.vx = dirX * speed;
+    e.vz = dirZ * speed;
+    e.vy += lift * 0.5;
+  }
 }

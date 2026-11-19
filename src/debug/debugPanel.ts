@@ -94,6 +94,10 @@ export function createDebugPanel(options: {
   sg.number(tuning, 'shotgunFireInterval', 0.05, 1, 0.01);
   sg.number(tuning, 'shotgunReloadTime', 0.3, 3, 0.05);
   sg.number(tuning, 'shotgunSelfPush', 0, 20, 0.5);
+  sg.number(tuning, 'shotgunKnockbackRange', 0, 15, 0.5);
+  sg.number(tuning, 'shotgunKnockback', 0, 40, 0.5);
+  sg.number(tuning, 'shotgunKnockbackLift', 0, 15, 0.5);
+  sg.number(tuning, 'shotgunKnockbackMin', 0, 1, 0.05);
   sg.number(tuning, 'weaponSwitchTime', 0, 1, 0.05);
   sg.number(viewmodelSettings, 'shotgunX', -0.3, 0.3, 0.005);
   sg.number(viewmodelSettings, 'shotgunY', -0.3, 0.1, 0.005);

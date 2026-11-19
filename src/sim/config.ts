@@ -170,10 +170,19 @@ export const tuning = {
   /** Critical multiplier PER PELLET (lower than the revolver's: a blast to the head is already a lot of pellets). */
   shotgunHeadshotMultiplier: 1.5,
   /**
-   * Recoil on YOU, m/s, only in the air: shooting down pushes you up (a
-   * "shotgun jump"), shooting backward pushes you forward. Movement tech.
+   * Recoil on YOU, m/s: shooting backward pushes you forward, shooting down
+   * (in the air) pushes you up, a "shotgun jump". It only ever HELPS: the
+   * part that would slow you down is thrown away (see weapon.ts).
    */
   shotgunSelfPush: 5,
+  /** Point-blank blast throws enemies back (like the kick) within this distance, meters... */
+  shotgunKnockbackRange: 5,
+  /** ...with this speed at 0 m and with every pellet on target, m/s (it fades with distance and missed pellets). */
+  shotgunKnockback: 16,
+  /** Upward speed at full strength, m/s. */
+  shotgunKnockbackLift: 5,
+  /** Weaker than this fraction of full strength: no knockback (it would just stun-lock them with tiny pushes). */
+  shotgunKnockbackMin: 0.3,
 
   // --- Weapon switching ---
   /** Seconds for the new weapon to come up: you can't fire before. */
