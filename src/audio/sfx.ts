@@ -258,3 +258,14 @@ export function playBell(times: number, base = 160, gap = 1.1): void {
     }, i * gap * 1000);
   }
 }
+
+/**
+ * Headshot: it must FEEL different. A sharp, bright crack, a wet pop, and a
+ * short high "tink" on top: a sound you learn to chase.
+ */
+export function playHeadshot(kill: boolean): void {
+  noiseBurst({ duration: 0.06, volume: 0.9, filter: 'highpass', frequency: 2500 });
+  thump({ duration: 0.12, volume: 0.6, from: 300, to: 90 });
+  ring(1900, 0.35, kill ? 0.3 : 0.18);
+  if (kill) noiseBurst({ start: 0.03, duration: 0.25, volume: 0.45, filter: 'lowpass', frequency: 1200, frequencyEnd: 250 });
+}

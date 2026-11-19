@@ -74,6 +74,8 @@ export function createDebugPanel(options: {
   gun.number(tuning, 'revolverFireBuffer', 0, 0.3, 0.01);
   gun.number(tuning, 'revolverReloadTime', 0.2, 3, 0.05);
   gun.number(tuning, 'revolverAmmo', 1, 12, 1);
+  gun.number(tuning, 'revolverDamage', 5, 200, 5);
+  gun.number(tuning, 'headshotMultiplier', 1, 5, 0.25);
   gun.number(viewmodelSettings, 'fov', 30, 100, 1);
   gun.number(viewmodelSettings, 'x', -0.3, 0.3, 0.005);
   gun.number(viewmodelSettings, 'y', -0.3, 0.1, 0.005);
@@ -92,7 +94,8 @@ export function createDebugPanel(options: {
   ghoul.boolean(tuning, 'wavesEnabled');
   ghoul.number(tuning, 'waveBaseCount', 1, 30, 1);
   ghoul.number(tuning, 'waveMaxAliveCap', 1, 60, 1);
-  ghoul.number(tuning, 'waveHealthPerWave', 0, 100, 5);
+  ghoul.number(tuning, 'waveHealthStep', 1, 30, 1);
+  ghoul.number(tuning, 'ghoulHeadHeight', 0.8, 1.8, 0.05);
   ghoul.number(tuning, 'waveBreak', 0, 30, 0.5);
   ghoul.number(tuning, 'ghoulRunnerSpeed', 1, 12, 0.1);
   ghoul.number(tuning, 'ghoulSpeed', 0.5, 10, 0.1);

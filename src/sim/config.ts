@@ -137,29 +137,30 @@ export const tuning = {
   revolverFireBuffer: 0.12,
   /** Seconds to reload all 6 rounds. */
   revolverReloadTime: 1.1,
-  /** Damage per bullet (no enemies yet). */
-  revolverDamage: 34,
+  /**
+   * Damage per bullet. Health is designed in "shots to kill" (see the
+   * breakpoint table in docs/DESIGN.md): 50 = one shot on a basic ghoul.
+   */
+  revolverDamage: 50,
+  /** Headshot damage multiplier: this is an aim game, headshots are king. */
+  headshotMultiplier: 3,
   /** Max shooting distance, meters. */
   weaponRange: 200,
 
   // --- Player health ---
   playerMaxHealth: 100,
-  /**
-   * Temporary, CoD-style: health comes back after a few seconds without
-   * damage. (The design doc proposes health from kills instead: undecided.)
-   * Set the rate to 0 to disable.
-   */
-  playerRegenDelay: 4,
-  playerRegenRate: 25, // health per second
 
   // --- Practice targets ---
-  /** Health of a target (revolver does 34: 3 hits). */
-  targetHealth: 100,
+  /** Health of a target (revolver does 50: 3 body hits). */
+  targetHealth: 150,
   /** Seconds before a knocked-down target stands up again. */
   targetRespawnTime: 3,
 
   // --- Ghoul (basic horde enemy) ---
-  ghoulHealth: 100,
+  /** Health of a ghoul in waves 1-9 (one revolver shot). It grows in steps, see waves.ts. */
+  ghoulHealth: 50,
+  /** Hits above this height (from the feet) are headshots, meters. */
+  ghoulHeadHeight: 1.35,
   /** Walking speed, m/s (the player runs at 8: you can always outrun them). */
   ghoulSpeed: 3.6,
   /** How quickly it reaches its speed / turns (per second). */
@@ -198,8 +199,8 @@ export const tuning = {
   waveBaseCount: 6,
   /** Max ghouls alive at the same time, in any wave. */
   waveMaxAliveCap: 24,
-  /** Extra ghoul health per wave. */
-  waveHealthPerWave: 15,
+  /** Ghoul health goes up one step (+ghoulHealth) every this many waves. */
+  waveHealthStep: 10,
   /** Seconds before the first wave. */
   waveFirstBreak: 4,
   /** Seconds of breather between waves. */

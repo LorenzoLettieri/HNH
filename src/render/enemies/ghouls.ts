@@ -154,7 +154,7 @@ export function createGhoulRenderer(scene: THREE.Scene): GhoulRenderer {
       v.mesh.rotation.x = -v.fallAngle;
       const remaining = tuning.ghoulCorpseTime - e.stateTicks / 60;
       if (remaining < 1) v.mesh.position.y -= (1 - remaining) * 0.3;
-      showFrame(v, FRAMES.hurt);
+      showFrame(v, e.headless ? FRAMES.headless : FRAMES.hurt);
       return;
     }
     v.mesh.rotation.x = 0;

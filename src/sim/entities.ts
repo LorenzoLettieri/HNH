@@ -29,6 +29,8 @@ export interface GhoulEntity extends EntityBase {
   type: 'ghoul';
   /** Runners are faster (and have red eyes). */
   runner: boolean;
+  /** Killed by a headshot: the head is gone (for the death animation). */
+  headless: boolean;
   vx: number;
   vy: number;
   vz: number;
@@ -89,6 +91,7 @@ export function createGhoul(
     id,
     type: 'ghoul',
     runner,
+    headless: false,
     x,
     y,
     z,

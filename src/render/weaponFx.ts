@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import type { SimEvent } from '../sim/events';
 import { tuning } from '../sim/config';
-import { playDryFire, playReload, playShot, playTargetDown, playTargetHit } from '../audio/sfx';
+import { playDryFire, playHeadshot, playReload, playShot, playTargetDown, playTargetHit } from '../audio/sfx';
 import { createImpacts } from './impacts';
 import { spawnBlood, spawnSparks } from './particles';
 
@@ -25,11 +25,12 @@ export interface WeaponFx {
  * animation needs a "reflow" in between (reading offsetWidth forces it).
  */
 const hitmarker = document.getElementById('hitmarker');
-function showHitmarker(kill: boolean): void {
+function showHitmarker(kill: boolean, headshot: boolean): void {
   if (!hitmarker) return;
-  hitmarker.classList.remove('hit', 'kill');
+  hitmarker.classList.remove('hit', 'kill', 'head');
   void hitmarker.offsetWidth;
   hitmarker.classList.add(kill ? 'kill' : 'hit');
+  if (headshot) hitmarker.classList.add('head');
 }
 
 export function createWeaponFx(scene: THREE.Scene): WeaponFx {
@@ -43,6 +44,7 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
   let flashTime = 0;
 
   const point = new THREE.Vector3();
+  const up = new THREE.Vector3(0, 1, 0);
   const normal = new THREE.Vector3();
   const forward = new THREE.Vector3();
 
@@ -62,7 +64,10 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
               normal.set(e.normal.x, e.normal.y, e.normal.z);
               // No holes on entities: they move (the hole would float in the air).
               if (e.surface === 'level') impacts.add(point, normal);
-              if (e.surface === 'flesh') spawnBlood(point, normal);
+              if (e.surface === 'flesh' && e.headshot) {
+                // Headshot: a big spray, mostly upward.
+                spawnBlood(point, up, 45);
+              } else if (e.surface === 'flesh') spawnBlood(point, normal);
               else spawnSparks(point, normal, e.surface === 'metal' ? 18 : 10);
             }
             for (const f of fx.onShot) f();
@@ -81,7 +86,8 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
               if (e.killed) playTargetDown();
               else playTargetHit();
             }
-            showHitmarker(e.killed);
+            if (e.headshot) playHeadshot(e.killed);
+            showHitmarker(e.killed, e.headshot);
             break;
         }
       }

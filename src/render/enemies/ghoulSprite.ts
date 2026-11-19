@@ -5,13 +5,14 @@
 // One frame is 32 × 60 px: at our 32 px/m it's 1 × 1.875 m, the same texel
 // density as the level. Frames, left to right:
 //   0-3: walk cycle   4: attack wind-up   5: attack swipe   6: hurt
+//   7: headless (killed by a headshot)
 import * as THREE from 'three';
 import { seededRandom } from '../props/pixelCanvas';
 
 export const FRAME_W = 32;
 export const FRAME_H = 60;
-export const FRAMES = { walk: [0, 1, 2, 3], windup: 4, swipe: 5, hurt: 6 };
-const FRAME_COUNT = 7;
+export const FRAMES = { walk: [0, 1, 2, 3], windup: 4, swipe: 5, hurt: 6, headless: 7 };
+const FRAME_COUNT = 8;
 
 const C = {
   outline: 0x120a08,
@@ -48,6 +49,8 @@ interface Pose {
   mouthOpen: boolean;
   /** Head tilted sideways by this many pixels (hurt). */
   headShift: number;
+  /** No head at all: a bloody neck stump instead (headshot kill). */
+  headless?: boolean;
 }
 
 /**
@@ -123,9 +126,14 @@ function paint(pose: Pose): Frame {
   f.rect(15, 21 + b, 1, 18, C.shirtDark); // button line
   for (let i = 0; i < 9; i++) f.set(13 + rand() * 6, 24 + b + rand() * 14, C.blood);
 
-  // Head (shifted sideways when hurt).
+  // Head (shifted sideways when hurt)... or a neck stump with blood spurting.
   const hx = 11 + pose.headShift;
   const hy = 6 + b;
+  if (pose.headless) {
+    f.rect(hx + 3, hy + 9, 4, 3, C.skinDark); // neck
+    f.rect(hx + 3, hy + 9, 4, 1, C.blood);
+    for (let i = 0; i < 10; i++) f.set(hx + 2 + rand() * 6, hy + 8 - rand() * 9, C.blood); // spurt
+  } else {
   f.rect(hx, hy, 10, 10, C.skin);
   f.rect(hx + 1, hy + 10, 8, 2, C.skin); // chin
   f.rect(hx, hy, 1, 10, C.skinDark);
@@ -153,6 +161,7 @@ function paint(pose: Pose): Frame {
   f.rect(hx - 1, hy - 5, 12, 4, C.hat); // (starts at row 1: row 0 is left for the outline)
   f.rect(hx - 1, hy - 2, 12, 1, C.band);
   f.rect(hx + 3, hy - 5, 4, 1, C.hatDark); // dent
+  }
 
   // Arms last, in front of the body: from the shoulders to the hands.
   for (const [sx, [hxh, hyh]] of [[9, pose.handL], [22, pose.handR]] as const) {
@@ -177,6 +186,8 @@ const POSES: Pose[] = [
   { handL: [18, 33], handR: [14, 35], liftL: 0, liftR: 2, bob: 1, mouthOpen: true, headShift: 0 },
   // Hurt: thrown back, arms out, head knocked aside.
   { handL: [5, 22], handR: [27, 20], liftL: 2, liftR: 0, bob: 0, mouthOpen: true, headShift: 1 },
+  // Headless: same flailing pose, no head.
+  { handL: [5, 24], handR: [27, 22], liftL: 2, liftR: 0, bob: 0, mouthOpen: true, headShift: 0, headless: true },
 ];
 
 export interface GhoulSheet {

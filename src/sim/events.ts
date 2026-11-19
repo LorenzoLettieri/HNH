@@ -16,8 +16,9 @@ export type SimEvent =
       entityId: number | null;
       /** What was hit, for the right effect: wall (hole + sparks), steel, or flesh (blood). */
       surface: 'level' | 'metal' | 'flesh' | null;
+      headshot: boolean;
     }
-  | { type: 'hit'; entityId: number; damage: number; killed: boolean; surface: 'metal' | 'flesh' }
+  | { type: 'hit'; entityId: number; damage: number; killed: boolean; surface: 'metal' | 'flesh'; headshot: boolean }
   | { type: 'playerHurt'; damage: number; fromX: number; fromZ: number }
   | { type: 'playerDied'; wave: number; kills: number; score: number }
   | { type: 'waveStart'; wave: number }

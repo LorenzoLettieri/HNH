@@ -95,6 +95,25 @@ Stile: **sprite 2D** (tipo Doom), coerenti con il resto.
 
 ---
 
+### Danni e salute: la regola dei breakpoint [DECISO]
+Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
+- **Si progetta in colpi per uccidere**, non in punti vita: il giocatore sente "2 colpi", non "130 HP".
+  La salute si sceglie in base ai breakpoint (le soglie dove cambia il numero di colpi).
+- Revolver **50 danni**, **testa ×3** (super premiata: segnalino dorato, suono dedicato, testa che
+  esplode, +50 punti sull'uccisione).
+- **Salute dei ghoul a gradini lenti** (ogni 10 ondate):
+
+| Ondate | Salute | Corpo | Testa |
+|---|---|---|---|
+| 1–9 | 50 | 1 colpo | 1 colpo |
+| 10–19 | 100 | 2 colpi | 1 colpo |
+| 20–29 | 150 | 3 colpi | 1 colpo |
+| 30+ | 200 | 4 colpi | 2 colpi |
+
+- La difficoltà delle prime ondate viene da **quantità, velocità, direzioni, tipi di nemico**;
+  la salute alta arriva solo molto tardi. Nemici resistenti = **miniboss** (eventi, non la norma).
+- **Niente rigenerazione della salute.** [DA DECIDERE] drop casuali dei nemici (medikit o simili).
+
 ## 4. La mappa [DECISO: cittadina all'aperto]
 
 **Una cittadina fantasma western sprofondata all'inferno.** Non deve essere realistica: va bene

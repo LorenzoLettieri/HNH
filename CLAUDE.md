@@ -47,16 +47,16 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
 - `src/input.ts`: input grezzo (tasti e tasti del mouse premuti, pressioni brevi "memorizzate", movimento mouse, Pointer Lock)
 - `src/controls.ts`: sensibilità mouse (`controlSettings`), angoli di vista, **mappatura tasti** (WASD, Spazio, Shift/C = accovacciati/slide, click = spara, R = ricarica, K = respawn) → `InputCommand` (T = cambia atmosfera, P = pixel art on/off, N = grafo IA, tasto sotto Esc = pannello debug, in `main.ts`)
 - `src/sim/`: simulazione pura (niente Three.js/DOM)
-  - `config.ts`: **valori di tuning** (oggetto `tuning`, modificabile dal pannello debug) (tick rate, altezza occhi, salute e rigenerazione, **ondate**, dimensioni giocatore, movimento a terra, gravità/salto/coyote/buffer, movimento e controllo in aria, aiuti al bhop, accovacciata, slide, wall jump, **revolver**, bersagli, **ghoul**)
+  - `config.ts`: **valori di tuning** (oggetto `tuning`, modificabile dal pannello debug) (tick rate, altezza occhi, salute, **ondate**, dimensioni giocatore, movimento a terra, gravità/salto/coyote/buffer, movimento e controllo in aria, aiuti al bhop, accovacciata, slide, wall jump, **revolver**, bersagli, **ghoul**)
   - `game.ts`: **stato di gioco unico** (`GameState`: giocatore, entità, ondata, statistiche) e `stepGame()` (un tick di tutto il gioco; game over alla morte)
   - `entities.ts`: **entità colpibili** (bersagli, ghoul): dati, salute, danno, hitbox
   - `ghoul.ts`: **IA del ghoul** (segue il flow field: cammina, salta con traiettoria balistica, si lascia cadere, **si arrampica**; da vicino inseguimento diretto con salto/aggiramento; separazione; artigliata con finestra per schivare)
   - `nav.ts`: **grafo di navigazione** generato dai box (nodi ogni 1,5 m, link cammina/salta/cadi/arrampicati/**sfiatatoio** (lancio simulato in anticipo), limiti di salto/caduta/arrampicata) e **flow field** (Dijkstra dal giocatore)
-  - `waves.ts`: **ondate stile CoD Zombies** (curva di difficoltà: quanti ghoul, quanti vivi insieme, salute, corridori, intervallo di spawn) e **punteggio**
+  - `waves.ts`: **ondate stile CoD Zombies** (curva di difficoltà: quanti ghoul, quanti vivi insieme, **salute a gradini** `ghoulHealthForWave`, corridori, intervallo di spawn) e **punteggio**
   - `command.ts`: tipo `InputCommand` (cosa vuole fare il giocatore in un tick)
   - `world.ts`: tipi del livello (`Box` AABB, `Prop` decorazioni, `TargetSpawn` bersagli, `World`) e helper `box()`
   - `props.ts`: **box di collisione invisibili dei props** (barile, palo del cartello, torcia) e zona di lancio degli sfiatatoi
-  - `weapon.ts`: revolver (sparo semi-automatico, munizioni, ricarica, hitscan)
+  - `weapon.ts`: revolver (sparo semi-automatico, munizioni, ricarica, hitscan, **colpo alla testa**)
   - `raycast.ts`: raggio contro i box (metodo degli "slab"): cosa colpisce un proiettile
   - `events.ts`: eventi della simulazione (sparo, colpo su un'entità, attacco del ghoul, giocatore ferito/morto, colpo a vuoto, ricarica) per effetti e suoni
   - `collision.ts`: movimento con collisioni asse per asse contro i box, `overlapsAny` (c'è spazio?), `findWall` (muro vicino?)

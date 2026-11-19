@@ -45,6 +45,17 @@ function runnerChance(n: number): number {
   return Math.min(0.6, Math.max(0, (n - 3) * 0.1));
 }
 
+/**
+ * Ghoul health grows in STEPS, slowly: 50 (waves 1-9), 100 (10-19), 150
+ * (20-29)... Designed in shots to kill (revolver 50, headshot ×3):
+ * waves 1-9 any hit kills; 10-29 the body needs more shots but the head is
+ * still one; from 30 even the head needs two. The difficulty of early waves
+ * comes from numbers and speed, not from bullet sponges.
+ */
+export function ghoulHealthForWave(n: number): number {
+  return tuning.ghoulHealth * (1 + Math.floor(n / tuning.waveHealthStep));
+}
+
 /** Spawn points closer than this to the player are skipped, meters. */
 const MIN_SPAWN_DISTANCE = 15;
 
@@ -94,7 +105,7 @@ export function stepWaves(game: GameState, world: World, events: SimEvent[]): vo
   const id = game.nextEntityId++;
   const s = points[(game.tick + id) % points.length];
   const runner = ((id * 7919) % 100) / 100 < runnerChance(w.number);
-  const health = tuning.ghoulHealth + (w.number - 1) * tuning.waveHealthPerWave;
+  const health = ghoulHealthForWave(w.number);
   game.entities.push(createGhoul(id, s.x, s.y, s.z, health, runner));
   w.toSpawn--;
   w.spawnCooldownTicks = secondsToTicks(spawnInterval(w.number));
@@ -108,6 +119,7 @@ export function scoreHits(stats: Stats, events: SimEvent[]): void {
     if (e.killed) {
       stats.kills++;
       stats.score += 100;
+      if (e.headshot) stats.score += 50; // headshot bonus
     }
   }
 }

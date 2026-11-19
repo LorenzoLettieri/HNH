@@ -36,7 +36,9 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
       deathStats.textContent = `Ondata ${e.wave} · ${e.kills} uccisioni · ${e.score} punti`;
     }
     if (e.type === 'waveStart') {
-      showBanner(`ONDATA ${e.wave}`, 3);
+      // Every waveHealthStep waves the ghouls get tougher: tell the player.
+      const tougher = e.wave % tuning.waveHealthStep === 0;
+      showBanner(tougher ? `ONDATA ${e.wave}\nsono più resistenti: mira alla testa` : `ONDATA ${e.wave}`, tougher ? 4 : 3);
       playBell(2); // the church bell tolls: here they come
     }
     if (e.type === 'waveEnd') {

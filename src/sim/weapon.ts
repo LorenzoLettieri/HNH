@@ -73,6 +73,10 @@ function fire(p: PlayerState, world: World, entities: Entity[], events: SimEvent
   const hit = hitEntity ? entityHit : levelHit;
   const target = hitEntity ? living[entityHit.index] : null;
 
+  // Headshot: the bullet hit the top of the ghoul (its head and hat).
+  // Checking the height of the impact point is enough: no second hitbox.
+  const headshot = target !== null && target.type === 'ghoul' && hit!.y - target.y > tuning.ghoulHeadHeight;
+
   const to = hit
     ? { x: hit.x, y: hit.y, z: hit.z }
     : { x: ox + dx * tuning.weaponRange, y: oy + dy * tuning.weaponRange, z: oz + dz * tuning.weaponRange };
@@ -83,16 +87,20 @@ function fire(p: PlayerState, world: World, entities: Entity[], events: SimEvent
     normal: hit ? { x: hit.nx, y: hit.ny, z: hit.nz } : null,
     entityId: target ? target.id : null,
     surface: !hit ? null : !target ? 'level' : target.type === 'ghoul' ? 'flesh' : 'metal',
+    headshot,
   });
 
   if (target) {
-    const killed = damage(target, tuning.revolverDamage);
+    const amount = tuning.revolverDamage * (headshot ? tuning.headshotMultiplier : 1);
+    const killed = damage(target, amount);
+    if (killed && headshot && target.type === 'ghoul') target.headless = true;
     events.push({
       type: 'hit',
       entityId: target.id,
-      damage: tuning.revolverDamage,
+      damage: amount,
       killed,
       surface: target.type === 'ghoul' ? 'flesh' : 'metal',
+      headshot,
     });
   }
 }

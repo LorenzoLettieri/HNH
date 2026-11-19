@@ -48,6 +48,8 @@
       }
       #hitmarker.hit { animation: hitmarker 0.15s ease-out; }
       #hitmarker.kill { --c: #ff4020; animation: hitmarker 0.4s ease-out; width: 30px; height: 30px; margin: -15px 0 0 -15px; }
+      /* Headshot: gold and bigger. */
+      #hitmarker.head { --c: #ffd030; width: 34px; height: 34px; margin: -17px 0 0 -17px; animation-duration: 0.45s; }
       @keyframes hitmarker { from { opacity: 1; } to { opacity: 0; } }
       /* Health bar, bottom-left above the debug text. */
       #health {
@@ -81,9 +83,10 @@
       /* Center banner: "ONDATA 3", "ONDATA SUPERATA", countdown. */
       #banner {
         position: fixed; left: 0; right: 0; top: 22%; text-align: center; pointer-events: none; opacity: 0;
-        color: #d02010; font: bold 56px Georgia, 'Times New Roman', serif; letter-spacing: 6px;
-        text-shadow: 3px 3px 0 #000;
+        color: #d02010; font: bold 24px Georgia, 'Times New Roman', serif; letter-spacing: 4px;
+        text-shadow: 3px 3px 0 #000; white-space: pre-line; /* "\n" = second line, smaller */
       }
+      #banner::first-line { font-size: 56px; }
       #ammo {
         position: fixed; right: 16px; bottom: 10px; color: #f0c080;
         font: bold 26px monospace; letter-spacing: 4px; pointer-events: none;
