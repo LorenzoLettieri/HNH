@@ -85,11 +85,17 @@ WEAPONS.forEach((weapon, i) => {
   slots.set(weapon, slot);
 });
 
-let shown: WeaponId | null = null;
+let shown = ''; // what the bar shows now: weapon in hand + owned weapons, as one string
 
 export function updateWeaponBar(player: PlayerState): void {
-  // Touch the DOM only when the weapon changes, not every frame.
-  if (player.weapon === shown) return;
-  shown = player.weapon;
-  for (const [weapon, slot] of slots) slot.classList.toggle('active', weapon === shown);
+  // Touch the DOM only when something changes (weapon in hand, or a weapon
+  // bought / lost at death), not every frame. One string is an easy "key".
+  const key = `${player.weapon}|${WEAPONS.map((w) => (player.owned[w] ? 1 : 0)).join('')}`;
+  if (key === shown) return;
+  shown = key;
+  for (const [weapon, slot] of slots) {
+    slot.classList.toggle('active', weapon === player.weapon);
+    // A weapon you don't own (yet): no slot. It appears when you buy it.
+    slot.hidden = !player.owned[weapon];
+  }
 }
