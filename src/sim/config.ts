@@ -128,6 +128,10 @@ export const tuning = {
   /** Minimum seconds between two wall jumps (else holding jump would burn them all at once). */
   wallJumpCooldown: 0.2,
 
+  // --- Body blocking (see bodyBlock.ts) ---
+  /** Enemies are solid: you can't run through the horde (CoD Zombies). Off = old ghost behavior. */
+  enemyBodyBlock: true,
+
   // --- Revolver ---
   /** Shots in the cylinder. */
   revolverAmmo: 6,

@@ -13,6 +13,7 @@ import type { SimEvent } from './events';
 import { createPlayer, respawn, stepPlayer, type PlayerState } from './player';
 import { stepWeapon } from './weapon';
 import { stepKick } from './kick';
+import { blockPlayerWithBodies } from './bodyBlock';
 import { dropFromKills, stepPickups, type Pickup } from './pickups';
 import { createStyle, isHighNoon, stepStyle, styleMultiplier, type StyleState } from './style';
 import type { World } from './world';
@@ -65,7 +66,7 @@ export function createGame(world: World, seed = 1): GameState {
 /**
  * One tick of the whole game, always in the same order:
  * 1. the player moves; 2. the player's weapon fires (and hits), the boot kicks;
- * 3. targets and enemies update; 4. enemy projectiles fly (and hit);
+ * 3. targets and enemies update, their bodies block the player; 4. enemy projectiles fly (and hit);
  * 5. the wave system spawns enemies; 6. pickups age and get collected;
  * 7. the style meter reads everything that happened in the tick.
  * Things that happened go into `events`.
@@ -121,6 +122,8 @@ export function stepGame(
     }
     else if (e.state !== 'dead') stepGhoul(e, game.player, game.entities, world, graph, flow, dt, events, pressure);
   }
+  // Enemies are solid: push the player out of their bodies (after they moved, see bodyBlock.ts).
+  blockPlayerWithBodies(game.player, game.entities, world, dt);
   game.projectiles = stepProjectiles(game.projectiles, game.player, world, dt, events);
   stepWaves(game, world, events);
   stepPickups(game, events);

@@ -59,6 +59,7 @@ export function createDebugPanel(options: {
   move.number(tuning, 'stopSpeed', 0, 6, 0.1);
   move.number(tuning, 'gravity', 5, 50, 0.5);
   move.number(tuning, 'jumpSpeed', 2, 15, 0.1);
+  move.boolean(tuning, 'enemyBodyBlock');
   move.boolean(tuning, 'autoBhop');
   move.number(tuning, 'coyoteTime', 0, 0.3, 0.01);
   move.number(tuning, 'jumpBufferTime', 0, 0.3, 0.01);

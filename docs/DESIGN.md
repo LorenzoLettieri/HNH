@@ -139,6 +139,15 @@ con un chiaro preavviso.
 
 Stile: **sprite 2D** (tipo Doom), coerenti con il resto.
 
+### I nemici sono solidi (body block) [FATTO: passo 1]
+Come in CoD Zombies, **non si passa attraverso l'orda correndo**: da una brutta situazione si
+esce col **movimento** (aggirare, saltare sopra le teste, wall jump) o **aprendosi un varco**
+(calcio e doppietta buttano a terra, e un nemico a terra non blocca). Ghoul, cani e tori sono
+cilindri solidi per il giocatore; i Malocchi (volano) no. Solo il giocatore viene spinto:
+i nemici sono "pesanti", e l'orda che preme ti sposta (mai dentro un muro).
+Da valutare dopo il playtest: atterrare sulle teste (oggi scivoli giù), nemici che si fermano
+al contatto invece di spingerti.
+
 ### Navigazione [FATTO]
 - **Grafo di navigazione** generato automaticamente dai box del livello (`src/sim/nav.ts`):
   nodi ogni 1,5 m su ogni superficie + link "cammina / salta / cadi / arrampicati".
