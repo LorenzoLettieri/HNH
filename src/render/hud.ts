@@ -1,4 +1,4 @@
-// HUD: health plate (healthPlate.ts), red flash when you get hit, red vignette when low on
+// HUD: health bar (healthBar.ts), red flash when you get hit, red vignette when low on
 // health, wave number, score, wave banners, the style meter (styleMeter.ts)
 // and the death summary.
 // Plain HTML/CSS elements (see index.html), updated from here.
@@ -9,7 +9,8 @@ import { playBell, playPickup, playPlayerHurt } from '../audio/sfx';
 import type { GameState } from '../sim/game';
 import { updateStyleMeter } from './styleMeter';
 import { updateHighNoon } from './highNoon';
-import { updateHealthPlate } from './healthPlate';
+import { updateHealthBar } from './healthBar';
+import './fonts'; // the wave number is written in Rye
 
 const damage = document.getElementById('damage')!;
 const pickupFlash = document.getElementById('pickup-flash')!;
@@ -79,7 +80,7 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
   updateHighNoon(game.style, events, dt);
 
   const health = player.health / tuning.playerMaxHealth;
-  updateHealthPlate(player.health, dt);
+  updateHealthBar(player.health, dt);
 
   // Red vignette: a flash on each hit, plus a constant glow when below 40%.
   flash = Math.max(0, flash - dt * 3);

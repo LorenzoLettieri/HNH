@@ -83,9 +83,9 @@
       /* Headshot: gold and bigger. */
       #hitmarker.head { --c: #ffd030; width: 34px; height: 34px; margin: -17px 0 0 -17px; animation-duration: 0.45s; }
       @keyframes hitmarker { from { opacity: 1; } to { opacity: 0; } }
-      /* --- Health, bottom-left (src/render/healthPlate.ts) ---
-         No frame: the number lies on the picture, like in Prodeus. Dark dried-blood
-         red, readable thanks to a soft dark smudge behind it (#hud-smudge-left)
+      /* --- Bottom-left: wave number and health bar (look "blood and ash") ---
+         No frame: they lie on the picture, like in Prodeus. Dark dried-blood red,
+         readable thanks to a soft dark smudge behind the corner (.hud-smudge)
          and a blurred black shadow, not a cartoon outline. */
       .hud-smudge {
         position: fixed; bottom: -80px; width: 420px; height: 200px; pointer-events: none;
@@ -93,12 +93,10 @@
       }
       #hud-smudge-left { left: -120px; }
       #hud-smudge-right { right: -120px; }
-      #health-plate { position: fixed; left: 28px; bottom: 22px; pointer-events: none; font-family: 'Rye', Georgia, serif; }
-      #health-number {
-        --lit: 0; /* 0..1: how much brighter the red is (heartbeat at low health), set from the TS */
-        display: inline-block; transform-origin: left bottom;
-        font-size: 46px; line-height: 1.1; letter-spacing: 1px;
-        color: color-mix(in srgb, #9a1c10, #ff3a1c calc(var(--lit) * 100%));
+      #hud-left { position: fixed; left: 28px; bottom: 22px; pointer-events: none; font-family: 'Rye', Georgia, serif; }
+      /* Wave number, like CoD Zombies' round tally (set by src/render/hud.ts). */
+      #wave {
+        font-size: 52px; line-height: 1.1; letter-spacing: 1px; color: #9a1c10;
         text-shadow: 0 0 2px #000, 2px 2px 0 #000, 0 0 14px rgba(0, 0, 0, 0.9);
       }
       /* The gauge: a thin line, no border. The ghost (dull, pale) lies under the fill. */
@@ -148,11 +146,6 @@
       #death-stats {
         position: fixed; left: 0; right: 0; top: 60%; text-align: center; pointer-events: none; opacity: 0;
         color: #f0c080; font: bold 22px monospace; text-shadow: 2px 2px 0 #000;
-      }
-      /* Wave number: big, red, old-western serif, like CoD's tally of rounds. */
-      #wave {
-        position: fixed; left: 16px; bottom: 80px; pointer-events: none;
-        color: #b01808; font: bold 72px Georgia, 'Times New Roman', serif; text-shadow: 3px 3px 0 #000;
       }
       #score {
         position: fixed; right: 16px; bottom: 44px; pointer-events: none;
@@ -278,13 +271,12 @@
     <div id="ammo"></div>
     <div id="damage"></div>
     <div id="pickup-flash"></div>
-    <div id="health-plate">
-      <div id="health-number"></div>
+    <div id="hud-left">
+      <div id="wave"></div>
       <div id="health-gauge"><div id="health-ghost"></div><div id="health-fill"></div></div>
     </div>
     <div id="death">SEI MORTO</div>
     <div id="death-stats"></div>
-    <div id="wave"></div>
     <div id="score"></div>
     <div id="banner"></div>
     <div id="style-meter">
