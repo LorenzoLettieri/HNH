@@ -59,11 +59,8 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
       showBanner('ONDATA SUPERATA', 2.5);
       playBell(1, 240);
     }
-    if (e.type === 'highNoon') {
-      // Provisional announcement: the real one (screen tint, its own sound) comes next.
-      showBanner('HIGH NOON\ncaricatore infinito', 2.5);
-      playBell(3, 240, 0.4); // three quick, high tolls: not the slow bell of the waves
-    }
+    // The banner says what the climax gives you; tint and sounds are in highNoon.ts.
+    if (e.type === 'highNoon') showBanner('HIGH NOON\ncaricatore infinito', 2.5);
   }
 
   // Wave number and score, always visible. During the break: a countdown.

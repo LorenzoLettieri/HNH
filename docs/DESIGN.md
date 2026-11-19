@@ -91,7 +91,10 @@ stilosa riavvia la catena e il lampeggio si ferma. Niente barra del tempo: la ba
   **Passo 2** [FATTO]: **tinta dello schermo** (`src/render/highNoon.ts`). All'inizio un **lampo bianco
   caldo**, come guardare il sole a mezzogiorno; per tutto il climax l'immagine è **calda** (tinta che
   mantiene il contrasto) e i **bordi dello schermo ardono** pulsando; svanisce nell'ultimo mezzo secondo.
-  [PROSSIMO] Suono dedicato, la fine del climax.
+  **Passo 3** [FATTO, da sentire]: **suoni**. All'inizio una **campana enorme e grave** (non quella delle
+  ondate) e un **fischio da duello** (melodia originale: sale, tiene col vibrato, scende); per tutto il climax
+  un'**eco da canyon** su ogni suono (spari, nemici, il fischio stesso), che si spegne alla fine.
+  [PROSSIMO] La fine del climax.
 - [DA DECIDERE] Bonus di danno ai rank alti (forse superato dal climax).
 - [DA DECIDERE] Eventuale bonus di drop della salute ai rank alti.
 

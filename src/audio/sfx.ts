@@ -12,6 +12,13 @@
 let ctx: AudioContext | null = null;
 let master: GainNode;
 let noiseBuffer: AudioBuffer;
+/** How much of the sound goes into the canyon echo (0 = off). See initAudio. */
+let echoSend: GainNode;
+
+/** Canyon echo (HIGH NOON): seconds between repeats, how much of each repeat comes back, how loud. */
+const ECHO_DELAY = 0.34;
+const ECHO_FEEDBACK = 0.4;
+const ECHO_WET = 0.55;
 
 /** Master volume, 0..1. */
 export const sfxSettings = { volume: 0.5 };
@@ -26,6 +33,29 @@ export function initAudio(): void {
   master = ctx.createGain();
   master.gain.value = sfxSettings.volume;
   master.connect(ctx.destination);
+
+  // The canyon echo, for HIGH NOON. Everything that goes to the speakers
+  // also goes (through echoSend, silent until turned on) into a delay line
+  // that FEEDS BACK into itself: each repeat goes around the loop again,
+  // quieter (feedback < 1) and darker (a lowpass in the loop, like air
+  // swallowing the highs of a far echo).
+  //
+  //   master ──▶ echoSend ──▶ delay ──▶ lowpass ──┬──▶ speakers
+  //                             ▲                 │
+  //                             └─── feedback ◀───┘
+  //
+  // (Web Audio forbids loops in the graph, unless there's a DelayNode in them.)
+  echoSend = ctx.createGain();
+  echoSend.gain.value = 0;
+  const delay = ctx.createDelay(1);
+  delay.delayTime.value = ECHO_DELAY;
+  const damp = ctx.createBiquadFilter();
+  damp.type = 'lowpass';
+  damp.frequency.value = 1800;
+  const feedback = ctx.createGain();
+  feedback.gain.value = ECHO_FEEDBACK;
+  master.connect(echoSend).connect(delay).connect(damp).connect(ctx.destination);
+  damp.connect(feedback).connect(delay);
 
   // One second of white noise (random samples), reused by every sound.
   noiseBuffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
@@ -525,6 +555,56 @@ export function playFireballHit(where: Where): void {
   if (!out) return;
   noiseBurst({ out, duration: 0.3, volume: 0.8, filter: 'lowpass', frequency: 3000, frequencyEnd: 250 });
   noiseBurst({ out, start: 0.05, duration: 0.4, volume: 0.25, filter: 'highpass', frequency: 4000 }); // sizzle
+}
+
+/**
+ * Turns the canyon echo on or off (HIGH NOON). Smoothly: setTargetAtTime
+ * glides the volume towards the target (a sudden jump would click). Turning
+ * it off only stops NEW sound from going in: the repeats already in the loop
+ * die out on their own.
+ */
+export function setCanyonEcho(on: boolean): void {
+  if (!ctx) return;
+  echoSend.gain.setTargetAtTime(on ? ECHO_WET : 0, ctx.currentTime, 0.1);
+}
+
+/**
+ * HIGH NOON starts: a huge church bell, much deeper and longer than the
+ * waves' one (same metal "ring", with the heavy strike of the clapper), and
+ * a duel whistle: a sine that glides up, holds with a vibrato (the wobble of
+ * a real whistle) and falls, plus a little breath. Turn the canyon echo on
+ * first: the whistle bounces off the canyon walls.
+ */
+export function playHighNoon(): void {
+  if (!ctx) return;
+  master.gain.value = sfxSettings.volume;
+  ring(82, 6, 0.55); // the bell
+  thump({ duration: 0.7, volume: 0.9, from: 140, to: 35 }); // the clapper's strike
+
+  const t0 = ctx.currentTime + 0.3; // the whistle comes in after the strike
+  const end = t0 + 1.1;
+  const whistle = ctx.createOscillator(); // a sine: the purest tone, like a whistle
+  whistle.frequency.setValueAtTime(1000, t0);
+  whistle.frequency.exponentialRampToValueAtTime(1570, t0 + 0.14); // up...
+  whistle.frequency.setValueAtTime(1570, t0 + 0.6); // ...hold...
+  whistle.frequency.exponentialRampToValueAtTime(1180, end - 0.1); // ...and down
+  // Vibrato: a slow oscillator (6 Hz) that pushes the whistle's pitch up and down by ±22 Hz.
+  const vibrato = ctx.createOscillator();
+  vibrato.frequency.value = 6;
+  const vibratoDepth = ctx.createGain();
+  vibratoDepth.gain.value = 22;
+  vibrato.connect(vibratoDepth).connect(whistle.frequency);
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0.001, t0);
+  env.gain.exponentialRampToValueAtTime(0.16, t0 + 0.05);
+  env.gain.setValueAtTime(0.16, end - 0.3);
+  env.gain.exponentialRampToValueAtTime(0.001, end);
+  whistle.connect(env).connect(master);
+  whistle.start(t0);
+  vibrato.start(t0);
+  whistle.stop(end);
+  vibrato.stop(end);
+  noiseBurst({ start: 0.3, duration: 1, volume: 0.05, filter: 'bandpass', frequency: 1500, q: 2 }); // breath
 }
 
 /**

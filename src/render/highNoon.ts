@@ -5,9 +5,13 @@
 // is hot (warm tint) and the borders of the screen burn, pulsing like heat;
 // it all fades away at the end. Two layers in index.html (#high-noon-heat,
 // #high-noon); from here we only animate their CSS variables.
+//
+// The sounds: a deep bell and a duel whistle when it starts, and for the
+// whole climax a canyon echo on every sound (src/audio/sfx.ts).
 import { TICK_DT } from '../sim/config';
 import type { SimEvent } from '../sim/events';
 import { isHighNoon, type StyleState } from '../sim/style';
+import { playHighNoon, setCanyonEcho } from '../audio/sfx';
 
 /** The flash at the start: how long it lasts (s), how strong in the middle and at the borders (0..1). */
 const FLASH_TIME = 0.7;
@@ -27,6 +31,7 @@ const heatLayer = document.getElementById('high-noon-heat')!;
 const lightLayer = document.getElementById('high-noon')!;
 let flash = 0; // 1 → 0 after the climax starts
 let clock = 0; // seconds, for the pulse
+let echoOn = false;
 
 /** Sets the CSS variables of a layer, or takes it out of the page when it adds nothing. */
 function setLayer(layer: HTMLElement, vars: Record<string, number>): void {
@@ -37,12 +42,25 @@ function setLayer(layer: HTMLElement, vars: Record<string, number>): void {
 }
 
 export function updateHighNoon(style: StyleState, events: readonly SimEvent[], dt: number): void {
-  for (const e of events) if (e.type === 'highNoon') flash = 1;
+  // The echo follows the STATE, not the events: dying mid-climax resets the
+  // style with no 'highNoonEnd', and an echo that never turns off would stay
+  // for the rest of the game. "Is it HIGH NOON? Then the echo is on" can't get stuck.
+  const highNoon = isHighNoon(style);
+  if (highNoon !== echoOn) {
+    echoOn = highNoon;
+    setCanyonEcho(highNoon);
+  }
+  for (const e of events) {
+    if (e.type === 'highNoon') {
+      flash = 1;
+      playHighNoon();
+    }
+  }
   clock += dt;
   flash = Math.max(0, flash - dt / FLASH_TIME);
 
   // How much the climax is "on": 1 for the whole climax, down to 0 in its last END_FADE seconds.
-  const on = isHighNoon(style) ? Math.min(1, (style.highNoonTicks * TICK_DT) / END_FADE) : 0;
+  const on = highNoon ? Math.min(1, (style.highNoonTicks * TICK_DT) / END_FADE) : 0;
   const pulse = Math.sin(clock * GLOW_HZ * Math.PI * 2);
   const f = flash * flash; // squared: it drops fast, then lingers a little
 
