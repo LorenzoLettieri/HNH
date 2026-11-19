@@ -11,6 +11,10 @@
 //   screech (the warning), then a low, fast leap aimed where you'll be.
 //   After landing it needs a moment to get up: the time to punish it.
 //      chase ──(2-6 m, in sight)──▶ lunge: crouch ──▶ leap ──(lands)──▶ recover ──▶ chase
+// - When it SEES you on its own level (pursuit mode): it doesn't follow your
+//   footsteps, it runs to where you're GOING (cutting you off), each ghoul
+//   aiming a bit to one side of you: the horde fans out and surrounds you
+//   instead of forming a conga line behind you.
 import { moveAndCollide, overlapsAny } from './collision';
 import { secondsToTicks, tuning } from './config';
 import type { GhoulEntity, Entity } from './entities';
@@ -61,14 +65,24 @@ export function stepGhoul(
   const distToPlayer = Math.hypot(player.x - g.x, player.z - g.z);
   const sameLevel = Math.abs(player.y - g.y) < 0.8;
   const direct = distToPlayer < tuning.ghoulDirectChaseRange && sameLevel;
+  // Can it see you? A raycast is the most expensive thing here, so it's
+  // refreshed only every 6 ticks (10 times a second: plenty for a zombie),
+  // staggered by id so the ghouls don't all do it on the same tick.
+  if ((g.stateTicks + g.id) % 6 === 0) {
+    g.seesPlayer = sameLevel && distToPlayer < tuning.ghoulPursuitRange && clearLine(g, player, distToPlayer, world);
+  }
+  const pursuit = !direct && g.onGround && sameLevel && g.seesPlayer;
 
-  // In "direct" mode the target is the player; otherwise the next node
-  // along the flow field. (No link = already at the player's node, or the
-  // player is unreachable: fall back to walking straight at them.)
+  // In "direct" mode the target is the player; in "pursuit" mode a point
+  // ahead of you and to one side (see pursuitTarget); otherwise the next
+  // node along the flow field. (No link = already at the player's node, or
+  // the player is unreachable: fall back to walking straight at them.)
   let link: NavLink | null = null;
   let targetX = player.x;
   let targetZ = player.z;
-  if (!direct && g.navNode >= 0 && flow.next[g.navNode]) {
+  if (pursuit) {
+    [targetX, targetZ] = pursuitTarget(g, player, distToPlayer, world);
+  } else if (!direct && g.navNode >= 0 && flow.next[g.navNode]) {
     link = flow.next[g.navNode];
     // For a vent, first walk onto the vent itself (the launch does the rest).
     const t = link!.via ?? graph.nodes[link!.to];
@@ -271,7 +285,7 @@ function stepLunge(g: GhoulEntity, player: PlayerState, world: World, dt: number
   // In the air: did it reach you? Its box against yours, a little generous
   // (claws stretched forward).
   if (airborne && !g.lungeHit && player.health > 0) {
-    const reach = tuning.ghoulRadius + tuning.playerRadius + 0.35;
+    const reach = tuning.ghoulRadius + tuning.playerRadius + tuning.ghoulLungeReach;
     const touching =
       Math.hypot(player.x - g.x, player.z - g.z) < reach &&
       g.y < player.y + tuning.playerHeight &&
@@ -293,6 +307,44 @@ function stepLunge(g: GhoulEntity, player: PlayerState, world: World, dt: number
     g.lungeCooldownTicks = secondsToTicks(tuning.ghoulLungeCooldown + ((g.id * 7) % 16) * 0.1);
     g.attackCooldownTicks = 0;
   }
+}
+
+/**
+ * Pursuit: where to run when it sees you. Two ideas, added together:
+ * 1. INTERCEPT: not where you are, but where you'll be by the time it gets
+ *    there (your velocity × the time it needs, capped). Like a dog that
+ *    cuts the corner instead of running behind the ball.
+ * 2. FLANK: each ghoul aims a few meters to one side of that point
+ *    (perpendicular to its line toward you). Its side and distance come
+ *    from its id, so a group spreads in a fan. The offset shrinks as it
+ *    gets close: at the end they all close in on you, from different sides.
+ * If that point is inside a wall, or the way there is blocked, it falls
+ * back to running straight at you.
+ */
+function pursuitTarget(g: GhoulEntity, player: PlayerState, dist: number, world: World): [number, number] {
+  const lead = Math.min(dist / ghoulSpeed(g), tuning.ghoulPursuitMaxLead) * tuning.ghoulPursuitLead;
+  let tx = player.x + player.vx * lead;
+  let tz = player.z + player.vz * lead;
+  // Unit vector from the ghoul toward the point, and its perpendicular (−z, x).
+  const dx = tx - g.x;
+  const dz = tz - g.z;
+  const d = Math.hypot(dx, dz) || 1;
+  // A value in [-1, 1] that's different for every id: the "golden ratio"
+  // trick (id × 0.618..., keep the decimals) spreads them evenly.
+  const side = ((g.id * 0.6180339) % 1) * 2 - 1;
+  const offset = side * Math.min(tuning.ghoulFlankDistance, dist * 0.4);
+  tx += (-dz / d) * offset;
+  tz += (dx / d) * offset;
+  // Is the spot reachable in a straight line? (Ray at knee height: low
+  // obstacles are fine, it hops over them.)
+  const rx = tx - g.x;
+  const rz = tz - g.z;
+  const rd = Math.hypot(rx, rz);
+  const r = tuning.ghoulRadius;
+  const blocked =
+    overlapsAny(tx, g.y + 0.05, tz, r, tuning.ghoulHeight, world.boxes) ||
+    (rd > 0.01 && raycastBoxes(g.x, g.y + tuning.ghoulJumpHeight + 0.2, g.z, rx / rd, 0, rz / rd, rd, world.boxes) !== null);
+  return blocked ? [player.x, player.z] : [tx, tz];
 }
 
 /** Nothing between its chest and yours? (It won't pounce through a wall or a fence.) */

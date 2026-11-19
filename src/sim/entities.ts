@@ -48,6 +48,8 @@ export interface GhoulEntity extends EntityBase {
   lungeCooldownTicks: number;
   /** This pounce already hit you (it only hurts once per leap). */
   lungeHit: boolean;
+  /** It saw you at the last check (on its level, in range, nothing in between): pursuit mode. */
+  seesPlayer: boolean;
   /** Going around an obstacle: ticks left, and which side (+1 / -1). */
   detourTicks: number;
   detourSide: number;
@@ -141,6 +143,7 @@ export function createGhoul(
     // arriving together doesn't pounce in sync.
     lungeCooldownTicks: secondsToTicks(1 + (id % 6) * 0.3),
     lungeHit: false,
+    seesPlayer: false,
     detourTicks: 0,
     // Half of them go around obstacles on the left, half on the right. Based on
     // the id, not Math.random(): the simulation must be deterministic (same

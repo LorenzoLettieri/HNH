@@ -92,6 +92,12 @@ Stile: **sprite 2D** (tipo Doom), coerenti con il resto.
   nessun tetto è sicuro (campanile compreso).
 - **Flow field**: una sola ricerca (Dijkstra) dal giocatore, condivisa da tutti i ghoul.
 - Tasto **N** in gioco: mostra il grafo.
+- **Inseguimento e accerchiamento**: quando un ghoul ti **vede** sul suo stesso livello (entro 30 m),
+  smette di seguire il grafo e corre **dove stai andando** (intercettazione, fino a 1,5 s di anticipo),
+  ognuno puntando qualche metro **di lato** (fino a 5 m, lato e distanza dipendono dall'id): l'orda si
+  apre a ventaglio e ti chiude da più direzioni invece di metterti in fila dietro. Da vicino (5 m)
+  torna a puntarti dritto. Distanza minima tra ghoul: 1,4 m (era 1).
+  Col bot di prova (giro in tondo, ondata 30): ghoul entro 6 m in media da 0,5 a ~4.
 - I volanti usano uno steering 3D semplice che evita gli ostacoli.
 
 ---
@@ -125,8 +131,8 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
   tondo rendeva immortali (0 colpi su 190 col bot di prova).
 - **Ghoul: artigliata e balzo.** L'artigliata (20 danni) non lo ferma più: continua a camminare
   al 60% della velocità mentre colpisce, quindi passargli accanto non è gratis. Tra **2 e 6 m**,
-  con la linea libera, **balza**: 0,35 s accovacciato a braccia alzate con uno **stridio che sale**
-  (il preavviso), poi un salto basso e veloce (fino a 13 m/s, ~0,4 s in aria) mirato **dove sarai**
+  con la linea libera, **balza**: 0,45 s accovacciato a braccia alzate con uno **stridio che sale**
+  (il preavviso), poi un salto basso e veloce (fino a 13 m/s, ~0,4 s in aria, preavviso 0,45 s) mirato **dove sarai**
   all'atterraggio. Ti ferisce se ti tocca in volo (20 danni). Atterrato resta **a terra 0,6 s**:
   è il momento di punirlo. Ricarica di 3–4,5 s. Resta un nemico che punisce le distrazioni:
   per chi lo vede arrivare è schivabile (salto, slide di lato).

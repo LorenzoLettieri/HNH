@@ -170,7 +170,7 @@ export const tuning = {
   /** Obstacles up to this height are hopped over, meters. */
   ghoulJumpHeight: 1.1,
   /** Ghouls closer than this push each other apart, meters. */
-  ghoulSeparation: 1,
+  ghoulSeparation: 1.4,
   /** Starts an attack when the player is closer than this, meters. */
   ghoulAttackRange: 1.4,
   /** Duration of the attack animation, seconds. */
@@ -197,13 +197,15 @@ export const tuning = {
    * Warning before the pounce, seconds: it crouches with its claws up and
    * screeches. That's your window to jump, slide aside or shoot it.
    */
-  ghoulLungeWindup: 0.35,
+  ghoulLungeWindup: 0.45,
   /** Max horizontal speed of the pounce, m/s (you run at 8: it's faster than you, briefly). */
   ghoulLungeSpeed: 13,
   /** Upward speed of the pounce, m/s: low and flat, ~0.4 s in the air. */
   ghoulLungeUpSpeed: 4,
   /** How much it aims where you'll be when it lands (0 = where you are, 1 = full lead). */
-  ghoulLungeLead: 0.8,
+  ghoulLungeLead: 0.6,
+  /** Extra reach of the claws in the air, beyond touching bodies, meters. Lower = easier to sidestep. */
+  ghoulLungeReach: 0.2,
   ghoulLungeDamage: 20,
   /** After landing it stays still this long, seconds: the moment to punish it. */
   ghoulLungeRecover: 0.6,
@@ -213,6 +215,17 @@ export const tuning = {
   ghoulClimbSpeed: 2.8,
   /** Closer than this (and on the same level) it walks straight at you, ignoring the graph. */
   ghoulDirectChaseRange: 5,
+  /**
+   * Pursuit mode: closer than this, on your level and seeing you, it stops
+   * following the graph and runs to cut you off (see pursuitTarget in ghoul.ts). Meters.
+   */
+  ghoulPursuitRange: 30,
+  /** How much it aims where you're going (0 = where you are, 1 = where you'll be when it arrives). */
+  ghoulPursuitLead: 1,
+  /** It never aims more than this many seconds of your running ahead of you. */
+  ghoulPursuitMaxLead: 1.5,
+  /** Max distance to one side of you each ghoul aims at, meters: how wide the horde fans out. */
+  ghoulFlankDistance: 5,
   /** How long a dead ghoul lies on the ground before disappearing, seconds. */
   ghoulCorpseTime: 4,
   /** Speed of the "runners" (fast ghouls, from wave 4), m/s. */
