@@ -286,34 +286,6 @@ export function computeFlowField(g: NavGraph, goal: number): FlowField {
   return { next, dist };
 }
 
-/**
- * The same Dijkstra, run FORWARD from `start`: what does it cost to reach
- * every node from HERE? Two questions, one algorithm:
- *   flow field (backward from a goal): "from anywhere, how do I get THERE?"
- *   reach (forward from a start):      "from HERE, where can I get, and at what price?"
- * It stops at `maxCost`: farther nodes stay at Infinity, and we don't pay for
- * exploring the whole map.
- */
-export function computeReach(g: NavGraph, start: number, maxCost = Infinity): Float64Array {
-  const dist = new Float64Array(g.nodes.length).fill(Infinity);
-  if (start < 0) return dist;
-  dist[start] = 0;
-  const heap = new MinHeap();
-  heap.push(start, 0);
-  while (heap.size > 0) {
-    const [node, d] = heap.pop();
-    if (d > dist[node]) continue;
-    for (const link of g.links[node]) {
-      const nd = d + link.cost;
-      if (nd < dist[link.to] && nd <= maxCost) {
-        dist[link.to] = nd;
-        heap.push(link.to, nd);
-      }
-    }
-  }
-  return dist;
-}
-
 const reversedCache = new WeakMap<NavGraph, { from: number; link: NavLink }[][]>();
 function reversedLinks(g: NavGraph): { from: number; link: NavLink }[][] {
   let rev = reversedCache.get(g);

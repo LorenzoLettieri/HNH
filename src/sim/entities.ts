@@ -150,14 +150,14 @@ export interface SharpshooterEntity extends EntityBase {
   vz: number;
   onGround: boolean;
   /**
-   * What it's doing (see sharpshooter.ts): walking/climbing to a perch
-   * (doesn't shoot), waiting (laser off), aiming (the laser follows you),
-   * locked (the laser stops and blinks, the shot is coming), dead.
+   * The shot cycle (see sharpshooter.ts): waiting (laser off), aiming (the
+   * laser follows you), locked (the laser stops and blinks, the shot is
+   * coming), dead.
    */
-  state: 'move' | 'idle' | 'aim' | 'lock' | 'dead';
+  state: 'idle' | 'aim' | 'lock' | 'dead';
   /** Ticks spent in the current state. */
   stateTicks: number;
-  /** Where the rifle points: a unit vector in 3D (the laser goes this way). While walking: where it walks. */
+  /** Where the rifle points: a unit vector in 3D (the laser goes this way). */
   aimX: number;
   aimY: number;
   aimZ: number;
@@ -165,18 +165,6 @@ export interface SharpshooterEntity extends EntityBase {
   shootCooldownTicks: number;
   /** Ticks in a row it couldn't see you while aiming. */
   lostSightTicks: number;
-  /** Ticks in a row it couldn't see you while waiting: too many and it moves (sharpshooterRelocateTime). */
-  unseenTicks: number;
-  /** The node (ghouls' graph) of the perch it's going to or standing on; -1 = none, choose one. */
-  perchNode: number;
-  /** The graph node it's standing on (-1 = unknown). */
-  navNode: number;
-  /** Climbing a wall: from the node at its foot to the one on top (-1 = not climbing). */
-  climbFrom: number;
-  climbTo: number;
-  climbTicks: number;
-  /** Ticks left to reach the perch before it gives up (stuck, pushed away...). */
-  moveTicksLeft: number;
   /** Killed by a headshot: the skull is gone (for the death animation). */
   headless: boolean;
 }
@@ -351,8 +339,7 @@ export function createSharpshooter(
     vz: 0,
     health,
     onGround: false,
-    // Born moving with no perch: the first thing it does is choose where to go.
-    state: 'move',
+    state: 'idle',
     stateTicks: 0,
     aimX: 0,
     aimY: 0,
@@ -361,13 +348,6 @@ export function createSharpshooter(
     // a group doesn't light up all its lasers at once.
     shootCooldownTicks: secondsToTicks(1 + (id % 5) * 0.3),
     lostSightTicks: 0,
-    unseenTicks: 0,
-    perchNode: -1,
-    navNode: -1,
-    climbFrom: -1,
-    climbTo: -1,
-    climbTicks: 0,
-    moveTicksLeft: 0,
     headless: false,
   };
 }

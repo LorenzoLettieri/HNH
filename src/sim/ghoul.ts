@@ -51,7 +51,7 @@ export function stepGhoul(
   if (g.detourTicks > 0) g.detourTicks--;
 
   if (g.climbTo >= 0) {
-    climbWall(g, graph.nodes[g.climbFrom], graph.nodes[g.climbTo], tuning.ghoulRadius, tuning.ghoulHeight, tuning.ghoulClimbSpeed, world, dt);
+    climb(g, graph.nodes[g.climbFrom], graph.nodes[g.climbTo], world, dt);
     return;
   }
   if (g.state === 'lunge' || g.state === 'recover') {
@@ -425,29 +425,12 @@ export function jumpTo(g: JumpingBody, t: NavNode): void {
   g.onGround = false;
 }
 
-/** What climbWall needs: a body that can be partway up a wall (ghouls and sharpshooters). */
-export interface ClimbingBody extends JumpingBody {
-  /** The node at the top it's climbing to (-1 = not climbing). */
-  climbTo: number;
-  climbTicks: number;
-}
-
 /**
- * Climbing a wall: go straight up at climbing `speed` (no gravity) along the
+ * Climbing a wall: go straight up at climbing speed (no gravity) along the
  * column above `from` (the graph checked it's free all the way up: no roof
  * eaves to bump into), then, once above the edge, step over onto `to`.
- * `radius` and `height`: the body's collider.
  */
-export function climbWall(
-  g: ClimbingBody,
-  from: NavNode,
-  to: NavNode,
-  radius: number,
-  height: number,
-  speed: number,
-  world: World,
-  dt: number,
-): void {
+function climb(g: GhoulEntity, from: NavNode, to: NavNode, world: World, dt: number): void {
   g.climbTicks++;
   const above = g.y >= to.y + 0.1;
   // Below the edge: drift toward the free column. Above it: move onto the top.
@@ -459,8 +442,8 @@ export function climbWall(
   const hSpeed = above ? 2.5 : Math.min(1.5, dist * 4); // slows down as it lines up
   g.vx = dist > 0.01 ? (dx / dist) * hSpeed : 0;
   g.vz = dist > 0.01 ? (dz / dist) * hSpeed : 0;
-  g.vy = above ? 0 : speed;
-  moveAndCollide(g, radius, height, world.boxes, dt);
+  g.vy = above ? 0 : tuning.ghoulClimbSpeed;
+  moveAndCollide(g, tuning.ghoulRadius, tuning.ghoulHeight, world.boxes, dt);
   // Done: over the edge (or it's been climbing way too long: give up).
   if ((above && dist < 0.8) || g.climbTicks > secondsToTicks(12)) {
     g.climbTo = -1;
