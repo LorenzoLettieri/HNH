@@ -180,3 +180,30 @@ futuro **poligono di tiro / tutorial**.
 - Nomi definitivi dei rank di stile.
 - Morte: si ricomincia da capo? Progressione persistente tra le partite?
 - Multiplayer co-op alle orde (in futuro): come si condivide lo stile?
+
+---
+
+## 9. Prestazioni: regole e ottimizzazioni rimandate
+
+**Regola: prima misura, poi ottimizza.** Le ottimizzazioni complicano il codice: si fanno solo
+quando una misura (l'indicatore in basso a sinistra: fps, ms di simulazione e di disegno,
+draw call) mostra che servono, e solo nel punto che costa. Eccezione: le scelte corrette per
+costruzione che non complicano nulla (es. il limite di voci per i versi dei nemici).
+
+### Misure (simulazione, novembre 2026)
+| Ghoul | Costo per tick | Quota di un fotogramma a 60 fps |
+|---|---|---|
+| 100 | 0,24 ms | 1,4% |
+| 200 | 0,8 ms | 5% |
+| 400 | 2,6 ms | 16% |
+| 800 | 10,4 ms | 63% |
+
+### Ottimizzazioni pronte all'uso (quando servono)
+| Ottimizzazione | Quando farla | Cosa risolve |
+|---|---|---|
+| **Static batching**: unire tutte le mesh statiche del livello e dei props in poche mesh (una per materiale) | se le draw call pesano: oggi ~470 con 4 ghoul, quasi tutte dal livello e dai props (ogni pezzo è un oggetto, ×2 per le ombre) | costo per-oggetto della geometria che non si muove mai |
+| **Instancing degli sprite** (un'unica draw call per tutti i ghoul) | draw call > ~300 o fps che calano con molti nemici | costo per-oggetto del disegno (oggi 2 draw call per ghoul: corpo + ombra) |
+| **Griglia spaziale** per la separazione | > ~200 nemici insieme | costo O(N²) della separazione (ogni ghoul controlla tutti gli altri) |
+| **Ombre "a macchia"** per i nemici lontani | se le ombre pesano (molti nemici visibili) | ogni nemico viene disegnato 2 volte (scena + shadow map) |
+| **IA a frequenza ridotta** per i nemici lontani | > ~300 nemici | ricalcoli inutili per chi è lontano |
+| **Interest management** di rete | multiplayer | banda: mandare a ogni client solo i nemici vicini |

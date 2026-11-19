@@ -174,11 +174,23 @@ function placeSound(where: Where): AudioNode | null {
  * (vibrato: a slow oscillator modulating the pitch), filtered to sound like
  * a throat, plus some breath noise. Pitch and length vary every time.
  */
+/**
+ * Voice limit: at most this many groans at the same time. Not an
+ * optimization: a horde of 50 groaning together is just noise, and you'd
+ * lose the information "there's one right behind me". The quietest (farthest)
+ * ones simply don't play.
+ */
+const MAX_GROANS = 4;
+let groansPlaying = 0;
+
 export function playGroan(where: Where, pitch = 1): void {
+  if (groansPlaying >= MAX_GROANS || where.volume < 0.08) return;
   const out = placeSound(where);
   if (!ctx || !out) return;
   const t0 = ctx.currentTime;
   const dur = 0.8 + Math.random() * 0.6;
+  groansPlaying++;
+  setTimeout(() => groansPlaying--, dur * 1000);
   const f0 = (80 + Math.random() * 40) * pitch;
 
   const voice = ctx.createOscillator();

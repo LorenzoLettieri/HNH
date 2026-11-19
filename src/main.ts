@@ -180,6 +180,23 @@ let lastViewYaw = view.yaw;
 let lastViewPitch = view.pitch;
 let lastTime = performance.now();
 
+// --- Performance readout ---------------------------------------------------------
+// "Measure first, optimize later": these numbers tell where the time goes.
+// - sim: milliseconds spent in the simulation ticks this frame;
+// - render: milliseconds of JavaScript to SEND the frame to the GPU (the GPU's
+//   own work isn't measurable from here, but fps drops when it's too much);
+// - calls: draw calls, how many separate "draw this" requests went to the GPU.
+renderer.info.autoReset = false;
+const perf = { sim: 0, render: 0, calls: 0, fps: 60 };
+function perfText(frameTime: number, ghouls: number): string {
+  // Smoothed fps (exponential average), otherwise the number jitters unreadably.
+  if (frameTime > 0) perf.fps += (1 / frameTime - perf.fps) * 0.05;
+  return (
+    `${perf.fps.toFixed(0)} fps  sim ${perf.sim.toFixed(2)} ms  render ${perf.render.toFixed(2)} ms  ` +
+    `${perf.calls} draw calls  ${ghouls} ghouls`
+  );
+}
+
 renderer.setAnimationLoop((now: number) => {
   // Seconds since the previous frame, capped so a hiccup (e.g. switching tab)
   // doesn't trigger hundreds of ticks in a row ("spiral of death").
@@ -188,6 +205,7 @@ renderer.setAnimationLoop((now: number) => {
 
   updateLook(); // mouse look every frame, for the snappiest aim
 
+  const simStart = performance.now();
   accumulator += frameTime;
   const events: SimEvent[] = [];
   while (accumulator >= TICK_DT) {
@@ -201,6 +219,7 @@ renderer.setAnimationLoop((now: number) => {
 
   // How far we are between the previous tick (0) and the current one (1).
   const alpha = accumulator / TICK_DT;
+  perf.sim = performance.now() - simStart;
   // View angles come straight from the mouse, not from the simulation:
   // interpolating them would add a tick of delay to aiming.
   // (rotation.z, the roll, is set by the camera feel below.)
@@ -226,7 +245,9 @@ renderer.setAnimationLoop((now: number) => {
   sky.position.copy(camera.position);
 
   const state = player.sliding ? 'SLIDE' : player.onGround ? (player.crouched ? 'CROUCH' : 'GROUND') : 'AIR';
-  hud.textContent = `${horizontalSpeed(player).toFixed(1)} m/s  ${state}  walljumps ${player.wallJumpsLeft}`;
+  hud.textContent =
+    `${horizontalSpeed(player).toFixed(1)} m/s  ${state}  walljumps ${player.wallJumpsLeft}\n` +
+    perfText(frameTime, game.entities.filter((e) => e.type === 'ghoul').length);
 
   // Weapon events of this frame → effects and sounds.
   weaponFx.handle(events, camera);
@@ -242,5 +263,12 @@ renderer.setAnimationLoop((now: number) => {
   updateFireLights(now / 1000);
   props.update(now / 1000);
   updateParticles(frameTime, now / 1000, camera, post.sceneSize.y);
+  // renderer.info counts draw calls; it normally resets at every render()
+  // call, but a frame here is many renders (scene, gun, post passes): we
+  // reset it ourselves once per frame to get the total.
+  renderer.info.reset();
+  const renderStart = performance.now();
   post.render(scene, camera, viewmodel);
+  perf.render = performance.now() - renderStart;
+  perf.calls = renderer.info.render.calls;
 });

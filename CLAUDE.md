@@ -41,7 +41,8 @@ per chi sta fermo); nemici che attaccano lo spazio (anche volanti e a distanza);
 
 ## Dove trovare le cose
 Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella rilevante.
-- `src/main.ts`: entry point (renderer, scena, luci, caricamento livello, game loop a passo fisso + interpolazione camera).
+- `src/main.ts`: entry point (renderer, scena, luci, caricamento livello, game loop a passo fisso + interpolazione camera,
+  **indicatore prestazioni**: fps, ms simulazione/disegno, draw call).
   Debug: `?pos=x,y,z&look=yaw,pitch` nell'URL per partire da un punto preciso; `?level=arena` per l'arena di prova
 - `src/input.ts`: input grezzo (tasti e tasti del mouse premuti, pressioni brevi "memorizzate", movimento mouse, Pointer Lock)
 - `src/controls.ts`: sensibilità mouse (`controlSettings`), angoli di vista, **mappatura tasti** (WASD, Spazio, Shift/C = accovacciati/slide, click = spara, R = ricarica, K = respawn) → `InputCommand` (T = cambia atmosfera, P = pixel art on/off, tasto sotto Esc = pannello debug, in `main.ts`)
