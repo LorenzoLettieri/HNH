@@ -166,16 +166,16 @@ export const tuning = {
   infiniteAmmo: false,
 
   // --- Drops and pickups (see pickups.ts) ---
-  /** Drop chance per point of enemy weight (ghoulCost 1 → 20%, eyebatCost 2 → 40%, houndCost 3 → 60%). */
-  dropChancePerWeight: 0.2,
+  /** Drop chance per point of enemy weight (ghoulCost 1 → 30%, eyebatCost 2 → 60%, houndCost 3 → 80% (the cap), bull too). */
+  dropChancePerWeight: 0.3,
   /** The drop chance never goes above this (heavy enemies of the future). */
   dropChanceMax: 0.8,
   /**
    * What a drop is: WEIGHTS, not percentages (see pickKind in pickups.ts).
-   * 4/3/3 = 40% bullets, 30% shells, 30% medkits. Set one to 0 to never drop it.
+   * 5/4/3 = 42% bullets, 33% shells, 25% medkits. Set one to 0 to never drop it.
    */
-  dropWeightBullets: 4,
-  dropWeightShells: 3,
+  dropWeightBullets: 5,
+  dropWeightShells: 4,
   dropWeightMedkit: 3,
   /** Seconds a drop stays on the ground before vanishing. */
   dropLifetime: 10,
@@ -184,9 +184,9 @@ export const tuning = {
   /** Health a medkit gives back. */
   medkitHeal: 25,
   /** Revolver bullets in a 'bullets' drop. */
-  ammoPickupBullets: 12,
+  ammoPickupBullets: 18,
   /** Shotgun shells in a 'shells' drop. */
-  ammoPickupShells: 4,
+  ammoPickupShells: 5,
   /** Pellets per shot (a fixed pattern: center + inner ring + outer ring). */
   shotgunPellets: 12,
   /** Half-angle of the outer ring of the pattern, degrees (7° = ~1.2 m wide at 10 m). */
