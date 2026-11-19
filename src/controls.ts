@@ -40,5 +40,14 @@ export function buildCommand(tick: number): InputCommand {
   // F or the right mouse button: the boot.
   const kick = isKeyDown('KeyF') || wasPressed('KeyF') || isKeyDown('Mouse2') || wasPressed('Mouse2');
   const respawn = isKeyDown('KeyK'); // K = "kill yourself" (debug)
-  return { tick, forward, strafe, jump, crouch, fire, kick, reload, respawn, yaw: view.yaw, pitch: view.pitch };
+  // Weapons: 1/2 pick a slot; Q or the wheel cycle. (wasPressed for all of
+  // them: holding Q must not switch back and forth every tick.)
+  let weaponSelect = 0;
+  if (wasPressed('Digit1')) weaponSelect = 1;
+  if (wasPressed('Digit2')) weaponSelect = 2;
+  if (wasPressed('KeyQ') || wasPressed('WheelDown')) weaponSelect = -1;
+  if (wasPressed('WheelUp')) weaponSelect = -2;
+  return {
+    tick, forward, strafe, jump, crouch, fire, kick, reload, weaponSelect, respawn, yaw: view.yaw, pitch: view.pitch,
+  };
 }

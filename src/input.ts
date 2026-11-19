@@ -101,6 +101,17 @@ export function initInput(target: HTMLElement, onLockChange: (locked: boolean) =
     if (isPointerLocked()) e.preventDefault();
   });
 
+  // The mouse wheel becomes two more "keys" that can only be pressed, never
+  // held: "WheelUp" and "WheelDown". A touchpad sends dozens of wheel events
+  // per swipe, so after one "notch" we ignore the wheel for a moment.
+  let lastWheel = 0;
+  document.addEventListener('wheel', (e) => {
+    if (!isPointerLocked() || e.deltaY === 0) return;
+    if (e.timeStamp - lastWheel < 120) return;
+    lastWheel = e.timeStamp;
+    pressedSinceCheck.add(e.deltaY < 0 ? 'WheelUp' : 'WheelDown');
+  });
+
   document.addEventListener('mousemove', (e) => {
     if (!isPointerLocked()) return;
     // movementX/Y = how far the mouse moved since the previous event, in pixels.

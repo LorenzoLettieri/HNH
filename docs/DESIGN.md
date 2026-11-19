@@ -290,7 +290,11 @@ futuro **poligono di tiro / tutorial**.
 ## 6. Armi (bozza)
 
 - **Revolver** — preciso, hitscan, "fanning" (raffica rapida col tasto destro).
-- **Canne mozze** — rosa di pallini, contraccolpo che ti spinge (anche come tecnica di movimento).
+- **Doppietta (canne mozze)** [FATTO] — tasto 2. Due colpi, 12 pallini in una **rosata fissa** (non casuale:
+  impari cosa fa), danno pieno fino a 6 m e poi in calo fino al 25% a 22 m: devastante da vicino, quasi
+  inutile lontano. Ricarica da sola quando le canne sono vuote. **Contraccolpo solo in aria**: sparare verso
+  il basso ti spinge su (annulla la caduta), sparare indietro ti lancia avanti (tecnica di movimento).
+  Per ora **tutte le armi sono disponibili da subito**; poi arriverà un negozio.
 - **Lazo / rampino** — mobilità (aggancio a punti della mappa) e utilità (tirare a sé i nemici?).
 
 ---

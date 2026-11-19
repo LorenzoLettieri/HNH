@@ -3,6 +3,7 @@ import { findWall, moveAndCollide, overlapsAny } from './collision';
 import type { World } from './world';
 import { ventUnder } from './props';
 import { secondsToTicks, tuning } from './config';
+import type { WeaponId } from './weapon';
 
 // Pure data: no Three.js, no DOM. Can be copied, compared, sent over the network.
 export interface PlayerState {
@@ -37,9 +38,15 @@ export interface PlayerState {
   /** Ticks spent on the ground since the last landing (big number = "long ago"). */
   groundTicks: number;
 
-  // --- Weapon (see weapon.ts) ---
-  /** Rounds left in the cylinder. */
+  // --- Weapons (see weapon.ts) ---
+  /** The weapon in your hands. */
+  weapon: WeaponId;
+  /** Ticks left before the weapon you just switched to is ready (0 = ready). */
+  switchTicks: number;
+  /** Rounds left in the revolver's cylinder. */
   ammo: number;
+  /** Shells left in the shotgun's barrels. */
+  shells: number;
   /** Ticks left before the next shot is allowed. */
   fireCooldownTicks: number;
   /** Ticks left in which a recent click is still waiting to fire. */
@@ -82,7 +89,10 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     wallJumpsLeft: tuning.wallJumpsMax,
     wallJumpCooldownTicks: 0,
     groundTicks: 999,
+    weapon: 'revolver',
+    switchTicks: 0,
     ammo: tuning.revolverAmmo,
+    shells: tuning.shotgunAmmo,
     fireCooldownTicks: 0,
     fireBufferTicks: 0,
     fireHeld: false,
@@ -359,7 +369,9 @@ export function respawn(p: PlayerState, world: World): void {
   p.sliding = false;
   p.health = tuning.playerMaxHealth;
   p.ammo = tuning.revolverAmmo;
+  p.shells = tuning.shotgunAmmo;
   p.reloadTicks = 0;
+  p.switchTicks = 0;
   p.kickTicks = 0;
   p.kickCooldownTicks = 0;
 }

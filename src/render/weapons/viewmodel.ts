@@ -6,7 +6,7 @@
 //   widens with speed.
 // Everything here is cosmetic: firing and ammo are decided by the simulation.
 import * as THREE from 'three';
-import { tuning } from '../../sim/config';
+import { secondsToTicks, tuning } from '../../sim/config';
 import type { PlayerState } from '../../sim/player';
 import type { Atmosphere } from '../atmospheres';
 import { directionFromAngles } from '../sky';
@@ -14,6 +14,8 @@ import { PixelCanvas } from '../props/pixelCanvas';
 import { createRevolverModel } from './revolverModel';
 import { createHands, poseLeftHand } from './hands';
 import { createKickLeg } from './kickLeg';
+import { createShotgunView } from './shotgunView';
+import type { WeaponId } from '../../sim/weapon';
 
 /** Mutable so the debug panel can change them. */
 export const viewmodelSettings = {
@@ -37,11 +39,43 @@ export const viewmodelSettings = {
   fanDuration: 0.4,
   /** Camera dip when the boot lands, radians (visual only). */
   kickViewPunch: 0.03,
+
+  // --- Shotgun (the origin of its model is the right hand on the grip) ---
+  shotgunX: 0.11,
+  shotgunY: -0.15,
+  shotgunZ: -0.26,
+  /** Turned inward, toward the crosshair, radians. */
+  shotgunYaw: 0.12,
+  /** Tilted on its side (roll), radians: shows a bit more of the gun's flank. */
+  shotgunRoll: 0.1,
+  /** Kick up on each shot, radians: heavier than the revolver... */
+  shotgunRecoil: 0.35,
+  /** ...and it slams back into your shoulder, meters. */
+  shotgunRecoilBack: 0.09,
+  shotgunRecoilRecovery: 7,
+  shotgunViewKick: 0.06,
+
+  /** How far below the screen a weapon starts when you switch to it, meters. */
+  switchDrop: 0.22,
 };
 
 /** Smoothly moves `current` toward `target` (same exponential easing as cameraFeel). */
 function approach(current: number, target: number, rate: number, dt: number): number {
   return target + (current - target) * Math.exp(-rate * dt);
+}
+
+/** A muzzle flash sprite: additive (it adds light), HDR bright (it blooms). */
+function createFlash(texture: THREE.Texture): THREE.Sprite {
+  const flash = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: texture,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      color: new THREE.Color(1, 1, 1).multiplyScalar(5),
+    }),
+  );
+  flash.visible = false;
+  return flash;
 }
 
 /** A star-shaped burst for the muzzle flash, drawn pixel by pixel. */
@@ -67,8 +101,8 @@ function flashTexture(): THREE.Texture {
 export interface Viewmodel {
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
-  onShot(): void;
-  onReload(): void;
+  onShot(weapon: WeaponId, barrel: number): void;
+  onReload(weapon: WeaponId): void;
   /** The kick started: play the leg animation (see kickLeg.ts). */
   onKick(): void;
   applyAtmosphere(a: Atmosphere): void;
@@ -107,9 +141,19 @@ export function createViewmodel(): Viewmodel {
   // lives in the holder and fans the hammer at every shot.
   const hands = createHands();
   gun.root.add(hands.right);
-  holder.add(hands.left);
+  // Everything that belongs to the revolver, to show/hide it in one go.
+  const revolver = new THREE.Group();
+  revolver.add(gun.root, hands.left);
+  holder.add(revolver);
   let fanTime = 1; // 0..1 progress of the fanning swipe (≥ 1 = idle)
   scene.add(holder);
+
+  // The shotgun, with its own hands and animations (see shotgunView.ts).
+  const shotgun = createShotgunView();
+  shotgun.root.visible = false;
+  holder.add(shotgun.root);
+  let shownWeapon: WeaponId = 'revolver';
+  let switchDrop = 0; // 1 = the gun is fully below the screen, 0 = in place
 
   // The kicking leg: directly in the scene (not in the holder), so the gun's
   // sway and bob don't shake it.
@@ -118,20 +162,16 @@ export function createViewmodel(): Viewmodel {
   let kickTime = Infinity; // seconds since the kick started (Infinity = none)
   let kickPunched = true; // the camera dip of this kick already happened
 
-  const flash = new THREE.Sprite(
-    new THREE.SpriteMaterial({
-      map: flashTexture(),
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      color: new THREE.Color(1, 1, 1).multiplyScalar(5), // HDR: blooms
-    }),
-  );
+  const flashMap = flashTexture();
+  const flash = createFlash(flashMap);
   flash.position.copy(gun.muzzle);
-  flash.visible = false;
   gun.root.add(flash);
+  const shotgunFlash = createFlash(flashMap);
+  shotgun.root.add(shotgunFlash);
 
   // Animation state.
   let kick = 0; // 0..1, recoil amount
+  let kickWeapon: WeaponId = 'revolver'; // which gun's recoil numbers apply
   let viewKick = 0;
   let flashTime = 0;
   let cylinderAngle = 0;
@@ -151,18 +191,28 @@ export function createViewmodel(): Viewmodel {
   return {
     scene,
     camera,
-    onShot() {
-      fanTime = 0;
+    onShot(weapon, barrel) {
       kick = 1;
-      viewKick = s.viewKick;
+      kickWeapon = weapon;
       flashTime = 0.05;
+      if (weapon === 'shotgun') {
+        viewKick = s.shotgunViewKick;
+        shotgun.onFire(barrel);
+        shotgunFlash.position.copy(shotgun.muzzles[barrel]);
+        shotgunFlash.material.rotation = Math.random() * Math.PI;
+        shotgunFlash.scale.setScalar(0.15 + Math.random() * 0.06);
+        return;
+      }
+      fanTime = 0;
+      viewKick = s.viewKick;
       cylinderTarget += Math.PI / 3; // next chamber: 360° / 6
       hammerTime = 0;
       flash.material.rotation = Math.random() * Math.PI;
       flash.scale.setScalar(0.09 + Math.random() * 0.05);
     },
-    onReload() {
-      reloadTime = 0;
+    onReload(weapon) {
+      if (weapon === 'shotgun') shotgun.onReload();
+      else reloadTime = 0;
     },
     onKick() {
       kickTime = 0;
@@ -194,13 +244,32 @@ export function createViewmodel(): Viewmodel {
       inverseCamera.copy(worldCamera.quaternion).invert();
       sun.position.copy(sunDir).applyQuaternion(inverseCamera).multiplyScalar(5);
 
+      // --- Weapon switch: the new gun pops in from below the screen ---
+      // (The old one simply disappears: it's already out of view in a
+      // fraction of a second, animating it down too would only add delay.)
+      if (player.weapon !== shownWeapon) {
+        shownWeapon = player.weapon;
+        switchDrop = 1;
+        reloadTime = -1; // a reload in progress was cancelled by the switch
+        shotgun.cancel();
+        flashTime = 0;
+      }
+      revolver.visible = shownWeapon === 'revolver';
+      shotgun.root.visible = shownWeapon === 'shotgun';
+      const switchTotal = secondsToTicks(tuning.weaponSwitchTime);
+      const switchTarget = switchTotal > 0 ? player.switchTicks / switchTotal : 0;
+      switchDrop = approach(switchDrop, Math.min(switchDrop, switchTarget), 30, dt);
+      const isShotgun = shownWeapon === 'shotgun';
+
       // --- Recoil, flash, view kick: instant hit, exponential recovery ---
-      kick = approach(kick, 0, s.recoilRecovery, dt);
+      kick = approach(kick, 0, kickWeapon === 'shotgun' ? s.shotgunRecoilRecovery : s.recoilRecovery, dt);
       viewKick = approach(viewKick, 0, 12, dt);
       flashTime -= dt;
-      flash.visible = flashTime > 0;
-      flashLight.intensity = flashTime > 0 ? 3 : 0;
-      flashLight.position.copy(gun.muzzle).applyMatrix4(gun.root.matrixWorld);
+      flash.visible = flashTime > 0 && !isShotgun;
+      shotgunFlash.visible = flashTime > 0 && isShotgun;
+      flashLight.intensity = flashTime > 0 ? (isShotgun ? 5 : 3) : 0;
+      const activeFlash = isShotgun ? shotgunFlash : flash;
+      flashLight.position.copy(activeFlash.position).applyMatrix4(activeFlash.parent!.matrixWorld);
 
       // --- Cylinder turns to the next chamber; hammer re-cocks after a shot ---
       cylinderAngle = approach(cylinderAngle, cylinderTarget, 25, dt);
@@ -221,6 +290,10 @@ export function createViewmodel(): Viewmodel {
         }
       }
       gun.cylinder.rotation.z = cylinderAngle;
+
+      // --- Shotgun: hammers, barrels, shells (see shotgunView.ts) ---
+      const shotgunReload = shotgun.update(dt, player);
+      if (isShotgun) reload = 0; // the revolver's reload pose doesn't apply
 
       // --- Left hand: fanning swipe after each shot (hidden while reloading) ---
       fanTime = Math.min(1, fanTime + dt / s.fanDuration);
@@ -256,15 +329,26 @@ export function createViewmodel(): Viewmodel {
       slideTilt = approach(slideTilt, player.sliding ? 1 : 0, 10, dt);
 
       // --- Compose the final pose ---
+      // Each weapon has its own rest pose and recoil; everything else
+      // (sway, bob, slide, kick, switch) is shared.
+      const rest = isShotgun
+        ? { x: s.shotgunX, y: s.shotgunY, z: s.shotgunZ, yaw: s.shotgunYaw, roll: s.shotgunRoll }
+        : { x: s.x, y: s.y, z: s.z, yaw: -0.04, roll: 0 };
+      const recoilUp = kickWeapon === 'shotgun' ? s.shotgunRecoil : s.recoil;
+      const recoilBack = kickWeapon === 'shotgun' ? s.shotgunRecoilBack : 0.05;
+      // Shotgun reload: the gun swings across, muzzle to the left, so you
+      // see it from the side: the barrels drop, the shells fly out.
+      const sr = shotgunReload;
       holder.position.set(
-        s.x + swayX + bobX - reload * 0.04 - slideTilt * 0.02 + legOut * 0.04,
-        s.y + swayY + bobY + fallOffset - reload * 0.07 - slideTilt * 0.03 - legOut * 0.05,
-        s.z + kick * 0.05,
+        rest.x + swayX + bobX - reload * 0.04 - slideTilt * 0.02 + legOut * 0.04 - sr * 0.04,
+        rest.y + swayY + bobY + fallOffset - reload * 0.07 - slideTilt * 0.03 - legOut * 0.05 + sr * 0.03
+          - switchDrop * s.switchDrop,
+        rest.z + kick * recoilBack - sr * 0.05,
       );
       holder.rotation.set(
-        kick * s.recoil + reload * 0.4 - swayY * 2,
-        -0.04 + swayX * 2,
-        reload * 1.1 + slideTilt * 0.35 - legOut * 0.25,
+        kick * recoilUp + reload * 0.4 - swayY * 2 - switchDrop * 0.6 + sr * 0.2,
+        rest.yaw + swayX * 2 + sr * 0.75,
+        rest.roll + reload * 1.1 + slideTilt * 0.35 - legOut * 0.25 + sr * 0.15,
       );
       return viewKick;
     },

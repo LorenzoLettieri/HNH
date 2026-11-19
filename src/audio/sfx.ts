@@ -98,6 +98,47 @@ export function playShot(): void {
   noiseBurst({ start: 0.18, duration: 0.5, volume: 0.18, filter: 'lowpass', frequency: 900, frequencyEnd: 150 });
 }
 
+/**
+ * Shotgun blast: the same recipe as the revolver (crack + blast + punch +
+ * echo) but everything bigger and LOWER: a wider, darker noise burst, a deeper
+ * and longer punch, and a longer echo. Low frequencies = "heavy".
+ */
+export function playShotgun(): void {
+  if (!ctx) return;
+  master.gain.value = sfxSettings.volume;
+  const v = 0.92 + Math.random() * 0.16;
+  noiseBurst({ duration: 0.1, volume: 0.8, filter: 'highpass', frequency: 1200 * v }); // crack
+  noiseBurst({ duration: 0.55, volume: 1.2, filter: 'lowpass', frequency: 1600 * v, frequencyEnd: 120 }); // blast
+  thump({ duration: 0.4, volume: 1.1, from: 110 * v, to: 28 }); // the shove in your shoulder
+  thump({ duration: 0.12, volume: 0.5, from: 300 * v, to: 90 }); // the "body" of the boom
+  noiseBurst({ start: 0.22, duration: 0.8, volume: 0.25, filter: 'lowpass', frequency: 700, frequencyEnd: 100 }); // echo
+}
+
+/**
+ * Shotgun reload, timed on the animation: CLACK (break open), two spent
+ * shells "plink" out, two new ones slide in (thock, thock), CLACK (shut) and
+ * the two hammers clicking back.
+ */
+export function playShotgunReload(duration: number): void {
+  const at = (k: number) => k * duration;
+  noiseBurst({ start: at(0.04), duration: 0.06, volume: 0.6, filter: 'bandpass', frequency: 1300, q: 2 }); // open
+  thump({ start: at(0.04), duration: 0.05, volume: 0.3, from: 300, to: 160 });
+  for (const k of [0.2, 0.25]) noiseBurst({ start: at(k), duration: 0.05, volume: 0.25, filter: 'bandpass', frequency: 5200, q: 8 }); // shells out
+  for (const k of [0.52, 0.66]) {
+    noiseBurst({ start: at(k), duration: 0.04, volume: 0.35, filter: 'bandpass', frequency: 900, q: 3 }); // shell in
+    thump({ start: at(k), duration: 0.04, volume: 0.2, from: 250, to: 180 });
+  }
+  noiseBurst({ start: at(0.82), duration: 0.07, volume: 0.8, filter: 'bandpass', frequency: 1500, q: 2 }); // snap shut
+  thump({ start: at(0.82), duration: 0.06, volume: 0.4, from: 350, to: 150 });
+  for (const k of [0.91, 0.96]) noiseBurst({ start: at(k), duration: 0.025, volume: 0.35, filter: 'bandpass', frequency: 3200, q: 5 }); // hammers
+}
+
+/** Weapon switch: a leather-and-metal rustle as the new gun comes up. */
+export function playWeaponSwitch(): void {
+  noiseBurst({ duration: 0.12, volume: 0.3, filter: 'bandpass', frequency: 700, frequencyEnd: 1500, q: 1.5 });
+  noiseBurst({ start: 0.1, duration: 0.03, volume: 0.25, filter: 'bandpass', frequency: 2800, q: 4 });
+}
+
 /** Empty cylinder: the hammer falls on nothing. */
 export function playDryFire(): void {
   noiseBurst({ duration: 0.03, volume: 0.5, filter: 'bandpass', frequency: 3500, q: 4 });
