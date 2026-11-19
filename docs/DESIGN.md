@@ -425,10 +425,17 @@ Punteggio e moneta sono **separati**:
   "E · COMMERCIA"; premendo E il cursore si libera e il pannello si apre a destra, **sopra il gioco
   che continua** (niente velo scuro: vedi l'orda arrivare). Intanto non miri e non spari, ma **ti muovi
   con WASD**. E (o "Chiudi") richiude e riprende il mouse; Esc chiude e mette in pausa, come sempre.
-  Se ti allontani col pannello aperto resta lì, grigio, con "Sei troppo lontano dal venditore" (chiuderlo
-  da solo metterebbe in pausa: il browser non ridà il mouse senza un click o un tasto).
+  Lo shop **si chiude** con E, con **Esc** e **allontanandosi** dal venditore (anche morendo). Chiudendo
+  si riprende il mouse; se il browser non lo concede (vuole un click o un tasto recente), il gioco non va
+  in pausa: compare "Clicca per riprendere la mira".
   Dentro: saluto del venditore, il tuo vildenaro, gli articoli col prezzo (rosso se non basta).
-  **Prezzo della doppietta: 400** [PROPOSTO, da tarare] (un ghoul ne lascia 10, × lo Stile).
+  **Prezzo della doppietta: 800** [DECISO per ora, da tarare] (un ghoul ne lascia 10, × lo Stile).
+- **Acquisto** [FATTO]: **si parte col solo revolver**. Il click su "Compra" non tocca il gioco: diventa
+  una richiesta nel comando di input del tick dopo, e la **simulazione** controlla tutto (venditore a
+  portata, già tua, vildenaro) e risponde con un evento. Comprata, la doppietta arriva carica, con 12
+  cartucce in tasca, e **finisce subito in mano**. Senza soldi: la riga trema e il venditore ti sfotte.
+  Le armi comprate si perdono alla morte (si ricomincia da capo). Le **munizioni cadono solo per le armi
+  che possiedi** (niente cartucce finché non hai la doppietta).
 
 **Vildenaro come drop** [DECISO]
 - **Monete lasciate dai nemici**, raccolte passandoci sopra (prendono il posto delle vecchie "anime"):
@@ -477,8 +484,7 @@ futuro **poligono di tiro / tutorial**.
   **Contraccolpo che non frena mai**: sparare indietro ti dà un piccolo boost in avanti, sparare dove stai
   andando non ti rallenta; in aria, sparare verso il basso ti spinge su (annulla la caduta: shotgun jump),
   sparare in alto non ti schiaccia a terra.
-  Per ora **tutte le armi sono disponibili da subito**; poi si compreranno negli **shop** col vildenaro
-  (si parte col solo revolver).
+  **Si compra all'armeria** per 800 vildenaro (si parte col solo revolver).
 - **Lazo / rampino** — mobilità (aggancio a punti della mappa) e utilità (tirare a sé i nemici?).
 
 ---
@@ -519,7 +525,7 @@ futuro **poligono di tiro / tutorial**.
 5. **Vildenaro**: monete lasciate dai nemici + contatore nell'HUD; lo Stile moltiplica punti e vildenaro.
    [FATTO: monete, contatore, moltiplicatore]
 6. **Shop**: venditore (sprite), tasto E, menu che non mette in pausa, primo acquisto: la doppietta.
-   [IN CORSO: armeria, venditore, tasto E e menu fatti; poi l'acquisto della doppietta]
+   [FATTO: armeria, venditore, tasto E e menu, acquisto della doppietta]
 7. Potenziamenti all'emporio.
 8. Lazo / rampino.
 

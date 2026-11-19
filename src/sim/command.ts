@@ -1,3 +1,4 @@
+import type { ShopItemId } from './shop';
 // What the player wants to do during ONE tick. The simulation only ever sees
 // this, never the keyboard or mouse directly. Later, the same object will be
 // sent over the network to the server.
@@ -25,6 +26,12 @@ export interface InputCommand {
   weaponSelect: number;
   /** Go back to the spawn point (debug/testing). */
   respawn: boolean;
+  /**
+   * Buy this item at the shop within reach (null = nothing). Clicking in the
+   * shop's panel doesn't change the game directly: it becomes this field,
+   * and the simulation decides (money, distance...). One day: the server.
+   */
+  buy: ShopItemId | null;
   /** View angles (radians) at the time the command was built. */
   yaw: number;
   pitch: number;

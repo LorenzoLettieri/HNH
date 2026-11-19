@@ -5,11 +5,15 @@
 // They live here, not in the UI, because one day the SERVER will have to say
 // yes or no to a purchase: a client could claim to be next to the vendor
 // from the other side of the map. Same rule as everything in src/sim: no DOM.
+import type { InputCommand } from './command';
 import { tuning } from './config';
+import type { SimEvent } from './events';
 import type { PlayerState } from './player';
+import { switchWeapon, type WeaponId } from './weapon';
 import type { ShopSpawn, World } from './world';
 
-export type ShopItemId = 'shotgun';
+/** Everything for sale. For now only weapons, so an item id IS a weapon id. */
+export type ShopItemId = Exclude<WeaponId, 'revolver'>;
 
 export interface ShopItem {
   id: ShopItemId;
@@ -37,4 +41,36 @@ export function shopInReach(p: PlayerState, world: World): ShopSpawn | null {
     if (near && sameFloor) return shop;
   }
   return null;
+}
+
+/** Do you already have it? (For now everything for sale is a weapon.) */
+export function ownsItem(p: PlayerState, id: ShopItemId): boolean {
+  return p.owned[id];
+}
+
+/**
+ * One tick of shopping: if the command asks to buy something, check
+ * everything (a vendor within reach that sells it, not already yours, enough
+ * vildenaro), then take the money and hand it over. Either way an event says
+ * how it went: the UI only finds out from the events, it never guesses.
+ */
+export function stepShop(p: PlayerState, cmd: InputCommand, world: World, events: SimEvent[]): void {
+  if (!cmd.buy) return;
+  const id = cmd.buy;
+  const shop = shopInReach(p, world);
+  const item = shop ? shopCatalog(shop.kind).find((i) => i.id === id) : undefined;
+  if (!item) return void events.push({ type: 'purchaseFailed', item: id, reason: 'far' });
+  if (ownsItem(p, id)) return void events.push({ type: 'purchaseFailed', item: id, reason: 'owned' });
+  if (p.money < item.price) return void events.push({ type: 'purchaseFailed', item: id, reason: 'money' });
+
+  p.money -= item.price;
+  // A new weapon comes loaded, with the starting spare rounds, and goes
+  // straight to your hands (you bought it to use it, right now).
+  p.owned[id] = true;
+  if (id === 'shotgun') {
+    p.shells = tuning.shotgunAmmo;
+    p.reserve.shotgun = Math.max(p.reserve.shotgun, tuning.shotgunReserveStart);
+  }
+  switchWeapon(p, id, events);
+  events.push({ type: 'purchase', item: id, price: item.price });
 }

@@ -54,6 +54,11 @@ export interface PlayerState {
    */
   reserve: Record<WeaponId, number>;
   /**
+   * Which weapons you own. You start with the revolver; the others are
+   * bought at the armory (shop.ts). Slots you don't own are skipped.
+   */
+  owned: Record<WeaponId, boolean>;
+  /**
    * The vildenaro in your pocket: the game's money (coins dropped by the
    * enemies, spent in the shops). On the player, not in the game's stats:
    * in multiplayer every player has their own wallet.
@@ -106,6 +111,7 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     ammo: tuning.revolverAmmo,
     shells: tuning.shotgunAmmo,
     reserve: startingReserve(),
+    owned: startingWeapons(),
     money: 0,
     fireCooldownTicks: 0,
     fireBufferTicks: 0,
@@ -124,6 +130,7 @@ export function copyPlayer(from: PlayerState, to: PlayerState): void {
   // both players would share the same pockets. Copy it by value (a shallow
   // copy is enough: inside it there are only numbers).
   to.reserve = { ...from.reserve };
+  to.owned = { ...from.owned }; // same story
 }
 
 /** Height of the player's collision box right now (shorter when crouched). */
@@ -385,8 +392,14 @@ function airSteer(p: PlayerState, wishX: number, wishZ: number, dt: number): voi
   }
 }
 
+/** Spare rounds at the start: only for the weapons you start with (the shotgun's come when you buy it). */
 function startingReserve(): Record<WeaponId, number> {
-  return { revolver: tuning.revolverReserveStart, shotgun: tuning.shotgunReserveStart };
+  return { revolver: tuning.revolverReserveStart, shotgun: 0 };
+}
+
+/** You start with the revolver only. */
+function startingWeapons(): Record<WeaponId, boolean> {
+  return { revolver: true, shotgun: false };
 }
 
 export function respawn(p: PlayerState, world: World): void {
@@ -400,6 +413,8 @@ export function respawn(p: PlayerState, world: World): void {
   p.ammo = tuning.revolverAmmo;
   p.shells = tuning.shotgunAmmo;
   p.reserve = startingReserve();
+  p.owned = startingWeapons(); // dead = start over: what you bought is gone
+  p.weapon = 'revolver';
   p.money = 0; // dead = the game starts over: empty pockets
   p.reloadTicks = 0;
   p.switchTicks = 0;

@@ -334,7 +334,7 @@
         box-sizing: border-box; padding: 18px 22px; z-index: 4; color: #e0c890; font: 15px Georgia, serif;
         background: rgba(28, 12, 6, 0.93); border: 3px solid #9a7434; box-shadow: 0 0 0 3px #120604, 6px 8px 0 3px #000;
       }
-      #shop[hidden], #shop-prompt[hidden], #shop-away[hidden] { display: none; }
+      #shop[hidden], #shop-prompt[hidden] { display: none; }
       #shop h2 { margin: 0; font: 34px 'Rye', Georgia, serif; letter-spacing: 3px; color: #d8a838; text-shadow: 2px 2px 0 #000; }
       #shop-greeting { margin: 4px 0 12px; font-style: italic; color: #a89070; }
       #shop-wallet { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0; border-top: 1px solid #5a3a20; border-bottom: 1px solid #5a3a20; }
@@ -350,8 +350,15 @@
       .shop-buy:hover:not(:disabled) { background: #7a4a24; }
       .shop-buy:disabled { cursor: default; opacity: 0.85; }
       .shop-item.poor .shop-price { color: #c03020; } /* not enough vildenaro */
-      #shop-away { margin-top: 10px; color: #c03020; font-style: italic; }
-      #shop.far .shop-item { opacity: 0.4; }
+      .shop-item.owned .shop-buy { background: transparent; border-color: #5a3a20; box-shadow: none; color: #8a7a62; }
+      .shop-item.shake { animation: shop-shake 0.35s; }
+      @keyframes shop-shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+      /* After the shop closes, if the browser didn't give the mouse back: the game goes on, click to aim again. */
+      #grab-hint {
+        position: fixed; left: 0; right: 0; top: 56%; text-align: center; pointer-events: none;
+        font: 18px 'Rye', Georgia, serif; letter-spacing: 3px; color: #e0c890; text-shadow: 2px 2px 0 #000, 0 0 10px #000;
+      }
+      #grab-hint[hidden] { display: none; }
       #shop-close {
         display: block; width: 100%; margin-top: 14px; padding: 8px; cursor: pointer; font: bold 15px monospace;
         background: #3a2414; color: #e0c890; border: 2px solid #120604;
@@ -361,12 +368,12 @@
   </head>
   <body>
     <div id="shop-prompt" hidden><kbd>E</kbd>COMMERCIA</div>
+    <div id="grab-hint" hidden>Clicca per riprendere la mira</div>
     <div id="shop" hidden>
       <h2>ARMERIA</h2>
       <div id="shop-greeting"></div>
       <div id="shop-wallet"><span>Il tuo vildenaro</span><span id="shop-money">0</span></div>
       <div id="shop-items"></div>
-      <div id="shop-away" hidden>Sei troppo lontano dal venditore.</div>
       <button id="shop-close"><kbd>E</kbd>Chiudi</button>
     </div>
     <div id="overlay">
@@ -420,7 +427,7 @@
             <tr><td><kbd>Q</kbd> / <kbd>Rotellina</kbd></td><td>Cambia arma</td></tr>
             <tr><td><kbd>F</kbd> / <kbd>Click destro</kbd></td><td>Calcio</td></tr>
             <tr><th colspan="2">Gioco</th></tr>
-            <tr><td><kbd>E</kbd></td><td>Vicino a un venditore: apri/chiudi lo shop (il gioco non si ferma)</td></tr>
+            <tr><td><kbd>E</kbd></td><td>Vicino a un venditore: apri/chiudi lo shop (il gioco non si ferma; anche Esc lo chiude)</td></tr>
             <tr><td><kbd>Esc</kbd></td><td>Pausa</td></tr>
             <tr><th colspan="2">Debug</th></tr>
             <tr><td><kbd>K</kbd></td><td>Respawn</td></tr>

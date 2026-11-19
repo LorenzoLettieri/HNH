@@ -5,6 +5,7 @@
 
 import type { WeaponId } from './weapon';
 import type { PickupKind } from './pickups';
+import type { ShopItemId } from './shop';
 
 export type SimEvent =
   /** A weapon fired (sound, flash, recoil). For the shotgun, `barrel` is 0 = right, 1 = left. */
@@ -69,5 +70,9 @@ export type SimEvent =
   | { type: 'dryFire' } // pulled the trigger with an empty cylinder
   | { type: 'reloadStart'; weapon: WeaponId }
   | { type: 'reloadEnd' }
+  /** You bought something at a shop (sound, the panel's thanks). */
+  | { type: 'purchase'; item: ShopItemId; price: number }
+  /** A purchase the simulation refused: not enough money, already yours, or too far from the vendor. */
+  | { type: 'purchaseFailed'; item: ShopItemId; reason: 'money' | 'owned' | 'far' }
   /** You collected a pickup (sound, flash on the HUD). */
   | { type: 'pickup'; kind: PickupKind; x: number; y: number; z: number };

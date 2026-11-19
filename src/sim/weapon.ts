@@ -72,14 +72,8 @@ export function stepWeapon(
   // Switching: the new weapon is in your hands at once, but it needs
   // weaponSwitchTime to come up before it can fire. A reload in progress is
   // CANCELLED (no free ammo: the rounds weren't in yet).
-  const target = selectedWeapon(p.weapon, cmd.weaponSelect);
-  if (target !== p.weapon) {
-    p.weapon = target;
-    p.switchTicks = secondsToTicks(tuning.weaponSwitchTime);
-    p.reloadTicks = 0;
-    p.fireCooldownTicks = 0;
-    events.push({ type: 'weaponSwitch', weapon: target });
-  }
+  const target = selectedWeapon(p, cmd.weaponSelect);
+  if (target !== p.weapon) switchWeapon(p, target, events);
 
   // Reloading: count down, then move rounds from the pockets into the gun.
   // The rounds are taken only at the END: a reload interrupted by a weapon
@@ -139,14 +133,36 @@ export function stepWeapon(
   }
 }
 
-/** Which weapon the command asks for (see InputCommand.weaponSelect). */
-function selectedWeapon(current: WeaponId, select: number): WeaponId {
+/** Puts `w` in your hands. Also used by the shop: a weapon you just bought goes straight to your hands. */
+export function switchWeapon(p: PlayerState, w: WeaponId, events: SimEvent[]): void {
+  p.weapon = w;
+  p.switchTicks = secondsToTicks(tuning.weaponSwitchTime);
+  p.reloadTicks = 0;
+  p.fireCooldownTicks = 0;
+  events.push({ type: 'weaponSwitch', weapon: w });
+}
+
+/**
+ * Which weapon the command asks for (see InputCommand.weaponSelect).
+ * Only weapons you OWN: a slot you haven't bought is ignored, and Q/the
+ * wheel skip it (with just the revolver, they do nothing).
+ */
+function selectedWeapon(p: PlayerState, select: number): WeaponId {
+  const current = p.weapon;
   if (select === 0) return current;
-  const i = WEAPONS.indexOf(current);
+  if (select > 0) {
+    const slot = WEAPONS[select - 1];
+    return slot && p.owned[slot] ? slot : current;
+  }
+  // Cycle: step forward (or back) until the next weapon you own.
+  const step = select === -1 ? 1 : -1;
   const n = WEAPONS.length;
-  if (select === -1) return WEAPONS[(i + 1) % n];
-  if (select === -2) return WEAPONS[(i - 1 + n) % n];
-  return WEAPONS[select - 1] ?? current; // a slot with no weapon: ignore
+  let i = WEAPONS.indexOf(current);
+  for (let k = 0; k < n; k++) {
+    i = (i + step + n) % n;
+    if (p.owned[WEAPONS[i]]) return WEAPONS[i];
+  }
+  return current;
 }
 
 /** Where the player's eye is and where it looks (a unit vector). Same yaw/pitch math as the camera. */

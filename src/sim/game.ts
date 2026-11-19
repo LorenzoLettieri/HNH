@@ -14,6 +14,7 @@ import { createPlayer, respawn, stepPlayer, type PlayerState } from './player';
 import { stepWeapon } from './weapon';
 import { stepKick } from './kick';
 import { blockPlayerWithBodies } from './bodyBlock';
+import { stepShop } from './shop';
 import { createPickup, dropFromKills, stepPickups, type Pickup } from './pickups';
 import { createStyle, isHighNoon, stepStyle, styleMultiplier, type StyleState } from './style';
 import type { World } from './world';
@@ -87,6 +88,8 @@ export function stepGame(
     e.pz = e.z;
   }
   stepPlayer(game.player, cmd, world, dt);
+  // Shopping first: a weapon bought this tick is in your hands for the rest of it.
+  stepShop(game.player, cmd, world, events);
   const firstNewEvent = events.length;
   // During HIGH NOON the guns are bottomless (the weapon doesn't know why: it only gets the flag).
   stepWeapon(game.player, cmd, world, game.entities, events, isHighNoon(game.style));

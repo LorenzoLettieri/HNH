@@ -101,7 +101,7 @@ function whatDrops(game: GameState, enemy: Enemy): Loot[] {
   const coinValue = Math.round(tuning.coinValue * styleMultiplier(game.style));
   for (let i = 0; i < coins; i++) loot.push({ kind: 'coin', value: coinValue });
   const chance = Math.min(tuning.dropChanceMax, enemyCost(enemy) * tuning.dropChancePerWeight);
-  if (random(game) < chance) loot.push({ kind: pickKind(random(game)), value: 0 });
+  if (random(game) < chance) loot.push({ kind: pickKind(random(game), game.player.owned), value: 0 });
   return loot;
 }
 
@@ -158,10 +158,13 @@ export function createPickup(game: GameState, kind: PickupKind, x: number, y: nu
  * of percentages: you can change one without having to fix the others to
  * make 100. (Loot tables in every game work like this.)
  */
-function pickKind(roll: number): PickupKind {
+function pickKind(roll: number, owned: Record<WeaponId, boolean>): PickupKind {
+  // Ammo for a weapon you don't own never drops: its weight becomes 0
+  // (the other kinds split its share: that's the beauty of weights).
+  const ammo = (kind: 'bullets' | 'shells', w: number) => (owned[AMMO_FOR[kind]] ? w : 0);
   const weights: [PickupKind, number][] = [
-    ['bullets', tuning.dropWeightBullets],
-    ['shells', tuning.dropWeightShells],
+    ['bullets', ammo('bullets', tuning.dropWeightBullets)],
+    ['shells', ammo('shells', tuning.dropWeightShells)],
     ['medkit', tuning.dropWeightMedkit],
   ];
   const total = weights.reduce((sum, [, w]) => sum + w, 0);
@@ -239,6 +242,7 @@ function collect(game: GameState, d: Pickup): boolean {
   }
   // Ammo: rounds for one weapon, up to what its pockets hold.
   const weapon = AMMO_FOR[kind];
+  if (!p.owned[weapon]) return false; // (the J debug key can drop it anyway: it stays on the ground)
   const max = weapon === 'shotgun' ? tuning.shotgunReserveMax : tuning.revolverReserveMax;
   if (p.reserve[weapon] >= max) return false;
   const amount = kind === 'shells' ? tuning.ammoPickupShells : tuning.ammoPickupBullets;

@@ -144,6 +144,7 @@ const debugPanel = createDebugPanel({
   onAtmosphereChange: () => applyAtmosphere(ATMOSPHERES[atmosphereIndex]),
   onPostSizeChange: () => post.refresh(),
   onJumpToWave: (n) => jumpToWave(game, n),
+  onGiveMoney: (amount) => (game.player.money += amount),
 });
 debugPanel.showAtmosphere(ATMOSPHERES[atmosphereIndex]);
 
@@ -175,11 +176,9 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyJ') dropPickupsInFront(game);
   // E: open/close the shop, if a vendor is within reach (src/sim/shop.ts).
   // Opening frees the mouse (to click in the panel); closing grabs it back.
-  // A key press counts as a "user gesture", so the browser allows the lock.
   if (e.code === 'KeyE') {
     if (shopMenu.isOpen) {
-      shopMenu.close();
-      requestLock(renderer.domElement);
+      closeShop();
     } else {
       const shop = paused ? null : shopInReach(player, world);
       if (shop) {
@@ -189,11 +188,15 @@ window.addEventListener('keydown', (e) => {
     }
   }
   // Esc with the shop open: the mouse is already free, so the browser doesn't
-  // use Esc for itself and we get it. It closes the shop and pauses (Esc = pause,
-  // as always). It can't grab the mouse back: Esc doesn't count as a gesture.
-  if (e.code === 'Escape' && shopMenu.isOpen) {
-    shopMenu.close();
-    updatePause();
+  // use Esc for itself and we get it: it closes the shop, like E.
+  // Esc while waiting for a click to aim again (grabPending): that's a pause.
+  if (e.code === 'Escape') {
+    if (shopMenu.isOpen) {
+      closeShop();
+    } else if (grabPending) {
+      grabPending = false;
+      updatePause();
+    }
   }
   if (e.code === 'Backquote') {
     debugPanel.toggle();
@@ -211,13 +214,24 @@ camera.rotation.order = 'YXZ';
 // Saved settings first, so the menu shows (and the game uses) the right values.
 loadSettings();
 const menu = createMenu({ onPlay: () => requestLock(renderer.domElement) });
-// The shop's panel. Clicking "Chiudi" is a gesture: it can grab the mouse back.
-const shopMenu = createShopMenu({
-  onCloseClick: () => {
-    shopMenu.close();
-    requestLock(renderer.domElement);
-  },
-});
+const shopMenu = createShopMenu({ onCloseClick: () => closeShop() });
+
+/**
+ * Closes the shop and tries to grab the mouse back. The browser grants the
+ * Pointer Lock only right after a "user gesture" (a click, a key press: the
+ * same rule as audio autoplay). E and the "Chiudi" button ARE gestures. Esc
+ * is not, and walking away has none of its own, but a key pressed in the last
+ * few seconds still counts (W, to walk away!), so it usually works anyway.
+ * When it doesn't, the game does NOT pause: it keeps going, and a line says
+ * "click to aim again" (grabPending) until you do.
+ */
+let grabPending = false;
+function closeShop(): void {
+  shopMenu.close();
+  grabPending = true; // until the mouse is back (onLockChange clears it)
+  requestLock(renderer.domElement);
+  updatePause();
+}
 
 // --- Pause ------------------------------------------------------------------
 // Esc already makes the browser release the mouse (pointer lock): we use that
@@ -226,9 +240,10 @@ const shopMenu = createShopMenu({
 // and with the SHOP open (docs/DESIGN.md: buying is a race against the horde).
 let paused = true; // until the first click
 function updatePause(): void {
-  paused = !isPointerLocked() && !debugPanel.visible && !shopMenu.isOpen;
+  paused = !isPointerLocked() && !debugPanel.visible && !shopMenu.isOpen && !grabPending;
   setAudioPaused(paused);
   menu.setOpen(paused);
+  shopMenu.setGrabHint(grabPending && !isPointerLocked());
 }
 initInput(renderer.domElement, (locked) => {
   if (locked) {
@@ -236,6 +251,7 @@ initInput(renderer.domElement, (locked) => {
     menu.markStarted(); // from now on, the menu means "paused"
     // Got the mouse back while the shop was open (a click on the game): close it.
     if (shopMenu.isOpen) shopMenu.close();
+    grabPending = false;
   }
   updatePause();
 });
@@ -337,7 +353,11 @@ renderer.setAnimationLoop((now: number) => {
   projectiles.update(game.projectiles, events, camera, alpha, dt);
   pickups.update(game.pickups, camera, alpha, now / 1000);
   vendors.update(camera, now / 1000);
-  shopMenu.update(player.money, shopInReach(player, world), paused);
+  // Walked away from the vendor (or died, and woke up at the spawn): the shop closes.
+  const shopNearby = shopInReach(player, world);
+  if (shopMenu.isOpen && !shopNearby) closeShop();
+  shopMenu.onEvents(events);
+  shopMenu.update(player, shopNearby, paused);
   updateHud(game, events, dt);
   updateThreats(game.entities, player, camera, dt);
   navDebug.update(getFlowField(getNavGraph(world), game.navGoal));

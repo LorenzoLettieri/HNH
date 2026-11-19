@@ -275,6 +275,27 @@ export function playPickup(kind: 'bullets' | 'shells' | 'medkit' | 'coin'): void
   }
 }
 
+/**
+ * Purchase: a cash register. A rattle of coins poured on the counter (a few
+ * quick high ticks), the drawer's bell ("ka-ching": two bright rings), and a
+ * low "clunk" of the gun put down on the wood.
+ */
+export function playPurchase(): void {
+  for (let i = 0; i < 6; i++) {
+    noiseBurst({ start: i * 0.035 + Math.random() * 0.01, duration: 0.02, volume: 0.25, filter: 'bandpass', frequency: 4500 + Math.random() * 2500, q: 10 });
+  }
+  setTimeout(() => ring(1760, 0.4, 0.09), 220);
+  setTimeout(() => ring(2640, 0.7, 0.1), 290);
+  thump({ start: 0.5, duration: 0.12, volume: 0.45, from: 180, to: 70 });
+  noiseBurst({ start: 0.5, duration: 0.06, volume: 0.3, filter: 'lowpass', frequency: 900 });
+}
+
+/** Not enough money: a dull, short "no" (two low thuds, the second lower). */
+export function playPurchaseDenied(): void {
+  thump({ duration: 0.09, volume: 0.4, from: 220, to: 160 });
+  thump({ start: 0.12, duration: 0.14, volume: 0.4, from: 160, to: 100 });
+}
+
 /** Bullet hits a steel target. */
 export function playTargetHit(): void {
   ring(900 + Math.random() * 120, 0.5, 0.35);

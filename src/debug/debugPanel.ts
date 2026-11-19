@@ -30,6 +30,8 @@ export function createDebugPanel(options: {
   onPostSizeChange: () => void;
   /** Debug: clear the enemies and start wave n. */
   onJumpToWave: (wave: number) => void;
+  /** Debug: vildenaro for free, to try the shop. */
+  onGiveMoney: (amount: number) => void;
 }): DebugPanel {
   const panel = createPanel();
 
@@ -38,6 +40,12 @@ export function createDebugPanel(options: {
   const jump = { wave: 10 };
   waves.number(jump, 'wave', 1, 60, 1);
   waves.button('Go to this wave', () => options.onJumpToWave(jump.wave));
+
+  // --- Shop ---
+  const shop = panel.folder('Shop (src/sim/config.ts, src/sim/shop.ts)');
+  shop.number(tuning, 'shopReach', 1, 6, 0.1);
+  shop.number(tuning, 'shotgunPrice', 0, 3000, 50);
+  shop.button('+500 vildenaro', () => options.onGiveMoney(500));
 
   // --- Style meter ---
   const style = panel.folder('Style (src/sim/config.ts, src/sim/style.ts)');
@@ -111,8 +119,6 @@ export function createDebugPanel(options: {
   drops.number(tuning, 'ammoPickupShells', 0, 12, 1);
   drops.number(tuning, 'coinsPerWeight', 0, 5, 1);
   drops.number(tuning, 'coinValue', 1, 100, 1);
-  drops.number(tuning, 'shopReach', 1, 6, 0.1);
-  drops.number(tuning, 'shotgunPrice', 0, 3000, 50);
   drops.number(tuning, 'dropBurstSpeedMin', 0, 10, 0.5);
   drops.number(tuning, 'dropBurstSpeedMax', 0, 10, 0.5);
   drops.number(tuning, 'dropBurstUp', 0, 15, 0.5);

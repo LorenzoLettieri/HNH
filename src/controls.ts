@@ -1,6 +1,7 @@
 // Turns raw input (input.ts) into what the game understands:
 // - view angles, updated every rendered frame for the most responsive aim;
 // - an InputCommand, built once per simulation tick.
+import type { ShopItemId } from './sim/shop';
 import { consumeMouseDelta, isKeyDown, isPointerLocked, wasPressed } from './input';
 import type { InputCommand } from './sim/command';
 
@@ -24,6 +25,16 @@ export function updateLook(): void {
 }
 
 /** Call once per simulation tick: snapshot of what the player wants right now. */
+/**
+ * A purchase asked by the shop's panel (a click on "Compra"), waiting for
+ * the next tick. The panel doesn't touch the game: it leaves a note here,
+ * and the next InputCommand carries it to the simulation, like a key press.
+ */
+let pendingBuy: ShopItemId | null = null;
+export function queueBuy(id: ShopItemId): void {
+  pendingBuy = id;
+}
+
 export function buildCommand(tick: number): InputCommand {
   let forward = 0;
   let strafe = 0;
@@ -47,7 +58,9 @@ export function buildCommand(tick: number): InputCommand {
   if (wasPressed('Digit2')) weaponSelect = 2;
   if (wasPressed('KeyQ') || wasPressed('WheelDown')) weaponSelect = -1;
   if (wasPressed('WheelUp')) weaponSelect = -2;
+  const buy = pendingBuy;
+  pendingBuy = null; // delivered: one click = one purchase attempt
   return {
-    tick, forward, strafe, jump, crouch, fire, kick, reload, weaponSelect, respawn, yaw: view.yaw, pitch: view.pitch,
+    tick, forward, strafe, jump, crouch, fire, kick, reload, weaponSelect, respawn, buy, yaw: view.yaw, pitch: view.pitch,
   };
 }
