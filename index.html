@@ -146,16 +146,16 @@
          with a burning-orange chevron pointing outward, blinking. clip-path cuts the
          element to a polygon: the chevron is just a colored box with its shape cut out. */
       #threats { position: fixed; left: 50%; top: 50%; pointer-events: none; }
-      .threat { position: absolute; left: -155px; top: -155px; width: 310px; height: 310px; opacity: 0; }
+      .threat { position: absolute; left: -210px; top: -210px; width: 420px; height: 420px; opacity: 0; }
       .threat i {
-        position: absolute; left: 50%; top: 0; width: 30px; height: 20px; margin-left: -15px;
+        position: absolute; left: 50%; top: 0; width: 52px; height: 34px; margin-left: -26px;
         background: linear-gradient(#ffd070, #ff7a14 55%, #a82a04);
         clip-path: polygon(50% 0, 100% 100%, 50% 62%, 0 100%);
         animation: threat-blink 0.16s ease-in-out infinite alternate;
       }
       /* The glow lives on the parent: clip-path would cut off a shadow on the chevron itself. */
-      .threat { filter: drop-shadow(0 0 1px #000) drop-shadow(0 0 7px rgba(255, 110, 20, 0.9)); }
-      @keyframes threat-blink { from { opacity: 1; } to { opacity: 0.35; } }
+      .threat { filter: drop-shadow(0 0 2px #000) drop-shadow(0 0 12px rgba(255, 110, 20, 0.95)); }
+      @keyframes threat-blink { from { opacity: 1; } to { opacity: 0.5; } }
       /* Flash when you collect a pickup: color from the --tint variable (set in hud.ts). */
       #pickup-flash {
         position: fixed; inset: 0; pointer-events: none; opacity: 0;
