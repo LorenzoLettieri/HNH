@@ -193,6 +193,22 @@ nuda e strade larghe 20 m, quindi bastava correre in tondo. Ora:
 
 ![Pianta prima e dopo la passata corpo a corpo](map-close-quarters.png)
 
+### Seconda passata: attraversare la mappa col movimento [FATTO]
+Obiettivo: **premiare il movimento preciso** per spostarsi, non solo per schivare.
+- **Strada alta**: tetti collegati da salti di precisione. Hotel → due **pilastri da 1×1 m** →
+  impresario (si saltella da un pilastro all'altro senza fermarsi); hotel → due piattaforme sospese
+  → saloon, che si collega alla rete di prima (piattaforme → chiesa → campanile); banca → armeria
+  (salto nel vuoto) → cassa sull'angolo → magazzino.
+- **Tetti bassi da wall jump**: un muro fino a ~4,5 m si scala con 3 wall jump ben cadenzati
+  (provato col bot: funziona solo col tempismo giusto). Impresario, case, armeria, emporio, telegrafo.
+- **Passaggi solo da slide** (1,1 m di luce; i ghoul sono alti 1,8 e fanno il giro): sotto la
+  pedana fra i vagoni (varco centrale della ferrovia) e sotto il carro di Cross Street. Sono **vie di
+  fuga** per chi sa scivolare.
+- **Emporio in cui si entra**: porte a est e ovest, finestre a nord e sud (davanzale 0,8 m, ci si
+  salta dentro). Dentro i Malocchi non ti vedono, ma i ghoul ti seguono: corpo a corpo vero, al chiuso.
+- Tutti i percorsi sono verificati con un giocatore simulato (fisica vera, comandi scritti a mano).
+- Draw call: fino a ~930 nella vista più carica. Lo **static batching** (§9) sta diventando utile.
+
 ### Regole pratiche emerse (vincoli del movimento attuale)
 - **Salto massimo ≈ 1,17 m**: gradini e scalini al massimo **1 m**.
 - **Salto in corsa ≈ 5,6 m** di distanza: gap tra piattaforme ≤ 3–4 m per stare comodi.

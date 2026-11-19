@@ -30,6 +30,16 @@
 // - Water tower (8 m): running jump from the saloon roof.
 // - Hotel (5.3 m): crate steps on its east side. Warehouse (6.3 m): crate
 //   steps on its west side. Both checked with a scripted player in the sim.
+// - HIGH ROAD (precise jumps between roofs, all checked with a scripted player):
+//   hotel → two 1×1 m pillars → undertaker; hotel → two floating platforms
+//   → saloon (→ church → bell tower); bank → drop onto the gunsmith → crate
+//   on its corner → warehouse.
+// - Low roofs (≤ 4.5 m: undertaker, houses, gunsmith, general store,
+//   telegraph) can be climbed with three well-timed wall jumps on one wall.
+// - SLIDE ONLY (1.1 m clearance, the ghouls are 1.8 m and go around): under
+//   the deck between the rail wagons (middle crossing), under the covered
+//   wagon on Cross Street.
+// - GENERAL STORE: you can go inside (doors east/west, windows north/south).
 //
 // Close-quarters pass (docs/DESIGN.md, "La mappa"): the quarters that were
 // empty ground are now filled with smaller buildings, so the town is a
@@ -138,6 +148,33 @@ function fence(minX: number, minZ: number, maxX: number, maxZ: number, gap: numb
 }
 
 /**
+ * A wall along Z (at x, from z1 to z2), `height` tall, with OPENINGS cut in
+ * it: doors and windows. A box can't have a hole, so the wall is built from
+ * pieces: for each opening, a piece below it (the sill: none for a door) and
+ * one above it (the lintel), plus the full-height pieces between openings.
+ * openings: [from z, to z, bottom y, top y].
+ */
+function wallZ(x: number, z1: number, z2: number, height: number, openings: [number, number, number, number][]): Box[] {
+  const t = 0.3; // thickness
+  const out: Box[] = [];
+  let z = z1;
+  for (const [a, b, bottom, top] of openings) {
+    if (a > z) out.push(box(x, 0, (z + a) / 2, t, height, a - z, 'planks')); // solid piece before
+    if (bottom > 0) out.push(box(x, 0, (a + b) / 2, t, bottom, b - a, 'planks')); // sill
+    out.push(box(x, top, (a + b) / 2, t, height - top, b - a, 'planks')); // lintel
+    z = b;
+  }
+  if (z2 > z) out.push(box(x, 0, (z + z2) / 2, t, height, z2 - z, 'planks'));
+  return out;
+}
+/** The same, for a wall along X (at z, from x1 to x2). Openings: [from x, to x, bottom y, top y]. */
+function wallX(z: number, x1: number, x2: number, height: number, openings: [number, number, number, number][]): Box[] {
+  // Build it as a wall along Z, then swap X and Z in every box (a mirror
+  // across the diagonal: same shape, rotated 90°).
+  return wallZ(z, x1, x2, height, openings).map((b) => ({ ...b, minX: b.minZ, maxX: b.maxZ, minZ: b.minX, maxZ: b.maxX }));
+}
+
+/**
  * Steps of crates against a wall, `count` crates `step` m apart in height,
  * going from (x, z) in the direction (dx, dz). The last one lets you jump
  * onto a roof. Steps ≤ 1 m: the max jump is ~1.17 m.
@@ -190,6 +227,7 @@ const props: Prop[] = [
   { type: 'lantern', mount: 'ground', x: 15.6, y: 22, z: -26.6, rotation: 20 }, // bell tower top
   { type: 'lantern', mount: 'ground', x: -27.6, y: 8, z: -15.3, rotation: 0 }, // water tower top
   { type: 'lantern', mount: 'ground', x: 0, y: 14, z: 24, rotation: 45 }, // middle of the bridge
+  { type: 'lantern', mount: 'ground', x: -25.5, y: 1, z: 17.3, rotation: 0 }, // on the general store's counter
 
   // Signs on the sidewalks (board hangs toward +X, or -X with rotation 180).
   { type: 'sign', x: -5.6, y: 0, z: -21, rotation: 0, text: 'SALOON' },
@@ -368,8 +406,47 @@ export const town: World = {
     box(-37.5, 0, -15, 2, 1.1, 2, 'stone'), // forge
     box(-34.5, 0, -14, 1, 0.8, 0.6, 'metal'), // anvil
     ...building(-36, 16, 7, 4, 8, 'wood'), // x -39.5..-32.5, z 12..20
-    // --- Cross Street west: an abandoned covered wagon in the middle ---
-    box(-16, 0, 3, 4.5, 2.4, 2, 'planks'),
+    // --- Cross Street west: an abandoned covered wagon in the middle, up on
+    //     its wheels: you can SLIDE under it (1.1 m), the ghouls go around ---
+    box(-16, 1.1, 3, 4.5, 1.3, 2, 'planks'),
+    box(-17.9, 0, 2.1, 0.3, 1.1, 0.3, 'wood'), // wheels
+    box(-14.1, 0, 2.1, 0.3, 1.1, 0.3, 'wood'),
+    box(-17.9, 0, 3.9, 0.3, 1.1, 0.3, 'wood'),
+    box(-14.1, 0, 3.9, 0.3, 1.1, 0.3, 'wood'),
+
+    // ===== TRAVERSAL PASS: rewarding precise movement =====
+    // --- High road 1: HOTEL roof (5.3) → two pillars (1×1 m tops!) → UNDERTAKER roof (4.3).
+    //     Gaps 2.2-2.7 m: easy with a running jump, but the landings are tiny:
+    //     hop from pillar to pillar without stopping. ---
+    box(-22, 0, -30.75, 1, 5, 1, 'wood'),
+    box(-25.5, 0, -30.75, 1, 4.7, 1, 'wood'),
+    // --- High road 2: HOTEL roof (5.3) → two floating platforms (6.0, 6.7) → SALOON roof (7.3),
+    //     which joins the old network (floating platforms → church → bell tower) ---
+    box(-12, 5.6, -26.5, 2, 0.4, 2, 'metal'),
+    box(-12, 6.3, -23, 2, 0.4, 2, 'metal'),
+    // --- High road 3: GUNSMITH roof (4.3: wall-jump it, or drop from the bank roof)
+    //     → crate on its corner (5.3) → WAREHOUSE roof (6.3) ---
+    box(19.6, 4.3, 28.6, 1.2, 1, 1.2, 'wood'), // on the corner: 0.5 m from the warehouse's eave
+
+    // --- Slide passage: the middle crossing of the rail line is blocked by a
+    //     low coupling deck at 1.1 m. You slide under it; the ghouls (1.8 m)
+    //     must use the other crossings. An escape route for good movement. ---
+    box(30, 1.1, 0, 3, 0.4, 7, 'metal'),
+
+    // --- GENERAL STORE: a building you can go INSIDE (8 × 7.5 m, roof 4.3).
+    //     Doors east and west, windows north and south (sill 0.8 m: jump through;
+    //     the opening is 2.2 m tall, so a standing body fits while hopping in).
+    //     Indoors the eye-bats can't see you, but the ghouls follow you in:
+    //     real close quarters. The roof: wall jumps only. ---
+    ...wallZ(-23, 11, 19, 4, [[14, 16.2, 0, 2.6]]), // east wall, door
+    ...wallZ(-30.5, 11, 19, 4, [[13.5, 15.7, 0, 2.6]]), // west wall, door
+    ...wallX(11, -30.5, -23, 4, [[-28.2, -26.2, 0.8, 3]]), // north wall, window
+    ...wallX(19, -30.5, -23, 4, [[-27.7, -25.7, 0.8, 3]]), // south wall, window
+    box(-26.75, 4, 15, 8.1, 0.3, 8.6, 'roof'),
+    box(-26.5, 0, 17.3, 3, 1, 0.6, 'wood'), // counter
+    box(-29.6, 0, 12, 1, 1.8, 1.4, 'wood'), // shelves in the corner
+    box(-24, 0, 12, 1, 1, 1, 'wood'), // crates
+    box(-24, 1, 12, 0.8, 0.8, 0.8, 'wood'),
 
     // --- South: a HOUSE west of the towers, a WAREHOUSE east of them ---
     ...building(-16, 34, 7, 4, 6, 'planks'), // x -19.5..-12.5, z 31..37
