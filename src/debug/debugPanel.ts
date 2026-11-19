@@ -290,6 +290,8 @@ export function createDebugPanel(options: {
   feel.number(cameraFeelSettings, 'hurtKickDamage', 5, 60, 1);
   feel.number(cameraFeelSettings, 'hurtStiffness', 50, 800, 10);
   feel.number(cameraFeelSettings, 'hurtDamping', 0.1, 1.5, 0.05);
+  feel.number(cameraFeelSettings, 'hurtShake', 0, 6, 0.1);
+  feel.number(cameraFeelSettings, 'hurtShakeDecay', 2, 30, 0.5);
   feel.button('Copy values', () => copyToClipboard(toSource(cameraFeelSettings)));
 
   // --- Post-processing ---

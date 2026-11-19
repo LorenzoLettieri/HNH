@@ -106,10 +106,14 @@
       #health-ghost, #health-fill { position: absolute; inset: 0; transform-origin: left; }
       #health-ghost { background: #8a6a58; }
       #health-fill { background: linear-gradient(90deg, #4a0604, #a01c10); box-shadow: 0 0 6px #6a0a04; }
-      /* Red vignette: transparent in the middle, red at the edges. */
+      /* Red flash when you get hit: transparent in the middle, red at the edges. The
+         center moves AWAY from the hit (--hx/--hy, set by hud.ts), so the red is thicker
+         on the side the hit came from (+ on y: screen y grows downward, "in front" = top). */
       #damage {
+        --hx: 0%; --hy: 0%;
         position: fixed; inset: 0; pointer-events: none; opacity: 0;
-        background: radial-gradient(ellipse at center, transparent 45%, rgba(170, 10, 0, 0.75) 100%);
+        background: radial-gradient(ellipse at calc(50% - var(--hx)) calc(50% + var(--hy)),
+          transparent 35%, rgba(150, 8, 0, 0.5) 70%, rgba(110, 0, 0, 0.9) 100%);
       }
       /* Low health (src/render/lowHealth.ts): blood creeping in from the edges. The texture
          is drawn in code and stretched to the screen without smoothing; opacity from the TS. */
@@ -314,6 +318,7 @@
     <div id="high-noon" hidden></div>
     <div id="low-health-gray" hidden></div>
     <div id="low-health" hidden></div>
+    <div id="damage"></div>
     <div id="hud-smudge-left" class="hud-smudge"></div>
     <div id="hud-smudge-right" class="hud-smudge"></div>
     <div id="hud-smudge-top-left" class="hud-smudge"></div>
@@ -322,7 +327,6 @@
     <div id="crosshair"></div>
     <div id="hitmarker"></div>
     <div id="ammo-box"><div id="ammo-rounds"></div><div id="ammo-reserve"></div></div>
-    <div id="damage"></div>
     <div id="hurt-arcs"></div>
     <div id="pickup-flash"></div>
     <div id="health-plate">

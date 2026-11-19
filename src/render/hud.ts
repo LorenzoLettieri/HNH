@@ -32,6 +32,12 @@ function showBanner(text: string, seconds: number): void {
 }
 
 let flash = 0; // 0..1, the red flash after a hit
+/** Damage of a "full strength" hit, for sounds and flash. */
+const HARD_HIT = 40;
+/** How far (% of the screen) the red flash's center moves away from the hit. */
+const FLASH_SHIFT = 30;
+/** How fast the red flash fades (per second). */
+const FLASH_FADE = 2;
 /** Screen tint for each pickup: same colors as their glow (render/pickups.ts). */
 const PICKUP_TINTS = { bullets: 'rgb(255, 200, 70)', shells: 'rgb(255, 90, 40)', medkit: 'rgb(70, 255, 100)' };
 let pickupTime = 0; // 0..1, the short flash when you collect something
@@ -41,11 +47,18 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
   const player: PlayerState = game.player;
   for (const e of events) {
     if (e.type === 'playerHurt') {
-      flash = 1;
-      playPlayerHurt();
-      // Where it came from: an arc around the crosshair and the head snapping away.
+      // How hard: 0..1 (a hound bite 0.4, a ghoul claw 0.5, a bull charge 1).
+      const strength = Math.min(1, e.damage / HARD_HIT);
+      const angle = screenAngle(player, e.fromX, e.fromZ);
+      playPlayerHurt(strength);
+      // Where it came from: an arc around the crosshair, the head snapping away...
       addHurtArc(e.fromX, e.fromZ, e.damage);
-      hurtKick(screenAngle(player, e.fromX, e.fromZ), e.damage);
+      hurtKick(angle, e.damage);
+      // ...and the red flash thicker on the hit's side: the center of the
+      // vignette's gradient moves AWAY from the hit (CSS variables in index.html).
+      flash = Math.max(flash, 0.6 + 0.4 * strength);
+      damage.style.setProperty('--hx', `${Math.sin(angle) * FLASH_SHIFT}%`);
+      damage.style.setProperty('--hy', `${Math.cos(angle) * FLASH_SHIFT}%`);
     }
     if (e.type === 'pickup') {
       // Doom's "bonus flash": the whole screen tinted for a moment, in the
@@ -94,7 +107,7 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
   updateHealthPlate(player.health, dt);
 
   // Red vignette: a flash on each hit (low health has its own effect, lowHealth.ts).
-  flash = Math.max(0, flash - dt * 3);
+  flash = Math.max(0, flash - dt * FLASH_FADE);
   updateHurtArcs(player, dt);
   damage.style.opacity = String(flash);
 

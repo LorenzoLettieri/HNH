@@ -11,6 +11,10 @@
 
 let ctx: AudioContext | null = null;
 let master: GainNode;
+/** Bus of all the "world" sounds, before the muffle filter (see initAudio). */
+let world: GainNode;
+/** Lowpass on the world sounds: wide open normally, closed for a moment when you get hit. */
+let muffle: BiquadFilterNode;
 let noiseBuffer: AudioBuffer;
 /** How much of the sound goes into the canyon echo (0 = off). See initAudio. */
 let echoSend: GainNode;
@@ -19,6 +23,11 @@ let echoSend: GainNode;
 const ECHO_DELAY = 0.34;
 const ECHO_FEEDBACK = 0.4;
 const ECHO_WET = 0.55;
+
+/** Getting hit: the muffle filter's cutoff, open and closed (Hz), and seconds to open back up. */
+const MUFFLE_OPEN = 20000;
+const MUFFLE_CLOSED = 350;
+const MUFFLE_RECOVER = 0.7;
 
 /** Master volume, 0..1. */
 export const sfxSettings = { volume: 0.5 };
@@ -33,6 +42,20 @@ export function initAudio(): void {
   master = ctx.createGain();
   master.gain.value = sfxSettings.volume;
   master.connect(ctx.destination);
+
+  // Every sound goes into `world`, then through `muffle` (a lowpass filter,
+  // normally wide open at 20 kHz = it changes nothing) into the master volume.
+  // When you get hit the filter closes for a moment: the world sounds
+  // muffled, as if you were stunned. The sounds of the hit itself skip it
+  // (they go straight to master), so they stay sharp over the dull world.
+  //
+  //   sounds ──▶ world ──▶ muffle ──┐
+  //   your hit ─────────────────────┴──▶ master (volume) ──▶ speakers
+  world = ctx.createGain();
+  muffle = ctx.createBiquadFilter();
+  muffle.type = 'lowpass';
+  muffle.frequency.value = MUFFLE_OPEN;
+  world.connect(muffle).connect(master);
 
   // The canyon echo, for HIGH NOON. Everything that goes to the speakers
   // also goes (through echoSend, silent until turned on) into a delay line
@@ -88,7 +111,7 @@ function noiseBurst(options: {
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(options.volume, t0);
   gain.gain.exponentialRampToValueAtTime(0.001, t0 + options.duration); // fast decay
-  src.connect(filter).connect(gain).connect(options.out ?? master);
+  src.connect(filter).connect(gain).connect(options.out ?? world);
   // Start at a random point of the noise so repeated sounds aren't identical.
   src.start(t0, Math.random() * 0.5, options.duration);
 }
@@ -110,7 +133,7 @@ function thump(options: {
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(options.volume, t0);
   gain.gain.exponentialRampToValueAtTime(0.001, t0 + options.duration);
-  osc.connect(gain).connect(options.out ?? master);
+  osc.connect(gain).connect(options.out ?? world);
   osc.start(t0);
   osc.stop(t0 + options.duration);
 }
@@ -200,7 +223,7 @@ function ring(base: number, duration: number, volume: number): void {
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(volume * gainRatio, t0);
     gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration / ratio ** 0.3);
-    osc.connect(gain).connect(master);
+    osc.connect(gain).connect(world);
     osc.start(t0);
     osc.stop(t0 + duration);
   }
@@ -261,7 +284,7 @@ function placeSound(where: Where): AudioNode | null {
   gain.gain.value = where.volume;
   const panner = ctx.createStereoPanner();
   panner.pan.value = Math.max(-1, Math.min(1, where.pan));
-  gain.connect(panner).connect(master);
+  gain.connect(panner).connect(world);
   return gain;
 }
 
@@ -479,16 +502,47 @@ export function playKickImpact(hits: number): void {
   noiseBurst({ duration: 0.09, volume: 0.6 * loud, filter: 'lowpass', frequency: 1400 * v, frequencyEnd: 250 });
 }
 
-/** The player gets hit: a heavy thud and a short grunt. */
-export function playPlayerHurt(): void {
-  thump({ duration: 0.2, volume: 0.9, from: 140, to: 45 });
-  noiseBurst({ duration: 0.12, volume: 0.5, filter: 'lowpass', frequency: 700 });
-  thump({ start: 0.02, duration: 0.15, volume: 0.25, from: 220, to: 150 }); // "ugh"
+/**
+ * The player gets hit. `strength` 0..1 (from the damage). Layers:
+ * a heavy body blow (sine dropping very low), a wet smack of flesh (band of
+ * noise), a dry crack on top, a short grunt; for hard hits a ringing in the
+ * ears. All of it goes straight to master, while the rest of the world is
+ * muffled for a moment (the filter closes at once and opens up slowly).
+ */
+export function playPlayerHurt(strength: number): void {
+  if (!ctx) return;
+  master.gain.value = sfxSettings.volume;
+  const v = 0.6 + 0.4 * strength;
+  thump({ out: master, duration: 0.4, volume: 1.1 * v, from: 120, to: 30 }); // body blow
+  noiseBurst({ out: master, duration: 0.11, volume: 0.9 * v, filter: 'bandpass', frequency: 1400, frequencyEnd: 400, q: 1.5 }); // smack
+  noiseBurst({ out: master, duration: 0.035, volume: 0.4 * v, filter: 'highpass', frequency: 3500 }); // crack
+  thump({ out: master, start: 0.03, duration: 0.16, volume: 0.3 * v, from: 230, to: 140 }); // "ugh"
+  // Ringing in the ears: a thin high sine, fading slowly. Only for hard hits.
+  if (strength >= 0.5) {
+    const t0 = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    osc.frequency.value = 3600;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.05 * strength, t0 + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.6);
+    osc.connect(gain).connect(master);
+    osc.start(t0);
+    osc.stop(t0 + 1.6);
+  }
+  // The world goes dull: close the filter at once (lower = more muffled for
+  // harder hits), then open it back up. Exponential ramp: frequencies are
+  // heard on a log scale, so it sounds like a steady "opening".
+  const t0 = ctx.currentTime;
+  const closed = MUFFLE_CLOSED * (2.5 - 1.5 * strength);
+  muffle.frequency.cancelScheduledValues(t0);
+  muffle.frequency.setValueAtTime(closed, t0);
+  muffle.frequency.exponentialRampToValueAtTime(MUFFLE_OPEN, t0 + MUFFLE_RECOVER * (0.6 + 0.4 * strength));
 }
 
 /** One heartbeat thump (low health): a very low, soft sine "boom", felt more than heard. */
 export function playHeartbeat(volume: number): void {
-  thump({ duration: 0.16, volume: 0.55 * volume, from: 75, to: 38 });
+  thump({ out: master, duration: 0.16, volume: 0.55 * volume, from: 75, to: 38 }); // not muffled: it is you
 }
 
 /**
@@ -604,7 +658,7 @@ export function playHighNoon(): void {
   env.gain.exponentialRampToValueAtTime(0.16, t0 + 0.05);
   env.gain.setValueAtTime(0.16, end - 0.3);
   env.gain.exponentialRampToValueAtTime(0.001, end);
-  whistle.connect(env).connect(master);
+  whistle.connect(env).connect(world);
   whistle.start(t0);
   vibrato.start(t0);
   whistle.stop(end);

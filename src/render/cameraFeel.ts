@@ -27,11 +27,15 @@ export const cameraFeelSettings = {
   rollRate: 10,
   eyeRate: 18,
   /** Head snap when you get hit by hurtKickDamage damage, degrees (bigger hits: more, up to 2×). */
-  hurtKick: 4,
+  hurtKick: 7,
   hurtKickDamage: 20,
   /** The spring that brings the head back: stiffness and damping ratio (<1 = a small bounce). */
   hurtStiffness: 250,
   hurtDamping: 0.45,
+  /** Shake on top of the snap: random jitter of the view at a hit of hurtKickDamage, degrees... */
+  hurtShake: 1.5,
+  /** ...and how fast it dies out (higher = shorter). */
+  hurtShakeDecay: 10,
 };
 
 let fov = cameraFeelSettings.baseFov;
@@ -39,6 +43,7 @@ let roll = 0;
 let eyeHeight = tuning.eyeHeight;
 // Hit snap: one damped spring per axis (angle in radians and its speed).
 const snap = { pitch: 0, pitchVel: 0, roll: 0, rollVel: 0 };
+let shake = 0; // current shake amplitude, radians
 
 /**
  * The player got hit from `angle` (screen angle: 0 = in front, +π/2 = right,
@@ -56,6 +61,8 @@ export function hurtKick(angle: number, damage: number): void {
   const v = (size * omega) / 0.57;
   snap.pitchVel += Math.cos(angle) * v;
   snap.rollVel += Math.sin(angle) * v;
+  // Shake: the snap is one smooth movement, the shake adds the "rattle".
+  shake = Math.max(shake, THREE.MathUtils.degToRad(s.hurtShake) * Math.min(2, damage / s.hurtKickDamage));
 }
 
 /**
@@ -111,8 +118,12 @@ export function updateCameraFeel(
     [snap.pitch, snap.pitchVel] = stepSpring(snap.pitch, snap.pitchVel, h);
     [snap.roll, snap.rollVel] = stepSpring(snap.roll, snap.rollVel, h);
   }
-  camera.rotation.z = roll + snap.roll;
-  camera.rotation.x += snap.pitch;
+  // Shake: a new random offset every frame, smaller and smaller (exponential decay).
+  shake *= Math.exp(-s.hurtShakeDecay * dt);
+  const jitter = () => (Math.random() * 2 - 1) * shake;
+  camera.rotation.z = roll + snap.roll + jitter();
+  camera.rotation.x += snap.pitch + jitter();
+  camera.rotation.y += jitter();
 
   // 3. Eye height: glide toward standing or crouched height.
   const targetEye = player.crouched ? tuning.crouchEyeHeight : tuning.eyeHeight;
