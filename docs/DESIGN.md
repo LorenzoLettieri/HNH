@@ -76,7 +76,7 @@ con un chiaro preavviso.
 | **Ghoul** | Carne da cannone (ispirato agli zombie di CoD Zombies): cammina verso di te, **scavalca gli ostacoli bassi e aggira quelli alti**; in futuro si arrampicherà | A terra non sei mai al sicuro; un muretto non basta |
 | **Segugio infernale** | Balzi lunghi e precisi, anche su piattaforme | Devi muoverti continuamente |
 | **Avvoltoio** | Volante, gira in cerchio e picchia in picchiata | Raggiunge ogni tetto, obbliga a guardare in alto |
-| **Malocchio** [IN CORSO] | Occhio-pipistrello volante: orbita attorno a te a distanza (10 m, 5 m più in alto) e spara proiettili lenti. **Pupilla = punto critico** (×3, come la testa del ghoul) | Il movimento diventa difesa; obbliga a guardare in alto e a mirare con precisione |
+| **Malocchio** [FATTO] | Occhio-pipistrello volante: orbita attorno a te a distanza (10 m, 5 m più in alto) e spara proiettili lenti. **Pupilla = punto critico** (×3, come la testa del ghoul) | Il movimento diventa difesa; obbliga a guardare in alto e a mirare con precisione |
 | **Fuoco fatuo** | Volante a distanza, proiettili lenti (forse superato dal Malocchio) | Il movimento diventa difesa |
 | **Pistolero scheletro** | A distanza, colpo istantaneo **annunciato** (luccichio + click) | Punisce chi sta fermo in vista, premia chi rompe la linea di tiro |
 | **Dinamitardo** | Lancia dinamite ad arco, lascia fiamme | Nega zone: ti costringe a spostarti |
@@ -171,13 +171,22 @@ Ondate numerate (`src/sim/waves.ts`), sempre più dure, 8 s di pausa tra una e l
 annunciate dalla campana della chiesa. Alla morte: riepilogo (ondata, uccisioni, punti) e
 si ricomincia dall'ondata 1.
 
-| Ondata | Ghoul totali | Corridori | Salute |
-|---|---|---|---|
-| 1 | 6 | 0 | 100 |
-| 4 | 13 | ~10% | 145 |
-| 8 | 27 | ~50% | 205 |
+**Composizione casuale a budget [DECISO]**: niente ondate scritte a mano. Ogni tipo di nemico ha
+un **peso** (quanto è pericoloso), ogni ondata un **budget** di peso; a ogni spawn si pesca un tipo
+a caso tra quelli che il budget residuo si può permettere. Stesso budget, mix diverso in ogni
+partita. Oggi ghoul e Malocchio pesano **1** (quindi il budget = numero di nemici); un futuro bruto
+potrebbe pesare 5. Il caso usa un generatore con **seed** (deterministico: stesso seed = stessa partita).
+[DA VALUTARE] con pesi uguali un'ondata 1 può avere 4 Malocchi su 6: se è troppo, alzare il peso
+del Malocchio (es. 2) o aggiungere un'ondata minima di comparsa.
 
-- Vivi insieme: 6 + 2·ondata (max 24). Intervallo di spawn: da 2 s a 0,5 s.
+| Ondata | Budget (nemici) | Corridori (tra i ghoul) | Salute ghoul / Malocchio |
+|---|---|---|---|
+| 1 | 6 | 0 | 50 / 100 |
+| 4 | 13 | ~10% | 50 / 100 |
+| 8 | 27 | ~50% | 50 / 100 |
+| 10 | 36 | 60% | 100 / 200 |
+
+- Peso vivo insieme: 6 + 2·ondata (max 24). La salute di tutti i nemici sale a gradini ogni 10 ondate. Intervallo di spawn: da 2 s a 0,5 s.
 - **Corridori** (dall'ondata 4): 5,4 m/s invece di 3,6, **occhi rossi**.
 - **Punteggio** stile CoD: 10 per colpo, 100 per uccisione.
   [DA DECIDERE] cosa si compra con i punti (armi, potenziamenti, "santuari" sulla mappa).

@@ -24,9 +24,15 @@ export interface GameState {
   navGoal: number;
   /** Enemy projectiles in flight (fireballs...). */
   projectiles: Projectile[];
+  /** State of the seeded random generator (see random.ts): what the waves spawn. */
+  rng: number;
 }
 
-export function createGame(world: World): GameState {
+/**
+ * `seed` decides the "random" choices of the whole game (which enemies, where).
+ * Same seed = same game, if the player does the same things.
+ */
+export function createGame(world: World, seed = 1): GameState {
   const entities = createEntities(world);
   return {
     tick: 0,
@@ -37,6 +43,7 @@ export function createGame(world: World): GameState {
     stats: { kills: 0, score: 0 },
     navGoal: -1,
     projectiles: [],
+    rng: seed,
   };
 }
 

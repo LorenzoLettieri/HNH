@@ -90,7 +90,11 @@ function applyAtmosphere(a: Atmosphere): void {
 const params = new URLSearchParams(location.search);
 const world = LEVELS[params.get('level') ?? DEFAULT_LEVEL] ?? LEVELS[DEFAULT_LEVEL];
 // The whole game state (player + entities), created from the level.
-const game = createGame(world);
+// The seed makes every game different (which enemies, where). ?seed=123 in
+// the URL replays the same sequence: handy to test a specific situation.
+const seed = Number(params.get('seed') ?? Math.floor(Math.random() * 2 ** 32));
+console.log(`seed: ${seed}`);
+const game = createGame(world, seed);
 
 await loadMaterials(); // top-level await: the game starts once textures are ready
 // Boxes without a `look` are invisible colliders (e.g. around props): not drawn.

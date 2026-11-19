@@ -43,7 +43,8 @@ per chi sta fermo); nemici che attaccano lo spazio (anche volanti e a distanza);
 Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella rilevante.
 - `src/main.ts`: entry point (renderer, scena, luci, caricamento livello, game loop a passo fisso + interpolazione camera,
   **indicatore prestazioni**: fps, ms simulazione/disegno, draw call).
-  Debug: `?pos=x,y,z&look=yaw,pitch` nell'URL per partire da un punto preciso; `?level=arena` per l'arena di prova
+  Debug: `?pos=x,y,z&look=yaw,pitch` nell'URL per partire da un punto preciso; `?level=arena` per l'arena di prova;
+  `?seed=123` per rigiocare la stessa sequenza di ondate (il seed di ogni partita è scritto nella console del browser)
 - `src/input.ts`: input grezzo (tasti e tasti del mouse premuti, pressioni brevi "memorizzate", movimento mouse, Pointer Lock)
 - `src/controls.ts`: sensibilità mouse (`controlSettings`), angoli di vista, **mappatura tasti** (WASD, Spazio, Shift/C = accovacciati/slide, click = spara, R = ricarica, K = respawn) → `InputCommand` (T = cambia atmosfera, P = pixel art on/off, N = grafo IA, **B = fai apparire un Malocchio** (debug), tasto sotto Esc = pannello debug, in `main.ts`)
 - `src/sim/`: simulazione pura (niente Three.js/DOM)
@@ -54,7 +55,8 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
   - `eyebat.ts`: **IA del Malocchio** (occhio-pipistrello volante: orbita attorno al giocatore a distanza e quota fisse, steering 3D, separazione, sale sopra gli ostacoli; **sparo**: macchina a stati volo → carica (preavviso, rallenta) → palla di fuoco, solo con linea di vista; da morto cade)
   - `projectiles.ts`: **proiettili nemici** (palle di fuoco lente: movimento a ogni tick, collisione col livello lungo il segmento percorso, sfera contro il box del giocatore, danno e spinta)
   - `nav.ts`: **grafo di navigazione** generato dai box (nodi ogni 1,5 m, link cammina/salta/cadi/arrampicati/**sfiatatoio** (lancio simulato in anticipo), limiti di salto/caduta/arrampicata) e **flow field** (Dijkstra dal giocatore)
-  - `waves.ts`: **ondate stile CoD Zombies** (curva di difficoltà: quanti ghoul, quanti vivi insieme, **salute a gradini** `ghoulHealthForWave`, corridori, intervallo di spawn) e **punteggio**
+  - `waves.ts`: **ondate stile CoD Zombies** con **budget di peso**: ogni nemico ha un costo (`ghoulCost`, `eyebatCost` in `config.ts`), ogni ondata un budget (`waveBudget`), e a ogni spawn si sceglie un tipo a caso tra quelli che il budget si può permettere. **`ROSTER`** = elenco dei nemici delle ondate (aggiungere un nemico = aggiungere una riga). Curva di difficoltà (budget, peso vivo insieme, **salute a gradini** `healthForWave`, corridori, intervallo di spawn) e **punteggio**
+  - `random.ts`: **numeri casuali con seed** (mulberry32): deterministici, stato salvato nel `GameState` (`rng`)
   - `command.ts`: tipo `InputCommand` (cosa vuole fare il giocatore in un tick)
   - `world.ts`: tipi del livello (`Box` AABB, `Prop` decorazioni, `TargetSpawn` bersagli, `World`) e helper `box()`
   - `props.ts`: **box di collisione invisibili dei props** (barile, palo del cartello, torcia) e zona di lancio degli sfiatatoi

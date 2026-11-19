@@ -191,6 +191,8 @@ export const tuning = {
   ghoulCorpseTime: 4,
   /** Speed of the "runners" (fast ghouls, from wave 4), m/s. */
   ghoulRunnerSpeed: 5.4,
+  /** Weight in the waves' budget (how much trouble it is; see src/sim/waves.ts). */
+  ghoulCost: 1,
 
   // --- Malocchio (flying eye-bat; AI in src/sim/eyebat.ts) ---
   /**
@@ -220,6 +222,10 @@ export const tuning = {
   eyebatSeparation: 2.5,
   /** How long a dead eye-bat lies on the ground before disappearing, seconds. */
   eyebatCorpseTime: 3,
+  /** Weight in the waves' budget (see src/sim/waves.ts). */
+  eyebatCost: 1,
+  /** In the waves it appears this high above the spawn point, meters. */
+  eyebatSpawnHeight: 4,
   /** It only shoots when you're closer than this (and in sight), meters. */
   eyebatShootRange: 30,
   /** Seconds between two shots (plus up to 1 s of variation, so a group doesn't fire in sync). */
@@ -244,11 +250,11 @@ export const tuning = {
   // --- Waves (CoD-zombies style; the curve is in src/sim/waves.ts) ---
   /** Turn off to roam the map without enemies. */
   wavesEnabled: true,
-  /** Ghouls in wave 1. */
+  /** Weight budget of wave 1 (= number of enemies, if they all weigh 1). */
   waveBaseCount: 6,
-  /** Max ghouls alive at the same time, in any wave. */
+  /** Max weight alive at the same time, in any wave. */
   waveMaxAliveCap: 24,
-  /** Ghoul health goes up one step (+ghoulHealth) every this many waves. */
+  /** Enemy health goes up one step (+ base health) every this many waves. */
   waveHealthStep: 10,
   /** Seconds before the first wave. */
   waveFirstBreak: 4,
