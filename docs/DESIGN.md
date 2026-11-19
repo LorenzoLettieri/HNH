@@ -71,7 +71,9 @@ scalda nella forgia**: D grigio cenere, C rosso spento, B rosso, A arancio, S gi
 HIGH NOON bianco incandescente con l'alone che pulsa; l'alone cresce col rank. Appare quando parte una
 catena, sparisce quando si spezza (resta la lettera di prima mentre svanisce). Salire di rank = la lettera
 cala come un **timbro**; perdere un rank per i danni = la lettera **trema**.
-[DA DECIDERE] Mostrare anche il timer della catena (quanto manca prima che si spezzi).
+**Timer della catena** [FATTO: passo 3]: negli ultimi **1,5 s** prima che la catena si spezzi la lettera
+**lampeggia**, sempre più veloce (da 3 a 12 volte al secondo, come il bip di una bomba); ogni azione
+stilosa riavvia la catena e il lampeggio si ferma. Niente barra del tempo: la barra resta il progresso del rank.
 
 ### A cosa serve
 - **Moltiplicatore** sul **punteggio** e sul **vildenaro** guadagnato (la moneta: vedi §5, Economia).

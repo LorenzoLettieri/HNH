@@ -1,8 +1,9 @@
 // The style meter on screen (src/sim/style.ts has the logic): on the right side,
 // the rank letter, the rank's name and a bar with the progress towards the
-// next rank. Markup and CSS are in index.html; from here we only change CSS
-// variables (the colors of the rank), text and transforms.
-import { tuning } from '../sim/config';
+// next rank. When the chain is about to break, the letter blinks, faster and
+// faster. Markup and CSS are in index.html; from here we only change CSS
+// variables (the colors of the rank), text, opacity and transforms.
+import { TICK_DT, tuning } from '../sim/config';
 import { STYLE_RANKS, styleRank, type StyleState } from '../sim/style';
 import './fonts'; // the letters are written in Rye
 
@@ -48,6 +49,16 @@ const FADE_IN = 12;
 const FADE_OUT = 2.5;
 /** How fast the bar catches up with the real value (higher = snappier). */
 const BAR_SPEED = 15;
+/**
+ * Chain timer: in its last CHAIN_WARN_TIME seconds the letter blinks, from
+ * BLINK_HZ_START to BLINK_HZ_END blinks per second right before it breaks.
+ * (Never more than half the chain: with a short styleChainTime it would blink all the time.)
+ */
+const CHAIN_WARN_TIME = 1.5;
+const BLINK_HZ_START = 3;
+const BLINK_HZ_END = 12;
+/** Opacity of the letter in the "off" half of a blink (0 = it disappears). */
+const BLINK_DIM = 0.15;
 /** HIGH NOON: the glow pulses, how much (fraction of its radius) and how fast (Hz). */
 const HIGH_NOON_PULSE = 0.4;
 const HIGH_NOON_PULSE_HZ = 3;
@@ -65,6 +76,7 @@ let stamp = 0; // 1 → 0 during the stamp
 let shake = 0; // 1 → 0 during the shake
 let progress = 0; // the bar on screen, 0..1, follows the real value
 let clock = 0; // seconds, for the HIGH NOON pulse
+let blinkPhase = 0; // 0..1, where we are in the current blink: first half on, second half off
 
 /** Changes the rank on screen: text and colors. Only called when the rank changes, not every frame. */
 function showRank(rank: number): void {
@@ -120,6 +132,24 @@ export function updateStyleMeter(style: StyleState, dt: number): void {
     `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px) ` +
     `scale(${(1 + STAMP_SCALE * slam).toFixed(3)}) rotate(${(STAMP_TILT * slam).toFixed(1)}deg)`;
   barFill.style.transform = `scaleX(${progress.toFixed(3)})`;
+
+  // Chain timer: the chain is about to break, the letter blinks faster and faster.
+  // Every stylish action restarts the chain, and the blinking stops.
+  const timeLeft = style.chainTicks * TICK_DT;
+  const warnTime = Math.min(CHAIN_WARN_TIME, tuning.styleChainTime / 2);
+  let letterOpacity = 1;
+  if (active && timeLeft < warnTime) {
+    const urgency = 1 - timeLeft / warnTime; // 0 = warning just started, 1 = about to break
+    const hz = BLINK_HZ_START + (BLINK_HZ_END - BLINK_HZ_START) * urgency;
+    // "Phase accumulation", like an oscillator: every frame we move forward by
+    // hz·dt cycles. With floor(time·hz), a changing hz would make the blink
+    // jump back and forth (time·hz changes even when time stands almost still).
+    blinkPhase = (blinkPhase + hz * dt) % 1;
+    if (blinkPhase >= 0.5) letterOpacity = BLINK_DIM;
+  } else {
+    blinkPhase = 0; // the next warning starts with the letter on
+  }
+  letter.style.opacity = String(letterOpacity);
 
   // HIGH NOON: the white-hot glow breathes.
   if (shownRank === lastRank) {
