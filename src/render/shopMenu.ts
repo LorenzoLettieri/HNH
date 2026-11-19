@@ -4,8 +4,10 @@
 // can't aim, but you can still move with WASD).
 //
 // This file only DRAWS: what's for sale, prices and "is the vendor within
-// reach" come from the simulation (src/sim/shop.ts). A click on "Compra"
-// doesn't buy anything by itself: it queues a request (queueBuy in
+// reach" come from the simulation (src/sim/shop.ts). Buying takes TWO clicks
+// on an item's box: the first turns it into "CONFERMA", the second buys (a
+// misclick in a hurry, with the horde at the door, shouldn't cost 800).
+// The second click doesn't buy anything by itself either: it queues a request (queueBuy in
 // controls.ts) that the next tick carries to the simulation, and the answer
 // comes back as an event ('purchase' / 'purchaseFailed', see onEvents).
 // Opening and closing (E, Esc, walking away) are wired in main.ts.
@@ -31,6 +33,9 @@ const ITEM_TEXT: Record<ShopItemId, { name: string; desc: string }> = {
 const THANKS = '\u201CAffare fatto. Trattala bene, e lei tratter\u00E0 bene te.\u201D';
 const NO_MONEY = '\u201CCon quei quattro spiccioli? Torna quando avrai il vildenaro, straniero.\u201D';
 
+/** Seconds the "CONFERMA" stays up waiting for the second click, then the box goes back to normal. */
+const CONFIRM_TIME = 3;
+
 const GREETINGS = [
   '“Benvenuto, straniero. Qui si paga in vildenaro, niente credito.”',
   '“Fa’ in fretta: i tuoi amici morti non aspettano.”',
@@ -49,6 +54,17 @@ export interface ShopMenu {
   setGrabHint(visible: boolean): void;
 }
 
+/**
+ * A clicked button keeps the keyboard FOCUS, and a focused button "clicks"
+ * itself when you press Space or Enter. With the shop open you still move
+ * and jump: Space would buy the shotgun (or confirm it) behind your back!
+ * Cancelling the mousedown's default action stops the button from taking
+ * the focus; the click still happens.
+ */
+function noFocus(el: HTMLElement): void {
+  el.addEventListener('mousedown', (e) => e.preventDefault());
+}
+
 export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu {
   const panel = document.getElementById('shop')!;
   const greeting = document.getElementById('shop-greeting')!;
@@ -56,36 +72,88 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
   const moneyEl = document.getElementById('shop-money')!;
   const prompt = document.getElementById('shop-prompt')!;
   const grabHint = document.getElementById('grab-hint')!;
-  document.getElementById('shop-close')!.addEventListener('click', options.onCloseClick);
+  const closeButton = document.getElementById('shop-close')!;
+  closeButton.addEventListener('click', options.onCloseClick);
+  noFocus(closeButton);
 
   let isOpen = false;
   let kind: ShopSpawn['kind'] = 'weapons';
   /** One row per item: its state changes every frame (affordable? already yours?). */
-  let rows: { id: ShopItemId; price: number; el: HTMLElement; button: HTMLButtonElement; label: HTMLElement }[] = [];
+  interface Row {
+    id: ShopItemId;
+    price: number;
+    el: HTMLButtonElement;
+    label: HTMLElement;
+    /** The pending setTimeout that cancels "CONFERMA" (0 = not confirming). */
+    confirmTimer: number;
+    /** Not enough vildenaro (updated every frame by update()). */
+    poor: boolean;
+  }
+  let rows: Row[] = [];
+
+  /** Back to the normal face (timeout, a click on another item, a purchase). */
+  function cancelConfirm(r: Row): void {
+    clearTimeout(r.confirmTimer);
+    r.confirmTimer = 0;
+    r.el.classList.remove('confirming');
+  }
+
+  /**
+   * A click on an item's box. First click: "CONFERMA" (and any other item
+   * waiting for confirmation goes back to normal). Second click: buy.
+   * Not enough money: no point in confirming, the request goes straight to
+   * the simulation, which refuses it (and the vendor has his say).
+   */
+  function onItemClick(r: Row): void {
+    if (r.poor || r.confirmTimer) {
+      cancelConfirm(r);
+      queueBuy(r.id); // only asks: the simulation will answer with an event
+      return;
+    }
+    for (const other of rows) cancelConfirm(other);
+    r.el.classList.add('confirming');
+    r.confirmTimer = window.setTimeout(() => cancelConfirm(r), CONFIRM_TIME * 1000);
+  }
 
   /** Builds the item list. Only when opening: prices can change from the debug panel. */
   function fill(): void {
     list.replaceChildren();
     rows = shopCatalog(kind).map((item) => {
       const text = ITEM_TEXT[item.id];
-      const row = document.createElement('div');
+      // The whole box is ONE button (spans inside, not divs: a <button> may
+      // only contain "phrasing" elements). Two faces, CSS shows one of them:
+      // the item, or "CONFERMA" (class .confirming on the button).
+      const row = document.createElement('button');
       row.className = 'shop-item';
       row.innerHTML = `
-        <div class="shop-item-text">
-          <div class="shop-item-name"></div>
-          <div class="shop-item-desc"></div>
-        </div>
-        <button class="shop-buy"><span class="shop-price"></span></button>`;
+        <span class="shop-item-face">
+          <span class="shop-item-text">
+            <span class="shop-item-name"></span>
+            <span class="shop-item-desc"></span>
+          </span>
+          <span class="shop-price"></span>
+        </span>
+        <span class="shop-item-confirm">
+          <span class="shop-confirm-word">CONFERMA</span>
+          <span class="shop-confirm-price"></span>
+        </span>`;
       // textContent, not innerHTML, for the words: never build HTML out of strings
       // with data inside (same reason you escape output in a Blade template).
       row.querySelector('.shop-item-name')!.textContent = text.name;
       row.querySelector('.shop-item-desc')!.textContent = text.desc;
-      const button = row.querySelector<HTMLButtonElement>('.shop-buy')!;
-      const label = row.querySelector<HTMLElement>('.shop-price')!;
-      // The click only asks: the simulation will answer with an event.
-      button.addEventListener('click', () => queueBuy(item.id));
+      row.querySelector('.shop-confirm-price')!.textContent = `paga ${item.price} vildenaro`;
+      const r: Row = {
+        id: item.id,
+        price: item.price,
+        el: row,
+        label: row.querySelector<HTMLElement>('.shop-price')!,
+        confirmTimer: 0,
+        poor: false,
+      };
+      row.addEventListener('click', () => onItemClick(r));
+      noFocus(row);
       list.append(row);
-      return { id: item.id, price: item.price, el: row, button, label };
+      return r;
     });
   }
 
@@ -103,6 +171,7 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
     close() {
       isOpen = false;
       panel.hidden = true;
+      for (const r of rows) cancelConfirm(r); // reopening never shows a stale "CONFERMA"
     },
     update(player, inReach, paused) {
       // The prompt: next to a vendor, shop closed, game running.
@@ -112,10 +181,12 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
       for (const r of rows) {
         const owned = ownsItem(player, r.id);
         r.el.classList.toggle('owned', owned);
-        r.el.classList.toggle('poor', !owned && player.money < r.price);
-        // Bought: the button becomes a label. Not enough money: still
-        // clickable, so the vendor can tell you what he thinks of you.
-        r.button.disabled = owned;
+        // Bought: the box is disabled, the price becomes "TUA". Not enough
+        // money: still clickable, so the vendor can tell you what he thinks of you.
+        r.el.classList.toggle('poor', r.poor);
+        r.poor = !owned && player.money < r.price;
+        r.el.disabled = owned;
+        if (owned && r.confirmTimer) cancelConfirm(r);
         r.label.textContent = owned ? 'TUA' : String(r.price);
       }
     },

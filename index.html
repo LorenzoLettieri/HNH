@@ -358,18 +358,31 @@
       #shop-greeting { margin: 4px 0 12px; font-style: italic; color: #a89070; }
       #shop-wallet { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0; border-top: 1px solid #5a3a20; border-bottom: 1px solid #5a3a20; }
       #shop-money { font: 22px 'Rye', Georgia, serif; color: #d8a838; }
-      .shop-item { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid #3a2414; }
+      /* One item = one big button: the whole box is clickable. Two faces: the item,
+         and "CONFERMA" after the first click (class .confirming, set by shopMenu.ts). */
+      .shop-item {
+        display: block; width: 100%; margin: 10px 0; padding: 10px 12px; box-sizing: border-box; min-height: 74px;
+        text-align: left; cursor: pointer; color: inherit; font: inherit;
+        background: #2a1810; border: 2px solid #5a3a20; box-shadow: 0 0 0 2px #120604;
+      }
+      .shop-item:hover:not(:disabled) { background: #3a2414; border-color: #c89a40; }
+      .shop-item:disabled { cursor: default; }
+      .shop-item-face { display: flex; gap: 12px; align-items: center; }
       .shop-item-text { flex: 1; }
+      .shop-item-name, .shop-item-desc { display: block; }
       .shop-item-name { font: 17px 'Rye', Georgia, serif; color: #f0d8a0; }
       .shop-item-desc { margin-top: 2px; font-size: 13px; color: #a89070; }
-      .shop-buy {
-        min-width: 86px; padding: 8px 10px; cursor: pointer; font: 18px 'Rye', Georgia, serif;
-        background: #5a3a20; color: #f0d878; border: 2px solid #c89a40; box-shadow: 0 0 0 2px #120604;
-      }
-      .shop-buy:hover:not(:disabled) { background: #7a4a24; }
-      .shop-buy:disabled { cursor: default; opacity: 0.85; }
+      .shop-price { min-width: 64px; text-align: right; font: 20px 'Rye', Georgia, serif; color: #f0d878; }
       .shop-item.poor .shop-price { color: #c03020; } /* not enough vildenaro */
-      .shop-item.owned .shop-buy { background: transparent; border-color: #5a3a20; box-shadow: none; color: #8a7a62; }
+      .shop-item.owned .shop-price { color: #8a7a62; }
+      .shop-item.owned .shop-item-name { color: #a89070; }
+      .shop-item-confirm { display: none; text-align: center; }
+      .shop-item.confirming { background: #5a2a14; border-color: #f0d878; }
+      .shop-item.confirming .shop-item-face { display: none; }
+      .shop-item.confirming .shop-item-confirm { display: block; animation: shop-confirm 0.15s ease-out; }
+      .shop-confirm-word { display: block; font: 26px 'Rye', Georgia, serif; letter-spacing: 4px; color: #f0d878; text-shadow: 2px 2px 0 #000; }
+      .shop-confirm-price { display: block; font-size: 13px; color: #e0c890; }
+      @keyframes shop-confirm { from { transform: scale(1.12); } to { transform: scale(1); } }
       .shop-item.shake { animation: shop-shake 0.35s; }
       @keyframes shop-shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
       /* After the shop closes, if the browser didn't give the mouse back: the game goes on, click to aim again. */

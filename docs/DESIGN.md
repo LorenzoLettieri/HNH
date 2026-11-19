@@ -434,6 +434,9 @@ Punteggio e moneta sono **separati**:
   una richiesta nel comando di input del tick dopo, e la **simulazione** controlla tutto (venditore a
   portata, già tua, vildenaro) e risponde con un evento. Comprata, la doppietta arriva carica, con 12
   cartucce in tasca, e **finisce subito in mano**. Senza soldi: la riga trema e il venditore ti sfotte.
+  **Doppio click** [FATTO]: tutto il box dell'articolo è cliccabile; il primo click lo trasforma in
+  "CONFERMA · paga 800 vildenaro", il secondo compra (la conferma scade dopo 3 s). Un click sbagliato
+  di fretta, con l'orda alla porta, non deve costare 800.
   Le armi comprate si perdono alla morte (si ricomincia da capo). Le **munizioni cadono solo per le armi
   che possiedi** (niente cartucce finché non hai la doppietta).
 
