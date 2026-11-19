@@ -191,15 +191,20 @@ export function isAlive(e: Entity): boolean {
  * cube around the plate (a bit generous on the corners, nobody will notice).
  */
 export function hitBox(e: Entity): Box {
+  // The HITBOX (what bullets and kicks hit) is NOT the collider (the box that
+  // walks into walls, ghoulRadius / eyebatRadius). The collider must be slim
+  // to fit through alleys; the hitbox should match what you SEE, and a bit
+  // more: in a fast game, a shot that visibly touches the sprite must count.
+  // Every shooter does this (generous hitboxes), it's not cheating.
   if (e.type === 'ghoul') {
-    const r = tuning.ghoulRadius;
-    return box(e.x, e.y, e.z, r * 2, tuning.ghoulHeight, r * 2);
+    return box(e.x, e.y, e.z, tuning.ghoulHitWidth, tuning.ghoulHitHeight, tuning.ghoulHitWidth);
   }
   if (e.type === 'eyebat') {
-    // A cube around the eye. The wings are NOT in it: shooting a thin wing
-    // and getting a kill would feel wrong, and missing "through" it is fine.
-    const r = tuning.eyebatRadius;
-    return box(e.x, e.y, e.z, r * 2, r * 2, r * 2);
+    // A cube around the eye, a bit bigger than the eye itself (it includes
+    // where the wings join the body, not the wing tips).
+    const h = tuning.eyebatHitRadius;
+    const centerY = e.y + tuning.eyebatRadius; // e.y is the bottom of the (collider) body
+    return box(e.x, centerY - h, e.z, h * 2, h * 2, h * 2);
   }
   const r = TARGET_PLATE_RADIUS;
   return box(e.x, e.y + TARGET_PLATE_HEIGHT - r, e.z, r * 2, r * 2, r * 2);

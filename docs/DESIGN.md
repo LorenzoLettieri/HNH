@@ -122,6 +122,11 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
 
 - La difficoltà delle prime ondate viene da **quantità, velocità, direzioni, tipi di nemico**;
   la salute alta arriva solo molto tardi. Nemici resistenti = **miniboss** (eventi, non la norma).
+- **Hitbox generose, separate dal collider** [DECISO]: la scatola che urta i muri (stretta, per
+  passare nei vicoli) non è quella che prende i colpi. La hitbox copre **tutto lo sprite**: ghoul
+  1,0 × 2,0 m (il collider è 0,7 m), Malocchio un cubo di 1,3 m attorno all'occhio (prima 0,8 m),
+  pupilla con raggio 0,25 m (prima 0,15). Regola: un colpo che tocca visibilmente il disegno deve
+  contare. Tasto **H** per vederle.
 - **Malocchio**: **stessa salute del ghoul** (50, stessi gradini), quindi stessi colpi per uccidere:
   1 colpo nelle ondate 1–9, dalla 30 4 al corpo o 2 nella pupilla. La sua difficoltà è colpirlo
   (piccolo, in alto, in movimento), non la resistenza. Il critico si calcola

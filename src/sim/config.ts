@@ -183,7 +183,15 @@ export const tuning = {
   ghoulSpeed: 3.6,
   /** How quickly it reaches its speed / turns (per second). */
   ghoulAccel: 6,
+  /** Half the width of its COLLIDER (walls, alleys). Not what bullets hit: see ghoulHitWidth. */
   ghoulRadius: 0.35,
+  /**
+   * Width of its HITBOX (what bullets and kicks hit), meters. The sprite is
+   * 1 m wide: the hitbox matches it, so a shot that touches the drawing counts.
+   */
+  ghoulHitWidth: 1.0,
+  /** Height of its hitbox, meters (the sprite is ~1.9 m with the hat). */
+  ghoulHitHeight: 2.0,
   ghoulHeight: 1.8,
   /** Obstacles up to this height are hopped over, meters. */
   ghoulJumpHeight: 1.1,
@@ -261,11 +269,16 @@ export const tuning = {
   /** Radius of the round body (the eye), meters. Its hitbox is a cube this wide ×2. */
   eyebatRadius: 0.4,
   /**
+   * Half the size of its HITBOX, a cube centered on the eye, meters. Bigger
+   * than the eye (0.4): it includes the base of the wings. Not the collider.
+   */
+  eyebatHitRadius: 0.65,
+  /**
    * Critical spot: a bullet passing closer than this to the CENTER of the eye
    * hits the pupil (×headshotMultiplier). The pupil always faces you, so
    * "close to the center, as seen from you" = "in the pupil". Meters.
    */
-  eyebatPupilRadius: 0.15,
+  eyebatPupilRadius: 0.25,
   /** Cruising speed, m/s (slower than you: you can always get away). */
   eyebatSpeed: 6,
   /** How quickly it reaches its speed / turns (per second). Low = floaty, drifting flight. */

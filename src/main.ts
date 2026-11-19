@@ -24,6 +24,7 @@ import { createEyebatRenderer } from './render/enemies/eyebats';
 import { createProjectileRenderer } from './render/projectiles';
 import { updateHud } from './render/hud';
 import { createNavDebug } from './render/navDebug';
+import { createHitboxDebug } from './render/hitboxDebug';
 import { getFlowField, getNavGraph } from './sim/nav';
 import { createViewmodel } from './render/weapons/viewmodel';
 import type { SimEvent } from './sim/events';
@@ -112,6 +113,7 @@ const ghouls = createGhoulRenderer(scene);
 const eyebats = createEyebatRenderer(scene);
 const projectiles = createProjectileRenderer(scene);
 const navDebug = createNavDebug(scene, getNavGraph(world));
+const hitboxDebug = createHitboxDebug(scene);
 // The gun in your hand: its own scene and camera, drawn over the world.
 const viewmodel = createViewmodel();
 viewmodel.setAspect(window.innerWidth / window.innerHeight);
@@ -143,6 +145,7 @@ window.addEventListener('keydown', (e) => {
   }
   if (e.code === 'KeyP') post.togglePixelArt();
   if (e.code === 'KeyN') navDebug.toggle();
+  if (e.code === 'KeyH') hitboxDebug.toggle();
   // Debug: B spawns an eye-bat in front of you (until they're in the waves).
   if (e.code === 'KeyB') spawnEyebatInFront(game);
   if (e.code === 'Backquote') {
@@ -301,6 +304,7 @@ renderer.setAnimationLoop((now: number) => {
   projectiles.update(game.projectiles, events, camera, alpha, dt);
   updateHud(game, events, dt);
   navDebug.update(getFlowField(getNavGraph(world), game.navGoal));
+  hitboxDebug.update(game.entities);
   ammoHud.textContent = player.reloadTicks > 0
     ? 'RELOADING'
     : '●'.repeat(player.ammo) + '○'.repeat(Math.max(0, 6 - player.ammo));

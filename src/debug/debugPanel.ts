@@ -117,6 +117,8 @@ export function createDebugPanel(options: {
   ghoul.number(tuning, 'peakLungeCooldownFactor', 0.1, 1, 0.05);
   ghoul.number(tuning, 'peakRunnerChance', 0, 1, 0.05);
   ghoul.number(tuning, 'ghoulHeadHeight', 0.8, 1.8, 0.05);
+  ghoul.number(tuning, 'ghoulHitWidth', 0.3, 2.5, 0.05);
+  ghoul.number(tuning, 'ghoulHitHeight', 1, 3, 0.05);
   ghoul.number(tuning, 'waveBreak', 0, 30, 0.5);
   ghoul.number(tuning, 'spawnMinDistance', 0, 40, 1);
   ghoul.number(tuning, 'spawnMaxDistance', 10, 100, 1);
@@ -153,7 +155,8 @@ export function createDebugPanel(options: {
   eyebat.number(tuning, 'eyebatHealth', 10, 500, 5);
   eyebat.number(tuning, 'eyebatCost', 1, 10, 1);
   eyebat.number(tuning, 'eyebatFromWave', 1, 30, 1);
-  eyebat.number(tuning, 'eyebatPupilRadius', 0.02, 0.4, 0.01);
+  eyebat.number(tuning, 'eyebatPupilRadius', 0.02, 0.6, 0.01);
+  eyebat.number(tuning, 'eyebatHitRadius', 0.2, 1.5, 0.05);
   eyebat.number(tuning, 'eyebatSpeed', 0.5, 15, 0.1);
   eyebat.number(tuning, 'eyebatAccel', 0.5, 10, 0.1);
   eyebat.number(tuning, 'eyebatOrbitDistance', 2, 30, 0.5);

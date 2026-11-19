@@ -50,11 +50,11 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
 - `src/menu.ts`: **menu di avvio/pausa** (pagine Gioca / Impostazioni / Comandi; il markup e lo stile stanno in `index.html`)
 - `src/settings.ts`: **impostazioni del giocatore** salvate nel `localStorage` (per ora la sensibilità del mouse, scala Quake/CS)
 - `src/input.ts`: input grezzo (tasti e tasti del mouse premuti, pressioni brevi "memorizzate", movimento mouse, Pointer Lock)
-- `src/controls.ts`: sensibilità mouse in radianti (`controlSettings`, impostata da `settings.ts`), angoli di vista, **mappatura tasti** (WASD, Spazio, Shift/C = accovacciati/slide, click = spara, R = ricarica, **F / tasto destro = calcio**, K = respawn) → `InputCommand` (T = cambia atmosfera, P = pixel art on/off, N = grafo IA, **B = fai apparire un Malocchio** (debug), tasto sotto Esc = pannello debug, in `main.ts`)
+- `src/controls.ts`: sensibilità mouse in radianti (`controlSettings`, impostata da `settings.ts`), angoli di vista, **mappatura tasti** (WASD, Spazio, Shift/C = accovacciati/slide, click = spara, R = ricarica, **F / tasto destro = calcio**, K = respawn) → `InputCommand` (T = cambia atmosfera, P = pixel art on/off, N = grafo IA, **H = hitbox**, **B = fai apparire un Malocchio** (debug), tasto sotto Esc = pannello debug, in `main.ts`)
 - `src/sim/`: simulazione pura (niente Three.js/DOM)
   - `config.ts`: **valori di tuning** (oggetto `tuning`, modificabile dal pannello debug) (tick rate, altezza occhi, salute, **ondate** (anche picco della pressione e spawn), dimensioni giocatore, movimento a terra, gravità/salto/coyote/buffer, movimento e controllo in aria, aiuti al bhop, accovacciata, slide, wall jump, **revolver**, **calcio** (`kick*`), bersagli, **ghoul**, **Malocchio** (anche sparo: carica, intervallo, velocità/danno della palla di fuoco, **tiro d'anticipo** `eyebatLeadFactor`), **balzo del ghoul** (`ghoulLunge*`), **proiettili nemici**)
   - `game.ts`: **stato di gioco unico** (`GameState`: giocatore, entità, **proiettili nemici**, ondata, statistiche) e `stepGame()` (un tick di tutto il gioco; game over alla morte)
-  - `entities.ts`: **entità colpibili** (bersagli, ghoul, Malocchio): dati, salute, danno, hitbox
+  - `entities.ts`: **entità colpibili** (bersagli, ghoul, Malocchio): dati, salute, danno, **hitbox** (`hitBox`: separata dal collider, misure in `config.ts`: `ghoulHitWidth/Height`, `eyebatHitRadius`, `eyebatPupilRadius`)
   - `ghoul.ts`: **IA del ghoul** (segue il flow field: cammina, salta con traiettoria balistica, si lascia cadere, **si arrampica**; da vicino inseguimento diretto con salto/aggiramento; separazione; artigliata senza fermarsi; **inseguimento** quando ti vede: punta dove stai andando e di lato, così l'orda accerchia; **balzo** da 2–6 m con preavviso, tiro d'anticipo e recupero a terra)
   - `eyebat.ts`: **IA del Malocchio** (occhio-pipistrello volante: orbita attorno al giocatore a distanza e quota fisse, steering 3D, separazione, sale sopra gli ostacoli; **sparo**: macchina a stati volo → carica (preavviso, rallenta) → palla di fuoco **mirata dove sarai** (intercettazione), solo con linea di vista; da morto cade)
   - `projectiles.ts`: **proiettili nemici** (palle di fuoco lente: movimento a ogni tick, collisione col livello lungo il segmento percorso, sfera contro il box del giocatore, danno e spinta)
@@ -110,6 +110,7 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
     - `ghoulSprite.ts`: **sprite del ghoul** disegnato pixel per pixel (palette, pose dei fotogrammi)
     - `ghouls.ts`: disegno dei ghoul (billboard verso la camera, fotogramma per stato, caduta da morti)
   - `navDebug.ts`: vista del grafo di navigazione (tasto N): link colorati per tipo, nodi colorati per distanza dal giocatore
+  - `hitboxDebug.ts`: vista delle **hitbox** dei nemici (tasto H): verde = corpo, giallo = zona critica (testa / pupilla)
   - `targets.ts`: **bersagli** (modello, oscillazione a molla quando colpiti, caduta e rialzata)
   - `impacts.ts`: fori di proiettile sulle superfici (decal, dimensione, quanti ne restano)
   - `materials.ts`: **quale texture usa ogni materiale** (`LOOKS`), densità dei pixel, mesh dei box
