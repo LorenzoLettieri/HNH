@@ -384,6 +384,9 @@ export function createDebugPanel(options: {
   hound.number(tuning, 'houndUnseenTime', 0, 3, 0.05);
   hound.number(tuning, 'houndCloseCharge', 0, 10, 0.5);
   hound.number(tuning, 'houndStalkMaxTime', 1, 20, 0.5);
+  hound.number(tuning, 'houndChargeTurnRate', 0, 360, 5);
+  hound.number(tuning, 'houndLeadFactor', 0, 1.5, 0.05);
+  hound.number(tuning, 'houndSkidTime', 0, 2, 0.05);
   hound.number(tuning, 'houndChargeMaxTime', 0.5, 8, 0.1);
   hound.number(tuning, 'houndRetreatTime', 0, 4, 0.1);
   hound.number(tuning, 'houndHitWidth', 0.3, 2.5, 0.05);

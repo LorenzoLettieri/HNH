@@ -14,7 +14,7 @@ import { tuning } from '../../sim/config';
 import type { Entity, HoundEntity } from '../../sim/entities';
 import type { SimEvent } from '../../sim/events';
 import { addHeightFog } from '../heightFog';
-import { spawnSnort } from '../particles';
+import { spawnDirt, spawnSnort } from '../particles';
 import { soundAt } from '../soundPosition';
 import { FRAMES, FRAME_H, FRAME_W, houndSheet } from './houndSprite';
 import { playGhoulDeath, playHowl, playSwipe } from '../../audio/sfx';
@@ -42,6 +42,8 @@ const GLOW_CHARGE = 7;
 const TRAIL_STALK = 5;
 const TRAIL_CHARGE = 14;
 const TRAIL_PARTICLES = 2;
+/** Skidding after a missed charge: clods of dirt thrown forward by the paws, per second. */
+const SKID_DIRT = 30;
 
 interface HoundView {
   mesh: THREE.Mesh;
@@ -171,7 +173,16 @@ export function createHoundRenderer(scene: THREE.Scene): HoundRenderer {
     const step = Math.floor(v.runPhase);
     const charging = e.state === 'charge' || e.state === 'bite';
     v.material.emissiveIntensity = charging ? GLOW_CHARGE : GLOW_STALK;
-    if (e.state !== 'dead' && e.state !== 'staggered' && speed > 1) {
+    if (e.state === 'skid' && e.onGround && speed > 1.5) {
+      // Paws dug in: dirt sprays ahead, the way it's sliding.
+      v.trailOwed += SKID_DIRT * dt;
+      while (v.trailOwed >= 1) {
+        v.trailOwed--;
+        puff.set(m.position.x, m.position.y + 0.05, m.position.z);
+        up.set(e.vx / speed, 0.6, e.vz / speed).normalize();
+        spawnDirt(puff, up, 2);
+      }
+    } else if (e.state !== 'dead' && e.state !== 'staggered' && speed > 1) {
       v.trailOwed += (charging ? TRAIL_CHARGE : TRAIL_STALK) * dt;
       while (v.trailOwed >= 1) {
         v.trailOwed--;
@@ -199,7 +210,8 @@ export function createHoundRenderer(scene: THREE.Scene): HoundRenderer {
     } else {
       const f = FRAMES.side;
       // In the air (a jump, a charge over an obstacle): the stretched gallop frame.
-      const frame = hurt ? f.hurt : e.state === 'bite' ? f.bite : !e.onGround ? f.run[0] : f.run[step % 4];
+      // Skidding: frozen on the frame with the front paws planted.
+      const frame = hurt ? f.hurt : e.state === 'bite' ? f.bite : !e.onGround ? f.run[0] : e.state === 'skid' ? f.run[1] : f.run[step % 4];
       showFrame(v, frame, mirror);
     }
   }

@@ -248,9 +248,16 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
   resistenza). Ciclo **pedina → carica → morso → fuga**:
   - **Pedina** a ~12 m girandoti attorno **verso le spalle** (9,5 m/s: a piedi non lo semini).
   - Quando resta **fuori dalla tua vista** per 0,5 s (oltre 55° da dove guardi, cioè fuori dallo
-    schermo, o dietro un muro) **ulula** e **carica** a 13 m/s. L'ululato è il preavviso, con il
+    schermo, o dietro un muro) **ulula** e **carica** a 12 m/s. L'ululato è il preavviso, con il
     panning stereo: ti dice da dove arriva. Carica comunque se gli lasci arrivare a 5 m o se ti pedina
     da più di 7 s (fissarlo non basta a tenerlo lontano per sempre).
+  - **La carica è impegnata** (playtest: prima era un missile a ricerca, ti mordeva nel ~93% delle
+    cariche qualunque cosa facessi, e i cani erano la prima causa di morte). All'ululato punta
+    **dove sarai** e poi può curvare solo di **70°/s**. Bot di prova su terreno aperto, cane a 14 m:
+    fermo ti morde il 94% delle volte, strafe in linea retta l'82%; uno **scatto di lato o
+    un'inversione quando è a ~5 m** (~0,4 s prima) lo fa mancare 85–90% delle volte; a 3 m è tardi.
+    Se ti manca (o sbatte contro un muro) **sbanda** frenando per 0,7 s, sollevando terra: è il
+    momento di sparargli.
   - **Morso** (15 danni, preavviso 0,25 s), poi **scappa** per 1,2 s e ricomincia.
   - Non si arrampica: se sei su un tetto raggiungibile solo arrampicandosi, ti aspetta sotto.
   - **Aspetto**: segugio scheletrico color carbone, costole e spina dorsale scoperte, cornetti, collare

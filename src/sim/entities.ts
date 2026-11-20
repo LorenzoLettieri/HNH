@@ -100,10 +100,17 @@ export interface HoundEntity extends EntityBase {
   onGround: boolean;
   /**
    * The ambush cycle (see hound.ts): stalking you out of sight, charging
-   * (after the howl), biting, running away after the bite. Plus thrown by
-   * a kick/blast (flying, then down for a moment), and dead.
+   * (after the howl), biting, running away after the bite, skidding to a
+   * stop after a charge that missed you. Plus thrown by a kick/blast
+   * (flying, then down for a moment), and dead.
    */
-  state: 'stalk' | 'charge' | 'bite' | 'retreat' | 'staggered' | 'dead';
+  state: 'stalk' | 'charge' | 'bite' | 'retreat' | 'skid' | 'staggered' | 'dead';
+  /**
+   * Direction of the charge (unit vector on the ground). Picked at the howl,
+   * then it can only turn by houndChargeTurnRate: a late sidestep dodges it.
+   */
+  chargeDirX: number;
+  chargeDirZ: number;
   /** Ticks spent in the current state. */
   stateTicks: number;
   /** Ticks before it can bite again. */
@@ -306,6 +313,8 @@ export function createHound(id: number, x: number, y: number, z: number, health 
     navNode: -1,
     seen: false,
     unseenTicks: 0,
+    chargeDirX: 0,
+    chargeDirZ: 1,
     stalkSide: id % 2 === 0 ? 1 : -1, // deterministic, like the ghoul's detour side
   };
 }

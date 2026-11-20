@@ -497,6 +497,24 @@ export const tuning = {
   houndCloseCharge: 5,
   /** After stalking this long it charges anyway (staring at it forever doesn't keep it away), seconds. */
   houndStalkMaxTime: 7,
+  /**
+   * How fast a charging hound can turn, degrees per second. At the howl it
+   * picks a direction (at where you'll be), then it can only bend it this
+   * much. Test bot, open ground, 14 m: standing still it bites 94% of the
+   * charges, strafing in a straight line 82%; a sidestep or a reversal when
+   * it's ~5 m away (~0.4 s) makes it miss 85–90%; too late (3 m) never.
+   * The higher, the harder to dodge (at 90 only a reversal works; unlimited
+   * = the old homing missile: 93% whatever you do).
+   */
+  houndChargeTurnRate: 70,
+  /**
+   * The charge aims at where you'll BE (0 = where you are, 1 = full
+   * prediction, like the bull and the eye-bat): strafing in a straight line
+   * doesn't save you, CHANGING direction at the right moment does.
+   */
+  houndLeadFactor: 1,
+  /** After a charge that missed (you're behind it, or it hit a wall) it skids to a stop for this long, seconds: shoot it! */
+  houndSkidTime: 0.7,
   /** A charge that hasn't reached you in this time gives up (back to stalking), seconds. */
   houndChargeMaxTime: 3,
   /** After a bite it runs away for this long, then stalks again, seconds. */
