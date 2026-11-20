@@ -111,6 +111,7 @@ function landKick(
   const hipY = p.y + 0.9;
 
   let hits = 0;
+  const at: { x: number; y: number; z: number; flesh: boolean }[] = [];
   for (const e of entities) {
     if (!isAlive(e)) continue;
     const b = hitBox(e);
@@ -138,6 +139,15 @@ function landKick(
     if (rLen > 0.01 && raycastBoxes(p.x, hipY, p.z, dx / rLen, ry / rLen, dz / rLen, rLen, world.boxes)) continue;
 
     hits++;
+    // Contact point: from its center, one radius toward you, at the height
+    // you'd hit it (your chest, kept inside its body).
+    const toYou = dist > 0.01 ? radius / dist : 0;
+    at.push({
+      x: cx - dx * toYou,
+      y: Math.max(b.minY, Math.min(b.maxY, p.y + 1.2)),
+      z: cz - dz * toYou,
+      flesh: isEnemy(e),
+    });
     const killed = damage(e, stats.damage);
     events.push({
       type: 'hit',
@@ -161,7 +171,7 @@ function landKick(
     kz /= kLen;
     knockBack(e, kx, kz, stats.knockback, stats.lift);
   }
-  events.push({ type: 'kickLand', tool, hits });
+  events.push({ type: 'kickLand', tool, hits, at });
 }
 
 /**

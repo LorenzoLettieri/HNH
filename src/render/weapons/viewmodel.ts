@@ -42,6 +42,8 @@ export const viewmodelSettings = {
   bob: 0.012,
   /** Camera dip when the boot (or the shovel) lands, radians (visual only). */
   kickViewPunch: 0.03,
+  /** The same for the shovel: a bigger dip, it's a heavier blow. */
+  shovelViewPunch: 0.07,
 
   // --- Shotgun (the origin of its model is the right hand on the grip) ---
   shotgunX: 0.15,
@@ -381,7 +383,7 @@ export function createViewmodel(): Viewmodel {
       const windup = kickTool === 'shovel' ? tuning.shovelWindup : tuning.kickWindup;
       if (!kickPunched && kickTime >= windup) {
         kickPunched = true;
-        viewKick -= s.kickViewPunch;
+        viewKick -= kickTool === 'shovel' ? s.shovelViewPunch : s.kickViewPunch;
       }
 
       // --- Sway: the gun lags behind when you turn the mouse ---

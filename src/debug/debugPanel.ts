@@ -6,6 +6,7 @@ import { cameraFeelSettings } from '../render/cameraFeel';
 import { viewmodelSettings } from '../render/weapons/viewmodel';
 import { fanSettings } from '../render/weapons/hands';
 import { shovelSettings } from '../render/weapons/shovelView';
+import { hitStopSettings } from '../render/hitStop';
 import type { Atmosphere } from '../render/atmospheres';
 import { copyToClipboard, createPanel, toSource, type Folder } from './panel';
 import { checkTuning, markPractice } from '../fairPlay';
@@ -308,6 +309,11 @@ export function createDebugPanel(options: {
   shovel.number(shovelSettings, 'variation', 0, 0.5, 0.01);
   shovel.number(shovelSettings, 'holdTime', 0, 0.6, 0.01);
   shovel.number(shovelSettings, 'dropTime', 0.05, 0.6, 0.01);
+  // Feel of the impact: camera dip (viewmodel.ts) and hit-stop (render/hitStop.ts).
+  shovel.number(viewmodelSettings, 'shovelViewPunch', 0, 0.2, 0.005);
+  shovel.number(hitStopSettings, 'shovel', 0, 0.2, 0.005);
+  shovel.number(hitStopSettings, 'perExtraHit', 0, 0.05, 0.005);
+  shovel.number(hitStopSettings, 'max', 0, 0.3, 0.01);
   gun.number(viewmodelSettings, 'fov', 30, 100, 1);
   gun.number(viewmodelSettings, 'x', -0.3, 0.3, 0.005);
   gun.number(viewmodelSettings, 'y', -0.3, 0.1, 0.005);

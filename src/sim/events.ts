@@ -103,8 +103,12 @@ export type SimEvent =
   | { type: 'projectileHit'; kind: 'fireball' | 'bullet'; x: number; y: number; z: number; nx: number; ny: number; nz: number; player: boolean }
   /** The melee attack starts (the leg or the shovel swings: whoosh). */
   | { type: 'kickStart'; tool: MeleeTool }
-  /** The foot (or the blade) lands: how many things it hit (0 = hit the air). */
-  | { type: 'kickLand'; tool: MeleeTool; hits: number }
+  /**
+   * The foot (or the blade) lands: how many things it hit (0 = hit the air),
+   * and WHERE on each one (the side of its body facing you, at chest
+   * height): sparks go there, and blood if it's `flesh` (not a steel target).
+   */
+  | { type: 'kickLand'; tool: MeleeTool; hits: number; at: { x: number; y: number; z: number; flesh: boolean }[] }
   | { type: 'dryFire' } // pulled the trigger with an empty cylinder
   /** A reload starts; `seconds` = how long it lasts (cards can change it: the animation and the sounds follow). */
   | { type: 'reloadStart'; weapon: WeaponId; seconds: number }

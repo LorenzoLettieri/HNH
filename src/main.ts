@@ -5,6 +5,7 @@ import { submitScore } from './leaderboard';
 import { markPractice, practiceGame, startGame } from './fairPlay';
 import { createMenu } from './menu';
 import { createDebugPanel, debugTime } from './debug/debugPanel';
+import { hitStopScale } from './render/hitStop';
 import { buildCommand, controlSettings, updateLook, view } from './controls';
 import { TICK_DT } from './sim/config';
 import { copyPlayer, createPlayer } from './sim/player';
@@ -383,7 +384,8 @@ renderer.setAnimationLoop((now: number) => {
   // Paused: the simulation doesn't advance (no time goes into the
   // accumulator) and everything animated by the game gets dt = 0: the scene
   // freezes like a photo, but keeps being drawn (the overlay sits on top).
-  const dt = paused ? 0 : frameTime * debugTime.timeScale;
+  // A heavy blow freezes everything for an instant (hit-stop, see render/hitStop.ts).
+  const dt = paused ? 0 : frameTime * debugTime.timeScale * hitStopScale(frameTime);
   accumulator += dt;
   const events: SimEvent[] = [];
   while (accumulator >= TICK_DT) {
