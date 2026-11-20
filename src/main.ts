@@ -45,6 +45,7 @@ import type { SimEvent } from './sim/events';
 import { initAudio, setAudioPaused } from './audio/sfx';
 import { applyParticles, createParticles, updateParticles } from './render/particles';
 import { updateBurning } from './render/burning';
+import { createMarks } from './render/marks';
 import { applyHeightFog } from './render/heightFog';
 import { applySky, createSky, directionFromAngles } from './render/sky';
 
@@ -123,6 +124,7 @@ createFireLights(scene, props.fires);
 createParticles(scene, props.fires, props.vents);
 const weaponFx = createWeaponFx(scene);
 const targets = createTargets(scene, game.entities);
+const marks = createMarks(scene); // "Marchio": the sigil over marked enemies
 const ghouls = createGhoulRenderer(scene);
 const eyebats = createEyebatRenderer(scene);
 const hounds = createHoundRenderer(scene);
@@ -376,6 +378,7 @@ renderer.setAnimationLoop((now: number) => {
   bulls.update(game.entities, events, camera, alpha, dt);
   sharpshooters.update(game.entities, events, camera, alpha, dt);
   updateBurning(game.entities, dt); // "Fiato di drago": burning enemies
+  marks.update(game.entities, alpha, dt);
   projectiles.update(game.projectiles, events, camera, alpha, dt);
   pickups.update(game.pickups, camera, alpha, now / 1000);
   vendors.update(camera, now / 1000);

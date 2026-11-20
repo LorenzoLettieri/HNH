@@ -35,6 +35,7 @@
 import * as THREE from 'three';
 import { secondsToTicks, tuning } from '../../sim/config';
 import type { PlayerState } from '../../sim/player';
+import { fireInterval } from '../../sim/weapon';
 import type { LeverTimes } from '../../audio/sfx';
 import { ELASTIC_STEP, PoseSpring, ZERO_POSE, phase, poseAt, smoothstep, type GunPose } from './elastic';
 import { loadGunModel } from './gunModel';
@@ -287,7 +288,7 @@ export function createRifleView(flightSpace: THREE.Object3D): RifleView {
       clearCases();
     },
     update(dt, player) {
-      const interval = tuning.rifleFireInterval;
+      const interval = fireInterval(player, 'rifle'); // "Leva da pistolero" makes it shorter
       const perRoundTicks = secondsToTicks(tuning.rifleReloadPerRound);
       const reloading = player.reloadTicks > 0;
       // Progress of the round being pushed in (0..1), -1 while the gun is

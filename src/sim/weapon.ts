@@ -65,14 +65,15 @@ export function magazineSize(p: PlayerState, w: WeaponId): number {
       return tuning.rifleAmmo;
   }
 }
-function fireInterval(w: WeaponId): number {
+/** Seconds between two shots (for the carbine: the lever's cycle). The player, because cards can change it. */
+export function fireInterval(p: PlayerState, w: WeaponId): number {
   switch (w) {
     case 'revolver':
       return tuning.revolverFireInterval;
     case 'shotgun':
       return tuning.shotgunFireInterval;
     case 'rifle':
-      return tuning.rifleFireInterval;
+      return tuning.rifleFireInterval * (hasCard(p, 'gunslingerLever') ? tuning.gunslingerLeverScale : 1);
   }
 }
 /**
@@ -122,6 +123,11 @@ export function stepWeapon(
   rng: RandomState,
 ): void {
   // Timers.
+  p.quietTicks++;
+  // "Duellante": the tic when the carbine's double-damage shot is ready.
+  if (p.quietTicks === secondsToTicks(tuning.duelistTime) && p.weapon === 'rifle' && hasCard(p, 'duelist')) {
+    events.push({ type: 'duelReady' });
+  }
   if (p.fireCooldownTicks > 0) p.fireCooldownTicks--;
   if (p.fireBufferTicks > 0) p.fireBufferTicks--;
   if (p.switchTicks > 0) p.switchTicks--;
@@ -154,8 +160,8 @@ export function stepWeapon(
     p.reloadTicks--;
     if (p.reloadTicks === 0) {
       const loaded = currentAmmo(p);
-      const wanted = oneByOne ? 1 : full - loaded;
-      const moved = Math.min(wanted, tuning.infiniteAmmo ? Infinity : p.reserve[pocket]);
+      const wanted = oneByOne ? (hasCard(p, 'twoAtATime') ? 2 : 1) : full - loaded; // "Due alla volta"
+      const moved = Math.min(wanted, full - loaded, tuning.infiniteAmmo ? Infinity : p.reserve[pocket]);
       setCurrentAmmo(p, loaded + moved);
       if (!tuning.infiniteAmmo) p.reserve[pocket] -= moved;
       if (oneByOne && moved > 0) events.push({ type: 'reloadRound' });
@@ -200,6 +206,7 @@ export function stepWeapon(
   const aimAllowed = cmd.altFire && p.weapon === 'rifle' && p.reloadTicks === 0 && p.switchTicks === 0;
   const adsFull = secondsToTicks(tuning.rifleAdsTime);
   p.adsTicks = aimAllowed ? Math.min(adsFull, p.adsTicks + 1) : Math.max(0, p.adsTicks - 1);
+  p.aimHeldTicks = aimAllowed ? p.aimHeldTicks + 1 : 0; // "Quickscope": since when you're aiming
 
   const ammo = currentAmmo(p);
   // Nothing in the pockets = no reload. You hear the click and that's it:
@@ -240,25 +247,26 @@ export function stepWeapon(
     /** Rounds this shot takes out of the gun (the shotgun's cards can make it 2, or 0). */
     let shells = 1;
     if (fanning) {
-      events.push({ type: 'fire', weapon: 'revolver', barrel: 0 });
+      events.push({ type: 'fire', weapon: 'revolver', barrel: 0, seconds: fireInterval(p, 'revolver') });
       fireFanned(p, world, entities, events, rng, lastRound);
     } else if (p.weapon === 'shotgun') {
       // Right barrel first (2 shells left), then the left one. Card "Doppio
       // botto": with both loaded, both go off together.
       const both = hasCard(p, 'doubleBang') && ammo >= 2;
-      if (both || ammo === tuning.shotgunAmmo) events.push({ type: 'fire', weapon: 'shotgun', barrel: 0 });
-      if (both || ammo !== tuning.shotgunAmmo) events.push({ type: 'fire', weapon: 'shotgun', barrel: 1 });
+      if (both || ammo === tuning.shotgunAmmo) events.push({ type: 'fire', weapon: 'shotgun', barrel: 0, seconds: fireInterval(p, 'shotgun') });
+      if (both || ammo !== tuning.shotgunAmmo) events.push({ type: 'fire', weapon: 'shotgun', barrel: 1, seconds: fireInterval(p, 'shotgun') });
       shells = fireShotgun(p, world, entities, events, both ? [0, Math.PI / 7] : [ammo === tuning.shotgunAmmo ? 0 : Math.PI / 7]);
     } else if (p.weapon === 'rifle') {
-      events.push({ type: 'fire', weapon: 'rifle', barrel: 0 });
+      events.push({ type: 'fire', weapon: 'rifle', barrel: 0, seconds: fireInterval(p, 'rifle') });
       fireRifle(p, world, entities, events, rng);
     } else {
-      events.push({ type: 'fire', weapon: 'revolver', barrel: 0 });
+      events.push({ type: 'fire', weapon: 'revolver', barrel: 0, seconds: fireInterval(p, 'revolver') });
       fireRevolver(p, world, entities, events, lastRound);
     }
     if (!bottomless) setCurrentAmmo(p, Math.min(full, ammo - shells));
+    p.quietTicks = 0; // "Duellante": the wait starts over
     p.wallJumpShot = false; // the wall jump's shot is fired (hit or miss)
-    p.fireCooldownTicks = secondsToTicks(fireInterval(p.weapon));
+    p.fireCooldownTicks = secondsToTicks(fireInterval(p, p.weapon));
     p.fireBufferTicks = 0;
     p.fanQueued = false;
     if (fanning) {
@@ -616,14 +624,41 @@ function fireFanned(
  */
 function fireRifle(p: PlayerState, world: World, entities: Entity[], events: SimEvent[], rng: RandomState): void {
   const a = aim(p);
-  const spread = Math.tan((tuning.rifleHipSpread * Math.PI) / 180) * (1 - adsAmount(p));
+  // "Leva da pistolero": no spread from the hip.
+  const hip = hasCard(p, 'gunslingerLever') ? 0 : tuning.rifleHipSpread;
+  const spread = Math.tan((hip * Math.PI) / 180) * (1 - adsAmount(p));
   const angle = random(rng) * Math.PI * 2;
   const r = Math.sqrt(random(rng));
   const [dx, dy, dz] = tilt(p, a, Math.cos(angle) * r, Math.sin(angle) * r, spread);
-  const hit = trace(a.ox, a.oy, a.oz, dx, dy, dz, tuning.weaponRange, world, entities.filter(isAlive), false, events);
-  if (hit) {
-    const amount = tuning.rifleDamage * (hit.headshot ? tuning.rifleHeadshotMultiplier : 1);
-    applyGunDamage(hit.target, amount, hit.headshot, 'rifle', hit.distance, events);
+
+  // The cards that change the damage of THIS shot (read before the loop: a
+  // piercing bullet carries them through every enemy it crosses).
+  const aimed = adsAmount(p) >= 1;
+  const critMultiplier = hasCard(p, 'scope') && aimed ? tuning.scopeCritMultiplier : tuning.rifleHeadshotMultiplier;
+  const quickscope = hasCard(p, 'quickscope') && p.aimHeldTicks > 0 && p.aimHeldTicks <= secondsToTicks(tuning.quickscopeWindow);
+  const duel = hasCard(p, 'duelist') && p.quietTicks >= secondsToTicks(tuning.duelistTime) ? tuning.duelistMultiplier : 1;
+  const marks = hasCard(p, 'mark');
+
+  // "Perforante": after an enemy, the same ray goes on, without that enemy
+  // in the list, until it hits the level (or nothing). Without the card it
+  // stops at the first one, as always.
+  let living = entities.filter(isAlive);
+  const pierce = hasCard(p, 'piercing');
+  for (let i = 0; i < 16; i++) {
+    const hit = trace(a.ox, a.oy, a.oz, dx, dy, dz, tuning.weaponRange, world, living, false, events);
+    if (!hit) break;
+    const critical = hit.headshot || quickscope;
+    let amount = tuning.rifleDamage * (critical ? critMultiplier : 1) * duel;
+    // "Marchio": a marked enemy takes double and loses the mark; an unmarked one gets it.
+    const wasMarked = marks && hit.target.marked === true;
+    if (wasMarked) {
+      amount *= tuning.markMultiplier;
+      hit.target.marked = false;
+    }
+    applyGunDamage(hit.target, amount, critical, 'rifle', hit.distance, events);
+    if (marks && !wasMarked && isAlive(hit.target) && isEnemy(hit.target)) hit.target.marked = true;
+    if (!pierce) break;
+    living = living.filter((e) => e !== hit.target);
   }
 }
 

@@ -166,6 +166,17 @@ export const tuning = {
   /** Card "Spinta di gruppo": enemies within this many meters behind the one you blasted are thrown too, at this × the strength. */
   groupPushRadius: 2.5,
   groupPushScale: 0.7,
+  /** Card "Duellante": seconds without shooting before the next carbine shot does duelistMultiplier × damage. */
+  duelistTime: 1.5,
+  duelistMultiplier: 2,
+  /** Card "Leva da pistolero": the lever's time (rifleFireInterval) × this. */
+  gunslingerLeverScale: 0.7,
+  /** Card "Cannocchiale": the carbine's critical multiplier when fully aimed (normally rifleHeadshotMultiplier). */
+  scopeCritMultiplier: 6,
+  /** Card "Quickscope": seconds from starting to aim in which a shot is a critical hit. */
+  quickscopeWindow: 0.2,
+  /** Card "Marchio": damage × this on a marked enemy. */
+  markMultiplier: 2,
   /** Minimum seconds between two shots (it's semi-automatic: one click = one shot). */
   revolverFireInterval: 0.32,
   /** A click slightly before the gun is ready still fires as soon as it is, seconds. */

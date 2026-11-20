@@ -648,37 +648,20 @@ futuro **poligono di tiro / tutorial**.
 - **Pallini rimbalzanti**: i pallini che toccano il pavimento rimbalzano una volta (il calo col danno conta tutto il percorso).
 - **Spinta di gruppo**: la spinta a bruciapelo lancia anche chi sta entro 2,5 m dietro al primo nemico (al 70%).
 
-**Mazzo della carabina** (7 carte)
+**Mazzo della carabina** (7 carte) [FATTO]
 - **Duellante**: dopo 1,5 s senza sparare il colpo successivo fa danno doppio (150 al corpo, 600 critico),
   con un "tic" quando è pronto.
-- **Leva da pistolero**: niente imprecisione dall'anca (in aria e a terra) e leva più veloce. Mirare
-  serve ancora per lo zoom e per Cannocchiale.
-- **Perforante**: il colpo attraversa tutti i nemici in fila.
-- **Cannocchiale**: zoom più forte; mirando il critico vale ×6 invece di ×4.
+- **Leva da pistolero**: niente imprecisione dall'anca (in aria e a terra) e leva più veloce (0,62 → 0,43 s;
+  animazione e suoni seguono). Mirare serve ancora per lo zoom e per Cannocchiale.
+- **Perforante**: il colpo attraversa tutti i nemici in fila (danno pieno a ognuno).
+- **Cannocchiale**: zoom più forte (FOV 32 invece di 50); mirando fino in fondo il critico vale ×6 invece di ×4.
 - **Quickscope**: un colpo entro 0,2 s dall'inizio della mira è un critico garantito.
-- **Marchio**: il colpo marca il nemico, il colpo successivo su di lui fa danno doppio.
+- **Marchio**: il colpo marca il nemico (un sigillo rosso sopra la testa), il colpo successivo su di lui fa danno
+  doppio e toglie il marchio.
 - **Due alla volta**: la ricarica infila due colpi per volta.
 
-**Stato** [FATTO: passo 1] la simulazione (`src/sim/upgrades.ts`): mazzi, pescata, prezzo che cresce,
-acquisto controllato dalla simulazione (armeria a portata, arma tua, carta sul bancone, soldi) e la prima
-carta, **Tamburo del becchino**. Il pannello dello shop non mostra ancora le carte: per provarla c'è un
-bottone nel pannello debug. Il modello 3D del revolver ha 6 camere: con 8 colpi l'animazione di ricarica
-ne mostra comunque 6 (le munizioni a schermo sono giuste).
-**Passo 2** [FATTO]: le carte **nel pannello dello shop**, sotto le armi: per ogni arma che possiedi un titolo
-"Potenzia: Revolver" con il livello a rombi (◆ preso, ◇ libero), le carte del bancone come box cliccabili col
-solito doppio click, prezzo rosso se non basta. Dopo un acquisto la lista si ricostruisce con la nuova pescata;
-a mazzo finito "Per quest'arma non ho altro", al livello massimo "Al massimo". Le armi senza carte non mostrano
-la sezione.
-**Passo 3** [FATTO]: **interfaccia a due pannelli**. Nell'elenco dell'armeria c'è anche il **revolver** (sempre tuo);
-su un'arma che possiedi il prezzo diventa **"POTENZIA"**, e il click apre **a sinistra** dello shop il pannello
-dei potenziamenti di quell'arma (titolo, livello a rombi, le carte, "Scegli un potenziamento. Il prossimo costerà
-di più."); un altro click sulla stessa arma lo chiude. **Due carte** sul bancone invece di tre (`upgradeOfferSize`).
-**Passo 4** [FATTO, da tarare]: altre tre carte del revolver (4 in tutto). **Tamburo veloce**: ricarica in 2/3 del
-tempo (animazione e suoni si accorciano con lei). **Ricarica in scivolata**: un colpo dalla tasca ogni 0,3 s di
-scivolata col revolver in mano (non durante ricarica o fanning; il timer riparte a ogni scivolata, così non si
-sfrutta a colpetti). **Colpo da cavaliere**: dopo un wall jump il primo colpo è critico ovunque colpisca, finché
-non tocchi terra (un colpo a vuoto lo spreca; vale anche per il primo colpo del fanning).
-**Passo 5** [FATTO]: il mazzo del revolver è completo (7 carte). Il rimescolamento è rimandato.
+**Tutti i mazzi sono completi** (7 + 9 + 7 = 23 carte). Prossimo: giocarci e tarare; poi rimescolamento ed
+eventi/patti.
 
 Scartate: Proiettili d'argento, Rimbalzo (carabina), Colpo di grazia, Polso fermo, Mozzata corta,
 Leva in corsa, Sangue freddo, Ottone caldo.

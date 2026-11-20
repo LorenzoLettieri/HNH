@@ -40,7 +40,15 @@ export type CardId =
   | 'doubleBang'
   | 'leadFlight'
   | 'bouncingPellets'
-  | 'groupPush';
+  | 'groupPush'
+  // Carbine
+  | 'duelist'
+  | 'gunslingerLever'
+  | 'piercing'
+  | 'scope'
+  | 'quickscope'
+  | 'mark'
+  | 'twoAtATime';
 
 export interface CardInfo {
   /** The weapon whose deck it's in. */
@@ -87,6 +95,21 @@ export const CARDS: Record<CardId, CardInfo> = {
   bouncingPellets: { weapon: 'shotgun' },
   /** Spinta di gruppo: the point-blank knockback also throws whoever is right behind the enemy. */
   groupPush: { weapon: 'shotgun' },
+
+  /** Duellante: after duelistTime seconds without shooting, the next shot does double damage (quietTicks). */
+  duelist: { weapon: 'rifle' },
+  /** Leva da pistolero: no hip-fire spread, and the lever is faster (fireInterval). */
+  gunslingerLever: { weapon: 'rifle' },
+  /** Perforante: the bullet goes through every enemy in a line (fireRifle). */
+  piercing: { weapon: 'rifle' },
+  /** Cannocchiale: stronger zoom (cameraFeel.ts), critical ×scopeCritMultiplier when fully aimed. */
+  scope: { weapon: 'rifle' },
+  /** Quickscope: a shot within quickscopeWindow of starting to aim is a critical hit (aimHeldTicks). */
+  quickscope: { weapon: 'rifle' },
+  /** Marchio: a hit marks the enemy; the next hit on it does double damage (Entity.marked). */
+  mark: { weapon: 'rifle' },
+  /** Due alla volta: the reload pushes in two rounds at a time. */
+  twoAtATime: { weapon: 'rifle' },
 };
 
 /** Is this card out of the deck because you took one that excludes it (or that it excludes)? */

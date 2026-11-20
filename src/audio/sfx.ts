@@ -266,6 +266,16 @@ export function playCarbineRoundIn(): void {
   thump({ start: 0.015, duration: 0.05, volume: 0.2, from: 260, to: 170 });
 }
 
+/**
+ * Card "Duellante": the double-damage shot is ready. A dry "tic" (a short
+ * click through a narrow filter) and a faint metallic ring after it (a
+ * very high Q makes filtered noise ring like a tiny bell).
+ */
+export function playDuelReady(): void {
+  noiseBurst({ duration: 0.015, volume: 0.35, filter: 'bandpass', frequency: 4200, q: 8 });
+  noiseBurst({ start: 0.01, duration: 0.35, volume: 0.25, filter: 'bandpass', frequency: 2600, q: 60 });
+}
+
 /** Weapon switch: a leather-and-metal rustle as the new gun comes up. */
 export function playWeaponSwitch(): void {
   noiseBurst({ duration: 0.12, volume: 0.3, filter: 'bandpass', frequency: 700, frequencyEnd: 1500, q: 1.5 });

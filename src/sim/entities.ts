@@ -20,6 +20,8 @@ interface EntityBase {
   /** Card "Calcio di piombo": ticks left in which hitting a wall hurts (status.ts), and its speed last tick. */
   slamTicks?: number;
   slamSpeed?: number;
+  /** Card "Marchio": marked by a carbine hit, the next carbine hit on it does double damage. */
+  marked?: boolean;
 }
 
 export interface TargetEntity extends EntityBase {

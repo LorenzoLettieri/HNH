@@ -14,6 +14,7 @@
 import * as THREE from 'three';
 import { tuning } from '../sim/config';
 import type { PlayerState } from '../sim/player';
+import { hasCard } from '../sim/upgrades';
 import { adsAmount } from '../sim/weapon';
 
 /** Mutable so the debug panel can change them. */
@@ -22,6 +23,8 @@ export const cameraFeelSettings = {
   baseFov: 75,
   /** Vertical FOV aimed down the carbine's sights, degrees (75 → 50 = a 1.6× zoom). */
   adsFov: 50,
+  /** Card "Cannocchiale": a stronger zoom (smaller FOV) when aiming the carbine. */
+  scopeAdsFov: 32,
   /** Extra degrees of FOV at full speed. */
   speedFovExtra: 12,
   /** Speed (m/s) where the FOV starts widening... */
@@ -121,7 +124,8 @@ export function updateCameraFeel(
   fov = approach(fov, s.baseFov + s.speedFovExtra * t, s.fovRate, dt);
   // The zoom goes on top, faster than the speed FOV: aiming must be snappy.
   ads = approach(ads, adsAmount(player), 30, dt);
-  const zoomed = fov + (s.adsFov - fov) * ads * ads * (3 - 2 * ads); // smoothstep
+  const target = hasCard(player, 'scope') ? s.scopeAdsFov : s.adsFov;
+  const zoomed = fov + (target - fov) * ads * ads * (3 - 2 * ads); // smoothstep
   if (Math.abs(camera.fov - zoomed) > 0.01) {
     camera.fov = zoomed;
     camera.updateProjectionMatrix(); // the projection matrix depends on the FOV

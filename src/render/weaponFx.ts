@@ -2,9 +2,9 @@
 // impact holes, sparks, the muzzle flash lighting up the world, sounds.
 import * as THREE from 'three';
 import type { SimEvent } from '../sim/events';
-import { tuning } from '../sim/config';
 import {
   playDryFire,
+  playDuelReady,
   playFireballHit,
   playRicochet,
   playHeadshot,
@@ -77,7 +77,7 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
             if (e.weapon === 'shotgun') playShotgun();
             else if (e.weapon === 'rifle') {
               playCarbineShot();
-              playCarbineLever(leverTimes(tuning.rifleFireInterval)); // cla-CLACK, timed on the animation
+              playCarbineLever(leverTimes(e.seconds)); // cla-CLACK, timed on the animation (the event says how long)
             } else playShot();
             camera.getWorldDirection(forward);
             flash.position.copy(camera.position).addScaledVector(forward, 0.8);
@@ -102,6 +102,9 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
             break;
           case 'weaponSwitch':
             playWeaponSwitch();
+            break;
+          case 'duelReady':
+            playDuelReady(); // "Duellante": the next carbine shot does double damage
             break;
           case 'ricochet':
             // Card "Ricochet": the bullet bounced off a head (ptiiing + a few sparks).

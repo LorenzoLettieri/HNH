@@ -112,6 +112,34 @@ const CARD_TEXT: Record<CardId, { name: string; desc: string }> = {
     name: 'Spinta di gruppo',
     desc: 'La spinta a bruciapelo travolge anche chi sta dietro al primo nemico.',
   },
+  duelist: {
+    name: 'Duellante',
+    desc: 'Dopo un secondo e mezzo senza sparare, il colpo dopo fa il doppio. Un tic ti dice quando è pronto.',
+  },
+  gunslingerLever: {
+    name: 'Leva da pistolero',
+    desc: 'Precisa anche dall’anca, e la leva gira più veloce.',
+  },
+  piercing: {
+    name: 'Perforante',
+    desc: 'Il proiettile attraversa tutti i nemici in fila.',
+  },
+  scope: {
+    name: 'Cannocchiale',
+    desc: 'Zoom più forte. Mirando fino in fondo, il colpo critico vale sei volte invece di quattro.',
+  },
+  quickscope: {
+    name: 'Quickscope',
+    desc: 'Un colpo sparato appena alzi il mirino (entro 0,2 secondi) è sempre critico.',
+  },
+  mark: {
+    name: 'Marchio',
+    desc: 'Il colpo marchia il nemico: il prossimo colpo su di lui fa il doppio.',
+  },
+  twoAtATime: {
+    name: 'Due alla volta',
+    desc: 'La ricarica infila due colpi per volta.',
+  },
 };
 
 /** Weapon names in the upgrade panel's title. */

@@ -83,6 +83,12 @@ export function createDebugPanel(options: {
   shop.number(tuning, 'leadStockSlamDamage', 0, 300, 5);
   shop.number(tuning, 'groupPushRadius', 0.5, 6, 0.1);
   shop.number(tuning, 'groupPushScale', 0, 1.5, 0.05);
+  shop.number(tuning, 'duelistTime', 0.2, 5, 0.1);
+  shop.number(tuning, 'duelistMultiplier', 1, 4, 0.1);
+  shop.number(tuning, 'gunslingerLeverScale', 0.3, 1, 0.05);
+  shop.number(tuning, 'scopeCritMultiplier', 1, 10, 0.5);
+  shop.number(tuning, 'quickscopeWindow', 0.05, 1, 0.01);
+  shop.number(tuning, 'markMultiplier', 1, 4, 0.1);
 
   // --- Style meter ---
   const style = panel.folder('Style (src/sim/config.ts, src/sim/style.ts)');
@@ -240,6 +246,7 @@ export function createDebugPanel(options: {
   rifle.number(tuning, 'rifleReloadInterrupt', 0, 0.5, 0.01);
   rifle.number(tuning, 'rifleBuyBullets', 0, 72, 1);
   rifle.number(cameraFeelSettings, 'adsFov', 20, 75, 1);
+  rifle.number(cameraFeelSettings, 'scopeAdsFov', 10, 75, 1);
   rifle.number(viewmodelSettings, 'rifleX', -0.3, 0.3, 0.005);
   rifle.number(viewmodelSettings, 'rifleY', -0.3, 0.1, 0.005);
   rifle.number(viewmodelSettings, 'rifleZ', -0.6, 0, 0.005);

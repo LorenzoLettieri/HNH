@@ -11,7 +11,8 @@ import type { StyleAward } from './style';
 
 export type SimEvent =
   /** A weapon fired (sound, flash, recoil). For the shotgun, `barrel` is 0 = right, 1 = left. */
-  | { type: 'fire'; weapon: WeaponId; barrel: number }
+  /** `seconds` = time before it can fire again (the carbine's lever cycle follows it: cards can change it). */
+  | { type: 'fire'; weapon: WeaponId; barrel: number; seconds: number }
   /** You switched weapon: the new one is coming up. */
   | { type: 'weaponSwitch'; weapon: WeaponId }
   /** One bullet or pellet: where it went and what it hit (impacts, blood). A shotgun blast is many of these. */
@@ -46,6 +47,8 @@ export type SimEvent =
       target: Entity['type'];
     }
   | { type: 'playerHurt'; damage: number; fromX: number; fromZ: number }
+  /** Card "Duellante": the carbine's next shot is ready to do double damage (the tic). */
+  | { type: 'duelReady' }
   /** Card "Ricochet": a bullet bounced off a head toward another enemy (the ptiiing). From where. */
   | { type: 'ricochet'; x: number; y: number; z: number }
   /** Card "Ultimo colpo": the last round exploded. Where, and how big. */

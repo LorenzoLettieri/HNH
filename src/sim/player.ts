@@ -111,6 +111,10 @@ export interface PlayerState {
    * ground. A kill before landing gives them back (refundLeadFlight in weapon.ts).
    */
   leadFlightShells: number;
+  /** Ticks since you last fired any weapon (card "Duellante"). */
+  quietTicks: number;
+  /** Ticks you've been holding the carbine's aim (0 = not aiming; card "Quickscope"). */
+  aimHeldTicks: number;
 
   // --- Kick (see kick.ts) ---
   /** Ticks since the kick started (0 = not kicking). The foot lands at kickWindup. */
@@ -165,6 +169,8 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     slideReloadTicks: 0,
     wallJumpShot: false,
     leadFlightShells: 0,
+    quietTicks: 0,
+    aimHeldTicks: 0,
     kickTicks: 0,
     kickCooldownTicks: 0,
     kickHeld: false,
@@ -493,6 +499,8 @@ export function respawn(p: PlayerState, world: World): void {
   p.slideReloadTicks = 0;
   p.wallJumpShot = false;
   p.leadFlightShells = 0;
+  p.quietTicks = 0;
+  p.aimHeldTicks = 0;
   p.switchTicks = 0;
   p.kickTicks = 0;
   p.kickCooldownTicks = 0;
