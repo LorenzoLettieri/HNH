@@ -30,6 +30,7 @@ import { createVendorRenderer } from './render/vendors';
 import { createShopMenu } from './render/shopMenu';
 import { createMapOverlay } from './render/mapOverlay';
 import { shopInReach } from './sim/shop';
+import './render/crosshair'; // paints the crosshair once
 import { updateHud } from './render/hud';
 import { updateAmmoHud } from './render/ammoHud';
 import { updateWeaponBar } from './render/weaponBar';

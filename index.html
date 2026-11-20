@@ -68,11 +68,11 @@
       #debug-panel input[type='number'] { width: 56px; background: #2a1810; color: inherit; border: 1px solid #5a3a20; }
       #debug-panel button { margin: 6px 0 10px; background: #5a3a20; color: inherit; border: 0; padding: 4px 8px; cursor: pointer; }
 
-      /* Crosshair: a dot and four short ticks, drawn with CSS only. */
+      /* Crosshair: a canvas painted by src/render/crosshair.ts (18 × 18 pixels, centered;
+         a canvas because forced dark modes repaint CSS colors). */
       #crosshair {
-        position: fixed; left: 50%; top: 50%; width: 2px; height: 2px; margin: -1px 0 0 -1px;
-        background: #ffe0a0; pointer-events: none;
-        box-shadow: -8px 0 0 #ffe0a0, 8px 0 0 #ffe0a0, 0 -8px 0 #ffe0a0, 0 8px 0 #ffe0a0;
+        position: fixed; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px;
+        pointer-events: none; image-rendering: pixelated;
       }
       /* Hitmarker: 4 short diagonal strokes around the crosshair, flashed on hit.
          The color is a CSS variable: white for a hit, red for a knockdown. */
@@ -517,7 +517,7 @@
     <div id="hud-smudge-right" class="hud-smudge"></div>
     <div id="hud-smudge-top-left" class="hud-smudge"></div>
     <div id="hud-smudge-top-right" class="hud-smudge"></div>
-    <div id="crosshair"></div>
+    <canvas id="crosshair"></canvas>
     <div id="hitmarker"></div>
     <div id="weapon-bar"></div>
     <div id="ammo-box"><div id="ammo-rounds"></div><div id="ammo-reserve"></div></div>
