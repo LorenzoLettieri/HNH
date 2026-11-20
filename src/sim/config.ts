@@ -751,6 +751,45 @@ export const tuning = {
   styleKill: 40,
   /** Extra style points if the kill was a headshot (on top of styleKill). */
   styleHeadshotKill: 30,
+  // Kill bonuses: extra lines on top of the kill, each with its own points.
+  /** A kill while you're in the air ("DAL CIELO"). */
+  styleAirKill: 30,
+  /** A kill while sliding ("IN SCIVOLATA"). */
+  styleSlideKill: 25,
+  /** A kill with your boot ("DI STIVALE"). */
+  styleKickKill: 30,
+  /** A kill right after switching weapon ("CAMBIO LAMPO")... */
+  styleQuickSwitchKill: 30,
+  /** ...within this many seconds after the new weapon is ready. */
+  styleQuickSwitchTime: 0.6,
+  /** A carbine kill shortly after you started aiming ("QUICKSCOPE")... */
+  styleQuickscope: 50,
+  /** ...at most this many seconds of aiming (rifleAdsTime is 0.18: the gun must be up). */
+  styleQuickscopeTime: 0.5,
+  /** A carbine kill from the hip, far away ("NOSCOPE")... */
+  styleNoscope: 50,
+  /** ...at least this far, meters. */
+  styleNoscopeDistance: 15,
+  /** A shotgun kill up close ("A BRUCIAPELO")... */
+  stylePointBlank: 20,
+  /** ...at most this far, meters. */
+  stylePointBlankDistance: 2.5,
+  /** A revolver or carbine kill from far away ("DA LONTANO")... */
+  styleLongShot: 30,
+  /** ...at least this far, meters. */
+  styleLongShotDistance: 30,
+  /** A kill with the last round in the revolver or the carbine ("ULTIMO COLPO"). */
+  styleLastRound: 25,
+  /** A kill with little health left ("SUL FILO")... */
+  styleCloseCall: 30,
+  /** ...at most this much health. */
+  styleCloseCallHealth: 25,
+  /** Several kills with ONE shot (or one kick): points for every kill after the first. */
+  styleMultiKill: 40,
+  /** Kills in a quick sequence: each kill within this many seconds of the previous one extends the streak... */
+  styleStreakTime: 1.5,
+  /** ...and gives this × (kills in the streak - 1): DOPPIA +20, TRIPLA +40, ... */
+  styleStreak: 20,
   /** Style points lost per point of damage taken (ghoul claw 20 → 60 points). */
   styleHurtPerDamage: 3,
   /**

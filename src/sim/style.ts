@@ -27,6 +27,7 @@
 // jumps) and variety come in the next steps.
 import type { SimEvent } from './events';
 import { secondsToTicks, tuning } from './config';
+import type { PlayerState } from './player';
 
 export interface StyleState {
   /** Points of the current chain (0 = no chain). */
@@ -35,6 +36,16 @@ export interface StyleState {
   chainTicks: number;
   /** Ticks left of the HIGH NOON climax. 0 = not in progress. */
   highNoonTicks: number;
+
+  // --- Memory, to recognize the stylish actions (kept even when the chain breaks) ---
+  /** Kills in the current streak (kills each within styleStreakTime of the previous one). */
+  streak: number;
+  /** Ticks left before the streak ends (0 = no streak). */
+  streakTicks: number;
+  /** Ticks since your last weapon switch (for "CAMBIO LAMPO"). */
+  sinceSwitchTicks: number;
+  /** Ticks spent aiming down the sights without a break (for "QUICKSCOPE"). */
+  aimTicks: number;
 }
 
 /** The ranks, lowest first (western names: proposals, see DESIGN.md). */
@@ -52,10 +63,38 @@ export const STYLE_RANKS = [
  * The stylish actions, each with its id (the HUD gives it a name on screen,
  * see STYLE_AWARD_NAMES in render/styleFeed.ts). A new action = a new id here.
  */
-export type StyleAward = 'hit' | 'kill' | 'headshot';
+export type StyleAward =
+  // What a hit did (one award per hit, the best one).
+  | 'hit'
+  | 'kill'
+  | 'headshot'
+  | 'pupil' // headshot on an eye-bat: right in the eye
+  | 'matador' // a bull killed while stunned against a wall
+  // Kill bonuses: how you got the kill.
+  | 'airKill'
+  | 'slideKill'
+  | 'kickKill'
+  | 'quickSwitch'
+  | 'quickscope'
+  | 'noscope'
+  | 'pointBlank'
+  | 'longShot'
+  | 'lastRound'
+  | 'closeCall'
+  // Several kills.
+  | 'multiKill' // with one shot: `count` = how many
+  | 'streak'; // one after the other: `count` = kills in the streak
 
 export function createStyle(): StyleState {
-  return { points: 0, chainTicks: 0, highNoonTicks: 0 };
+  return {
+    points: 0,
+    chainTicks: 0,
+    highNoonTicks: 0,
+    streak: 0,
+    streakTicks: 0,
+    sinceSwitchTicks: 9999,
+    aimTicks: 0,
+  };
 }
 
 /** Index in STYLE_RANKS for these points: 0 = D, the last one = HIGH NOON. */
@@ -85,9 +124,20 @@ export function isHighNoon(style: StyleState): boolean {
 /**
  * Updates the style with what happened in this tick: `events` from index `from`
  * on (the array may also hold the events of earlier ticks of the same frame).
- * Appends 'highNoon' / 'highNoonEnd' when the climax starts / ends.
+ * `player` is read for the "how": in the air, sliding, aiming, low on health...
+ * (stepStyle runs at the end of the tick, but the player moved at its start,
+ * before shooting: their state is the one they had when they pulled the trigger.)
+ * Appends a 'styleAward' event for every stylish action, and 'highNoon' /
+ * 'highNoonEnd' when the climax starts / ends.
  */
-export function stepStyle(style: StyleState, events: SimEvent[], from: number): void {
+export function stepStyle(style: StyleState, player: PlayerState, events: SimEvent[], from: number): void {
+  // The awards are appended at the END of `events`, while we're reading it:
+  // remember where this tick's events stop, so we don't read our own awards.
+  const end = events.length;
+
+  // Memory first: it must keep up even during HIGH NOON.
+  remember(style, player, events, from, end);
+
   // HIGH NOON in progress: everything else is frozen, only the climax runs out.
   if (style.highNoonTicks > 0) {
     style.highNoonTicks--;
@@ -102,26 +152,76 @@ export function stepStyle(style: StyleState, events: SimEvent[], from: number): 
 
   let gained = 0;
   let lost = 0;
-  // The awards are appended at the END of `events`, while we're reading it:
-  // remember where this tick's events stop, so we don't read our own awards.
-  const end = events.length;
-  const award = (id: StyleAward, points: number): void => {
+  const award = (id: StyleAward, points: number, count?: number): void => {
     gained += points;
-    events.push({ type: 'styleAward', award: id, points });
+    events.push({ type: 'styleAward', award: id, points, count });
   };
+
+  // Kills of this tick, per source: several kills by the same gun (or boot)
+  // in the same tick came from ONE shot. (A gun can't fire twice in a tick.)
+  const killsBySource = new Map<string, number>();
+
   for (let i = from; i < end; i++) {
     const e = events[i];
+    if (e.type === 'playerHurt') lost += e.damage * tuning.styleHurtPerDamage;
     // Your hits on enemies, not the steel targets (metal). (A bull's charge
     // shoves enemies without damage: it never produces 'hit' events.)
-    if (e.type === 'hit' && e.surface === 'flesh') {
-      // One award per hit, named after the best thing it did: a headshot
-      // kill is "HEADSHOT +75" (hit + kill + headshot), not three lines.
-      if (!e.killed) award('hit', tuning.styleHit);
-      else if (!e.headshot) award('kill', tuning.styleHit + tuning.styleKill);
-      else award('headshot', tuning.styleHit + tuning.styleKill + tuning.styleHeadshotKill);
-    } else if (e.type === 'playerHurt') {
-      lost += e.damage * tuning.styleHurtPerDamage;
+    if (e.type !== 'hit' || e.surface !== 'flesh') continue;
+
+    // One award per hit, named after the best thing it did: a headshot
+    // kill is "HEADSHOT +75" (hit + kill + headshot), not three lines.
+    if (!e.killed) {
+      award('hit', tuning.styleHit);
+      continue;
     }
+    const base = tuning.styleHit + tuning.styleKill;
+    if (!e.headshot) award('kill', base);
+    else {
+      const name = e.target === 'eyebat' ? 'pupil' : e.target === 'bull' ? 'matador' : 'headshot';
+      award(name, base + tuning.styleHeadshotKill);
+    }
+
+    // How you got it: every bonus that applies is a line of its own.
+    const gun = e.source !== 'kick';
+    if (!player.onGround) award('airKill', tuning.styleAirKill);
+    if (player.sliding) award('slideKill', tuning.styleSlideKill);
+    if (!gun) award('kickKill', tuning.styleKickKill);
+    if (style.sinceSwitchTicks <= secondsToTicks(tuning.weaponSwitchTime + tuning.styleQuickSwitchTime)) {
+      award('quickSwitch', tuning.styleQuickSwitchKill);
+    }
+    if (e.source === 'rifle') {
+      if (style.aimTicks > 0 && style.aimTicks <= secondsToTicks(tuning.styleQuickscopeTime)) {
+        award('quickscope', tuning.styleQuickscope);
+      } else if (style.aimTicks === 0 && e.distance >= tuning.styleNoscopeDistance) {
+        award('noscope', tuning.styleNoscope);
+      }
+    }
+    if (e.source === 'shotgun' && e.distance <= tuning.stylePointBlankDistance) {
+      award('pointBlank', tuning.stylePointBlank);
+    }
+    if ((e.source === 'revolver' || e.source === 'rifle') && e.distance >= tuning.styleLongShotDistance) {
+      award('longShot', tuning.styleLongShot);
+    }
+    // The shot that emptied the gun (the weapon already took the round away).
+    if ((e.source === 'revolver' || e.source === 'rifle') && player.loaded[e.source] === 0) {
+      award('lastRound', tuning.styleLastRound);
+    }
+    if (player.health <= tuning.styleCloseCallHealth) award('closeCall', tuning.styleCloseCall);
+
+    killsBySource.set(e.source, (killsBySource.get(e.source) ?? 0) + 1);
+  }
+
+  // Several kills: with one shot, and one after the other.
+  let kills = 0;
+  for (const n of killsBySource.values()) {
+    kills += n;
+    if (n >= 2) award('multiKill', tuning.styleMultiKill * (n - 1), n);
+  }
+  if (kills > 0) {
+    // Still inside the window of the previous kill: the streak goes on.
+    style.streak = style.streakTicks > 0 ? style.streak + kills : kills;
+    style.streakTicks = secondsToTicks(tuning.styleStreakTime);
+    if (style.streak >= 2) award('streak', tuning.styleStreak * (style.streak - 1), style.streak);
   }
 
   // Something stylish: more points, and the countdown starts again from the top.
@@ -143,4 +243,16 @@ export function stepStyle(style: StyleState, events: SimEvent[], from: number): 
     style.highNoonTicks = secondsToTicks(tuning.styleHighNoonTime);
     events.push({ type: 'highNoon' });
   }
+}
+
+/**
+ * The style's memory of what you've been doing: timers that the awards read.
+ * Updated every tick, chain or not.
+ */
+function remember(style: StyleState, player: PlayerState, events: SimEvent[], from: number, end: number): void {
+  style.sinceSwitchTicks++;
+  for (let i = from; i < end; i++) if (events[i].type === 'weaponSwitch') style.sinceSwitchTicks = 0;
+  // Aiming: counts up while the carbine is (even partly) at the eye.
+  style.aimTicks = player.adsTicks > 0 ? style.aimTicks + 1 : 0;
+  if (style.streakTicks > 0) style.streakTicks--;
 }

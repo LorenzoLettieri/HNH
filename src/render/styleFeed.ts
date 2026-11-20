@@ -17,23 +17,52 @@ import type { StyleAward } from '../sim/style';
  * The name on screen of each action. Record<StyleAward, …>: a new action in
  * style.ts without a name here is a compile error.
  * `minor` = small stuff (every hit): dimmer and smaller, so the big ones stand out.
+ * `name` can be a function of the award's `count` (how many kills in a streak...).
  */
-const STYLE_AWARD_NAMES: Record<StyleAward, { name: string; minor?: boolean }> = {
+interface AwardLook {
+  name: string | ((count: number) => string);
+  minor?: boolean;
+}
+const STYLE_AWARD_NAMES: Record<StyleAward, AwardLook> = {
   hit: { name: 'COLPO', minor: true },
   kill: { name: 'UCCISIONE' },
   headshot: { name: 'HEADSHOT' },
+  pupil: { name: "NELL'OCCHIO" },
+  matador: { name: 'MATADOR' },
+  airKill: { name: 'DAL CIELO' },
+  slideKill: { name: 'IN SCIVOLATA' },
+  kickKill: { name: 'DI STIVALE' },
+  quickSwitch: { name: 'CAMBIO LAMPO' },
+  quickscope: { name: 'QUICKSCOPE' },
+  noscope: { name: 'NOSCOPE' },
+  pointBlank: { name: 'A BRUCIAPELO' },
+  longShot: { name: 'DA LONTANO' },
+  lastRound: { name: 'ULTIMO COLPO' },
+  closeCall: { name: 'SUL FILO' },
+  multiKill: { name: (n) => (n === 2 ? 'DUE PICCIONI' : `STRAGE ×${n}`) },
+  streak: { name: (n) => STREAK_NAMES[n - 2] ?? `MASSACRO ×${n}` },
 };
+/** Kills in quick sequence: the name for 2, 3, 4, 5 kills; then MASSACRO ×n. */
+const STREAK_NAMES = ['DOPPIA', 'TRIPLA', 'QUADRUPLA', 'CINQUINA'];
+
+function awardName(award: StyleAward, count: number): string {
+  const { name } = STYLE_AWARD_NAMES[award];
+  return typeof name === 'string' ? name : name(count);
+}
 
 /** Seconds a line stays on screen (each repeat of the same action restarts it). */
 const LINE_LIFE = 1.4;
 /** Seconds of the exit animation (must match .feed-out in index.html). */
 const OUT_TIME = 0.25;
 /** At most this many lines: a new one pushes the oldest out at once. */
-const MAX_LINES = 5;
+const MAX_LINES = 6;
 
 interface Line {
   el: HTMLElement;
+  name: HTMLElement;
   points: HTMLElement;
+  /** The award has its own count (a streak): the name changes, no "×n". */
+  counted: boolean;
   award: StyleAward;
   count: number;
   total: number;
@@ -53,7 +82,7 @@ function restart(el: HTMLElement, cls: string): void {
 }
 
 function pointsText(line: Line): string {
-  return line.count > 1 ? `×${line.count} +${line.total}` : `+${line.total}`;
+  return line.count > 1 && !line.counted ? `×${line.count} +${line.total}` : `+${line.total}`;
 }
 
 function leave(line: Line): void {
@@ -65,15 +94,22 @@ function leave(line: Line): void {
   setTimeout(() => line.el.remove(), OUT_TIME * 1000);
 }
 
-function add(award: StyleAward, points: number): void {
-  // The same action as the newest line, still on screen: add it up.
-  const top = lines[0];
-  if (top && top.award === award && !top.leaving) {
-    top.count++;
-    top.total += points;
-    top.life = LINE_LIFE;
-    top.points.textContent = pointsText(top);
-    restart(top.points, 'feed-pop');
+function add(award: StyleAward, points: number, count: number | undefined): void {
+  // The same action as a line still on screen: add it up there (it doesn't
+  // move: the lines keep their order, only the numbers change and pop).
+  const same = lines.find((l) => l.award === award && !l.leaving);
+  if (same) {
+    same.total += points;
+    same.life = LINE_LIFE;
+    if (count === undefined) same.count++;
+    else {
+      // A streak going on: DOPPIA becomes TRIPLA, the whole line pops.
+      same.count = count;
+      same.name.textContent = awardName(award, count);
+      restart(same.el, 'feed-pop');
+    }
+    same.points.textContent = pointsText(same);
+    restart(same.points, 'feed-pop');
     return;
   }
 
@@ -82,13 +118,23 @@ function add(award: StyleAward, points: number): void {
   el.className = 'feed-line feed-in' + (look.minor ? ' minor' : '');
   const name = document.createElement('span');
   name.className = 'feed-name';
-  name.textContent = look.name;
+  name.textContent = awardName(award, count ?? 1);
   const pts = document.createElement('span');
   pts.className = 'feed-points';
   el.append(name, pts);
   feed.prepend(el); // newest on top
 
-  const line: Line = { el, points: pts, award, count: 1, total: points, life: LINE_LIFE, leaving: false };
+  const line: Line = {
+    el,
+    name,
+    points: pts,
+    counted: count !== undefined,
+    award,
+    count: count ?? 1,
+    total: points,
+    life: LINE_LIFE,
+    leaving: false,
+  };
   pts.textContent = pointsText(line);
   lines.unshift(line);
 
@@ -102,7 +148,7 @@ function add(award: StyleAward, points: number): void {
 
 export function updateStyleFeed(events: SimEvent[], dt: number): void {
   for (const e of events) {
-    if (e.type === 'styleAward') add(e.award, e.points);
+    if (e.type === 'styleAward') add(e.award, e.points, e.count);
     // Dead, or the climax is over: the style starts from zero, so does the list.
     if (e.type === 'playerDied' || e.type === 'highNoonEnd') for (const l of lines) leave(l);
   }

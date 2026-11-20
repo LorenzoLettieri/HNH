@@ -313,7 +313,14 @@ function trace(
 }
 
 /** Deals damage to an entity hit by a gun and reports it (hitmarker, score, sounds). */
-function applyGunDamage(target: Entity, amount: number, headshot: boolean, events: SimEvent[]): void {
+function applyGunDamage(
+  target: Entity,
+  amount: number,
+  headshot: boolean,
+  source: WeaponId,
+  distance: number,
+  events: SimEvent[],
+): void {
   const killed = damage(target, amount);
   if (killed && headshot && (target.type === 'ghoul' || target.type === 'sharpshooter')) target.headless = true;
   if (killed && headshot && target.type === 'eyebat') target.popped = true;
@@ -324,6 +331,9 @@ function applyGunDamage(target: Entity, amount: number, headshot: boolean, event
     killed,
     surface: isEnemy(target) ? 'flesh' : 'metal',
     headshot,
+    source,
+    distance,
+    target: target.type,
   });
 }
 
@@ -333,7 +343,7 @@ function fireRevolver(p: PlayerState, world: World, entities: Entity[], events: 
   const hit = trace(ox, oy, oz, dx, dy, dz, tuning.weaponRange, world, entities.filter(isAlive), false, events);
   if (hit) {
     const amount = tuning.revolverDamage * (hit.headshot ? tuning.headshotMultiplier : 1);
-    applyGunDamage(hit.target, amount, hit.headshot, events);
+    applyGunDamage(hit.target, amount, hit.headshot, 'revolver', hit.distance, events);
   }
 }
 
@@ -355,7 +365,7 @@ function fireRifle(p: PlayerState, world: World, entities: Entity[], events: Sim
   const hit = trace(a.ox, a.oy, a.oz, dx, dy, dz, tuning.weaponRange, world, entities.filter(isAlive), false, events);
   if (hit) {
     const amount = tuning.rifleDamage * (hit.headshot ? tuning.rifleHeadshotMultiplier : 1);
-    applyGunDamage(hit.target, amount, hit.headshot, events);
+    applyGunDamage(hit.target, amount, hit.headshot, 'rifle', hit.distance, events);
   }
 }
 
@@ -417,7 +427,7 @@ function fireShotgun(p: PlayerState, world: World, entities: Entity[], events: S
     totals.set(hit.target, t);
   }
   for (const [target, t] of totals) {
-    applyGunDamage(target, Math.round(t.amount), t.headshot, events);
+    applyGunDamage(target, Math.round(t.amount), t.headshot, 'shotgun', t.distance, events);
     blastBack(p, target, t.pellets, t.distance);
   }
   recoil(p, dx, dy, dz);

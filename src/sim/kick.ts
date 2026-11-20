@@ -90,6 +90,9 @@ function landKick(p: PlayerState, world: World, entities: Entity[], events: SimE
       killed,
       surface: isEnemy(e) ? 'flesh' : 'metal',
       headshot: false,
+      source: 'kick',
+      distance: dist,
+      target: e.type,
     });
 
     // Knockback direction: halfway between "away from you" and "where you

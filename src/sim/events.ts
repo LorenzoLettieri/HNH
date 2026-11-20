@@ -4,6 +4,7 @@
 // (On a future server, the same events would be sent to the clients.)
 
 import type { WeaponId } from './weapon';
+import type { Entity } from './entities';
 import type { PickupKind } from './pickups';
 import type { ShopItemId } from './shop';
 import type { StyleAward } from './style';
@@ -37,10 +38,16 @@ export type SimEvent =
       killed: boolean;
       surface: 'metal' | 'flesh';
       headshot: boolean;
+      /** What hit it: a gun or your boot (the style rewards some of them). */
+      source: WeaponId | 'kick';
+      /** How far it was from you, meters. */
+      distance: number;
+      /** What kind of entity it was (the eye-bat's pupil is a headshot, but it gets its own name). */
+      target: Entity['type'];
     }
   | { type: 'playerHurt'; damage: number; fromX: number; fromZ: number }
   /** A stylish action gave you style points (the HUD lists them under the meter). */
-  | { type: 'styleAward'; award: StyleAward; points: number }
+  | { type: 'styleAward'; award: StyleAward; points: number; count?: number }
   /** You reached the top style rank: the HIGH NOON climax starts (bottomless guns for a few seconds). */
   | { type: 'highNoon' }
   /** The HIGH NOON climax is over: the style starts over from zero. */

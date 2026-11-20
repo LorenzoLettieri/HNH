@@ -133,7 +133,7 @@ export function stepGame(
   stepWaves(game, world, events);
   stepPickups(game, world, dt, events);
   // Last: it needs the whole tick (your hits come first, the enemies' hits on you later).
-  stepStyle(game.style, events, tickEvents);
+  stepStyle(game.style, game.player, events, tickEvents);
 
   // Dead: game over, CoD style. Report how far you got, then start over from
   // wave 1: back to the spawn, the horde is cleared, stats reset.
