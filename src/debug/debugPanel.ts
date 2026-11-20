@@ -100,6 +100,9 @@ export function createDebugPanel(options: {
   style.number(tuning, 'styleNearMissDistance', 0, 5, 0.1);
   style.number(tuning, 'styleTorero', 0, 200, 5);
   style.number(tuning, 'styleToreroDistance', 0, 10, 0.25);
+  style.number(tuning, 'styleRepeatFactor', 0.3, 1, 0.05);
+  style.number(tuning, 'styleRepeatMin', 0, 1, 0.05);
+  style.number(tuning, 'styleRepeatRecover', 0, 1, 0.01);
   style.number(tuning, 'styleHighNoonTime', 1, 20, 0.5);
   style.number(tuning, 'styleMultiplierPerRank', 0, 2, 0.05);
   style.button('Copy values', () => copyToClipboard(toSource(tuning)));

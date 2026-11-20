@@ -743,8 +743,8 @@ export const tuning = {
    * and the style drops to zero at once. Short = harsh, long = forgiving.
    */
   styleChainTime: 5,
-  /** Style points to climb one rank: D → C → B → A → S → SS → HIGH NOON (6 steps = 1200). */
-  styleRankPoints: 180,
+  /** Style points to climb one rank: D → C → B → A → S → SS → HIGH NOON (6 steps = 1500). */
+  styleRankPoints: 250,
   /** Style points for every hit on an enemy (a shotgun blast counts once per enemy). */
   styleHit: 5,
   /** Extra style points for a kill (a one-shot kill = styleHit + styleKill). */
@@ -815,6 +815,13 @@ export const tuning = {
   styleTorero: 50,
   /** ...and you were at most this far to its side, meters. */
   styleToreroDistance: 3,
+  // Variety: the same action again and again is worth less and less.
+  /** Every time you do an action, its next one is worth this much less (0.8 = -20%)... */
+  styleRepeatFactor: 0.8,
+  /** ...but never less than this fraction of its points... */
+  styleRepeatMin: 0.25,
+  /** ...and it gets fresh again over time: fraction of its value recovered per second. */
+  styleRepeatRecover: 0.15,
   /** Style points lost per point of damage taken (ghoul claw 20 → 60 points). */
   styleHurtPerDamage: 3,
   /**

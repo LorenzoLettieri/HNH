@@ -82,18 +82,23 @@ riga sola, non "colpo + uccisione + headshot"). La stessa azione ripetuta mentre
 **si somma** ("COLPO ×3 +15") invece di aggiungere righe. Animazione: la riga **entra di scatto da destra**,
 grande e incandescente, si raffredda nel suo colore; i punti sono nel colore del rank; poi scivola via.
 
-**Azioni stilose da aggiungere** [PROPOSTA, in ordine di passi]:
-1. *Modificatori dell'uccisione* (righe extra sopra l'uccisione): **in volo**, **in slide**, **appena
-   cambiata arma**, **di calcio**, **quickscope** della carabina (uccisione poco dopo aver iniziato a mirare),
-   **noscope** (carabina dall'anca da lontano), **a bruciapelo** con la doppietta, **da lontano**, **nella
-   pupilla** del Malocchio, **ultimo colpo** del caricatore, **sul filo** (con poca vita), **toro stordito**.
-2. *Combo di uccisioni*: **più uccisioni con un colpo solo** (doppietta), **uccisioni in rapida sequenza**
-   (doppia, tripla, massacro…).
-3. *Movimento*: **velocità** (punti continui sopra una soglia, di più più vai veloce), **tempo in volo**
-   (premio all'atterraggio, cresce coi secondi), **wall jump** (e catene di wall jump), **bhop** consecutivi,
-   **slide-jump**, **schivate** (proiettile del tiratore o carica del toro evitati di poco).
-4. *Varietà*: la stessa azione ripetuta nella stessa catena rende sempre meno.
-5. Ritaratura dei numeri (`styleRankPoints`, punti di ogni azione).
+**Azioni stilose** [FATTO: passi 5–7, da tarare giocando] (`StyleAward` in `style.ts`, punti in `config.ts`):
+- *Cosa ha fatto il colpo* (una riga per colpo): COLPO, UCCISIONE, HEADSHOT, NELL'OCCHIO (pupilla del
+  Malocchio), MATADOR (toro ucciso mentre è stordito).
+- *Come hai ucciso* (righe in più): DAL CIELO (in volo), IN SCIVOLATA, DI STIVALE (calcio), CAMBIO LAMPO
+  (entro 0,6 s da quando la nuova arma è pronta), QUICKSCOPE (carabina, entro 0,5 s da quando inizi a
+  mirare), NOSCOPE (carabina dall'anca da 15 m in su), A BRUCIAPELO (doppietta entro 2,5 m), DA LONTANO
+  (revolver/carabina da 30 m in su), ULTIMO COLPO (il colpo che svuota revolver o carabina), SUL FILO (25 di vita o meno).
+- *Più uccisioni*: DUE PICCIONI / STRAGE ×n con un colpo solo (o un calcio); in serie, ognuna entro 1,5 s
+  dalla precedente: DOPPIA, TRIPLA, QUADRUPLA, CINQUINA, MASSACRO ×n (la riga si aggiorna invece di moltiplicarsi).
+- *Movimento*: VELOCITÀ (sopra 10 m/s, punti continui che crescono con la velocità, dati due volte al
+  secondo), IN VOLO x s (all'atterraggio, da 1 s in su), WALL JUMP (il secondo vale doppio, il terzo
+  triplo), BHOP ×n (di più per bhop di fila, fino a 5), SLIDE JUMP, SFIATATOIO, PER UN PELO (un proiettile
+  nemico ti passa a meno di 1,2 m), OLÉ! (la carica del toro ti manca di poco).
+- **Deciso: il movimento da solo tiene viva la catena** (è il cuore del gioco), frenato dalla varietà.
+- **Varietà** [FATTO]: ogni azione ha una **freschezza** (0..1). Farla la moltiplica per 0,8 (fino a un minimo
+  di 0,25); il tempo la riporta su (+0,15 al secondo). Il colpo semplice e la velocità non calano.
+- Con molte più fonti di punti, il rank sale prima: **un rank ogni 250 punti** (HIGH NOON a 1500). Da tarare giocando.
 
 ### A cosa serve
 - **Moltiplicatore** sul **punteggio** e sul **vildenaro** guadagnato (la moneta: vedi §5, Economia).
