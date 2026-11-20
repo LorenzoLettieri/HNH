@@ -18,6 +18,11 @@
 // vildenaro. Who moves well gets richer, and stronger, sooner: a snowball
 // effect, on purpose (DESIGN.md, "movement as power").
 //
+// Every stylish action is an AWARD (StyleAward: an id and its points): stepStyle
+// appends a 'styleAward' event for each one, and the HUD lists them under the
+// meter ("HEADSHOT +30"). The simulation decides WHAT was stylish and how much
+// it's worth; the screen only decides how to show it.
+//
 // For now only hits and kills give style. Movement (speed, air time, wall
 // jumps) and variety come in the next steps.
 import type { SimEvent } from './events';
@@ -42,6 +47,12 @@ export const STYLE_RANKS = [
   { letter: 'SS', name: 'Showdown' },
   { letter: 'HN', name: 'HIGH NOON' },
 ] as const;
+
+/**
+ * The stylish actions, each with its id (the HUD gives it a name on screen,
+ * see STYLE_AWARD_NAMES in render/styleFeed.ts). A new action = a new id here.
+ */
+export type StyleAward = 'hit' | 'kill' | 'headshot';
 
 export function createStyle(): StyleState {
   return { points: 0, chainTicks: 0, highNoonTicks: 0 };
@@ -91,13 +102,23 @@ export function stepStyle(style: StyleState, events: SimEvent[], from: number): 
 
   let gained = 0;
   let lost = 0;
-  for (let i = from; i < events.length; i++) {
+  // The awards are appended at the END of `events`, while we're reading it:
+  // remember where this tick's events stop, so we don't read our own awards.
+  const end = events.length;
+  const award = (id: StyleAward, points: number): void => {
+    gained += points;
+    events.push({ type: 'styleAward', award: id, points });
+  };
+  for (let i = from; i < end; i++) {
     const e = events[i];
     // Your hits on enemies, not the steel targets (metal). (A bull's charge
     // shoves enemies without damage: it never produces 'hit' events.)
     if (e.type === 'hit' && e.surface === 'flesh') {
-      gained += tuning.styleHit;
-      if (e.killed) gained += tuning.styleKill + (e.headshot ? tuning.styleHeadshotKill : 0);
+      // One award per hit, named after the best thing it did: a headshot
+      // kill is "HEADSHOT +75" (hit + kill + headshot), not three lines.
+      if (!e.killed) award('hit', tuning.styleHit);
+      else if (!e.headshot) award('kill', tuning.styleHit + tuning.styleKill);
+      else award('headshot', tuning.styleHit + tuning.styleKill + tuning.styleHeadshotKill);
     } else if (e.type === 'playerHurt') {
       lost += e.damage * tuning.styleHurtPerDamage;
     }

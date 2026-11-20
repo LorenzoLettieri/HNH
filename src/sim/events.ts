@@ -6,6 +6,7 @@
 import type { WeaponId } from './weapon';
 import type { PickupKind } from './pickups';
 import type { ShopItemId } from './shop';
+import type { StyleAward } from './style';
 
 export type SimEvent =
   /** A weapon fired (sound, flash, recoil). For the shotgun, `barrel` is 0 = right, 1 = left. */
@@ -38,6 +39,8 @@ export type SimEvent =
       headshot: boolean;
     }
   | { type: 'playerHurt'; damage: number; fromX: number; fromZ: number }
+  /** A stylish action gave you style points (the HUD lists them under the meter). */
+  | { type: 'styleAward'; award: StyleAward; points: number }
   /** You reached the top style rank: the HIGH NOON climax starts (bottomless guns for a few seconds). */
   | { type: 'highNoon' }
   /** The HIGH NOON climax is over: the style starts over from zero. */

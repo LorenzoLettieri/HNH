@@ -1,6 +1,6 @@
 // HUD: health plate (healthPlate.ts), red flash, direction arc (damageIndicator.ts)
 // and head snap (cameraFeel.ts) when you get hit, low health (lowHealth.ts),
-// wave number, enemies left, fps, speed, score, wave banners, the style meter (styleMeter.ts)
+// wave number, enemies left, fps, speed, score, wave banners, the style meter (styleMeter.ts) and its feed (styleFeed.ts)
 // and the death summary.
 // Plain HTML/CSS elements (see index.html), updated from here.
 import { tuning } from '../sim/config';
@@ -11,6 +11,7 @@ import type { GameState } from '../sim/game';
 import { horizontalSpeed } from '../sim/player';
 import { isEnemy } from '../sim/entities';
 import { updateStyleMeter } from './styleMeter';
+import { updateStyleFeed } from './styleFeed';
 import { updateHighNoon } from './highNoon';
 import { updateHealthPlate } from './healthPlate';
 import { updateLowHealth } from './lowHealth';
@@ -164,6 +165,7 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
   }
 
   updateStyleMeter(game.style, dt);
+  updateStyleFeed(events, dt);
   updateHighNoon(game.style, events, dt);
 
   const health = player.health / tuning.playerMaxHealth;

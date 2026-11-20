@@ -74,6 +74,26 @@ cala come un **timbro**; perdere un rank per i danni = la lettera **trema**.
 **Timer della catena** [FATTO: passo 3]: negli ultimi **1,5 s** prima che la catena si spezzi la lettera
 **lampeggia**, sempre più veloce (da 3 a 12 volte al secondo, come il bip di una bomba); ogni azione
 stilosa riavvia la catena e il lampeggio si ferma. Niente barra del tempo: la barra resta il progresso del rank.
+**Elenco delle azioni** [FATTO: passo 4] (`src/render/styleFeed.ts`): sotto il meter, per un attimo, le
+azioni appena fatte e quanto valgono ("HEADSHOT +75"). Ogni azione stilosa è un **premio** (`StyleAward`
+in `style.ts`: un id e i punti) e la simulazione manda un evento `styleAward`; il nome a schermo sta nel
+rendering. **Un premio per colpo**, col nome della cosa migliore che ha fatto (un headshot letale è una
+riga sola, non "colpo + uccisione + headshot"). La stessa azione ripetuta mentre la riga è ancora a schermo
+**si somma** ("COLPO ×3 +15") invece di aggiungere righe. Animazione: la riga **entra di scatto da destra**,
+grande e incandescente, si raffredda nel suo colore; i punti sono nel colore del rank; poi scivola via.
+
+**Azioni stilose da aggiungere** [PROPOSTA, in ordine di passi]:
+1. *Modificatori dell'uccisione* (righe extra sopra l'uccisione): **in volo**, **in slide**, **appena
+   cambiata arma**, **di calcio**, **quickscope** della carabina (uccisione poco dopo aver iniziato a mirare),
+   **noscope** (carabina dall'anca da lontano), **a bruciapelo** con la doppietta, **da lontano**, **nella
+   pupilla** del Malocchio, **ultimo colpo** del caricatore, **sul filo** (con poca vita), **toro stordito**.
+2. *Combo di uccisioni*: **più uccisioni con un colpo solo** (doppietta), **uccisioni in rapida sequenza**
+   (doppia, tripla, massacro…).
+3. *Movimento*: **velocità** (punti continui sopra una soglia, di più più vai veloce), **tempo in volo**
+   (premio all'atterraggio, cresce coi secondi), **wall jump** (e catene di wall jump), **bhop** consecutivi,
+   **slide-jump**, **schivate** (proiettile del tiratore o carica del toro evitati di poco).
+4. *Varietà*: la stessa azione ripetuta nella stessa catena rende sempre meno.
+5. Ritaratura dei numeri (`styleRankPoints`, punti di ogni azione).
 
 ### A cosa serve
 - **Moltiplicatore** sul **punteggio** e sul **vildenaro** guadagnato (la moneta: vedi §5, Economia).
