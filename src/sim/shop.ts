@@ -9,11 +9,22 @@ import type { InputCommand } from './command';
 import { tuning } from './config';
 import type { SimEvent } from './events';
 import type { PlayerState } from './player';
+import { CARDS, upgradeOffer, upgradePrice, type CardId } from './upgrades';
 import { switchWeapon, type WeaponId } from './weapon';
 import type { ShopSpawn, World } from './world';
 
 /** Everything for sale. For now only weapons, so an item id IS a weapon id. */
 export type ShopItemId = Exclude<WeaponId, 'revolver'>;
+
+/**
+ * Anything the command can ask to buy: a weapon from the catalog, or an
+ * upgrade card from a weapon's deck (upgrades.ts). The ids never overlap.
+ */
+export type PurchaseId = ShopItemId | CardId;
+
+function isCard(id: PurchaseId): id is CardId {
+  return id in CARDS;
+}
 
 export interface ShopItem {
   id: ShopItemId;
@@ -59,6 +70,7 @@ export function ownsItem(p: PlayerState, id: ShopItemId): boolean {
  */
 export function stepShop(p: PlayerState, cmd: InputCommand, world: World, events: SimEvent[]): void {
   if (!cmd.buy) return;
+  if (isCard(cmd.buy)) return buyCard(p, cmd.buy, world, events);
   const id = cmd.buy;
   const shop = shopInReach(p, world);
   const item = shop ? shopCatalog(shop.kind).find((i) => i.id === id) : undefined;
@@ -81,4 +93,25 @@ export function stepShop(p: PlayerState, cmd: InputCommand, world: World, events
   }
   switchWeapon(p, id, events);
   events.push({ type: 'purchase', item: id, price: item.price });
+}
+
+/**
+ * Buying an upgrade card. Same checks as a weapon, plus the card-specific
+ * ones: the weapon must be yours, and the card must be ON THE COUNTER right
+ * now (one of the cards drawn for you). Otherwise a client could ask for any
+ * card it likes: "is it in the offer?" is the server's question, not the panel's.
+ */
+function buyCard(p: PlayerState, id: CardId, world: World, events: SimEvent[]): void {
+  const weapon = CARDS[id].weapon;
+  const shop = shopInReach(p, world);
+  if (shop?.kind !== 'weapons') return void events.push({ type: 'purchaseFailed', item: id, reason: 'far' });
+  const price = upgradePrice(p, weapon);
+  if (!p.owned[weapon] || price === null || !upgradeOffer(p, weapon).includes(id)) {
+    return void events.push({ type: 'purchaseFailed', item: id, reason: 'unavailable' });
+  }
+  if (p.money < price) return void events.push({ type: 'purchaseFailed', item: id, reason: 'money' });
+
+  p.money -= price;
+  p.cards[weapon].push(id); // the level goes up, and with it the next offer changes
+  events.push({ type: 'purchase', item: id, price });
 }

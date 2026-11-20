@@ -33,3 +33,20 @@ export function random(s: RandomState): number {
 export function randomInt(s: RandomState, n: number): number {
   return Math.floor(random(s) * n);
 }
+
+/**
+ * A seed made from a few integers, mixed so that close inputs give unrelated
+ * seeds ((7, 0, 1) and (7, 0, 2) must not start similar sequences). It's a
+ * tiny HASH: the same numbers always give the same seed. Used where a random
+ * choice must be stable, like the cards on the shop's counter (upgrades.ts).
+ */
+export function seedFrom(...values: number[]): number {
+  let h = 0x9e3779b9;
+  for (const v of values) {
+    h = Math.imul(h ^ (v | 0), 0x85ebca6b);
+    h ^= h >>> 13;
+    h = Math.imul(h, 0xc2b2ae35);
+    h ^= h >>> 16;
+  }
+  return h | 0;
+}

@@ -658,6 +658,12 @@ futuro **poligono di tiro / tutorial**.
 - **Marchio**: il colpo marca il nemico, il colpo successivo su di lui fa danno doppio.
 - **Due alla volta**: la ricarica infila due colpi per volta.
 
+**Stato** [FATTO: passo 1] la simulazione (`src/sim/upgrades.ts`): mazzi, pescata, prezzo che cresce,
+acquisto controllato dalla simulazione (armeria a portata, arma tua, carta sul bancone, soldi) e la prima
+carta, **Tamburo del becchino**. Il pannello dello shop non mostra ancora le carte: per provarla c'è un
+bottone nel pannello debug. Il modello 3D del revolver ha 6 camere: con 8 colpi l'animazione di ricarica
+ne mostra comunque 6 (le munizioni a schermo sono giuste). Prossimo: le carte nel pannello dello shop.
+
 Scartate: Proiettili d'argento, Rimbalzo (carabina), Colpo di grazia, Polso fermo, Mozzata corta,
 Leva in corsa, Sangue freddo, Ottone caldo.
 

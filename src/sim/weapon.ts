@@ -39,6 +39,7 @@ import type { World } from './world';
 import { damage, hitBox, isAlive, isEnemy, type Entity, type EyebatEntity } from './entities';
 import { knockBack } from './kick';
 import { random, type RandomState } from './random';
+import { hasCard } from './upgrades';
 
 export type WeaponId = 'revolver' | 'shotgun' | 'rifle';
 /** Weapon slots, in order: key 1 = revolver, key 2 = shotgun, key 3 = carbine. */
@@ -49,11 +50,14 @@ export type AmmoType = 'bullets' | 'shells';
 /** Which cartridges each weapon shoots (and so which pocket its reload empties). */
 export const AMMO_TYPE: Record<WeaponId, AmmoType> = { revolver: 'bullets', shotgun: 'shells', rifle: 'bullets' };
 
-/** Rounds a full weapon holds. (Functions, not constants: tuning changes at runtime.) */
-export function magazineSize(w: WeaponId): number {
+/**
+ * Rounds a full weapon holds. (Functions, not constants: tuning changes at
+ * runtime, and the upgrade cards change some weapons.)
+ */
+export function magazineSize(p: PlayerState, w: WeaponId): number {
   switch (w) {
     case 'revolver':
-      return tuning.revolverAmmo;
+      return tuning.revolverAmmo + (hasCard(p, 'undertakerCylinder') ? tuning.undertakerExtraRounds : 0);
     case 'shotgun':
       return tuning.shotgunAmmo;
     case 'rifle':
@@ -122,7 +126,7 @@ export function stepWeapon(
   // climax starts with an empty cylinder, or you switch to an empty gun), and
   // a reload in progress is pointless: dropped (like when you switch weapon).
   if (bottomless) {
-    setCurrentAmmo(p, magazineSize(p.weapon));
+    setCurrentAmmo(p, magazineSize(p, p.weapon));
     p.reloadTicks = 0;
   }
 
@@ -134,7 +138,7 @@ export function stepWeapon(
 
   const pocket = AMMO_TYPE[p.weapon];
   const oneByOne = reloadsOneByOne(p.weapon);
-  const full = magazineSize(p.weapon);
+  const full = magazineSize(p, p.weapon);
 
   // Reloading: count down, then move rounds from the pockets into the gun.
   // The rounds are taken only at the END: a reload interrupted by a weapon

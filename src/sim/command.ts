@@ -1,4 +1,4 @@
-import type { ShopItemId } from './shop';
+import type { PurchaseId } from './shop';
 // What the player wants to do during ONE tick. The simulation only ever sees
 // this, never the keyboard or mouse directly. Later, the same object will be
 // sent over the network to the server.
@@ -36,8 +36,9 @@ export interface InputCommand {
    * Buy this item at the shop within reach (null = nothing). Clicking in the
    * shop's panel doesn't change the game directly: it becomes this field,
    * and the simulation decides (money, distance...). One day: the server.
+   * A weapon or an upgrade card (shop.ts, PurchaseId).
    */
-  buy: ShopItemId | null;
+  buy: PurchaseId | null;
   /** View angles (radians) at the time the command was built. */
   yaw: number;
   pitch: number;

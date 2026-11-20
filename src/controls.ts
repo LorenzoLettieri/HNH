@@ -1,7 +1,7 @@
 // Turns raw input (input.ts) into what the game understands:
 // - view angles, updated every rendered frame for the most responsive aim;
 // - an InputCommand, built once per simulation tick.
-import type { ShopItemId } from './sim/shop';
+import type { PurchaseId } from './sim/shop';
 import { consumeMouseDelta, isKeyDown, isPointerLocked, wasPressed } from './input';
 import type { InputCommand } from './sim/command';
 
@@ -33,8 +33,8 @@ export function updateLook(): void {
  * the next tick. The panel doesn't touch the game: it leaves a note here,
  * and the next InputCommand carries it to the simulation, like a key press.
  */
-let pendingBuy: ShopItemId | null = null;
-export function queueBuy(id: ShopItemId): void {
+let pendingBuy: PurchaseId | null = null;
+export function queueBuy(id: PurchaseId): void {
   pendingBuy = id;
 }
 

@@ -21,6 +21,7 @@ import { createPickup, dropFromKills, stepPickups, type Pickup } from './pickups
 import { createStyle, isHighNoon, stepStyle, styleMultiplier, type StyleState } from './style';
 import type { World } from './world';
 import { tuning } from './config';
+import { randomInt } from './random';
 
 export interface GameState {
   tick: number;
@@ -52,7 +53,7 @@ export interface GameState {
  */
 export function createGame(world: World, seed = 1): GameState {
   const entities = createEntities(world);
-  return {
+  const game: GameState = {
     tick: 0,
     player: createPlayer(world.spawn.x, world.spawn.y, world.spawn.z),
     entities,
@@ -67,6 +68,16 @@ export function createGame(world: World, seed = 1): GameState {
     pickups: [],
     rng: seed,
   };
+  rollCardSeed(game);
+  return game;
+}
+
+/**
+ * A new seed for the armory's cards (upgrades.ts): once per game, taken from
+ * the game's generator, so the same game seed gives the same cards.
+ */
+function rollCardSeed(game: GameState): void {
+  game.player.cardSeed = randomInt(game, 0x7fffffff);
 }
 
 /**
@@ -156,6 +167,7 @@ export function stepGame(
     game.wave = createWaveState();
     game.stats = { kills: 0, score: 0 };
     game.style = createStyle();
+    rollCardSeed(game); // new game, new cards on the counter
   }
   game.tick++;
 }

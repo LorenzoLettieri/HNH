@@ -35,7 +35,7 @@ function build(weapon: WeaponId, size: number): void {
 }
 
 export function updateAmmoHud(player: PlayerState): void {
-  const size = magazineSize(player.weapon);
+  const size = magazineSize(player, player.weapon);
   if (builtFor !== `${player.weapon}:${size}`) build(player.weapon, size);
 
   // Full rounds on the left, spent ones on the right (they're fired from the right).

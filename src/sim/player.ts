@@ -5,6 +5,7 @@ import { ventUnder } from './props';
 import { secondsToTicks, tuning } from './config';
 import type { AmmoType, WeaponId } from './weapon';
 import type { SimEvent } from './events';
+import { noCards, type CardId } from './upgrades';
 
 // Pure data: no Three.js, no DOM. Can be copied, compared, sent over the network.
 export interface PlayerState {
@@ -73,6 +74,16 @@ export interface PlayerState {
    * in multiplayer every player has their own wallet.
    */
   money: number;
+  /**
+   * Upgrade cards bought for each weapon (upgrades.ts), in the order you
+   * bought them: how many = the weapon's level. Lost when you die.
+   */
+  cards: Record<WeaponId, CardId[]>;
+  /**
+   * Seed of the cards drawn at the armory (upgrades.ts): rolled once per
+   * game, so the counter shows the same cards until you buy one.
+   */
+  cardSeed: number;
   /** Ticks left before the next shot is allowed. */
   fireCooldownTicks: number;
   /** Ticks left in which a recent click is still waiting to fire. */
@@ -129,6 +140,8 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     adsTicks: 0,
     owned: startingWeapons(),
     money: 0,
+    cards: noCards(),
+    cardSeed: 0,
     fireCooldownTicks: 0,
     fireBufferTicks: 0,
     fireHeld: false,
@@ -151,6 +164,8 @@ export function copyPlayer(from: PlayerState, to: PlayerState): void {
   to.reserve = { ...from.reserve };
   to.loaded = { ...from.loaded };
   to.owned = { ...from.owned }; // same story
+  // Arrays inside an object: one level deeper (each array copied too).
+  to.cards = { revolver: [...from.cards.revolver], shotgun: [...from.cards.shotgun], rifle: [...from.cards.rifle] };
 }
 
 /** Height of the player's collision box right now (shorter when crouched). */
@@ -448,6 +463,7 @@ export function respawn(p: PlayerState, world: World): void {
   p.owned = startingWeapons(); // dead = start over: what you bought is gone
   p.weapon = 'revolver';
   p.money = 0; // dead = the game starts over: empty pockets
+  p.cards = noCards(); // ...and plain weapons
   p.reloadTicks = 0;
   p.fanShotsLeft = 0;
   p.fanQueued = false;

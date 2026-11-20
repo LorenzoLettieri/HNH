@@ -135,6 +135,8 @@ export const tuning = {
   // --- Revolver ---
   /** Shots in the cylinder. */
   revolverAmmo: 6,
+  /** Card "Tamburo del becchino" (upgrades.ts): extra rounds in the cylinder. */
+  undertakerExtraRounds: 2,
   /** Minimum seconds between two shots (it's semi-automatic: one click = one shot). */
   revolverFireInterval: 0.32,
   /** A click slightly before the gun is ready still fires as soon as it is, seconds. */
@@ -245,6 +247,15 @@ export const tuning = {
   shotgunPrice: 800,
   /** Price of the lever-action carbine at the armory. */
   riflePrice: 1200,
+  // --- Weapon upgrades: decks of cards at the armory (see upgrades.ts) ---
+  /** Price of a weapon's first card, in vildenaro. */
+  upgradeBasePrice: 500,
+  /** Every card bought makes the next one of the same weapon this many times dearer (500, 1000, 2000). */
+  upgradePriceGrowth: 2,
+  /** Cards a weapon can take at most. */
+  upgradeMaxLevel: 3,
+  /** Cards drawn on the counter to choose from. */
+  upgradeOfferSize: 3,
   // --- Vildenaro: the coins every enemy drops (see dropCoins in pickups.ts) ---
   /** Coins dropped per point of enemy weight: ghoul 1 coin, eye-bat 2, hound 3, bull 5. ALWAYS, not a chance. */
   coinsPerWeight: 1,

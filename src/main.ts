@@ -3,7 +3,7 @@ import { initInput, isKeyDown, isPointerLocked, isTypingInField, requestLock } f
 import { loadSettings } from './settings';
 import { createMenu } from './menu';
 import { createDebugPanel, debugTime } from './debug/debugPanel';
-import { buildCommand, controlSettings, updateLook, view } from './controls';
+import { buildCommand, controlSettings, queueBuy, updateLook, view } from './controls';
 import { TICK_DT } from './sim/config';
 import { copyPlayer, createPlayer } from './sim/player';
 import { createGame, spawnBullInFront, spawnSharpshooterInFront, spawnEyebatInFront, spawnHoundInFront, dropPickupsInFront, stepGame } from './sim/game';
@@ -30,6 +30,7 @@ import { createVendorRenderer } from './render/vendors';
 import { createShopMenu } from './render/shopMenu';
 import { createMapOverlay } from './render/mapOverlay';
 import { shopInReach } from './sim/shop';
+import { upgradeOffer, upgradePrice } from './sim/upgrades';
 import './render/crosshair'; // paints the crosshair once
 import { adsAmount, WEAPONS } from './sim/weapon';
 import { updateHud } from './render/hud';
@@ -152,6 +153,13 @@ const debugPanel = createDebugPanel({
   onPostSizeChange: () => post.refresh(),
   onJumpToWave: (n) => jumpToWave(game, n),
   onGiveMoney: (amount) => (game.player.money += amount),
+  onBuyRevolverCard: () => {
+    // Temporary, until the shop's panel shows the cards: print the counter
+    // and ask to buy its first card. The simulation still checks everything.
+    const offer = upgradeOffer(game.player, 'revolver');
+    console.log('Revolver counter:', offer, 'price:', upgradePrice(game.player, 'revolver'));
+    if (offer.length > 0) queueBuy(offer[0]);
+  },
 });
 debugPanel.showAtmosphere(ATMOSPHERES[atmosphereIndex]);
 

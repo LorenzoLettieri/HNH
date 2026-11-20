@@ -6,7 +6,7 @@
 import type { WeaponId } from './weapon';
 import type { Entity } from './entities';
 import type { PickupKind } from './pickups';
-import type { ShopItemId } from './shop';
+import type { PurchaseId } from './shop';
 import type { StyleAward } from './style';
 
 export type SimEvent =
@@ -101,8 +101,11 @@ export type SimEvent =
   | { type: 'reloadRound' }
   | { type: 'reloadEnd' }
   /** You bought something at a shop (sound, the panel's thanks). */
-  | { type: 'purchase'; item: ShopItemId; price: number }
-  /** A purchase the simulation refused: not enough money, already yours, or too far from the vendor. */
-  | { type: 'purchaseFailed'; item: ShopItemId; reason: 'money' | 'owned' | 'far' }
+  | { type: 'purchase'; item: PurchaseId; price: number }
+  /**
+   * A purchase the simulation refused: not enough money, already yours, too far from the vendor,
+   * or (a card) not on the counter / weapon not yours / weapon maxed out.
+   */
+  | { type: 'purchaseFailed'; item: PurchaseId; reason: 'money' | 'owned' | 'far' | 'unavailable' }
   /** You collected a pickup (sound, flash on the HUD). */
   | { type: 'pickup'; kind: PickupKind; x: number; y: number; z: number };
