@@ -1,46 +1,68 @@
-// The shovel swing on screen (the simulation side is in src/sim/kick.ts).
+// The shovel swing on screen (the simulation side is in src/sim/kick.ts):
+// an overhead BONK, cartoon style.
 //
 // The model (public/models/shovel.glb, made by tools/blender/shovel.py) has
 // its origin on the D-grip, where the hand holds it, and the shaft along -Z.
-// We never show the hand: the grip stays BELOW the bottom-left edge of the
-// screen and only the shaft and the blade sweep across the view. An old
-// trick (many shooters crop melee arms the same way): no arm to pose, and
-// the eye reads the swing from the blade anyway.
+// We never show the hand: the grip stays BELOW the bottom edge of the screen
+// and only the shaft and the blade come into view. An old trick (many
+// shooters crop melee arms the same way): no arm to pose, and the eye reads
+// the blow from the blade anyway.
 //
-// The swing is a few KEYFRAMES of the grip's pose (position + rotation, in
-// the viewmodel camera's space), blended with smoothstep (poseAt, elastic.ts).
-// The subtle part is WHEN the blade must hit: at the moment the simulation
-// lands the blow (tuning.shovelWindup after the press). Smoothstep is slow
-// at both ends of a segment and fastest exactly in the MIDDLE, so the
-// "cocked" key and the "follow-through" key are placed symmetrically around
-// the impact: the blade crosses the center of the screen at full speed
-// right when the hit happens, instead of easing in and stopping there.
+// Four phases, each with the easing that "sells" it (an easing is a curve
+// that maps 0..1 time to 0..1 progress: same idea as CSS's ease-in/ease-out):
+//   1. RAISE: it's already over your head, out of view (the shaft pointing
+//      up and back), and it creeps a little further back: the anticipation
+//      of a cartoon blow. Nothing on screen yet: swinging it up IN FRONT of
+//      the camera would sweep a huge shaft across your face.
+//   2. STRIKE: down onto the target, ease-IN (u³): slow at the top, fastest
+//      at the very end. The impact comes at full speed, exactly when the
+//      simulation lands the hit (tuning.shovelWindup after the press).
+//   3. BOING: it stops dead and bounces back up on a damped spring, with the
+//      blade quivering around the shaft. The comic part. A damped
+//      oscillation is A·e^(-k·t)·sin(ω·t): a sine whose amplitude decays.
+//   4. DROP: down out of view.
 //
 // Rotation order 'YXZ': first turn left/right (yaw), then tilt the shaft up
 // (pitch), then roll the blade around the shaft. The same order as an FPS
 // camera, and for the same reason: each angle means one clear thing.
 import * as THREE from 'three';
 import { tuning } from '../../sim/config';
-import { poseAt, ZERO_POSE, type GunPose } from './elastic';
+import { smoothstep } from './elastic';
 import { loadGunModel } from './gunModel';
 
-/** Where the grip sits when the swing is "out", camera space (x right, y up, -z forward). */
+/** Pose and timing of the bonk. Camera space (x right, y up, -z forward); angles in radians. */
 export const shovelSettings = {
-  /** The grip, below the bottom-left corner of the view (out of sight). */
+  /**
+   * The grip, below the bottom edge of the view (out of sight), left of
+   * center and at arm's length: closer to the eye, the shaft would fill the
+   * screen as it goes past.
+   */
   gripX: -0.12,
-  gripY: -0.42,
-  gripZ: -0.12,
-  /** How far around the swing starts (left) and ends (right), radians. */
-  cockYaw: 1.0,
-  followYaw: -1.1,
-  /** How much the shaft points up, radians: brings the blade into view. */
-  pitch: 0.75,
-  /** Blade roll around the shaft, radians: its flat face leads the swing (a "BONK"). */
-  roll: -1.3,
-  /** Seconds it takes to come in from below before the cocked pose (at most: shorter if the wind-up is). */
-  raiseTime: 0.06,
-  /** Seconds to drop back out of view after the follow-through. */
-  dropTime: 0.22,
+  gripY: -0.45,
+  gripZ: -0.3,
+  /** Shaft angle raised high (π/2 = straight up: the blade above your head, out of view). */
+  raisedPitch: 1.9,
+  /** How much further back it creeps while raised (the anticipation), radians. */
+  windBack: 0.25,
+  /** Shaft angle at the impact: the blade just below the crosshair. */
+  impactPitch: 0.5,
+  /** Turned a little to the right: from the grip on the left, the blade lands in the middle. */
+  yaw: -0.15,
+  /** Blade roll: π = the flat face looks down, so it's the FACE that slaps the enemy. */
+  roll: Math.PI,
+  /** Fraction of the wind-up spent in the anticipation (the rest is the strike). */
+  raiseShare: 0.4,
+  /** How far it bounces back up after the impact, radians... */
+  boingAmount: 0.35,
+  /** ...how fast it wobbles (rad/s) and how fast the wobble dies out (1/s). */
+  boingFrequency: 38,
+  boingDecay: 11,
+  /** Blade quiver around the shaft, radians (same spring). */
+  quiver: 0.25,
+  /** Seconds it stays out wobbling before it drops. */
+  holdTime: 0.2,
+  /** Seconds to drop back out of view. */
+  dropTime: 0.18,
 };
 
 export interface ShovelView {
@@ -52,6 +74,9 @@ export interface ShovelView {
   update(dt: number): number;
 }
 
+/** Below the screen: how far down the grip goes when the shovel is put away, meters. */
+const HIDDEN_DROP = 0.4;
+
 export function createShovelView(): ShovelView {
   const s = shovelSettings;
   const root = new THREE.Group();
@@ -60,27 +85,6 @@ export function createShovelView(): ShovelView {
   root.add(loadGunModel('shovel.glb'));
   let time = Infinity; // seconds since the swing started
 
-  /**
-   * The keyframes for this swing, built from the CURRENT tuning (the debug
-   * panel can change the wind-up): times in seconds, poses as absolute
-   * angles plus a drop below the screen in y.
-   */
-  function keys(): [number, GunPose][] {
-    const impact = tuning.shovelWindup;
-    // Symmetric around the impact (see the top of the file). Half of the
-    // sweep before, half after: the cocked key can't come before t = 0.
-    const half = Math.max(0.05, Math.min(impact, 0.1));
-    const cocked = Math.max(0, impact - half);
-    const follow = impact + half;
-    const hidden = (yaw: number): GunPose => ({ ...ZERO_POSE, y: -0.35, yaw, pitch: s.pitch - 0.6, roll: s.roll });
-    const out = (yaw: number): GunPose => ({ ...ZERO_POSE, yaw, pitch: s.pitch, roll: s.roll });
-    const k: [number, GunPose][] = [];
-    // Coming in from below (only if there's time before the cocked pose).
-    if (cocked > 0) k.push([Math.max(0, cocked - s.raiseTime), hidden(s.cockYaw)]);
-    k.push([cocked, out(s.cockYaw)], [follow, out(s.followYaw)], [follow + s.dropTime, hidden(s.followYaw - 0.3)]);
-    return k;
-  }
-
   return {
     root,
     play() {
@@ -88,21 +92,37 @@ export function createShovelView(): ShovelView {
     },
     update(dt) {
       time += dt;
-      const k = keys();
-      const end = k[k.length - 1][0];
+      // Phase boundaries, in seconds (read every frame: the debug panel can change them).
+      const impact = tuning.shovelWindup;
+      const raised = impact * s.raiseShare;
+      const dropStart = impact + s.holdTime;
+      const end = dropStart + s.dropTime;
       root.visible = time < end;
       if (!root.visible) return 0;
-      // poseAt works on a 0..1 timeline: our key times divided by the end.
-      const pose = poseAt(
-        k.map(([t, p]) => [t / end, p]),
-        time / end,
-      );
-      // Before the first key (coming in from below), poseAt has nothing yet: start hidden.
-      const p = time < k[0][0] ? k[0][1] : pose;
-      root.position.set(s.gripX, s.gripY + p.y, s.gripZ);
-      root.rotation.set(p.pitch, p.yaw, p.roll);
-      // How "out" it is: 1 between the cocked and the follow-through poses, fading at the ends.
-      return Math.max(0, Math.min(1, 1 + p.y / 0.35));
+
+      let pitch: number;
+      let drop = 0; // meters below the rest position (0 = out, HIDDEN_DROP = gone)
+      let roll = s.roll;
+      const top = s.raisedPitch + s.windBack;
+      if (time < raised) {
+        // 1. RAISE: over your head, creeping back (ease-out: it slows down and hangs there).
+        pitch = s.raisedPitch + s.windBack * smoothstep(time / raised);
+      } else if (time < impact) {
+        // 2. STRIKE: ease-in, u³. Its slope is 0 at the start and steepest at u = 1.
+        const u = (time - raised) / (impact - raised);
+        pitch = top + (s.impactPitch - top) * u * u * u;
+      } else {
+        // 3. BOING: |sin| so it only bounces UP off the target (it can't go through it).
+        const t = time - impact;
+        const decay = Math.exp(-s.boingDecay * t);
+        pitch = s.impactPitch + s.boingAmount * decay * Math.abs(Math.sin(s.boingFrequency * t));
+        roll += s.quiver * decay * Math.sin(s.boingFrequency * 1.3 * t);
+        // 4. DROP.
+        if (time > dropStart) drop = HIDDEN_DROP * smoothstep((time - dropStart) / s.dropTime);
+      }
+      root.position.set(s.gripX, s.gripY - drop, s.gripZ);
+      root.rotation.set(pitch, s.yaw, roll);
+      return 1 - drop / HIDDEN_DROP;
     },
   };
 }

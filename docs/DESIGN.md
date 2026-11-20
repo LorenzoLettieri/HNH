@@ -358,10 +358,11 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
   si compra all'armeria (600 vildenaro) e **prende il posto dello stivale sul tasto F**, come il
   coltello bowie di CoD Zombies: la pistola resta in mano, non è uno slot. Stesso attacco del calcio
   (cono davanti, niente attraverso i muri, spinta), numeri diversi: portata 2,2 m, arco ±60°,
-  **75 danni** (il triplo del calcio), spinta 15 m/s in avanti e 6 in alto, 0,12 s di carica, 0,6 s
-  di ricarica. Uccisione = premio di Stile "DI BADILE". A schermo: **spazzata da sinistra a destra**
-  con la sola mano sinistra, che non si vede (l'impugnatura resta sotto il bordo dello schermo); la pistola
-  si scosta. Se un giorno servirà, braccio vero in posa come quelli della carabina. Ha il **suo mazzo di carte** (§6c), pensato
+  **75 danni** (il triplo del calcio), spinta 15 m/s in avanti e 6 in alto, 0,16 s di carica, 0,6 s
+  di ricarica. Uccisione = premio di Stile "DI BADILE". A schermo: un **BONK dall'alto, quasi comico**:
+  il badile cala sul mirino di piatto, si ferma di colpo e rimbalza come una molla; la mano non si vede
+  (l'impugnatura resta sotto il bordo dello schermo), la pistola si scosta. Carica 0,16 s (il calcio 0,08):
+  il colpo dall'alto deve vedersi arrivare. Se un giorno servirà, braccio vero in posa come quelli della carabina. Ha il **suo mazzo di carte** (§6c), pensato
   attorno all'idea che **premia la velocità** (il danno × velocità è una carta, non la base):
   - **Slancio**: il danno cresce con la velocità orizzontale (fermo = normale, a velocità da bhop
     un ghoul muore in un colpo).
