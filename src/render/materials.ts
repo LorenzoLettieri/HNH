@@ -49,15 +49,33 @@ interface LookDef {
 /** Which images each look uses. Change a name here to change a material. */
 const LOOKS: Record<Look, LookDef> = {
   dirt: { side: 'floor_ground_dirt' },
-  wood: { side: 'timber_square_planks_cross', fit: true },
-  stone: { side: 'wall_brick_small_sand', top: 'floor_stone_sand_random' },
+
+  // Walls. The top of a building is hidden under its roof slab, but small things
+  // (a stagecoach, a wagon) show it: wooden walls get planks on top.
+  clapboard: { side: 'clapboard_bone', top: 'floor_wood_planks' },
+  clapboardRed: { side: 'clapboard_oxblood', top: 'floor_wood_planks' },
+  clapboardOchre: { side: 'clapboard_ochre', top: 'floor_wood_planks' },
+  // Vertical boards with a horizontal board at the bottom and near the top: anchored
+  // to the world, a 4 m wall gets them at its foot and under its roof.
+  boards: { side: 'wall_wood_trimsheet', top: 'floor_wood_planks' },
+  adobe: { side: 'adobe' },
+  stone: { side: 'wall_stone', top: 'floor_stone' },
+  brick: { side: 'Brick_1' },
+  tin: { side: 'tin' },
+
+  // Wood.
   planks: { side: 'floor_wood_planks' },
-  // Roof slabs: tiles on top; the edges and the underside (the ceiling, seen from
-  // inside a building or under the eaves) are boards.
+  timber: { side: 'timber' },
+  crate: { side: 'timber_square_planks_cross', fit: true },
+
+  // Roof slabs: the roofing on top; the edges and the underside (the ceiling, seen
+  // from inside a building or under the eaves) are boards.
   roof: { side: 'floor_wood_planks', top: 'shingles' },
+  tinRoof: { side: 'floor_wood_planks', top: 'tin' },
+  tiles: { side: 'floor_wood_planks', top: 'roof_clay_red_center' },
+
   metal: { side: 'iron_plates' },
   rock: { side: 'canyon_rock' },
-  brick: { side: 'Brick_1' },
 };
 
 const loader = new THREE.TextureLoader();

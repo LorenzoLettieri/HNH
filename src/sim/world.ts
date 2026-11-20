@@ -18,7 +18,30 @@ export interface Box {
    * How the renderer should draw it. The simulation ignores this.
    * No look = invisible collider (e.g. the collision box of a prop).
    */
-  look?: 'dirt' | 'wood' | 'stone' | 'planks' | 'roof' | 'metal' | 'rock' | 'brick';
+  look?:
+    | 'dirt'
+    // Walls: painted clapboard (bone white, barn red, mustard), raw vertical boards,
+    // adobe, grey stone, brick, corrugated tin.
+    | 'clapboard'
+    | 'clapboardRed'
+    | 'clapboardOchre'
+    | 'boards'
+    | 'adobe'
+    | 'stone'
+    | 'brick'
+    | 'tin'
+    // Wood: floors and decks, posts and beams, crates.
+    | 'planks'
+    | 'timber'
+    | 'crate'
+    // Roof slabs (the top differs, the edges and the underside are boards):
+    // wood shingles, corrugated tin, clay tiles.
+    | 'roof'
+    | 'tinRoof'
+    | 'tiles'
+    // Riveted iron (towers, floating platforms) and the canyon's rock.
+    | 'metal'
+    | 'rock';
 }
 
 /**

@@ -1,5 +1,7 @@
-// "Town": a western ghost town sunk into hell. Greybox stage: the shapes and
-// routes are what matters here; looks will come later.
+// "Town": a western ghost town sunk into hell. Every building has its own
+// material (look): painted clapboard, raw boards, adobe with clay tiles (the
+// Spanish part of town: church and bathhouse), stone, brick, corrugated tin.
+// How each look is drawn: src/render/materials.ts.
 //
 // Coordinates: X = east(+)/west(-), Z = south(+)/north(-), Y = up. Meters.
 // The player spawns at the south end of Main Street, looking north.
@@ -89,6 +91,7 @@ function cliffs(): Box[] {
 }
 
 // --- A building: solid block + a roof slab slightly wider (eaves) -----------------
+// roof: 'roof' = wood shingles, 'tinRoof' = corrugated tin, 'tiles' = clay tiles.
 function building(
   x: number,
   z: number,
@@ -96,10 +99,11 @@ function building(
   height: number,
   sizeZ: number,
   look: Box['look'],
+  roof: Box['look'] = 'roof',
 ): Box[] {
   return [
     box(x, 0, z, sizeX, height, sizeZ, look),
-    box(x, height, z, sizeX + 0.6, 0.3, sizeZ + 0.6, 'roof'),
+    box(x, height, z, sizeX + 0.6, 0.3, sizeZ + 0.6, roof),
   ];
 }
 
@@ -115,8 +119,8 @@ function building(
  */
 function porch(x: number, z1: number, z2: number, awningX: number, height: number): Box[] {
   const out: Box[] = [];
-  for (let z = z1; z <= z2 + 0.01; z += (z2 - z1) / 3) out.push(box(x, 0, z, 0.25, height, 0.25, 'wood'));
-  out.push(box(awningX, height, (z1 + z2) / 2, Math.abs(awningX - x) * 2 + 0.5, 0.2, z2 - z1 + 1, 'planks'));
+  for (let z = z1; z <= z2 + 0.01; z += (z2 - z1) / 3) out.push(box(x, 0, z, 0.25, height, 0.25, 'timber'));
+  out.push(box(awningX, height, (z1 + z2) / 2, Math.abs(awningX - x) * 2 + 0.5, 0.2, z2 - z1 + 1, 'tinRoof'));
   return out;
 }
 
@@ -125,11 +129,11 @@ function shed(x: number, z: number, sizeX: number, sizeZ: number, height: number
   const hx = sizeX / 2 - 0.2;
   const hz = sizeZ / 2 - 0.2;
   return [
-    box(x - hx, 0, z - hz, 0.4, height, 0.4, 'wood'),
-    box(x + hx, 0, z - hz, 0.4, height, 0.4, 'wood'),
-    box(x - hx, 0, z + hz, 0.4, height, 0.4, 'wood'),
-    box(x + hx, 0, z + hz, 0.4, height, 0.4, 'wood'),
-    box(x, height, z, sizeX + 0.4, 0.3, sizeZ + 0.4, 'roof'),
+    box(x - hx, 0, z - hz, 0.4, height, 0.4, 'timber'),
+    box(x + hx, 0, z - hz, 0.4, height, 0.4, 'timber'),
+    box(x - hx, 0, z + hz, 0.4, height, 0.4, 'timber'),
+    box(x + hx, 0, z + hz, 0.4, height, 0.4, 'timber'),
+    box(x, height, z, sizeX + 0.4, 0.3, sizeZ + 0.4, 'tinRoof'),
   ];
 }
 
@@ -144,14 +148,14 @@ function fence(minX: number, minZ: number, maxX: number, maxZ: number, gap: numb
   const halfX = (maxX - minX - gap) / 2; // length of each half of a north/south side
   const halfZ = (maxZ - minZ - gap) / 2;
   return [
-    box(minX + halfX / 2, 0, minZ, halfX, h, t, 'wood'),
-    box(maxX - halfX / 2, 0, minZ, halfX, h, t, 'wood'),
-    box(minX + halfX / 2, 0, maxZ, halfX, h, t, 'wood'),
-    box(maxX - halfX / 2, 0, maxZ, halfX, h, t, 'wood'),
-    box(minX, 0, minZ + halfZ / 2, t, h, halfZ, 'wood'),
-    box(minX, 0, maxZ - halfZ / 2, t, h, halfZ, 'wood'),
-    box(maxX, 0, minZ + halfZ / 2, t, h, halfZ, 'wood'),
-    box(maxX, 0, maxZ - halfZ / 2, t, h, halfZ, 'wood'),
+    box(minX + halfX / 2, 0, minZ, halfX, h, t, 'timber'),
+    box(maxX - halfX / 2, 0, minZ, halfX, h, t, 'timber'),
+    box(minX + halfX / 2, 0, maxZ, halfX, h, t, 'timber'),
+    box(maxX - halfX / 2, 0, maxZ, halfX, h, t, 'timber'),
+    box(minX, 0, minZ + halfZ / 2, t, h, halfZ, 'timber'),
+    box(minX, 0, maxZ - halfZ / 2, t, h, halfZ, 'timber'),
+    box(maxX, 0, minZ + halfZ / 2, t, h, halfZ, 'timber'),
+    box(maxX, 0, maxZ - halfZ / 2, t, h, halfZ, 'timber'),
   ];
 }
 
@@ -160,26 +164,41 @@ function fence(minX: number, minZ: number, maxX: number, maxZ: number, gap: numb
  * it: doors and windows. A box can't have a hole, so the wall is built from
  * pieces: for each opening, a piece below it (the sill: none for a door) and
  * one above it (the lintel), plus the full-height pieces between openings.
- * openings: [from z, to z, bottom y, top y].
+ * openings: [from z, to z, bottom y, top y]. The pieces share one look and, since
+ * textures are anchored to the world, it runs across them without seams.
  */
-function wallZ(x: number, z1: number, z2: number, height: number, openings: [number, number, number, number][]): Box[] {
+function wallZ(
+  x: number,
+  z1: number,
+  z2: number,
+  height: number,
+  openings: [number, number, number, number][],
+  look: Box['look'],
+): Box[] {
   const t = 0.3; // thickness
   const out: Box[] = [];
   let z = z1;
   for (const [a, b, bottom, top] of openings) {
-    if (a > z) out.push(box(x, 0, (z + a) / 2, t, height, a - z, 'planks')); // solid piece before
-    if (bottom > 0) out.push(box(x, 0, (a + b) / 2, t, bottom, b - a, 'planks')); // sill
-    out.push(box(x, top, (a + b) / 2, t, height - top, b - a, 'planks')); // lintel
+    if (a > z) out.push(box(x, 0, (z + a) / 2, t, height, a - z, look)); // solid piece before
+    if (bottom > 0) out.push(box(x, 0, (a + b) / 2, t, bottom, b - a, look)); // sill
+    out.push(box(x, top, (a + b) / 2, t, height - top, b - a, look)); // lintel
     z = b;
   }
-  if (z2 > z) out.push(box(x, 0, (z + z2) / 2, t, height, z2 - z, 'planks'));
+  if (z2 > z) out.push(box(x, 0, (z + z2) / 2, t, height, z2 - z, look));
   return out;
 }
 /** The same, for a wall along X (at z, from x1 to x2). Openings: [from x, to x, bottom y, top y]. */
-function wallX(z: number, x1: number, x2: number, height: number, openings: [number, number, number, number][]): Box[] {
+function wallX(
+  z: number,
+  x1: number,
+  x2: number,
+  height: number,
+  openings: [number, number, number, number][],
+  look: Box['look'],
+): Box[] {
   // Build it as a wall along Z, then swap X and Z in every box (a mirror
   // across the diagonal: same shape, rotated 90°).
-  return wallZ(z, x1, x2, height, openings).map((b) => ({ ...b, minX: b.minZ, maxX: b.maxZ, minZ: b.minX, maxZ: b.maxX }));
+  return wallZ(z, x1, x2, height, openings, look).map((b) => ({ ...b, minX: b.minZ, maxX: b.maxZ, minZ: b.minX, maxZ: b.maxX }));
 }
 
 /** Moves boxes up by `dy`: walls built from the ground (wallZ/wallX) become the walls of an upper floor. */
@@ -194,7 +213,7 @@ function raise(boxes: Box[], dy: number): Box[] {
  */
 function crateSteps(x: number, z: number, dx: number, dz: number, count: number, step: number): Box[] {
   const out: Box[] = [];
-  for (let i = 0; i < count; i++) out.push(box(x + dx * i * 1.2, 0, z + dz * i * 1.2, 1.2, step * (i + 1), 1.2, 'wood'));
+  for (let i = 0; i < count; i++) out.push(box(x + dx * i * 1.2, 0, z + dz * i * 1.2, 1.2, step * (i + 1), 1.2, 'crate'));
   return out;
 }
 
@@ -208,8 +227,8 @@ function cemetery(cx: number, cz: number): Box[] {
       if ((row + col) % 2 === 0) {
         out.push(box(x, 0, z, 0.7, 1, 0.25, 'stone')); // tombstone
       } else {
-        out.push(box(x, 0, z, 0.15, 1.4, 0.15, 'wood')); // cross: post...
-        out.push(box(x, 0.95, z, 0.7, 0.15, 0.15, 'wood')); // ...and arm
+        out.push(box(x, 0, z, 0.15, 1.4, 0.15, 'timber')); // cross: post...
+        out.push(box(x, 0.95, z, 0.7, 0.15, 0.15, 'timber')); // ...and arm
       }
     }
   }
@@ -332,40 +351,40 @@ export const town: World = {
     ...cliffs(),
 
     // --- SALOON (NW): roof 7.3 m, balcony on the street side at 3 m ---
-    ...building(-15, -14, 14, 7, 10, 'planks'),
+    ...building(-15, -14, 14, 7, 10, 'clapboardRed'),
     box(-7.25, 2.75, -14, 1.5, 0.25, 10, 'planks'), // balcony floor
-    box(-6.75, 0, -18.7, 0.3, 2.75, 0.3, 'wood'), // balcony posts
-    box(-6.75, 0, -9.3, 0.3, 2.75, 0.3, 'wood'),
-    box(-4.8, 0, -8.5, 1, 1, 1, 'wood'), // crate steps up to the balcony
-    box(-6, 0, -8.5, 1, 2, 1, 'wood'),
+    box(-6.75, 0, -18.7, 0.3, 2.75, 0.3, 'timber'), // balcony posts
+    box(-6.75, 0, -9.3, 0.3, 2.75, 0.3, 'timber'),
+    box(-4.8, 0, -8.5, 1, 1, 1, 'crate'), // crate steps up to the balcony
+    box(-6, 0, -8.5, 1, 2, 1, 'crate'),
     // A "staircase" of junk piled on the balcony, up to the roof. Steps of
     // 1 m: the max jump height is ~1.17 m, so 1.2 m steps would be too tall!
     // Climb it heading north (you arrive on the balcony from its south end).
-    box(-7.25, 3, -15.5, 1.2, 1, 1, 'wood'), // top 4
-    box(-7.25, 3, -16.5, 1.2, 2, 1, 'wood'), // top 5
-    box(-7.25, 3, -17.5, 1.2, 3, 1, 'wood'), // top 6
-    box(-7.25, 3, -18.5, 1.2, 4, 1, 'wood'), // top 7 → jump west onto the roof (7.3)
+    box(-7.25, 3, -15.5, 1.2, 1, 1, 'crate'), // top 4
+    box(-7.25, 3, -16.5, 1.2, 2, 1, 'crate'), // top 5
+    box(-7.25, 3, -17.5, 1.2, 3, 1, 'crate'), // top 6
+    box(-7.25, 3, -18.5, 1.2, 4, 1, 'crate'), // top 7 → jump west onto the roof (7.3)
 
     // --- WATER TOWER (west of the saloon): tank top at 8 m, 1.5 m from the
     //     saloon roof: a running jump from the roof lands you on it ---
-    box(-28.3, 0, -16, 0.5, 4, 0.5, 'wood'),
-    box(-24.3, 0, -16, 0.5, 4, 0.5, 'wood'),
-    box(-28.3, 0, -12, 0.5, 4, 0.5, 'wood'),
-    box(-24.3, 0, -12, 0.5, 4, 0.5, 'wood'),
-    box(-26.3, 4, -14, 5, 4, 5, 'planks'),
+    box(-28.3, 0, -16, 0.5, 4, 0.5, 'timber'),
+    box(-24.3, 0, -16, 0.5, 4, 0.5, 'timber'),
+    box(-28.3, 0, -12, 0.5, 4, 0.5, 'timber'),
+    box(-24.3, 0, -12, 0.5, 4, 0.5, 'timber'),
+    box(-26.3, 4, -14, 5, 4, 5, 'boards'), // the tank: staves, a band at its foot and one at the top
 
     // --- CHURCH (NE): roof 9.3 m ---
-    ...building(17, -16, 10, 9, 14, 'stone'),
+    ...building(17, -16, 10, 9, 14, 'adobe', 'tiles'), // a mission church: adobe and clay tiles
     // Bell tower against the church's north side, 22 m (reached with the
     // steam vent on the church roof).
-    box(17, 0, -25.5, 5, 22, 5, 'stone'),
+    box(17, 0, -25.5, 5, 22, 5, 'adobe'),
     // Belfry on top: four tall corner posts, a roof high enough not to bump
     // your head when the vent launches you, and the bell (you can walk under it).
-    box(14.8, 22, -27.7, 0.4, 4, 0.4, 'wood'),
-    box(19.2, 22, -27.7, 0.4, 4, 0.4, 'wood'),
-    box(14.8, 22, -23.3, 0.4, 4, 0.4, 'wood'),
-    box(19.2, 22, -23.3, 0.4, 4, 0.4, 'wood'),
-    box(17, 26, -25.5, 5.4, 0.4, 5.4, 'roof'),
+    box(14.8, 22, -27.7, 0.4, 4, 0.4, 'timber'),
+    box(19.2, 22, -27.7, 0.4, 4, 0.4, 'timber'),
+    box(14.8, 22, -23.3, 0.4, 4, 0.4, 'timber'),
+    box(19.2, 22, -23.3, 0.4, 4, 0.4, 'timber'),
+    box(17, 26, -25.5, 5.4, 0.4, 5.4, 'tiles'),
     box(17, 24.4, -25.5, 1, 1.2, 1, 'metal'), // the bell
 
     // --- Floating platforms over Main Street: saloon roof → church roof ---
@@ -374,10 +393,10 @@ export const town: World = {
     box(8.5, 8.6, -14, 3, 0.4, 3, 'metal'), // top 9.0
 
     // --- SHERIFF (SW): roof 5.3 m ---
-    ...building(-14, 14, 12, 5, 9, 'stone'),
+    ...building(-14, 14, 12, 5, 9, 'stone'), // the jail: stone walls
 
     // --- BANK (SE): roof 8.3 m ---
-    ...building(15, 14, 10, 8, 10, 'brick'),
+    ...building(15, 14, 10, 8, 10, 'brick', 'tinRoof'),
 
     // --- Floating platforms over Main Street: sheriff roof → bank roof ---
     box(-3, 5.6, 14, 3, 0.4, 3, 'metal'), // top 6.0
@@ -391,54 +410,54 @@ export const town: World = {
 
     // --- GALLOWS (west end of Cross Street): platform 2 m ---
     box(-30, 0, 0, 5, 2, 5, 'planks'),
-    box(-26.9, 0, 0, 1.2, 1, 1.2, 'wood'), // step
-    box(-31.5, 2, 0, 0.3, 3.5, 0.3, 'wood'),
-    box(-28.5, 2, 0, 0.3, 3.5, 0.3, 'wood'),
-    box(-30, 5.5, 0, 3.3, 0.3, 0.3, 'wood'),
+    box(-26.9, 0, 0, 1.2, 1, 1.2, 'crate'), // step
+    box(-31.5, 2, 0, 0.3, 3.5, 0.3, 'timber'),
+    box(-28.5, 2, 0, 0.3, 3.5, 0.3, 'timber'),
+    box(-30, 5.5, 0, 3.3, 0.3, 0.3, 'timber'),
 
     // --- CEMETERY (SW corner) ---
     ...cemetery(-30, 30),
 
     // --- RAILWAY (east side): two abandoned wagons, roofs at 3.2 m ---
-    box(30, 0, -8, 3, 3.2, 9, 'planks'),
-    box(30, 0, 8, 3, 3.2, 9, 'planks'),
-    box(27.6, 0, -3, 1.2, 1.2, 1.2, 'wood'), // crate to climb on the wagons
+    box(30, 0, -8, 3, 3.2, 9, 'clapboardOchre'),
+    box(30, 0, 8, 3, 3.2, 9, 'tin'),
+    box(27.6, 0, -3, 1.2, 1.2, 1.2, 'crate'), // crate to climb on the wagons
     // A longer train: the rail line becomes a wall with three narrow
     // crossings (5-7 m) between the wagons. Chokepoints for the horde.
-    box(30, 0, -22, 3, 3.2, 9, 'planks'),
-    box(30, 0, 22, 3, 3.2, 9, 'planks'),
-    box(27.6, 0, 20, 1.2, 1.2, 1.2, 'wood'), // crate to climb on the south wagon
+    box(30, 0, -22, 3, 3.2, 9, 'tin'),
+    box(30, 0, 22, 3, 3.2, 9, 'clapboardOchre'),
+    box(27.6, 0, 20, 1.2, 1.2, 1.2, 'crate'), // crate to climb on the south wagon
 
     // ===== CLOSE-QUARTERS PASS: filling the empty quarters with alleys =====
     // --- North: HOTEL (roof 5.3, crate steps on its east side) and UNDERTAKER ---
-    ...building(-14, -33, 10, 5, 8, 'brick'), // x -19..-9, z -37..-29
+    ...building(-14, -33, 10, 5, 8, 'clapboard'), // x -19..-9, z -37..-29
     ...crateSteps(-8, -29.8, 0, -1, 5, 1), // tops 1-5 m, going north → jump west onto the roof (5.3)
-    ...building(-33, -29, 8, 4, 7, 'planks'), // x -37..-29, z -32.5..-25.5
+    ...building(-33, -29, 8, 4, 7, 'boards'), // x -37..-29, z -32.5..-25.5
     // --- North: STABLE across Main Street from the hotel (Main Street north is 13 m wide) ---
-    ...building(8, -35, 8, 6, 8, 'wood'), // x 4..12, z -39..-31
-    box(-1, 0, -33, 4, 0.8, 1, 'wood'), // water trough in the middle of the street
+    ...building(8, -35, 8, 6, 8, 'clapboardRed', 'tinRoof'), // x 4..12, z -39..-31: a red barn
+    box(-1, 0, -33, 4, 0.8, 1, 'planks'), // water trough in the middle of the street
     // --- North-east: railway DEPOT against the cliff ---
-    ...building(38.5, -30, 7, 5, 10, 'planks'), // x 35..42, z -35..-25
+    ...building(38.5, -30, 7, 5, 10, 'clapboardOchre', 'tinRoof'), // x 35..42, z -35..-25
 
     // --- West: BLACKSMITH's open shed (forge + anvil) and a HOUSE ---
     ...shed(-36.5, -15, 7, 6, 3.5),
-    box(-37.5, 0, -15, 2, 1.1, 2, 'stone'), // forge
+    box(-37.5, 0, -15, 2, 1.1, 2, 'brick'), // forge
     box(-34.5, 0, -14, 1, 0.8, 0.6, 'metal'), // anvil
-    ...building(-36, 16, 7, 4, 8, 'wood'), // x -39.5..-32.5, z 12..20
+    ...building(-36, 16, 7, 4, 8, 'boards'), // x -39.5..-32.5, z 12..20
     // --- Cross Street west: an abandoned covered wagon in the middle, up on
     //     its wheels: you can SLIDE under it (1.1 m), the ghouls go around ---
-    box(-16, 1.1, 3, 4.5, 1.3, 2, 'planks'),
-    box(-17.9, 0, 2.1, 0.3, 1.1, 0.3, 'wood'), // wheels
-    box(-14.1, 0, 2.1, 0.3, 1.1, 0.3, 'wood'),
-    box(-17.9, 0, 3.9, 0.3, 1.1, 0.3, 'wood'),
-    box(-14.1, 0, 3.9, 0.3, 1.1, 0.3, 'wood'),
+    box(-16, 1.1, 3, 4.5, 1.3, 2, 'boards'),
+    box(-17.9, 0, 2.1, 0.3, 1.1, 0.3, 'timber'), // wheels
+    box(-14.1, 0, 2.1, 0.3, 1.1, 0.3, 'timber'),
+    box(-17.9, 0, 3.9, 0.3, 1.1, 0.3, 'timber'),
+    box(-14.1, 0, 3.9, 0.3, 1.1, 0.3, 'timber'),
 
     // ===== TRAVERSAL PASS: rewarding precise movement =====
     // --- High road 1: HOTEL roof (5.3) → two pillars (1×1 m tops!) → UNDERTAKER roof (4.3).
     //     Gaps 2.2-2.7 m: easy with a running jump, but the landings are tiny:
     //     hop from pillar to pillar without stopping. ---
-    box(-22, 0, -30.75, 1, 5, 1, 'wood'),
-    box(-25.5, 0, -30.75, 1, 4.7, 1, 'wood'),
+    box(-22, 0, -30.75, 1, 5, 1, 'timber'),
+    box(-25.5, 0, -30.75, 1, 4.7, 1, 'timber'),
     // --- High road 2: HOTEL roof (5.3) → two floating platforms (6.0, 6.7) → SALOON roof (7.3),
     //     which joins the old network (floating platforms → church → bell tower) ---
     box(-12, 5.6, -26.5, 2, 0.4, 2, 'metal'),
@@ -456,19 +475,19 @@ export const town: World = {
     //     the opening is 2.2 m tall, so a standing body fits while hopping in).
     //     Indoors the eye-bats can't see you, but the ghouls follow you in:
     //     real close quarters. The roof: wall jumps only. ---
-    ...wallZ(-23, 11, 19, 4, [[14, 16.2, 0, 2.6]]), // east wall, door
-    ...wallZ(-30.5, 11, 19, 4, [[13.5, 15.7, 0, 2.6]]), // west wall, door
-    ...wallX(11, -30.5, -23, 4, [[-28.2, -26.2, 0.8, 3]]), // north wall, window
-    ...wallX(19, -30.5, -23, 4, [[-27.7, -25.7, 0.8, 3]]), // south wall, window
+    ...wallZ(-23, 11, 19, 4, [[14, 16.2, 0, 2.6]], 'clapboardOchre'), // east wall, door
+    ...wallZ(-30.5, 11, 19, 4, [[13.5, 15.7, 0, 2.6]], 'clapboardOchre'), // west wall, door
+    ...wallX(11, -30.5, -23, 4, [[-28.2, -26.2, 0.8, 3]], 'clapboardOchre'), // north wall, window
+    ...wallX(19, -30.5, -23, 4, [[-27.7, -25.7, 0.8, 3]], 'clapboardOchre'), // south wall, window
     box(-26.75, 4, 15, 8.1, 0.3, 8.6, 'roof'),
-    box(-26.5, 0, 17.3, 3, 1, 0.6, 'wood'), // counter
-    box(-29.6, 0, 12, 1, 1.8, 1.4, 'wood'), // shelves in the corner
-    box(-24, 0, 12, 1, 1, 1, 'wood'), // crates
-    box(-24, 1, 12, 0.8, 0.8, 0.8, 'wood'),
+    box(-26.5, 0, 17.3, 3, 1, 0.6, 'planks'), // counter
+    box(-29.6, 0, 12, 1, 1.8, 1.4, 'planks'), // shelves in the corner
+    box(-24, 0, 12, 1, 1, 1, 'crate'), // crates
+    box(-24, 1, 12, 0.8, 0.8, 0.8, 'crate'),
 
     // --- South: a HOUSE west of the towers, a WAREHOUSE east of them ---
-    ...building(-16, 34, 7, 4, 6, 'planks'), // x -19.5..-12.5, z 31..37
-    ...building(25, 34, 10, 6, 8, 'brick'), // x 20..30, z 30..38
+    ...building(-16, 34, 7, 4, 6, 'clapboard'), // x -19.5..-12.5, z 31..37
+    ...building(25, 34, 10, 6, 8, 'brick', 'tinRoof'), // x 20..30, z 30..38
     ...crateSteps(19, 30.4, 0, 1, 6, 1), // tops 1-6 m, going south → jump east onto the roof (6.3)
     // --- South-east: GUNSMITH between the east tower and the warehouse (3 m alley to the tower,
     //     2.5 m to the bank). Two storeys: a solid ground floor, and UPSTAIRS the ARMORY, the
@@ -481,34 +500,34 @@ export const town: World = {
     box(16.1, 4, 29.7, 4.8, 0.3, 1.8, 'planks'), // x 13.7..18.5, z 28.8..30.6
     // The armory's walls, 3.4 m tall, standing on the upstairs floor.
     // Openings: [from, to, bottom, top], measured from the upstairs floor.
-    ...raise(wallX(28.35, 14, 22, 3.4, [[15.2, 17.6, 0, 2.9], [19.4, 21.2, 0.8, 2.9]]), 4.3), // south: wide door + window
-    ...raise(wallZ(14.15, 21.5, 28.5, 3.4, [[23.8, 26.6, 0.5, 2.9]]), 4.3), // west: big low window (from the tower side)
-    ...raise(wallZ(21.85, 21.5, 28.5, 3.4, [[24.2, 26.6, 0, 2.9]]), 4.3), // east: loading door (from the crates)
-    box(18, 4.3, 21.65, 8, 3.4, 0.3, 'planks'), // north wall: behind the vendor
-    box(18, 7.7, 25, 8.6, 0.3, 7.6, 'roof'), // roof, top 8.0
+    ...raise(wallX(28.35, 14, 22, 3.4, [[15.2, 17.6, 0, 2.9], [19.4, 21.2, 0.8, 2.9]], 'boards'), 4.3), // south: wide door + window
+    ...raise(wallZ(14.15, 21.5, 28.5, 3.4, [[23.8, 26.6, 0.5, 2.9]], 'boards'), 4.3), // west: big low window (from the tower side)
+    ...raise(wallZ(21.85, 21.5, 28.5, 3.4, [[24.2, 26.6, 0, 2.9]], 'boards'), 4.3), // east: loading door (from the crates)
+    box(18, 4.3, 21.65, 8, 3.4, 0.3, 'boards'), // north wall: behind the vendor
+    box(18, 7.7, 25, 8.6, 0.3, 7.6, 'tinRoof'), // roof, top 8.0
     // Inside: the counter along the north wall, the vendor behind it (shops, above),
     // a gun rack on each side of him.
-    box(18, 4.3, 23.3, 4, 1, 0.6, 'wood'), // counter, x 16..20, z 23.0..23.6
-    box(15.2, 4.3, 22.1, 1.8, 1.9, 0.5, 'wood'), // gun racks
-    box(20.8, 4.3, 22.1, 1.6, 1.9, 0.5, 'wood'),
+    box(18, 4.3, 23.3, 4, 1, 0.6, 'planks'), // counter, x 16..20, z 23.0..23.6
+    box(15.2, 4.3, 22.1, 1.8, 1.9, 0.5, 'timber'), // gun racks
+    box(20.8, 4.3, 22.1, 1.6, 1.9, 0.5, 'timber'),
     // East: a staircase of crates along the wall, going south (tops 0.95-3.8 m),
     // the last one right in front of the loading door (0.5 m below its threshold).
     // At x 22.4..23.6: clear of the upstairs floor's overhang (22.3), or you'd bump your head.
-    box(23, 0, 21.8, 1.2, 0.95, 1.2, 'wood'),
-    box(23, 0, 23, 1.2, 1.9, 1.2, 'wood'),
-    box(23, 0, 24.2, 1.2, 2.85, 1.2, 'wood'),
-    box(23, 0, 25.4, 1.2, 3.8, 1.2, 'wood'),
+    box(23, 0, 21.8, 1.2, 0.95, 1.2, 'crate'),
+    box(23, 0, 23, 1.2, 1.9, 1.2, 'crate'),
+    box(23, 0, 24.2, 1.2, 2.85, 1.2, 'crate'),
+    box(23, 0, 25.4, 1.2, 3.8, 1.2, 'crate'),
     // --- South-east corner: MINE ENTRANCE dug into the canyon wall (a rock outcrop + timber frame) ---
     box(37, 0, 39.5, 9, 5, 5, 'rock'),
-    box(34.5, 0, 36.8, 0.4, 3.2, 0.4, 'wood'),
-    box(38.5, 0, 36.8, 0.4, 3.2, 0.4, 'wood'),
-    box(36.5, 3.2, 36.8, 4.4, 0.4, 0.4, 'wood'),
+    box(34.5, 0, 36.8, 0.4, 3.2, 0.4, 'timber'),
+    box(38.5, 0, 36.8, 0.4, 3.2, 0.4, 'timber'),
+    box(36.5, 3.2, 36.8, 4.4, 0.4, 0.4, 'timber'),
     // --- East: TELEGRAPH OFFICE and the SAWMILL's open shed, east of the rail line ---
-    ...building(38.5, 5, 7, 4, 6, 'planks'), // x 35..42, z 2..8
+    ...building(38.5, 5, 7, 4, 6, 'clapboard'), // x 35..42, z 2..8
     ...shed(38.5, -17, 7, 6, 3.5),
-    box(38.5, 0, -17, 4, 0.9, 1.2, 'wood'), // log on the saw bench
+    box(38.5, 0, -17, 4, 0.9, 1.2, 'timber'), // log on the saw bench
     // --- West: BATHHOUSE next to the gallows (2.5 m alley between them) ---
-    ...building(-38.5, 1, 7, 5, 8, 'stone'), // x -42..-35, z -3..5
+    ...building(-38.5, 1, 7, 5, 8, 'adobe', 'tiles'), // x -42..-35, z -3..5
     // --- Cemetery fence (gaps in the middle of each side) ---
     ...fence(-36, 24, -24, 36, 3),
 
@@ -516,22 +535,22 @@ export const town: World = {
     ...porch(-6.4, 10, 18, -7.2, 2.6),
     ...porch(8.4, 10, 18, 9.2, 2.6),
     // A broken stagecoach in the north half (under the floating platforms)
-    box(1.5, 0, -19, 2.2, 2.2, 4.5, 'wood'),
+    box(1.5, 0, -19, 2.2, 2.2, 4.5, 'boards'),
     // The town WELL in the square: a stone ring, two posts and a little roof
     box(2, 0, 0, 2, 1, 2, 'stone'),
-    box(1.2, 1, 0, 0.2, 1.6, 0.2, 'wood'),
-    box(2.8, 1, 0, 0.2, 1.6, 0.2, 'wood'),
+    box(1.2, 1, 0, 0.2, 1.6, 0.2, 'timber'),
+    box(2.8, 1, 0, 0.2, 1.6, 0.2, 'timber'),
     box(2, 2.6, 0, 2.4, 0.2, 2.4, 'roof'),
     // Troughs and crates: low cover along Main Street
-    box(-5, 0, -3, 3, 0.8, 1, 'wood'),
-    box(8.5, 0, 4, 1, 0.8, 3, 'wood'),
-    box(-6.5, 0, 28, 1.2, 1.2, 1.2, 'wood'),
-    box(-6.8, 0, 29.3, 1, 1, 1, 'wood'),
-    box(6, 0, 31, 1.2, 1.2, 1.2, 'wood'),
+    box(-5, 0, -3, 3, 0.8, 1, 'planks'),
+    box(8.5, 0, 4, 1, 0.8, 3, 'planks'),
+    box(-6.5, 0, 28, 1.2, 1.2, 1.2, 'crate'),
+    box(-6.8, 0, 29.3, 1, 1, 1, 'crate'),
+    box(6, 0, 31, 1.2, 1.2, 1.2, 'crate'),
     // East side, between the church and the rail line: crate piles
-    box(25, 0, -16, 1.2, 1.2, 1.2, 'wood'),
-    box(25, 0, -17.2, 1.2, 2.2, 1.2, 'wood'),
-    box(36, 0, 12, 2, 1, 2, 'wood'),
-    box(37, 0, -10, 1.2, 1.2, 1.2, 'wood'),
+    box(25, 0, -16, 1.2, 1.2, 1.2, 'crate'),
+    box(25, 0, -17.2, 1.2, 2.2, 1.2, 'crate'),
+    box(36, 0, 12, 2, 1, 2, 'crate'),
+    box(37, 0, -10, 1.2, 1.2, 1.2, 'crate'),
   ],
 };
