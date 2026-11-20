@@ -23,7 +23,7 @@ export const tuning = {
 
   // --- Ground movement (Quake-style) ---
   /** Target speed when holding a direction on the ground, m/s. */
-  maxGroundSpeed: 8,
+  maxGroundSpeed: 6.5,
   /**
    * How fast you reach maxGroundSpeed. Each second you gain up to
    * groundAccel × maxGroundSpeed m/s: 14 × 8 = 112 m/s² → full speed in ~0.07 s.
@@ -83,7 +83,7 @@ export const tuning = {
    * Speed added by each successful hop (jumping within the grace window), m/s.
    * It shrinks as you go faster (see bhopBoostFalloff): speed grows, but slower and slower.
    */
-  bhopBoost: 1,
+  bhopBoost: 0.7,
   /** Above this speed the hop boost starts shrinking: boost × (this / speed)². m/s. */
   bhopBoostFalloff: 9,
 
@@ -99,7 +99,7 @@ export const tuning = {
   /** Minimum speed to start a slide instead of a plain crouch, m/s. */
   slideStartSpeed: 5,
   /** Speed added when a slide starts, m/s. */
-  slideBoost: 3,
+  slideBoost: 5,
   /** The boost only applies below this speed: no infinite acceleration by spamming. m/s. */
   slideBoostMaxSpeed: 13,
   /** Seconds before another slide can give a boost again. */
@@ -117,7 +117,7 @@ export const tuning = {
   /** Upward speed of a wall jump, m/s. */
   wallJumpUp: 8.5,
   /** Speed pushing you away from the wall, m/s (small: it's not a bounce). */
-  wallJumpPush: 2.5,
+  wallJumpPush: 3.5,
   /**
    * Apex-style: speed added along the wall, in the direction you're looking, m/s.
    * Shrinks at high speed like the hop boost (same falloff).
@@ -136,15 +136,15 @@ export const tuning = {
   /** Shots in the cylinder. */
   revolverAmmo: 6,
   /** Minimum seconds between two shots (it's semi-automatic: one click = one shot). */
-  revolverFireInterval: 0.22,
+  revolverFireInterval: 0.32,
   /** A click slightly before the gun is ready still fires as soon as it is, seconds. */
   revolverFireBuffer: 0.12,
   /** Seconds to reload all 6 rounds. */
-  revolverReloadTime: 1.1,
+  revolverReloadTime: 1.5,
   /** Spare bullets in your pockets at the start (the reload takes them from here). */
   revolverReserveStart: 36,
   /** Most spare bullets you can carry: pickups above this are wasted. */
-  revolverReserveMax: 72,
+  revolverReserveMax: 54,
   /**
    * Damage per bullet. Health is designed in "shots to kill" (see the
    * breakpoint table in docs/DESIGN.md): 50 = one shot on a basic ghoul.
@@ -175,7 +175,7 @@ export const tuning = {
   /** Spare shells at the start. */
   shotgunReserveStart: 12,
   /** Most spare shells you can carry. */
-  shotgunReserveMax: 24,
+  shotgunReserveMax: 20,
   /** Debug: reloading doesn't use up the reserve. */
   infiniteAmmo: false,
 
@@ -319,7 +319,7 @@ export const tuning = {
   /** Hits above this height (from the feet) are headshots, meters. */
   ghoulHeadHeight: 1.35,
   /** Walking speed, m/s (the player runs at 8: you can always outrun them). */
-  ghoulSpeed: 3.6,
+  ghoulSpeed: 4,
   /** How quickly it reaches its speed / turns (per second). */
   ghoulAccel: 6,
   /** Half the width of its COLLIDER (walls, alleys). Not what bullets hit: see ghoulHitWidth. */
@@ -339,7 +339,7 @@ export const tuning = {
   /** Starts an attack when the player is closer than this, meters. */
   ghoulAttackRange: 1.4,
   /** Duration of the attack animation, seconds. */
-  ghoulAttackTime: 0.7,
+  ghoulAttackTime: 0.5,
   /** Pause between attacks, seconds. */
   ghoulAttackCooldown: 0.6,
   /** Damage of one claw swipe. */
@@ -407,9 +407,9 @@ export const tuning = {
    */
   houndSpeed: 9.5,
   /** Sprint speed of the ambush, m/s: as fast as a good bunny hop. */
-  houndChargeSpeed: 13,
+  houndChargeSpeed: 12,
   /** While stalking it keeps about this far from you, meters. */
-  houndStalkDistance: 12,
+  houndStalkDistance: 14,
   /** It only launches an ambush from closer than this, meters. */
   houndChargeRange: 20,
   /**
@@ -566,7 +566,7 @@ export const tuning = {
    */
   eyebatPupilRadius: 0.25,
   /** Cruising speed, m/s (slower than you: you can always get away). */
-  eyebatSpeed: 6,
+  eyebatSpeed: 8,
   /** How quickly it reaches its speed / turns (per second). Low = floaty, drifting flight. */
   eyebatAccel: 2.5,
   /** Distance it likes to keep from the player, horizontally, meters. */
@@ -598,7 +598,7 @@ export const tuning = {
    */
   eyebatChargeTime: 0.7,
   /** Speed of its fireball, m/s. Slower than you (8 m/s): you can't outrun it, but you can dodge it. */
-  eyebatProjectileSpeed: 12,
+  eyebatProjectileSpeed: 13,
   /**
    * How much it LEADS the shot: 0 = aims where you are now (only hits you if
    * you stand still), 1 = aims exactly where you'll be if you keep going
@@ -623,18 +623,18 @@ export const tuning = {
    * AIM, the warning: the red laser is on and FOLLOWS you (where you'll be)
    * for this long, seconds. It gets brighter as the shot gets closer.
    */
-  sharpshooterAimTime: 1.3,
+  sharpshooterAimTime: 1,
   /**
    * LOCK: the laser stops following you and blinks, seconds; then the shot.
    * Your cue to change direction: the bullet goes where the laser points.
    */
-  sharpshooterLockTime: 0.4,
+  sharpshooterLockTime: 0.3,
   /**
    * How fast the rifle can turn while aiming, degrees/s. Moving steadily it
    * follows you exactly; a sudden cut leaves the laser behind for a moment.
    * Running across it fast and CLOSE (bunny hop at 5 m ≈ 150°/s) outruns it.
    */
-  sharpshooterTurnRate: 120,
+  sharpshooterTurnRate: 140,
   /**
    * How much it leads you (0 = where you are, 1 = where you'll be if you keep
    * going straight), like eyebatLeadFactor. It accounts for the lock time too.
@@ -645,8 +645,8 @@ export const tuning = {
   /** Lost sight of you while aiming for this long, seconds: it gives up and aims again later. */
   sharpshooterLoseSightTime: 0.4,
   /** Speed of its bullet, m/s: much faster than a fireball (12). Across 40 m in under half a second. */
-  sharpshooterBulletSpeed: 90,
-  sharpshooterBulletDamage: 30,
+  sharpshooterBulletSpeed: 100,
+  sharpshooterBulletDamage: 35,
   /** Push given to the player by its bullet, m/s. */
   sharpshooterBulletKnockback: 5,
   /** Radius of its bullet, meters (for hitting the player): small, it's a bullet. */
@@ -665,9 +665,9 @@ export const tuning = {
    * Walking to its perch, m/s: a bit slower than a ghoul (3.6), so you can
    * catch it on the way. While moving it doesn't shoot: that's your window.
    */
-  sharpshooterWalkSpeed: 3.4,
+  sharpshooterWalkSpeed: 4,
   /** Climbing a wall, m/s (ghoul: 2.8). Halfway up a wall it's an easy target. */
-  sharpshooterClimbSpeed: 2.4,
+  sharpshooterClimbSpeed: 3,
   /** Not seeing you for this long (seconds), it looks for a new perch. */
   sharpshooterRelocateTime: 3,
   /**
@@ -711,7 +711,7 @@ export const tuning = {
   /** Turn off to roam the map without enemies. */
   wavesEnabled: true,
   /** Weight budget of wave 1 (= number of enemies, if they all weigh 1). */
-  waveBaseCount: 6,
+  waveBaseCount: 8,
   /** Max weight alive at the same time, in any wave (reached around wave 17). */
   waveMaxAliveCap: 40,
   /** Enemy health goes up one step (+ base health) every this many waves. */
@@ -802,17 +802,17 @@ export const tuning = {
   styleStreak: 20,
   // Movement: style that keeps the chain alive without shooting.
   /** Above this horizontal speed (m/s) you earn style continuously (running is 8: bhop, slide, wall jumps)... */
-  styleSpeedMin: 10,
+  styleSpeedMin: 14,
   /** ...this many points per second at styleSpeedMin, more the faster you go (× speed / styleSpeedMin). */
-  styleSpeed: 10,
+  styleSpeed: 8,
   /** Seconds in the air: from this flight time on, landing gives style ("IN VOLO 1,8 s")... */
   styleAirTimeMin: 1,
   /** ...this many points per second of flight. */
-  styleAirTime: 25,
+  styleAirTime: 20,
   /** A wall jump: this × how many wall jumps in this flight (the third is worth 3×). */
-  styleWallJump: 15,
+  styleWallJump: 10,
   /** A bunny hop: this × how many hops in a row (up to 5×). */
-  styleBhop: 8,
+  styleBhop: 4,
   /** A jump out of a slide. */
   styleSlideJump: 15,
   /** Launched by a steam vent. */
@@ -827,13 +827,13 @@ export const tuning = {
   styleToreroDistance: 3,
   // Variety: the same action again and again is worth less and less.
   /** Every time you do an action, its next one is worth this much less (0.8 = -20%)... */
-  styleRepeatFactor: 0.8,
+  styleRepeatFactor: 0.6,
   /** ...but never less than this fraction of its points... */
   styleRepeatMin: 0.25,
   /** ...and it gets fresh again over time: fraction of its value recovered per second. */
   styleRepeatRecover: 0.15,
   /** Style points lost per point of damage taken (ghoul claw 20 → 60 points). */
-  styleHurtPerDamage: 3,
+  styleHurtPerDamage: 6,
   /**
    * HIGH NOON, the climax: when you reach the top rank, for this many seconds
    * the guns never run dry (no reloading, just shoot). Then the style starts over from zero.

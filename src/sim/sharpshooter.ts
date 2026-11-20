@@ -48,11 +48,11 @@ export const MUZZLE_FORWARD = 0.1;
 /** On the ground it stops quickly (pushed by a kick, it slides a bit), 1/s. */
 const GROUND_FRICTION = 8;
 /** Walking: how quickly it reaches its speed or turns (1/s, like ghoulAccel). */
-const WALK_ACCEL = 8;
+const WALK_ACCEL = 4;
 /** On its perch when its feet are this close to the node, meters. */
 const ARRIVE_DIST = 0.4;
 /** Just arrived: it takes position for this long before it can aim, seconds. */
-const SETTLE_TIME = 0.6;
+const SETTLE_TIME = 0.2;
 
 export function stepSharpshooter(
   s: SharpshooterEntity,
