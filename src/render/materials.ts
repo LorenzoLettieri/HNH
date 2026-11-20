@@ -1,11 +1,12 @@
 // Textures and materials for the level. The level data only says *what* a
-// box is made of (its `look`); this file decides how each look is drawn.
+// box is made of (its `look`); this file decides how each look is drawn,
+// and turns the hundreds of level boxes into a handful of meshes.
 import * as THREE from 'three';
 import type { Box } from '../sim/world';
+import { addHeightFog } from './heightFog';
 
 /** The material names a visible box can have. */
 type Look = NonNullable<Box['look']>;
-import { addHeightFog } from './heightFog';
 
 /**
  * Texel density: how many texture pixels cover one meter of surface.
@@ -21,16 +22,39 @@ export const PIXELS_PER_METER = 32;
  */
 const BASE = import.meta.env.BASE_URL;
 
-/** Which image each look uses. Swap a file name here to change a material. */
-const LOOKS: Record<Look, string> = {
-  dirt: `${BASE}textures/floor_ground_dirt.png`,
-  wood: `${BASE}textures/timber_square_planks_cross.png`,
-  stone: `${BASE}textures/wall_brick_small_sand.png`,
-  planks: `${BASE}textures/floor_wood_planks.png`,
-  roof: `${BASE}textures/roof_clay_red_center.png`,
-  metal: `${BASE}textures/Metal_Plate.png`,
-  rock: `${BASE}textures/wall_rock.png`,
-  brick: `${BASE}textures/Brick_1.png`,
+/**
+ * How a look is drawn. Texture names are files in public/textures/ (without `.png`).
+ * The 4 sides of a box use `side`; the top and the underside can have their own
+ * texture (if missing, they use `side` too): a roof slab with tiles on top and
+ * planks underneath, a stone block with paving on top...
+ */
+interface LookDef {
+  side: string;
+  top?: string;
+  bottom?: string;
+  /**
+   * How the texture is laid on each face:
+   * - false (default): anchored to the WORLD, at the same density everywhere. The
+   *   texture runs on seamlessly from one box to the next (a wall built from pieces
+   *   around a window looks like one wall), and wall textures start at the ground.
+   * - true: FITTED to each face, a whole number of times (at least once). For
+   *   textures that are a picture of the whole object, like the side of a crate.
+   */
+  fit?: boolean;
+}
+
+/** Which images each look uses. Change a name here to change a material. */
+const LOOKS: Record<Look, LookDef> = {
+  dirt: { side: 'floor_ground_dirt' },
+  wood: { side: 'timber_square_planks_cross', fit: true },
+  stone: { side: 'wall_brick_small_sand', top: 'floor_stone_sand_random' },
+  planks: { side: 'floor_wood_planks' },
+  // Roof slabs: tiles on top; the edges and the underside (the ceiling, seen from
+  // inside a building or under the eaves) are boards.
+  roof: { side: 'floor_wood_planks', top: 'roof_clay_red_center' },
+  metal: { side: 'Metal_Plate' },
+  rock: { side: 'wall_rock' },
+  brick: { side: 'Brick_1' },
 };
 
 const loader = new THREE.TextureLoader();
@@ -52,37 +76,147 @@ async function loadPixelTexture(url: string): Promise<THREE.Texture> {
   return tex;
 }
 
-const materials = {} as Record<Look, THREE.MeshStandardMaterial>;
+/** One material per texture (not per look: two looks using the same image share it). */
+const materials = new Map<string, THREE.MeshStandardMaterial>();
 
 /** Downloads all textures (in parallel) and builds the materials. Call once at startup. */
 export async function loadMaterials(): Promise<void> {
-  const looks = Object.keys(LOOKS) as Look[];
-  const textures = await Promise.all(looks.map((look) => loadPixelTexture(LOOKS[look])));
-  looks.forEach((look, i) => {
-    materials[look] = new THREE.MeshStandardMaterial({ map: textures[i], roughness: 1 });
-    addHeightFog(materials[look]);
-  });
+  const names = new Set<string>();
+  for (const look of Object.values(LOOKS)) {
+    names.add(look.side);
+    if (look.top) names.add(look.top);
+    if (look.bottom) names.add(look.bottom);
+  }
+  await Promise.all(
+    [...names].map(async (name) => {
+      const map = await loadPixelTexture(`${BASE}textures/${name}.png`);
+      const material = new THREE.MeshStandardMaterial({ map, roughness: 1 });
+      addHeightFog(material);
+      materials.set(name, material);
+    }),
+  );
 }
 
-/** Builds the mesh for one level box, with the texture tiled at a constant density.
- * Requires loadMaterials() to have finished. */
-export function createBoxMesh(b: Box): THREE.Mesh {
-  const sizeX = b.maxX - b.minX;
-  const sizeY = b.maxY - b.minY;
-  const sizeZ = b.maxZ - b.minZ;
-  const material = materials[b.look!];
-  const { width, height } = material.map!.image as HTMLImageElement;
-  const geometry = texturedBoxGeometry(sizeX, sizeY, sizeZ, width, height);
+// --- From boxes to meshes ---------------------------------------------------------
 
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.castShadow = true; // blocks sunlight
-  mesh.receiveShadow = true; // shows shadows cast by others
-  // BoxGeometry is centered on its origin: place the mesh at the box's center.
-  mesh.position.set(b.minX + sizeX / 2, b.minY + sizeY / 2, b.minZ + sizeZ / 2);
-  return mesh;
+type Vec3 = [number, number, number];
+
+/**
+ * The 6 faces of a box. For each: where it faces (`normal`) and its own "right" (`u`)
+ * and "up" (`v`) directions, as seen from outside. On the sides "up" is always +Y,
+ * so wall textures stand upright. u × v = normal: that also makes each face's
+ * triangles counter-clockwise seen from outside, which is how the GPU tells the
+ * front of a triangle from its back.
+ */
+const FACES: { normal: Vec3; u: Vec3; v: Vec3; part: 'side' | 'top' | 'bottom' }[] = [
+  { normal: [1, 0, 0], u: [0, 0, -1], v: [0, 1, 0], part: 'side' }, // east
+  { normal: [-1, 0, 0], u: [0, 0, 1], v: [0, 1, 0], part: 'side' }, // west
+  { normal: [0, 0, 1], u: [1, 0, 0], v: [0, 1, 0], part: 'side' }, // south
+  { normal: [0, 0, -1], u: [-1, 0, 0], v: [0, 1, 0], part: 'side' }, // north
+  { normal: [0, 1, 0], u: [1, 0, 0], v: [0, 0, -1], part: 'top' },
+  { normal: [0, -1, 0], u: [1, 0, 0], v: [0, 0, 1], part: 'bottom' },
+];
+
+/** A face's 4 corners, as steps along its (u, v) directions: counter-clockwise. */
+const CORNERS: [number, number][] = [
+  [-1, -1],
+  [1, -1],
+  [1, 1],
+  [-1, 1],
+];
+
+const dot = (a: Vec3, b: Vec3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+
+/** The faces of every box that uses the same texture, merged into one geometry. */
+interface Batch {
+  positions: number[];
+  normals: number[];
+  uvs: number[];
+  /** Triangles: 3 indices into the vertices each (two per face). */
+  indices: number[];
 }
 
 /**
+ * Builds the level's meshes: ONE mesh per texture, holding the faces of every box
+ * that uses it ("static batching").
+ *
+ * Why: every mesh costs a "draw call", a request from the CPU to the GPU (bind
+ * this material, this geometry, draw). One mesh per box meant hundreds of them
+ * (twice, with the shadow map), and the CPU side of each call costs much more
+ * than drawing a few triangles. The level never moves, so we can merge it once
+ * at load time: the GPU draws the same triangles, with a few calls instead.
+ * The price: a merged mesh can't be culled piece by piece (it's always drawn whole).
+ * Requires loadMaterials() to have finished. Boxes without a look are invisible
+ * colliders: skipped.
+ */
+export function createLevelMeshes(boxes: readonly Box[]): THREE.Mesh[] {
+  const batches = new Map<string, Batch>();
+
+  for (const b of boxes) {
+    if (!b.look) continue;
+    const look = LOOKS[b.look];
+    const center: Vec3 = [(b.minX + b.maxX) / 2, (b.minY + b.maxY) / 2, (b.minZ + b.maxZ) / 2];
+    const half: Vec3 = [(b.maxX - b.minX) / 2, (b.maxY - b.minY) / 2, (b.maxZ - b.minZ) / 2];
+
+    for (const face of FACES) {
+      // A box resting on the ground (or sunk into it) never shows its underside.
+      if (face.part === 'bottom' && b.minY <= 0) continue;
+
+      const name = look[face.part] ?? look.side;
+      let batch = batches.get(name);
+      if (!batch) {
+        batch = { positions: [], normals: [], uvs: [], indices: [] };
+        batches.set(name, batch);
+      }
+      const { width, height } = materials.get(name)!.map!.image as HTMLImageElement;
+
+      // Half the face's size along its u and v, and how far it is from the center.
+      const halfU = Math.abs(dot(face.u, half));
+      const halfV = Math.abs(dot(face.v, half));
+      const halfN = Math.abs(dot(face.normal, half));
+      // Fitted textures: how many whole copies fit on the face (at least one).
+      const copiesU = Math.max(1, Math.round((2 * halfU * PIXELS_PER_METER) / width));
+      const copiesV = Math.max(1, Math.round((2 * halfV * PIXELS_PER_METER) / height));
+
+      const first = batch.positions.length / 3; // index of this face's first vertex
+      for (const [su, sv] of CORNERS) {
+        const p: Vec3 = [0, 0, 0];
+        for (let i = 0; i < 3; i++) {
+          p[i] = center[i] + face.normal[i] * halfN + face.u[i] * su * halfU + face.v[i] * sv * halfV;
+        }
+        batch.positions.push(...p);
+        batch.normals.push(...face.normal);
+        if (look.fit) {
+          // From 0 to `copies` across the face: the image starts at the face's corner.
+          batch.uvs.push(((su + 1) / 2) * copiesU, ((sv + 1) / 2) * copiesV);
+        } else {
+          // World-anchored: the UV is the corner's position measured along the face's
+          // own right/up directions (a dot product = projection), in meters, then
+          // converted to "texture copies". Two neighboring faces on the same plane
+          // compute the same UV at the same point, so the texture has no seams.
+          batch.uvs.push((dot(p, face.u) * PIXELS_PER_METER) / width, (dot(p, face.v) * PIXELS_PER_METER) / height);
+        }
+      }
+      batch.indices.push(first, first + 1, first + 2, first, first + 2, first + 3);
+    }
+  }
+
+  return [...batches].map(([name, batch]) => {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(batch.positions, 3));
+    geometry.setAttribute('normal', new THREE.Float32BufferAttribute(batch.normals, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(batch.uvs, 2));
+    geometry.setIndex(batch.indices); // Three.js picks 16- or 32-bit indices by itself
+    const mesh = new THREE.Mesh(geometry, materials.get(name)!);
+    mesh.castShadow = true; // blocks sunlight
+    mesh.receiveShadow = true; // shows shadows cast by others
+    return mesh;
+  });
+}
+
+/**
+ * Box geometry for the props: the texture tiled at a constant density on each
+ * face, starting from the face's corner.
  * UVs are the 2D coordinates that say which point of the texture goes on each
  * vertex: (0,0) = bottom-left of the image, (1,1) = top-right.
  * BoxGeometry maps the whole image once on every face, so a 40 m floor would
