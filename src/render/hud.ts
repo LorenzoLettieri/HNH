@@ -1,10 +1,9 @@
 // HUD: health plate (healthPlate.ts), red flash, direction arc (damageIndicator.ts)
 // and head snap (cameraFeel.ts) when you get hit, low health (lowHealth.ts),
 // wave number, enemies left, fps, speed, score, wave banners, the style meter (styleMeter.ts) and its feed (styleFeed.ts)
-// and the death summary.
+// (the end-of-game screen is endScreen.ts).
 // Plain HTML/CSS elements (see index.html), updated from here.
 import { tuning } from '../sim/config';
-import type { Placement } from '../leaderboard';
 import type { SimEvent } from '../sim/events';
 import type { PlayerState } from '../sim/player';
 import { playBell, playPickup, playPlayerHurt } from '../audio/sfx';
@@ -21,11 +20,6 @@ import { hurtKick } from './cameraFeel';
 
 const damage = document.getElementById('damage')!;
 const pickupFlash = document.getElementById('pickup-flash')!;
-const death = document.getElementById('death')!;
-const deathWave = document.getElementById('death-wave')!;
-const deathKills = document.getElementById('death-kills')!;
-const deathScore = document.getElementById('death-score')!;
-const deathRank = document.getElementById('death-rank')!;
 const waveHud = document.getElementById('wave')!;
 const waveBox = document.getElementById('wave-box')!;
 const scoreHud = document.getElementById('score')!;
@@ -40,9 +34,6 @@ const bannerSub = document.getElementById('banner-sub')!;
 let bannerTime = 0; // seconds left of the current message
 let countdownShown = -1; // the countdown digit on screen (-1 = none)
 
-/** Death screen: seconds in all, and the last seconds spent fading out. */
-const DEATH_TIME = 4.5;
-const DEATH_FADE = 1.5;
 
 /**
  * Restarts a CSS animation: remove the class, force the browser to compute
@@ -54,21 +45,6 @@ function restartAnimation(el: HTMLElement, cls: string): void {
   el.classList.remove(cls);
   void el.offsetWidth;
   el.classList.add(cls);
-}
-
-/**
- * The leaderboard's answer on the death screen (main.ts sends the score at
- * death; the answer can arrive a moment later, while the curtain is down).
- */
-export function showDeathRank(placement: Placement | null): void {
-  if (!placement) showDeathNote('');
-  else if (placement.rank === 1) showDeathNote('NUOVO RECORD!');
-  else showDeathNote(`${placement.rank}° IN CLASSIFICA SU ${placement.total}`);
-}
-
-/** A line under the stats on the death screen (e.g. "practice game"). */
-export function showDeathNote(text: string): void {
-  deathRank.textContent = text;
 }
 
 /** kind: 'hot' = HIGH NOON colors, 'countdown' = small line on top. */
@@ -98,7 +74,6 @@ const PICKUP_TINTS = { bullets: 'rgb(255, 200, 70)', shells: 'rgb(255, 90, 40)',
 /** Coins tint the screen less: you pick up dozens, it shouldn't feel like a camera flash every time. */
 const COIN_FLASH = 0.4;
 let pickupTime = 0; // 0..1, the short flash when you collect something
-let deathTime = 0; // seconds left of the death message
 
 export function updateHud(game: GameState, events: SimEvent[], dt: number): void {
   const player: PlayerState = game.player;
@@ -127,16 +102,7 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
       if (!soundsPlayed.has(e.kind)) playPickup(e.kind);
       soundsPlayed.add(e.kind);
     }
-    if (e.type === 'playerDied') {
-      deathTime = DEATH_TIME;
-      deathWave.textContent = String(e.wave);
-      deathKills.textContent = String(e.stats.kills);
-      deathScore.textContent = String(e.stats.score);
-      deathRank.textContent = ''; // filled by showDeathRank when the leaderboard answers
-      restartAnimation(death, 'show');
-      playBell(1, 90); // one deep, slow toll: a funeral bell
-      bannerTime = 0; // no wave message over the curtain
-    }
+    if (e.type === 'playerDied') bannerTime = 0; // no wave message left over for the next game
     if (e.type === 'waveStart') {
       // Every waveHealthStep waves the ghouls get tougher: tell the player.
       const tougher = e.wave % tuning.waveHealthStep === 0;
@@ -168,7 +134,7 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
   fpsHud.textContent = `${Math.round(fps)} FPS`;
   // Speed on the ground (m/s), the number to watch when bunny hopping.
   speedHud.textContent = `${horizontalSpeed(player).toFixed(1)} m/s`;
-  if (w.phase === 'break' && w.number > 0 && w.breakTicks < 60 * 5 && bannerTime <= 0 && deathTime <= 0) {
+  if (w.phase === 'break' && w.number > 0 && w.breakTicks < 60 * 5 && bannerTime <= 0) {
     // A new stamp only when the digit changes, not every frame.
     const n = Math.ceil(w.breakTicks / 60);
     if (n !== countdownShown) {
@@ -198,7 +164,4 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
   pickupTime = Math.max(0, pickupTime - dt * 5); // gone in 0.2 s
   pickupFlash.style.opacity = String(pickupTime * 0.35);
 
-  deathTime = Math.max(0, deathTime - dt);
-  // Solid curtain, then it opens in the last DEATH_FADE seconds.
-  death.style.opacity = String(Math.min(1, deathTime / DEATH_FADE));
 }

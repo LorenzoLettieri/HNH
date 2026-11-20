@@ -192,24 +192,52 @@
           rgba(255, 190, 90, calc(var(--core) * 0.6 + var(--edge) * 0.12)) 50%,
           rgba(255, 110, 20, var(--edge)) 100%);
       }
-      /* --- Death screen (src/render/hud.ts): a dark curtain over the game, which
-         restarts from wave 1 behind it. Opacity from the TS; the title sinks slowly
-         into place (animation restarted at every death, .show). */
+      /* --- End-of-game screen (src/render/endScreen.ts), CoD Zombies style: a dark
+         curtain over the frozen game; the title sinks into place, the stats slide in
+         one by one (animation-delay set per row from the TS), the leaderboard box on
+         the right. All animations restart at every death (.show). */
       #death {
         position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
-        gap: 28px; pointer-events: none; opacity: 0; font-family: 'Rye', Georgia, serif;
+        gap: 18px; padding: 16px; box-sizing: border-box; font-family: 'Rye', Georgia, serif; color: #c8b8a0;
         z-index: 1; /* above every HUD element (they have none), below menu (5) and debug panel (10) */
-        background: radial-gradient(ellipse at center, rgba(30, 0, 0, 0.78), rgba(0, 0, 0, 0.96) 75%);
+        background: radial-gradient(ellipse at center, rgba(30, 0, 0, 0.82), rgba(0, 0, 0, 0.97) 75%);
       }
+      #death[hidden] { display: none; }
+      #death.show { animation: death-curtain 0.8s ease-out; }
+      @keyframes death-curtain { from { opacity: 0; } to { opacity: 1; } }
       #death-title {
         font-size: 84px; letter-spacing: 6px; color: #9a1c10;
         text-shadow: 0 0 2px #000, 3px 3px 0 #000, 0 0 30px rgba(120, 0, 0, 0.8);
       }
       #death.show #death-title { animation: death-sink 2.5s ease-out; }
       @keyframes death-sink { from { transform: scale(1.25); opacity: 0; } 30% { opacity: 1; } to { transform: scale(1); } }
-      #death-stats { display: flex; gap: 56px; text-align: center; }
-      #death-rank { min-height: 1.2em; font-size: 18px; color: #ffd060; }
-      .death-stat div:last-child { font-size: 40px; color: #c8b8a0; text-shadow: 0 0 2px #000, 2px 2px 0 #000; }
+      #death-survived { margin-top: -10px; font-size: 22px; letter-spacing: 4px; color: #c8b8a0; text-shadow: 2px 2px 0 #000; }
+      #death.show #death-survived { animation: death-fade 0.6s 0.5s ease-out both; }
+      #death-columns { display: flex; gap: 48px; align-items: flex-start; flex-wrap: wrap; justify-content: center; }
+      #death-columns > div { width: 360px; max-width: 100%; }
+      .death-heading { margin-bottom: 8px; font-size: 13px; letter-spacing: 3px; color: #8a7a62; border-bottom: 1px solid #5a3a20; padding-bottom: 4px; }
+      /* One stat: label left, value right, dotted "leader" line between them like an old ledger. */
+      .death-row { display: flex; align-items: baseline; gap: 8px; padding: 3px 0; font-size: 17px; letter-spacing: 1px; }
+      .death-row::after { content: ''; order: 1; flex: 1; border-bottom: 2px dotted #4a3424; }
+      .death-row span { white-space: nowrap; }
+      .death-row .death-value { order: 2; font-size: 22px; color: #f0d8a8; text-shadow: 2px 2px 0 #000; }
+      #death.show .death-row { animation: death-row-in 0.35s ease-out both; }
+      @keyframes death-row-in { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
+      @keyframes death-fade { from { opacity: 0; } to { opacity: 1; } }
+      #death-placement { min-height: 1.4em; margin-bottom: 6px; font-size: 18px; letter-spacing: 2px; color: #f0d8a8; }
+      #death-placement.record { font-size: 26px; color: #ffd060; text-shadow: 0 0 12px rgba(255, 160, 40, 0.8), 2px 2px 0 #000; animation: death-record 0.9s ease-in-out infinite alternate; }
+      @keyframes death-record { from { transform: scale(1); } to { transform: scale(1.06); } }
+      #death-leaderboard .board { margin-top: 0; font-family: monospace; color: #f0c080; }
+      #death.show #death-leaderboard { animation: death-fade 0.6s 1s ease-out both; }
+      #death-buttons { display: flex; gap: 16px; margin-top: 8px; }
+      #death.show #death-buttons { animation: death-fade 0.6s 1.2s ease-out both; }
+      #death-buttons button {
+        padding: 10px 22px; cursor: pointer; font: 18px 'Rye', Georgia, serif; letter-spacing: 2px;
+        background: #5a3a20; color: #f0c080; border: 2px solid #120604;
+      }
+      #death-buttons button:hover { background: #7a4a24; color: #fff0c0; }
+      #death-buttons kbd { font: bold 12px monospace; opacity: 0.7; margin-left: 6px; }
+      @media (max-width: 700px) { #death-title { font-size: 48px; } }
       /* --- Top corners: wave (left) and score (right), same "blood and ash" look ---
          A dark smudge behind each top corner, like the bottom ones. */
       #hud-smudge-top-left { left: -120px; top: -80px; bottom: auto; }
@@ -605,14 +633,27 @@
       <div id="health-number"></div>
       <div id="health-gauge"><div id="health-ghost"></div><div id="health-fill"></div></div>
     </div>
-    <div id="death">
+    <div id="death" hidden>
       <div id="death-title">SEI MORTO</div>
-      <div id="death-stats">
-        <div class="death-stat"><div class="hud-label">ONDATA</div><div id="death-wave"></div></div>
-        <div class="death-stat"><div class="hud-label">UCCISIONI</div><div id="death-kills"></div></div>
-        <div class="death-stat"><div class="hud-label">PUNTI</div><div id="death-score"></div></div>
+      <div id="death-survived"></div>
+      <div id="death-columns">
+        <div>
+          <div class="death-heading">LA TUA PARTITA</div>
+          <div id="death-stats"></div>
+        </div>
+        <div id="death-leaderboard">
+          <div class="death-heading">CLASSIFICA</div>
+          <div id="death-placement"></div>
+          <table class="board">
+            <thead><tr><th>#</th><th>Nome</th><th>Ondata</th><th>Punti</th></tr></thead>
+            <tbody id="death-board"></tbody>
+          </table>
+        </div>
       </div>
-      <div id="death-rank" class="hud-label"></div>
+      <div id="death-buttons">
+        <button id="death-restart">Ricomincia<kbd>Spazio</kbd></button>
+        <button id="death-menu">Menu<kbd>Esc</kbd></button>
+      </div>
     </div>
     <div id="hud-top-left">
       <div id="wave-box" hidden><div class="hud-label">ONDATA</div><div id="wave"></div><div id="enemies-left" class="hud-label"></div></div>

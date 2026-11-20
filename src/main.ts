@@ -35,7 +35,8 @@ import { createMapOverlay } from './render/mapOverlay';
 import { shopInReach } from './sim/shop';
 import './render/crosshair'; // paints the crosshair once
 import { adsAmount, GEAR } from './sim/weapon';
-import { showDeathNote, showDeathRank, updateHud } from './render/hud';
+import { updateHud } from './render/hud';
+import { createEndScreen } from './render/endScreen';
 import { updateAmmoHud } from './render/ammoHud';
 import { updateWeaponBar } from './render/weaponBar';
 import { updateMoneyHud } from './render/moneyHud';
@@ -183,6 +184,22 @@ window.addEventListener('keydown', (e) => {
   // one would move the focus again.
   if (e.code === 'Tab' && !paused && !isTypingInField(e)) e.preventDefault();
   if (e.repeat || isTypingInField(e)) return;
+  // End screen: Space/Enter = play again, Esc = menu (after a moment: you were
+  // probably pressing Space when you died). Nothing else while it's open.
+  if (endScreen.isOpen) {
+    if (!endScreen.acceptsInput) return;
+    if (e.code === 'Space' || e.code === 'Enter') {
+      e.preventDefault(); // or the focused button would be "clicked" too
+      endScreen.close();
+      updatePause();
+      requestLock(renderer.domElement);
+    }
+    if (e.code === 'Escape') {
+      endScreen.close();
+      updatePause();
+    }
+    return;
+  }
   // Debug keys that change the game: this game won't count (fairPlay.ts).
   if (['KeyB', 'KeyG', 'KeyV', 'KeyL', 'KeyJ'].includes(e.code)) markPractice('nemici o raccoglibili fatti apparire');
   if (e.code === 'KeyT') {
@@ -249,6 +266,20 @@ loadSettings();
 startGame(); // the first game: does it count for the leaderboard? (fairPlay.ts)
 const menu = createMenu({ onPlay: () => requestLock(renderer.domElement) });
 const shopMenu = createShopMenu({ onCloseClick: () => closeShop() });
+// The end-of-game screen (render/endScreen.ts). While it's open the game is
+// frozen (updatePause). "Ricomincia" grabs the mouse again: the new game
+// starts as soon as the browser gives it to us; "Menu" shows the pause menu.
+const endScreen = createEndScreen({
+  onRestart: () => {
+    endScreen.close();
+    updatePause();
+    requestLock(renderer.domElement);
+  },
+  onMenu: () => {
+    endScreen.close();
+    updatePause();
+  },
+});
 
 /**
  * Closes the shop and tries to grab the mouse back. The browser grants the
@@ -274,9 +305,11 @@ function closeShop(): void {
 // and with the SHOP open (docs/DESIGN.md: buying is a race against the horde).
 let paused = true; // until the first click
 function updatePause(): void {
-  paused = !isPointerLocked() && !debugPanel.visible && !shopMenu.isOpen && !grabPending;
-  setAudioPaused(paused);
-  menu.setOpen(paused);
+  // The end screen freezes the game too, but it isn't the pause menu, and
+  // the audio keeps going (the funeral bell).
+  paused = endScreen.isOpen || (!isPointerLocked() && !debugPanel.visible && !shopMenu.isOpen && !grabPending);
+  setAudioPaused(paused && !endScreen.isOpen);
+  menu.setOpen(paused && !endScreen.isOpen);
   shopMenu.setGrabHint(grabPending && !isPointerLocked());
 }
 initInput(renderer.domElement, (locked) => {
@@ -286,6 +319,7 @@ initInput(renderer.domElement, (locked) => {
     // Got the mouse back while the shop was open (a click on the game): close it.
     if (shopMenu.isOpen) shopMenu.close();
     grabPending = false;
+    if (endScreen.isOpen) endScreen.close(); // a click on the game = start again
   }
   updatePause();
 });
@@ -405,20 +439,23 @@ renderer.setAnimationLoop((now: number) => {
   shopMenu.onEvents(events);
   shopMenu.update(player, shopNearby, paused);
   updateHud(game, events, dt);
-  // Game over: send the score, unless it was a practice game (fairPlay.ts).
-  // Not awaited: the game goes on (the next run starts behind the death
-  // curtain) and the answer shows up when it comes.
+  // Game over: send the score (unless it was a practice game, fairPlay.ts)
+  // and show the end screen. The simulation has already reset everything for
+  // the next game: it waits, frozen, behind the screen. The submit isn't
+  // awaited here: the screen gets the Promise and shows the answer when it comes.
   for (const e of events) {
     if (e.type !== 'playerDied') continue;
     const practice = practiceGame();
-    if (practice) {
-      showDeathNote(`PARTITA DI PROVA · NON IN CLASSIFICA (${practice})`);
-    } else {
-      submitScore({ name: settings.playerName, score: e.stats.score, wave: e.wave, kills: e.stats.kills })
-        .then(showDeathRank)
-        .catch(() => showDeathRank(null)); // offline / server down: just no rank
-    }
-    startGame(); // the simulation already started the next one
+    // Nothing to send for a practice game or a game with no points.
+    const placement = practice || e.stats.score <= 0
+      ? null
+      : submitScore({ name: settings.playerName, score: e.stats.score, wave: e.wave, kills: e.stats.kills });
+    if (shopMenu.isOpen) shopMenu.close();
+    grabPending = false;
+    endScreen.open({ wave: e.wave, stats: e.stats, practice, placement });
+    document.exitPointerLock(); // free the mouse for the buttons
+    updatePause();
+    startGame(); // fairPlay: the next game starts clean
   }
   updateThreats(game.entities, player, camera, dt);
   navDebug.update(getFlowField(getNavGraph(world), game.navGoal));
