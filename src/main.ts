@@ -11,7 +11,7 @@ import { jumpToWave } from './sim/waves';
 import { DEFAULT_LEVEL, LEVELS } from './levels';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
 import { lookScale, updateCameraFeel } from './render/cameraFeel';
-import { createBoxMesh, loadMaterials } from './render/materials';
+import { createLevelMeshes, loadMaterials } from './render/materials';
 import { ATMOSPHERES, type Atmosphere } from './render/atmospheres';
 import { applySunLight, createSunLight } from './render/sunLight';
 import { applyFireLights, createFireLights, updateFireLights } from './render/fireLights';
@@ -104,7 +104,7 @@ function applyAtmosphere(a: Atmosphere): void {
 }
 
 // --- Level ----------------------------------------------------------------
-// The level is pure data (src/levels/). Here we build one textured mesh per box.
+// The level is pure data (src/levels/). Here we turn its boxes into textured meshes.
 // ?level=arena in the URL picks another level (see src/levels/index.ts).
 const params = new URLSearchParams(location.search);
 const world = LEVELS[params.get('level') ?? DEFAULT_LEVEL] ?? LEVELS[DEFAULT_LEVEL];
@@ -116,8 +116,8 @@ console.log(`seed: ${seed}`);
 const game = createGame(world, seed);
 
 await loadMaterials(); // top-level await: the game starts once textures are ready
-// Boxes without a `look` are invisible colliders (e.g. around props): not drawn.
-for (const b of world.boxes) if (b.look) scene.add(createBoxMesh(b));
+// All the level's boxes, merged into one mesh per texture (see createLevelMeshes).
+for (const mesh of createLevelMeshes(world.boxes)) scene.add(mesh);
 // Props (barrels, signs, torches, lanterns, grass): models + their flames.
 const props = createProps(scene, world);
 createFireLights(scene, props.fires);
