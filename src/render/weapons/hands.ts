@@ -83,11 +83,17 @@ export const fanSettings = {
  * flicks the hand up to the hammer and back. Less realistic, much more
  * readable: the view stays clear.
  */
-const READY = { x: -0.04, y: -0.035, z: 0.0, roll: 0 };
-/** How far the strike lifts the hand to reach the hammer (from READY.y up to ~0.085). */
-const REACH = 0.12;
+// It also waits closer to you (z), so the arm passes IN FRONT of the hand
+// holding the gun instead of going through it.
+const READY = { x: -0.07, y: -0.035, z: 0.12, roll: 0 };
+/** Where the palm hits the hammer (where Arm_L was posed in Blender). */
+const HAMMER = { x: -0.04, y: 0.085, z: 0.0 };
+/** How far the strike moves the hand to get from READY to the hammer. */
+const REACH_Y = HAMMER.y - READY.y;
+const REACH_X = HAMMER.x - READY.x;
+const REACH_Z = HAMMER.z - READY.z;
 /** Out of the screen: straight down from the ready pose, so the horizontal arm just sinks. */
-const LOWERED = { x: -0.05, y: -0.25, z: 0.03, roll: 0.15 };
+const LOWERED = { x: -0.07, y: -0.25, z: 0.12, roll: 0.15 };
 
 interface Key {
   t: number; // 0..1 along the strike
@@ -104,8 +110,8 @@ interface Key {
 // bottom-left, so even the strike doesn't cover the middle of the screen.
 const STRIKE: Key[] = [
   { t: 0, x: 0, y: 0, z: 0, roll: 0 }, // ready, low
-  { t: 0.15, x: 0.0, y: REACH, z: -0.02, roll: 0.45 }, // CONTACT: on the hammer
-  { t: 0.4, x: 0.03, y: REACH - 0.02, z: 0.03, roll: 0.35 }, // swept past it, toward you
+  { t: 0.15, x: REACH_X, y: REACH_Y, z: REACH_Z - 0.02, roll: 0.45 }, // CONTACT: on the hammer
+  { t: 0.4, x: REACH_X + 0.03, y: REACH_Y - 0.02, z: REACH_Z + 0.03, roll: 0.35 }, // swept past it, toward you
   { t: 1, x: 0, y: 0, z: 0, roll: 0 }, // back down to ready
 ];
 
