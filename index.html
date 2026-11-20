@@ -45,6 +45,18 @@
         width: 70px; box-sizing: border-box; background: #2a1810; color: inherit;
         border: 1px solid #5a3a20; font: 16px monospace; padding: 2px 4px;
       }
+      /* Leaderboard page: name box (spans two columns) and the table. */
+      .setting.name { grid-template-columns: auto 1fr; }
+      .setting input[type='text'] {
+        box-sizing: border-box; width: 100%; background: #2a1810; color: inherit;
+        border: 1px solid #5a3a20; font: 16px monospace; padding: 2px 6px;
+      }
+      .board { width: 100%; margin-top: 16px; border-collapse: collapse; text-align: left; }
+      .board th { padding: 4px 8px; color: #d02010; font: bold 13px Georgia, 'Times New Roman', serif; letter-spacing: 1px; border-bottom: 1px solid #5a3a20; }
+      .board td { padding: 3px 8px; }
+      .board td:nth-child(1), .board td:nth-child(3), .board td:nth-child(4) { text-align: right; }
+      .board td:nth-child(2) { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .board tbody tr:nth-child(1) td { color: #ffd060; }
       .hint { font-size: 12px; opacity: 0.7; text-align: left; max-width: 420px; }
       /* Commands list: key on the left, action on the right. */
       .keys { border-collapse: collapse; margin: 0 auto; text-align: left; }
@@ -194,6 +206,7 @@
       #death.show #death-title { animation: death-sink 2.5s ease-out; }
       @keyframes death-sink { from { transform: scale(1.25); opacity: 0; } 30% { opacity: 1; } to { transform: scale(1); } }
       #death-stats { display: flex; gap: 56px; text-align: center; }
+      #death-rank { min-height: 1.2em; font-size: 18px; color: #ffd060; }
       .death-stat div:last-child { font-size: 40px; color: #c8b8a0; text-shadow: 0 0 2px #000, 2px 2px 0 #000; }
       /* --- Top corners: wave (left) and score (right), same "blood and ash" look ---
          A dark smudge behind each top corner, like the bottom ones. */
@@ -488,8 +501,23 @@
 
         <div class="menu-page" data-page="main">
           <button id="menu-play">Gioca</button>
+          <button data-goto="leaderboard">Classifica</button>
           <button data-goto="settings">Impostazioni</button>
           <button data-goto="controls">Comandi</button>
+        </div>
+
+        <div class="menu-page" data-page="leaderboard" hidden>
+          <h2>Classifica</h2>
+          <label class="setting name">
+            <span>Il tuo nome</span>
+            <input type="text" id="set-name" autocomplete="off" spellcheck="false" />
+          </label>
+          <table class="board">
+            <thead><tr><th>#</th><th>Nome</th><th>Ondata</th><th>Punti</th></tr></thead>
+            <tbody id="leaderboard-rows"></tbody>
+          </table>
+          <p class="hint">Per ora la classifica è salvata solo in questo browser: presto sarà online, condivisa con gli amici.</p>
+          <button class="back" data-goto="main">Indietro</button>
         </div>
 
         <div class="menu-page" data-page="settings" hidden>
@@ -582,6 +610,7 @@
         <div class="death-stat"><div class="hud-label">UCCISIONI</div><div id="death-kills"></div></div>
         <div class="death-stat"><div class="hud-label">PUNTI</div><div id="death-score"></div></div>
       </div>
+      <div id="death-rank" class="hud-label"></div>
     </div>
     <div id="hud-top-left">
       <div id="wave-box" hidden><div class="hud-label">ONDATA</div><div id="wave"></div><div id="enemies-left" class="hud-label"></div></div>

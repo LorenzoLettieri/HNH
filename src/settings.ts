@@ -1,12 +1,14 @@
 // Player settings (the "Impostazioni" menu): values the player chooses,
 // saved in the browser's localStorage so they survive a page reload.
 // Mouse: sensitivity. Audio: volume, ear ringing, muffled world when hit.
+// Leaderboard: the name your scores are saved under.
 //
 // Every change goes through set(), which applies it to the system that uses
 // it and saves everything. The menu (menu.ts) only calls set() and reads
 // `settings` back.
 import { controlSettings } from './controls';
 import { setVolume, sfxSettings } from './audio/sfx';
+import { cleanName } from './leaderboard';
 
 /** localStorage key. One JSON object holds all the settings. */
 const STORAGE_KEY = 'hnh.settings';
@@ -29,6 +31,8 @@ export const settings = {
   earRinging: true,
   /** The world goes muffled for a moment when you get hit. */
   hitMuffle: true,
+  /** Name on the leaderboard ('' = not chosen yet: DEFAULT_NAME in leaderboard.ts). */
+  playerName: '',
 };
 export type Settings = typeof settings;
 
@@ -51,10 +55,16 @@ function apply(): void {
   sfxSettings.hitMuffle = settings.hitMuffle;
 }
 
-/** Keeps a value valid: numbers in range, booleans as booleans. */
+/** Keeps a value valid: numbers in range, booleans as booleans, names cleaned. */
 function clean<K extends keyof Settings>(key: K, value: unknown): Settings[K] | undefined {
   const fallback = settings[key];
   if (typeof fallback === 'boolean') return typeof value === 'boolean' ? (value as Settings[K]) : undefined;
+  if (typeof fallback === 'string') {
+    if (typeof value !== 'string') return undefined;
+    // An empty box stays empty (so the menu doesn't fight you while you type),
+    // anything else goes through the same cleaning the leaderboard applies.
+    return (value.trim() === '' ? '' : cleanName(value)) as Settings[K];
+  }
   const n = Number(value);
   if (!Number.isFinite(n)) return undefined;
   if (key === 'sensitivity') return Math.min(SENSITIVITY_MAX, Math.max(SENSITIVITY_MIN, n)) as Settings[K];

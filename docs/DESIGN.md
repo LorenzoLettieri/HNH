@@ -621,6 +621,23 @@ a caso o il **livello successivo di un patto che hai già**.
 
 ---
 
+### Classifica [IN CORSO]
+Una mini classifica online tra amici: alla morte si manda nome, punti, ondata e uccisioni; top 10
+nel menu (pagina "Classifica") e il piazzamento sulla schermata di morte.
+- **Servizio: Cloudflare Worker + D1** (gratuito, non va in pausa): un piccolo endpoint in
+  TypeScript (`POST /scores`, `GET /scores`) con un database SQLite. Scelto rispetto a Firebase
+  e Supabase perché è un vero mini-backend: la validazione sta sul server, ed è il primo pezzo
+  del futuro server autoritativo. Il sito resta statico su GitHub Pages.
+- **Il client non è fidato**: chiunque può mandare un punteggio falso dalla console. Tra amici
+  va bene; il server farà solo controlli di buon senso (nome pulito, numeri plausibili, un invio
+  ogni tanto per IP).
+- **Dopo**: verifica col **replay** (seed + `InputCommand` di ogni tick): il server rigioca la
+  partita e calcola lui il punteggio. Possibile perché la simulazione è deterministica (serve
+  però un seed per partita: ora dopo la morte la partita continua con lo stesso generatore).
+- Passi: (1) [FATTO] classifica finta nel `localStorage` dietro `submitScore`/`fetchTop`
+  (`src/leaderboard.ts`), nome nel menu, piazzamento alla morte; (2) Worker + D1;
+  (3) `fetch` veri al posto dei finti; (4) rifiniture.
+
 ### Bersagli d'acciaio [DECISO: tenerli]
 I bersagli di prova (piatti d'acciaio su palo, 3 colpi, si rialzano) restano: serviranno per un
 futuro **poligono di tiro / tutorial**.
