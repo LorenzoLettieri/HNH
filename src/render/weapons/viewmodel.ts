@@ -59,6 +59,9 @@ export const viewmodelSettings = {
   switchDrop: 0.22,
 };
 
+/** How far the revolver's hammer falls forward when it fires, radians (the model has it cocked, at 0). */
+const HAMMER_FIRED = 0.5;
+
 /** Smoothly moves `current` toward `target` (same exponential easing as cameraFeel). */
 function approach(current: number, target: number, rate: number, dt: number): number {
   return target + (current - target) * Math.exp(-rate * dt);
@@ -197,7 +200,6 @@ export function createViewmodel(): Viewmodel {
       flashTime = 0.05;
       if (weapon === 'shotgun') {
         viewKick = s.shotgunViewKick;
-        shotgun.onFire(barrel);
         shotgunFlash.position.copy(shotgun.muzzles[barrel]);
         shotgunFlash.material.rotation = Math.random() * Math.PI;
         shotgunFlash.scale.setScalar(0.15 + Math.random() * 0.06);
@@ -275,7 +277,7 @@ export function createViewmodel(): Viewmodel {
       cylinderAngle = approach(cylinderAngle, cylinderTarget, 25, dt);
       hammerTime += dt;
       const cocked = Math.min(1, Math.max(0, (hammerTime - 0.06) / (tuning.revolverFireInterval * 0.6)));
-      gun.hammer.rotation.x = -0.6 * cocked; // 0 = down (just fired), -0.6 = cocked
+      gun.hammer.rotation.x = HAMMER_FIRED * (1 - cocked); // 0 = cocked, as modeled
 
       // --- Reload: tilt the gun away, spin the cylinder, bring it back ---
       let reload = 0;
@@ -291,7 +293,7 @@ export function createViewmodel(): Viewmodel {
       }
       gun.cylinder.rotation.z = cylinderAngle;
 
-      // --- Shotgun: hammers, barrels, shells (see shotgunView.ts) ---
+      // --- Shotgun: reload swing (see shotgunView.ts) ---
       const shotgunReload = shotgun.update(dt, player);
       if (isShotgun) reload = 0; // the revolver's reload pose doesn't apply
 
