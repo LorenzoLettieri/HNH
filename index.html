@@ -74,22 +74,15 @@
         position: fixed; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px;
         pointer-events: none; image-rendering: pixelated;
       }
-      /* Hitmarker: 4 short diagonal strokes around the crosshair, flashed on hit.
-         The color is a CSS variable: white for a hit, red for a knockdown. */
+      /* Hitmarker: painted by src/render/hitmarker.ts (color and size per kind of hit),
+         here only centering and the fade-out (opacity, which dark modes don't repaint). */
       #hitmarker {
-        --c: #fff;
-        position: fixed; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px;
+        position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
         pointer-events: none; opacity: 0;
-        background:
-          linear-gradient(45deg, transparent 44%, var(--c) 44%, var(--c) 56%, transparent 56%) top left / 7px 7px no-repeat,
-          linear-gradient(-45deg, transparent 44%, var(--c) 44%, var(--c) 56%, transparent 56%) top right / 7px 7px no-repeat,
-          linear-gradient(-45deg, transparent 44%, var(--c) 44%, var(--c) 56%, transparent 56%) bottom left / 7px 7px no-repeat,
-          linear-gradient(45deg, transparent 44%, var(--c) 44%, var(--c) 56%, transparent 56%) bottom right / 7px 7px no-repeat;
       }
       #hitmarker.hit { animation: hitmarker 0.15s ease-out; }
-      #hitmarker.kill { --c: #ff4020; animation: hitmarker 0.4s ease-out; width: 30px; height: 30px; margin: -15px 0 0 -15px; }
-      /* Headshot: gold and bigger. */
-      #hitmarker.head { --c: #ffd030; width: 34px; height: 34px; margin: -17px 0 0 -17px; animation-duration: 0.45s; }
+      #hitmarker.kill { animation: hitmarker 0.4s ease-out; }
+      #hitmarker.head { animation-duration: 0.45s; }
       @keyframes hitmarker { from { opacity: 1; } to { opacity: 0; } }
       /* --- Health, bottom-left (src/render/healthPlate.ts) ---
          No frame: the number lies on the picture, like in Prodeus. Dark dried-blood
@@ -518,7 +511,7 @@
     <div id="hud-smudge-top-left" class="hud-smudge"></div>
     <div id="hud-smudge-top-right" class="hud-smudge"></div>
     <canvas id="crosshair"></canvas>
-    <div id="hitmarker"></div>
+    <canvas id="hitmarker"></canvas>
     <div id="weapon-bar"></div>
     <div id="ammo-box"><div id="ammo-rounds"></div><div id="ammo-reserve"></div></div>
     <div id="hurt-arcs"></div>

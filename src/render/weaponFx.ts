@@ -18,6 +18,7 @@ import {
 } from '../audio/sfx';
 import type { WeaponId } from '../sim/weapon';
 import { createImpacts } from './impacts';
+import { showHitmarker } from './hitmarker';
 import { spawnBlood, spawnSparks } from './particles';
 
 /** How long the muzzle flash lights up the surroundings, seconds. */
@@ -33,20 +34,6 @@ export interface WeaponFx {
   onShot: ((weapon: WeaponId, barrel: number) => void)[];
   onReload: ((weapon: WeaponId) => void)[];
   onKick: (() => void)[];
-}
-
-/**
- * Hitmarker: the little X around the crosshair that confirms a hit.
- * Pure CSS: we add a class, and remove it after a moment. Restarting a CSS
- * animation needs a "reflow" in between (reading offsetWidth forces it).
- */
-const hitmarker = document.getElementById('hitmarker');
-function showHitmarker(kill: boolean, headshot: boolean): void {
-  if (!hitmarker) return;
-  hitmarker.classList.remove('hit', 'kill', 'head');
-  void hitmarker.offsetWidth;
-  hitmarker.classList.add(kill ? 'kill' : 'hit');
-  if (headshot) hitmarker.classList.add('head');
 }
 
 export function createWeaponFx(scene: THREE.Scene): WeaponFx {
