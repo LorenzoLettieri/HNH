@@ -254,7 +254,9 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
   - **Morso** (15 danni, preavviso 0,25 s), poi **scappa** per 1,2 s e ricomincia.
   - Non si arrampica: se sei su un tetto raggiungibile solo arrampicandosi, ti aspetta sotto.
   - **Aspetto**: segugio scheletrico color carbone, costole e spina dorsale scoperte, cornetti, collare
-    d'ottone chiodato, crepe di brace che si accendono quando carica. Sprite con **tre viste** (lato,
+    d'ottone chiodato, crepe di brace. **Deve vedersi bene** (playtest: di giorno spariva, marrone su marrone):
+    occhi grandi, **criniera di brace** luminosa lungo la schiena che ne disegna la sagoma, **scia di braci**
+    mentre corre; tutto si accende di più quando carica. Sprite con **tre viste** (lato,
     fronte, retro) scelte dall'angolo, perché ti gira attorno e va visto di profilo.
   - **Critico**: colpi sopra **0,7 m** (testa e orecchie) = ×3, come la testa del ghoul.
   - Bot di prova (non spara mai), 3 cani: ululato in media a ~90° da dove guardi (di lato o alle
