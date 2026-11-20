@@ -1,12 +1,14 @@
-// The gunslinger's arms: bare hands and a shirt with rolled-up sleeves,
-// low-poly with flat colors like the guns. A standalone model,
-// public/models/arms.glb, with two objects:
+// The gunslinger's arms: bare arms from "PSX First Person Arms" by
+// Drillimpact (CC0, original in assets-src/psx-arms/), posed in Blender on
+// our revolver and saved as a standalone model, public/models/arms.glb
+// (static meshes: the pose is baked into the vertices), with two objects:
 //   Arm_R  wrapped around the revolver's grip, in the gun's coordinates
 //          (origin = the right hand on the grip): it goes in at the origin;
 //   Arm_L  open hand, palm down, origin = PALM CENTER (the point the
 //          keyframes below move): it "fans" the hammer at every shot, the
 //          classic western gunslinger move.
-// Rigid meshes, no skeleton: the left arm is moved as a whole.
+// No skeleton in the file: the left arm is moved as a whole. (The original
+// rig, with IK and 18 animations, is in assets-src/ for when we need it.)
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
