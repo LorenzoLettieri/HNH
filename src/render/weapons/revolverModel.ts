@@ -25,7 +25,7 @@ export function createRevolverModel(): RevolverModel {
     muzzle: new THREE.Vector3(0, 0.044, -0.245),
   };
   model.root.add(
-    loadGunModel({ file: 'revolver.glb' }, (gltf) => {
+    loadGunModel('revolver.glb', (gltf) => {
       model.cylinder = gltf.getObjectByName('cylinder') ?? model.cylinder;
       model.hammer = gltf.getObjectByName('hammer') ?? model.hammer;
     }),

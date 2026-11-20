@@ -10,3 +10,5 @@ site: what the game loads lives in `public/`. Authors and licenses are in
   zip we kept the rigged model (`arms_rig.glb`, `arms_rig.blend`) and the two
   skin textures (`arms_01.png` bare, `arms_gloves_01.png` fingerless gloves);
   left out the FBX and the "Old Versions" folder.
+- `double-barrel/`: "Shotgun Double Barrel" by CreativeTrio (Poly Pizza), the
+  original of `public/models/doubleBarrel.glb`.
