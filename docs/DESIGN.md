@@ -644,7 +644,7 @@ nel menu (pagina "Classifica") e il piazzamento sulla schermata di morte.
   però un seed per partita: ora dopo la morte la partita continua con lo stesso generatore).
 - Passi: (1) [FATTO] classifica finta nel `localStorage` dietro `submitScore`/`fetchTop`
   (`src/leaderboard.ts`), nome nel menu, piazzamento alla morte; (2) [FATTO] Worker + D1 (`server/`);
-  (3) `fetch` veri al posto dei finti; (4) rifiniture.
+  (3) [FATTO] `fetch` veri al posto dei finti; (4) rifiniture.
 
 ### Bersagli d'acciaio [DECISO: tenerli]
 I bersagli di prova (piatti d'acciaio su palo, 3 colpi, si rialzano) restano: serviranno per un
