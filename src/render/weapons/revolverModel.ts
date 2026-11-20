@@ -1,7 +1,7 @@
-// The revolver in your hand: "Revolver" by Quaternius, modified in Blender
-// by tools/blender/revolver.py (brown grip, cylinder and hammer split off as
-// separate parts, already in the viewmodel's conventions: barrel along -Z,
-// meters, origin = the right hand on the grip) → public/models/revolver.glb.
+// The revolver in your hand: public/models/revolver.glb, our own model,
+// started from "Revolver" by Quaternius (brown grip, cylinder and hammer as
+// separate parts). It's already in the viewmodel's conventions: barrel along
+// -Z, meters, origin = the right hand on the grip, so it loads as is.
 import * as THREE from 'three';
 import { loadGunModel } from './gunModel';
 

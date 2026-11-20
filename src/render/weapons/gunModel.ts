@@ -18,8 +18,8 @@ export interface GunFit {
   /** File name in public/models/. */
   file: string;
   /**
-   * The corrections below are optional: a model fixed in Blender (like the
-   * revolver, see tools/blender/revolver.py) is already in our conventions.
+   * The corrections below are optional: a model already made in our
+   * conventions (like public/models/revolver.glb) needs none.
    */
   /** Euler rotation (radians) that points the barrel along -Z with the top up. */
   rotation?: [number, number, number];

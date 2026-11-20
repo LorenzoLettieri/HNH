@@ -6,8 +6,7 @@
 
 ## 3D models (`public/models/`)
 - `revolver.glb`: **Revolver** by Quaternius, CC0. From Poly Pizza: https://poly.pizza/m/9C26wSpMS0
-  Modified for the game by `tools/blender/revolver.py` (brown grip, cylinder and hammer as separate parts);
-  the original file is `tools/blender/sources/revolver_quaternius.glb`.
+  Modified for the game (brown grip, cylinder and hammer as separate parts, scaled and turned for the viewmodel).
 - `doubleBarrel.glb`: **Shotgun Double Barrel** by CreativeTrio. From Poly Pizza: https://poly.pizza/m/k0fA37Awl8
   (**license to be checked** on that page: CC0 or CC-BY; if CC-BY, this line is the attribution).
 - `arms.glb`, `leg.glb`, `shotgun.glb`: made for this project (`tools/blender/`).
