@@ -47,21 +47,6 @@ function phase(t: number, a: number, b: number): number {
   return Math.min(1, Math.max(0, (t - a) / (b - a)));
 }
 
-/** Where the arms hold this gun (rough: the hands will be redone for the new models). */
-export const shotgunArmSettings = {
-  /** Turn of the right arm around X, radians (negative = fist leans forward, like this grip). */
-  rightTilt: -0.3,
-  rightScale: 1.1,
-  /** Left palm under the fore-end, in the gun's coordinates. */
-  leftX: -0.035,
-  leftY: 0.03,
-  leftZ: -0.3,
-  leftPitch: 0,
-  /** After the roll, a turn around the vertical axis sends the forearm back and down instead of to the right. */
-  leftYaw: -1.0,
-  leftRoll: Math.PI / 2,
-};
-
 export interface ShotgunView {
   /** Goes inside the viewmodel holder. Its origin is the right hand on the grip. */
   root: THREE.Group;
@@ -96,21 +81,9 @@ export function createShotgunView(): ShotgunView {
     }),
   );
 
-  // Arms: the same model as the revolver's (render/weapons/hands.ts), moved
-  // to fit this gun. The right arm is modeled frozen around the REVOLVER's
-  // grip, so we move the whole arm: turn it by `rightTilt`, then shift it so
-  // the revolver's grip center lands on this gun's. The math: we want
-  // R·p_revolver + t = p_shotgun, so t = p_shotgun − R·p_revolver.
-  const a = shotgunArmSettings;
-  const hands = createHands();
-  hands.right.rotation.set(a.rightTilt, 0, 0);
-  hands.right.scale.setScalar(a.rightScale);
-  const revolverGrip = new THREE.Vector3(0, -0.028, 0.03).multiplyScalar(a.rightScale);
-  const shotgunGrip = new THREE.Vector3(0.004, -0.012, 0.014);
-  hands.right.position.copy(shotgunGrip).sub(revolverGrip.applyEuler(hands.right.rotation));
-  hands.left.position.set(a.leftX, a.leftY, a.leftZ);
-  hands.left.rotation.set(a.leftPitch, a.leftYaw, a.leftRoll);
-  root.add(hands.right, hands.left);
+  // One hand only: the right arm posed on this gun's grip (see hands.ts).
+  // The left hand stays out of view.
+  root.add(createHands().rightShotgun);
 
   let reloadTime = -1; // seconds since the reload started (-1 = not reloading)
 

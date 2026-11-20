@@ -39,17 +39,19 @@ export const viewmodelSettings = {
   kickViewPunch: 0.03,
 
   // --- Shotgun (the origin of its model is the right hand on the grip) ---
-  shotgunX: 0.11,
-  shotgunY: -0.15,
-  shotgunZ: -0.26,
+  shotgunX: 0.12,
+  shotgunY: -0.1,
+  shotgunZ: -0.32,
+  /** Barrels raised, radians: held one-handed, fairly upright (the arm in arms.glb is posed for this). */
+  shotgunPitch: 0.35,
   /** Turned inward, toward the crosshair, radians. */
-  shotgunYaw: 0.12,
+  shotgunYaw: 0.03,
   /** Tilted on its side (roll), radians: shows a bit more of the gun's flank. */
-  shotgunRoll: 0.1,
+  shotgunRoll: 0.05,
   /** Kick up on each shot, radians: heavier than the revolver... */
-  shotgunRecoil: 0.35,
+  shotgunRecoil: 0.2,
   /** ...and it slams back into your shoulder, meters. */
-  shotgunRecoilBack: 0.09,
+  shotgunRecoilBack: 0.11,
   shotgunRecoilRecovery: 7,
   shotgunViewKick: 0.06,
 
@@ -330,8 +332,8 @@ export function createViewmodel(): Viewmodel {
       // Each weapon has its own rest pose and recoil; everything else
       // (sway, bob, slide, kick, switch) is shared.
       const rest = isShotgun
-        ? { x: s.shotgunX, y: s.shotgunY, z: s.shotgunZ, yaw: s.shotgunYaw, roll: s.shotgunRoll }
-        : { x: s.x, y: s.y, z: s.z, yaw: -0.04, roll: 0 };
+        ? { x: s.shotgunX, y: s.shotgunY, z: s.shotgunZ, pitch: s.shotgunPitch, yaw: s.shotgunYaw, roll: s.shotgunRoll }
+        : { x: s.x, y: s.y, z: s.z, pitch: 0, yaw: -0.04, roll: 0 };
       const recoilUp = kickWeapon === 'shotgun' ? s.shotgunRecoil : s.recoil;
       const recoilBack = kickWeapon === 'shotgun' ? s.shotgunRecoilBack : 0.05;
       // Shotgun reload: the gun swings across, muzzle to the left, so you
@@ -344,7 +346,7 @@ export function createViewmodel(): Viewmodel {
         rest.z + kick * recoilBack - sr * 0.05,
       );
       holder.rotation.set(
-        kick * recoilUp + reload * 0.4 - swayY * 2 - switchDrop * 0.6 + sr * 0.2,
+        rest.pitch + kick * recoilUp + reload * 0.4 - swayY * 2 - switchDrop * 0.6 + sr * 0.2,
         rest.yaw + swayX * 2 + sr * 0.75,
         rest.roll + reload * 1.1 + slideTilt * 0.35 - legOut * 0.25 + sr * 0.15,
       );

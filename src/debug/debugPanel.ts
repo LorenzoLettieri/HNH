@@ -148,7 +148,9 @@ export function createDebugPanel(options: {
   sg.number(viewmodelSettings, 'shotgunX', -0.3, 0.3, 0.005);
   sg.number(viewmodelSettings, 'shotgunY', -0.3, 0.1, 0.005);
   sg.number(viewmodelSettings, 'shotgunZ', -0.6, 0, 0.005);
+  sg.number(viewmodelSettings, 'shotgunPitch', -0.5, 1, 0.01);
   sg.number(viewmodelSettings, 'shotgunYaw', -0.3, 0.3, 0.005);
+  sg.number(viewmodelSettings, 'shotgunRoll', -0.5, 0.5, 0.01);
   sg.number(viewmodelSettings, 'shotgunRecoil', 0, 1.5, 0.05);
   sg.number(viewmodelSettings, 'shotgunRecoilBack', 0, 0.3, 0.005);
   sg.number(viewmodelSettings, 'shotgunRecoilRecovery', 1, 30, 0.5);

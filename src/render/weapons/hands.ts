@@ -1,12 +1,16 @@
 // The gunslinger's arms: bare arms from "PSX First Person Arms" by
 // Drillimpact (CC0, original in assets-src/psx-arms/), posed in Blender on
 // our revolver and saved as a standalone model, public/models/arms.glb
-// (static meshes: the pose is baked into the vertices), with two objects:
+// (static meshes: the pose is baked into the vertices), with three objects:
 //   Arm_R  wrapped around the revolver's grip, in the gun's coordinates
 //          (origin = the right hand on the grip): it goes in at the origin;
 //   Arm_L  open hand, palm down, origin = PALM CENTER (the point the
 //          keyframes below move): it "fans" the hammer at every shot, the
 //          classic western gunslinger move.
+//   Arm_R_Shotgun  the right arm holding the double barrel ONE-HANDED by the
+//          wrist of the stock, index on the trigger, in the shotgun's
+//          coordinates; posed with the gun where the viewmodel holds it
+//          (viewmodelSettings.shotgun*), so the shoulder comes out right.
 // No skeleton in the file: the left arm is moved as a whole. (The original
 // rig, with IK and 18 animations, is in assets-src/ for when we need it.)
 import * as THREE from 'three';
@@ -17,6 +21,8 @@ export interface Hands {
   right: THREE.Group;
   /** Goes inside the viewmodel holder: moved by the fanning animation (origin = palm center). */
   left: THREE.Group;
+  /** Goes inside the shotgun's group: the one hand that holds it. */
+  rightShotgun: THREE.Group;
 }
 
 /**
@@ -28,6 +34,7 @@ export interface Hands {
 export function createHands(): Hands {
   const right = new THREE.Group();
   const left = new THREE.Group();
+  const rightShotgun = new THREE.Group();
   new GLTFLoader().load(`${import.meta.env.BASE_URL}models/arms.glb`, (gltf) => {
     gltf.scene.traverse((o) => {
       if (!(o instanceof THREE.Mesh)) return;
@@ -42,10 +49,12 @@ export function createHands(): Hands {
     });
     const armR = gltf.scene.getObjectByName('Arm_R');
     const armL = gltf.scene.getObjectByName('Arm_L');
+    const armRS = gltf.scene.getObjectByName('Arm_R_Shotgun');
     if (armR) right.add(armR);
     if (armL) left.add(armL);
+    if (armRS) rightShotgun.add(armRS);
   });
-  return { right, left };
+  return { right, left, rightShotgun };
 }
 
 // --- Fanning animation --------------------------------------------------------
