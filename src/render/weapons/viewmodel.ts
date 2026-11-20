@@ -174,9 +174,6 @@ export function createViewmodel(): Viewmodel {
   let kickWeapon: WeaponId = 'revolver'; // which gun's recoil numbers apply
   let viewKick = 0;
   let flashTime = 0;
-  let cylinderAngle = 0;
-  let cylinderTarget = 0;
-  let hammerTime = 1; // seconds since the last shot
   let reloadTime = -1; // seconds since the reload started (-1 = not reloading)
   let swayX = 0;
   let swayY = 0;
@@ -197,7 +194,6 @@ export function createViewmodel(): Viewmodel {
       flashTime = 0.05;
       if (weapon === 'shotgun') {
         viewKick = s.shotgunViewKick;
-        shotgun.onFire(barrel);
         shotgunFlash.position.copy(shotgun.muzzles[barrel]);
         shotgunFlash.material.rotation = Math.random() * Math.PI;
         shotgunFlash.scale.setScalar(0.15 + Math.random() * 0.06);
@@ -205,8 +201,6 @@ export function createViewmodel(): Viewmodel {
       }
       fanTime = 0;
       viewKick = s.viewKick;
-      cylinderTarget += Math.PI / 3; // next chamber: 360° / 6
-      hammerTime = 0;
       flash.material.rotation = Math.random() * Math.PI;
       flash.scale.setScalar(0.09 + Math.random() * 0.05);
     },
@@ -271,13 +265,8 @@ export function createViewmodel(): Viewmodel {
       const activeFlash = isShotgun ? shotgunFlash : flash;
       flashLight.position.copy(activeFlash.position).applyMatrix4(activeFlash.parent!.matrixWorld);
 
-      // --- Cylinder turns to the next chamber; hammer re-cocks after a shot ---
-      cylinderAngle = approach(cylinderAngle, cylinderTarget, 25, dt);
-      hammerTime += dt;
-      const cocked = Math.min(1, Math.max(0, (hammerTime - 0.06) / (tuning.revolverFireInterval * 0.6)));
-      gun.hammer.rotation.x = -0.6 * cocked; // 0 = down (just fired), -0.6 = cocked
-
-      // --- Reload: tilt the gun away, spin the cylinder, bring it back ---
+      // --- Reload: tilt the gun away and bring it back ---
+      // (The model is a single mesh: the cylinder can't spin on its own.)
       let reload = 0;
       if (reloadTime >= 0) {
         reloadTime += dt;
@@ -285,13 +274,10 @@ export function createViewmodel(): Viewmodel {
         if (t >= 1) reloadTime = -1;
         else {
           reload = Math.sin(Math.PI * t); // 0 → 1 → 0: down, then back up
-          cylinderAngle += dt * 25 * reload; // the classic cylinder spin
-          cylinderTarget = cylinderAngle;
         }
       }
-      gun.cylinder.rotation.z = cylinderAngle;
 
-      // --- Shotgun: hammers, barrels, shells (see shotgunView.ts) ---
+      // --- Shotgun: reload swing (see shotgunView.ts) ---
       const shotgunReload = shotgun.update(dt, player);
       if (isShotgun) reload = 0; // the revolver's reload pose doesn't apply
 
