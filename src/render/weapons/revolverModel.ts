@@ -1,27 +1,34 @@
-// The revolver in your hand: "Revolver" by Quaternius (public/models/revolver.glb,
-// see CREDITS.md), fitted to the viewmodel by gunModel.ts.
-// In the file the barrel points along +X, up is +Y and the gun is ~2 units
-// long: we turn it 90° around the vertical axis (+X → -Z) and scale it to
-// ~30 cm. The model is a single mesh: the cylinder and the hammer can't move
-// on their own (the procedural revolver could), so recoil and reload move
-// the whole gun.
+// The revolver in your hand: "Revolver" by Quaternius, modified in Blender
+// by tools/blender/revolver.py (brown grip, cylinder and hammer split off as
+// separate parts, already in the viewmodel's conventions: barrel along -Z,
+// meters, origin = the right hand on the grip) → public/models/revolver.glb.
 import * as THREE from 'three';
-import { loadGunModel, type GunFit } from './gunModel';
-
-export const REVOLVER_FIT: GunFit = {
-  file: 'revolver.glb',
-  rotation: [0, Math.PI / 2, 0],
-  scale: 0.151,
-  // Puts the middle of the wooden grip where the right hand holds it.
-  position: [0, -0.02, 0.026],
-};
+import { loadGunModel } from './gunModel';
 
 export interface RevolverModel {
   root: THREE.Group;
+  /** The rotating cylinder (drum): turns 60° per shot, around its own Z axis. */
+  cylinder: THREE.Object3D;
+  /** The hammer: modeled cocked; a positive rotation.x drops it forward (fired). */
+  hammer: THREE.Object3D;
   /** Where the muzzle flash appears (barrel tip), in root coordinates. */
   muzzle: THREE.Vector3;
 }
 
 export function createRevolverModel(): RevolverModel {
-  return { root: loadGunModel(REVOLVER_FIT), muzzle: new THREE.Vector3(0, 0.044, -0.245) };
+  // Until the file has loaded, the animations move these empty stand-ins:
+  // then the real parts take their place (the code keeps working either way).
+  const model: RevolverModel = {
+    root: new THREE.Group(),
+    cylinder: new THREE.Object3D(),
+    hammer: new THREE.Object3D(),
+    muzzle: new THREE.Vector3(0, 0.044, -0.245),
+  };
+  model.root.add(
+    loadGunModel({ file: 'revolver.glb' }, (gltf) => {
+      model.cylinder = gltf.getObjectByName('cylinder') ?? model.cylinder;
+      model.hammer = gltf.getObjectByName('hammer') ?? model.hammer;
+    }),
+  );
+  return model;
 }

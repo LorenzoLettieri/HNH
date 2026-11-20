@@ -17,19 +17,24 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 export interface GunFit {
   /** File name in public/models/. */
   file: string;
+  /**
+   * The corrections below are optional: a model fixed in Blender (like the
+   * revolver, see tools/blender/revolver.py) is already in our conventions.
+   */
   /** Euler rotation (radians) that points the barrel along -Z with the top up. */
-  rotation: [number, number, number];
+  rotation?: [number, number, number];
   /** Uniform scale: model units → meters. */
-  scale: number;
+  scale?: number;
   /** Final offset in meters, applied after rotation and scale (puts the grip on the origin). */
-  position: [number, number, number];
+  position?: [number, number, number];
 }
 
 /**
  * Returns a group right away; the model is added inside it when the file
- * has loaded (asynchronous, like fetch()).
+ * has loaded (asynchronous, like fetch()). `onLoad` receives the model, to
+ * find its moving parts by name.
  */
-export function loadGunModel(fit: GunFit): THREE.Group {
+export function loadGunModel(fit: GunFit, onLoad?: (model: THREE.Object3D) => void): THREE.Group {
   const root = new THREE.Group();
   new GLTFLoader().load(`${import.meta.env.BASE_URL}models/${fit.file}`, (gltf) => {
     gltf.scene.traverse((o) => {
@@ -50,10 +55,11 @@ export function loadGunModel(fit: GunFit): THREE.Group {
       }
     });
     const model = gltf.scene;
-    model.rotation.set(...fit.rotation);
-    model.scale.setScalar(fit.scale);
-    model.position.set(...fit.position);
+    model.rotation.set(...(fit.rotation ?? [0, 0, 0]));
+    model.scale.setScalar(fit.scale ?? 1);
+    model.position.set(...(fit.position ?? [0, 0, 0]));
     root.add(model);
+    onLoad?.(model);
   });
   return root;
 }
