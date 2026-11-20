@@ -9,6 +9,7 @@ import type { MeleeTool } from './kick';
 import type { PickupKind } from './pickups';
 import type { PurchaseId } from './shop';
 import type { StyleAward } from './style';
+import type { Stats } from './stats';
 
 export type SimEvent =
   /** A weapon fired (sound, flash, recoil). For the shotgun, `barrel` is 0 = right, 1 = left. */
@@ -72,7 +73,8 @@ export type SimEvent =
   | { type: 'highNoon' }
   /** The HIGH NOON climax is over: the style starts over from zero. */
   | { type: 'highNoonEnd' }
-  | { type: 'playerDied'; wave: number; kills: number; score: number }
+  /** Game over: how far you got and the game's statistics (stats.ts), for the end screen. */
+  | { type: 'playerDied'; wave: number; stats: Stats }
   | { type: 'waveStart'; wave: number }
   | { type: 'waveEnd'; wave: number }
   | { type: 'ghoulAttack'; entityId: number }

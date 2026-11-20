@@ -130,8 +130,8 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
     if (e.type === 'playerDied') {
       deathTime = DEATH_TIME;
       deathWave.textContent = String(e.wave);
-      deathKills.textContent = String(e.kills);
-      deathScore.textContent = String(e.score);
+      deathKills.textContent = String(e.stats.kills);
+      deathScore.textContent = String(e.stats.score);
       deathRank.textContent = ''; // filled by showDeathRank when the leaderboard answers
       restartAnimation(death, 'show');
       playBell(1, 90); // one deep, slow toll: a funeral bell

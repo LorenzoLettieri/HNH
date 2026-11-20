@@ -8,7 +8,8 @@ import { stepGhoul } from './ghoul';
 import { stepHound } from './hound';
 import { stepBull } from './bull';
 import { stepSharpshooter } from './sharpshooter';
-import { createWaveState, scoreHits, stepWaves, wavePressure, type Stats, type WaveState } from './waves';
+import { createWaveState, scoreHits, stepWaves, wavePressure, type WaveState } from './waves';
+import { countStats, createStats, type Stats } from './stats';
 import { BIG_BODY, getFlowField, getNavGraph, nearestNode } from './nav';
 import type { SimEvent } from './events';
 import { cellAt, getAirGrid } from './airNav';
@@ -60,7 +61,7 @@ export function createGame(world: World, seed = 1): GameState {
     entities,
     nextEntityId: entities.length + 1,
     wave: createWaveState(),
-    stats: { kills: 0, score: 0 },
+    stats: createStats(),
     style: createStyle(),
     navGoal: -1,
     navGoalBig: -1,
@@ -159,17 +160,18 @@ export function stepGame(
   stepPickups(game, world, dt, events);
   // Last: it needs the whole tick (your hits come first, the enemies' hits on you later).
   stepStyle(game.style, game.player, events, tickEvents);
+  countStats(game.stats, events.slice(tickEvents), game.style);
 
   // Dead: game over, CoD style. Report how far you got, then start over from
   // wave 1: back to the spawn, the horde is cleared, stats reset.
   if (game.player.health <= 0) {
-    events.push({ type: 'playerDied', wave: game.wave.number, kills: game.stats.kills, score: game.stats.score });
+    events.push({ type: 'playerDied', wave: game.wave.number, stats: game.stats });
     respawn(game.player, world);
     game.entities = game.entities.filter((e) => !isEnemy(e));
     game.projectiles = [];
     game.pickups = [];
     game.wave = createWaveState();
-    game.stats = { kills: 0, score: 0 };
+    game.stats = createStats(); // a new object: the event keeps the old one
     game.style = createStyle();
     rollCardSeed(game); // new game, new cards on the counter
   }

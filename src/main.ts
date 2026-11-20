@@ -414,7 +414,7 @@ renderer.setAnimationLoop((now: number) => {
     if (practice) {
       showDeathNote(`PARTITA DI PROVA · NON IN CLASSIFICA (${practice})`);
     } else {
-      submitScore({ name: settings.playerName, score: e.score, wave: e.wave, kills: e.kills })
+      submitScore({ name: settings.playerName, score: e.stats.score, wave: e.wave, kills: e.stats.kills })
         .then(showDeathRank)
         .catch(() => showDeathRank(null)); // offline / server down: just no rank
     }

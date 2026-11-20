@@ -14,6 +14,7 @@ import type { GameState } from './game';
 import type { SpawnPoint, World } from './world';
 import { raycastBoxes } from './raycast';
 import { currentEyeHeight } from './player';
+import type { Stats } from './stats';
 
 export interface WaveState {
   /** Current wave (0 = before the first one). */
@@ -27,10 +28,6 @@ export interface WaveState {
   spawnCooldownTicks: number;
 }
 
-export interface Stats {
-  kills: number;
-  score: number;
-}
 
 export function createWaveState(): WaveState {
   return { number: 0, phase: 'break', breakTicks: secondsToTicks(tuning.waveFirstBreak), budgetLeft: 0, spawnCooldownTicks: 0 };
