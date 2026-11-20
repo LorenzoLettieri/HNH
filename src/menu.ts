@@ -1,10 +1,11 @@
 // The pause / start menu shown over the game (the "overlay" in index.html).
 // Pure DOM: the markup lives in index.html, here we only wire the buttons.
 //
-// Pages: "main" (Gioca, Impostazioni, Comandi), "settings", "controls".
+// Pages: "main" (Gioca, Classifica, Impostazioni, Comandi), "leaderboard", "settings", "controls".
 // Every page is a <div class="menu-page" data-page="..."> and every button
 // with data-goto="..." switches to that page: like a tiny client-side router.
 import { SENSITIVITY_MAX, SENSITIVITY_MIN, set, settings, type Settings } from './settings';
+import { DEFAULT_NAME, fetchTop, NAME_MAX_LENGTH } from './leaderboard';
 
 export interface Menu {
   /** Shows the menu (back on the main page) or hides it. */
@@ -21,6 +22,50 @@ export function createMenu(options: { onPlay: () => void }): Menu {
 
   function showPage(name: string): void {
     for (const page of pages) page.hidden = page.dataset.page !== name;
+    if (name === 'leaderboard') void refreshLeaderboard();
+  }
+
+  // --- Leaderboard page -----------------------------------------------------
+  const nameBox = document.getElementById('set-name') as HTMLInputElement;
+  nameBox.maxLength = NAME_MAX_LENGTH;
+  nameBox.placeholder = DEFAULT_NAME;
+  // 'change', not 'input': the name is cleaned (spaces at the ends removed),
+  // and cleaning on every keystroke would eat the space before you type the
+  // next word. 'change' fires when you leave the box or press Enter.
+  nameBox.addEventListener('change', () => {
+    set('playerName', nameBox.value);
+    nameBox.value = settings.playerName;
+  });
+  const board = document.getElementById('leaderboard-rows')!;
+
+  /**
+   * Asks for the leaderboard and fills the table. Async: with the real server
+   * the answer takes a moment (or never comes), so first a "loading" row.
+   */
+  async function refreshLeaderboard(): Promise<void> {
+    nameBox.value = settings.playerName;
+    board.replaceChildren(row(['…', 'carico la classifica', '', '']));
+    try {
+      const top = await fetchTop();
+      if (top.length === 0) {
+        board.replaceChildren(row(['', 'nessuna partita, ancora', '', '']));
+        return;
+      }
+      board.replaceChildren(...top.map((e, i) => row([`${i + 1}`, e.name, `${e.wave}`, `${e.score}`])));
+    } catch {
+      board.replaceChildren(row(['', 'classifica non raggiungibile', '', '']));
+    }
+  }
+
+  /**
+   * One table row. textContent, never innerHTML: names are typed by players,
+   * and a name like "<img onerror=...>" in innerHTML would run as code (XSS,
+   * the same reason Blade escapes {{ }} by default).
+   */
+  function row(cells: string[]): HTMLTableRowElement {
+    const tr = document.createElement('tr');
+    for (const text of cells) tr.appendChild(document.createElement('td')).textContent = text;
+    return tr;
   }
 
   for (const button of overlay.querySelectorAll<HTMLElement>('[data-goto]')) {

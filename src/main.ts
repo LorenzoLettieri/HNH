@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { initInput, isKeyDown, isPointerLocked, isTypingInField, requestLock } from './input';
-import { loadSettings } from './settings';
+import { loadSettings, settings } from './settings';
+import { submitScore } from './leaderboard';
 import { createMenu } from './menu';
 import { createDebugPanel, debugTime } from './debug/debugPanel';
 import { buildCommand, controlSettings, updateLook, view } from './controls';
@@ -33,7 +34,7 @@ import { createMapOverlay } from './render/mapOverlay';
 import { shopInReach } from './sim/shop';
 import './render/crosshair'; // paints the crosshair once
 import { adsAmount, GEAR } from './sim/weapon';
-import { updateHud } from './render/hud';
+import { showDeathRank, updateHud } from './render/hud';
 import { updateAmmoHud } from './render/ammoHud';
 import { updateWeaponBar } from './render/weaponBar';
 import { updateMoneyHud } from './render/moneyHud';
@@ -393,6 +394,14 @@ renderer.setAnimationLoop((now: number) => {
   shopMenu.onEvents(events);
   shopMenu.update(player, shopNearby, paused);
   updateHud(game, events, dt);
+  // Game over: send the score. Not awaited: the game goes on (the next run
+  // starts behind the death curtain) and the answer shows up when it comes.
+  for (const e of events) {
+    if (e.type !== 'playerDied') continue;
+    submitScore({ name: settings.playerName, score: e.score, wave: e.wave, kills: e.kills })
+      .then(showDeathRank)
+      .catch(() => showDeathRank(null)); // offline / server down: just no rank
+  }
   updateThreats(game.entities, player, camera, dt);
   navDebug.update(getFlowField(getNavGraph(world), game.navGoal));
   navDebugBig.update(getFlowField(getNavGraph(world, BIG_BODY), game.navGoalBig));

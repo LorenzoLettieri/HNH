@@ -24,6 +24,7 @@ const death = document.getElementById('death')!;
 const deathWave = document.getElementById('death-wave')!;
 const deathKills = document.getElementById('death-kills')!;
 const deathScore = document.getElementById('death-score')!;
+const deathRank = document.getElementById('death-rank')!;
 const waveHud = document.getElementById('wave')!;
 const waveBox = document.getElementById('wave-box')!;
 const scoreHud = document.getElementById('score')!;
@@ -52,6 +53,14 @@ function restartAnimation(el: HTMLElement, cls: string): void {
   el.classList.remove(cls);
   void el.offsetWidth;
   el.classList.add(cls);
+}
+
+/**
+ * The leaderboard's answer on the death screen (main.ts sends the score at
+ * death; the answer can arrive a moment later, while the curtain is down).
+ */
+export function showDeathRank(rank: number | null): void {
+  deathRank.textContent = rank === null ? '' : rank === 1 ? 'NUOVO RECORD!' : `${rank}° POSTO IN CLASSIFICA`;
 }
 
 /** kind: 'hot' = HIGH NOON colors, 'countdown' = small line on top. */
@@ -115,6 +124,7 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
       deathWave.textContent = String(e.wave);
       deathKills.textContent = String(e.kills);
       deathScore.textContent = String(e.score);
+      deathRank.textContent = ''; // filled by showDeathRank when the leaderboard answers
       restartAnimation(death, 'show');
       playBell(1, 90); // one deep, slow toll: a funeral bell
       bannerTime = 0; // no wave message over the curtain
