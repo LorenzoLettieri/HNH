@@ -195,6 +195,7 @@ window.addEventListener('keydown', (e) => {
       requestLock(renderer.domElement);
     }
     if (e.code === 'Escape') {
+      e.preventDefault(); // "used": the menu that opens now must not read it as "resume" (menu.ts)
       endScreen.close();
       updatePause();
     }
@@ -240,12 +241,18 @@ window.addEventListener('keydown', (e) => {
   // Esc with the shop open: the mouse is already free, so the browser doesn't
   // use Esc for itself and we get it: it closes the shop, like E.
   // Esc while waiting for a click to aim again (grabPending): that's a pause.
+  // Esc while playing reaches us only in full screen with the Esc key ours
+  // (fullscreen.ts): then WE free the mouse, and the pause menu opens. Since
+  // the page released it, Esc in the menu may grab it back (menu.ts).
   if (e.code === 'Escape') {
     if (shopMenu.isOpen) {
       closeShop();
     } else if (grabPending) {
+      e.preventDefault(); // "used", as above
       grabPending = false;
       updatePause();
+    } else if (isPointerLocked()) {
+      document.exitPointerLock();
     }
   }
   if (e.code === 'Backquote') {

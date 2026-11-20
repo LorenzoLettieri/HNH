@@ -1,12 +1,13 @@
 // The pause / start menu shown over the game (the "overlay" in index.html).
 // Pure DOM: the markup lives in index.html, here we only wire the buttons.
 //
-// Pages: "main" (Gioca, Classifica, Impostazioni, Comandi), "leaderboard", "settings", "controls".
+// Pages: "main" (Gioca, Classifica, Impostazioni, Comandi, Schermo intero), "leaderboard", "settings", "controls".
 // Every page is a <div class="menu-page" data-page="..."> and every button
 // with data-goto="..." switches to that page: like a tiny client-side router.
 import { SENSITIVITY_MAX, SENSITIVITY_MIN, set, settings, type Settings } from './settings';
 import { DEFAULT_NAME, LEADERBOARD_SIZE, NAME_MAX_LENGTH } from './leaderboard';
 import { fillScoreTable } from './render/scoreTable';
+import { canLockEscape, isFullscreen, toggleFullscreen, watchFullscreen } from './fullscreen';
 
 export interface Menu {
   /** Shows the menu (back on the main page) or hides it. */
@@ -22,6 +23,7 @@ export function createMenu(options: { onPlay: () => void }): Menu {
   const pages = overlay.querySelectorAll<HTMLElement>('.menu-page');
 
   function showPage(name: string): void {
+    currentPage = name;
     for (const page of pages) page.hidden = page.dataset.page !== name;
     if (name === 'leaderboard') void refreshLeaderboard();
   }
@@ -50,10 +52,29 @@ export function createMenu(options: { onPlay: () => void }): Menu {
   }
   playButton.addEventListener('click', options.onPlay);
 
-  // Esc inside a sub-page goes back to the main page.
+  // Esc inside a sub-page goes back to the main page; on the main page it
+  // resumes the game (like "Riprendi"). The browser lets us grab the mouse
+  // again only if the game itself had freed it: in full screen with the Esc
+  // key ours (fullscreen.ts). Otherwise the request is just refused.
+  let currentPage = 'main';
   window.addEventListener('keydown', (e) => {
-    if (e.code === 'Escape' && overlay.style.display !== 'none') showPage('main');
+    // defaultPrevented = main.ts already used this Esc (e.g. it closed the end
+    // screen and that opened this menu during the same key press).
+    if (e.code !== 'Escape' || e.repeat || e.defaultPrevented || overlay.style.display === 'none') return;
+    if (currentPage !== 'main') showPage('main');
+    else options.onPlay();
   });
+
+  // Full screen (fullscreen.ts): the button says what a click will do.
+  const fullscreenButton = document.getElementById('menu-fullscreen')!;
+  const escHint = document.getElementById('menu-esc-hint')!;
+  const showFullscreen = (): void => {
+    fullscreenButton.textContent = isFullscreen() ? 'Esci dallo schermo intero' : 'Schermo intero';
+    escHint.hidden = !canLockEscape();
+  };
+  fullscreenButton.addEventListener('click', () => void toggleFullscreen());
+  watchFullscreen(showFullscreen);
+  showFullscreen();
 
   // --- Settings controls --------------------------------------------------
   // Every control writes through set() (applies + saves) and every refresh
