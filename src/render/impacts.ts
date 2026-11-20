@@ -54,7 +54,9 @@ export function createImpacts(scene: THREE.Scene): Impacts {
       next = (next + 1) % MAX_DECALS;
 
       // Lie flat on the surface: a plane faces +Z, so make it look along the normal.
-      decal.position.copy(point).addScaledVector(normal, 0.005);
+      // 2 cm out: above the ground patches (1 cm) and the doors and windows (5 mm),
+      // which float over their surfaces (GROUND_LIFT in materials.ts, DECAL_LIFT in decals.ts).
+      decal.position.copy(point).addScaledVector(normal, 0.02);
       target.copy(decal.position).add(normal);
       decal.lookAt(target);
       decal.rotateZ(Math.random() * Math.PI * 2); // random spin: holes don't all look the same

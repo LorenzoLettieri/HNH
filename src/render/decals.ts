@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import type { Decal, DecalLook } from '../sim/world';
 import { addHeightFog } from './heightFog';
-import { QuadBatch, SIDES } from './quadBatch';
+import { QuadBatch, SIDES, type Vec3 } from './quadBatch';
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -144,19 +144,6 @@ async function decalMaterial(def: DecalDef): Promise<THREE.MeshStandardMaterial>
     // Transparent pixels (the corners around a round window, the middle of a frame)
     // are simply not drawn: a cut-out, no blending, no sorting problems.
     alphaTest: 0.5,
-    // The decal lies exactly on the wall: the two would fight over the same depth
-    // ("z-fighting") and flicker. polygonOffset nudges the decal's depth a hair
-    // toward the camera, without moving it. The nudge has two parts:
-    // - units: a fixed number of the smallest depth steps the depth buffer can
-    //   tell apart. Tiny, and just what two surfaces on the SAME plane need.
-    // - factor: proportional to how steeply the surface recedes from the camera.
-    //   Seen at a grazing angle (a street you look down, a wall you run along)
-    //   that becomes tens of centimeters: the decal would then cover what stands
-    //   just in front of the surface (the vents' grates, 2 cm above the street,
-    //   vanished until you were close). So: units only.
-    polygonOffset: true,
-    polygonOffsetFactor: 0,
-    polygonOffsetUnits: -4,
   });
   if (def.glow) {
     material.emissiveMap = toTexture(glowMask(pixels));
@@ -167,6 +154,14 @@ async function decalMaterial(def: DecalDef): Promise<THREE.MeshStandardMaterial>
   return material;
 }
 
+/**
+ * How far in front of its wall a decal floats: 5 mm. On the wall's own plane the
+ * two would fight over the same depth and flicker ("z-fighting": see GROUND_LIFT
+ * in materials.ts for why polygonOffset isn't enough). 5 mm, not 1 cm: the
+ * lanterns' back plates sit 1 cm from the wall, and must stay in front.
+ */
+const DECAL_LIFT = 0.005;
+
 /** Builds the doors and windows: one mesh per picture. */
 export async function createDecalMeshes(decals: readonly Decal[]): Promise<THREE.Mesh[]> {
   const batches = new Map<DecalLook, QuadBatch>();
@@ -176,8 +171,11 @@ export async function createDecalMeshes(decals: readonly Decal[]): Promise<THREE
       batch = new QuadBatch();
       batches.set(d.look, batch);
     }
+    // A hair in front of the wall, along the direction it faces.
+    const { normal } = SIDES[d.facing];
+    const center: Vec3 = [d.x + normal[0] * DECAL_LIFT, d.y, d.z + normal[2] * DECAL_LIFT];
     // The whole picture once on the rectangle (UV from 0 to 1).
-    batch.add([d.x, d.y, d.z], SIDES[d.facing], d.width / 2, d.height / 2, (su, sv) => [(su + 1) / 2, (sv + 1) / 2]);
+    batch.add(center, SIDES[d.facing], d.width / 2, d.height / 2, (su, sv) => [(su + 1) / 2, (sv + 1) / 2]);
   }
   return Promise.all(
     [...batches].map(async ([look, batch]) => {

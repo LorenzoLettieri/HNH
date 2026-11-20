@@ -126,6 +126,9 @@ export async function loadMaterials(): Promise<void> {
 
 // --- From boxes to meshes ---------------------------------------------------------
 
+/** Big faces are cut into tiles of at most this many meters (see QuadBatch.addTiled). */
+const MAX_TILE = 8;
+
 /** The 6 faces of a box, and which texture of the look each one uses. */
 const FACES: (FaceAxes & { part: 'side' | 'top' | 'bottom' })[] = [
   { ...SIDES.east, part: 'side' },
@@ -192,7 +195,10 @@ export function createLevelMeshes(boxes: readonly Box[]): THREE.Mesh[] {
       const halfV = Math.abs(dot(face.v, half));
       const halfN = Math.abs(dot(face.normal, half));
       const faceCenter: Vec3 = [0, 1, 2].map((i) => center[i] + face.normal[i] * halfN) as Vec3;
-      batch.add(faceCenter, face, halfU, halfV, faceUV(name, look.fit, face, halfU, halfV));
+      const uv = faceUV(name, look.fit, face, halfU, halfV);
+      // A fitted texture spans the whole face: one quad. The others: tiles (see addTiled).
+      if (look.fit) batch.add(faceCenter, face, halfU, halfV, uv);
+      else batch.addTiled(faceCenter, face, halfU, halfV, MAX_TILE, uv);
     }
   }
 
@@ -205,11 +211,24 @@ export function createLevelMeshes(boxes: readonly Box[]): THREE.Mesh[] {
 }
 
 /**
+ * How high the ground patches float above the ground: 1 cm. Two surfaces on the
+ * SAME plane are never safe: each triangle computes its depth with its own small
+ * rounding errors (the GPU snaps the corners to a sub-pixel grid), and seen at a
+ * grazing angle, at our low resolution where one pixel covers a lot of ground,
+ * those errors are bigger than the difference between the two: pixel by pixel,
+ * sometimes one wins, sometimes the other ("z-fighting": the floors flickered
+ * when turning the view). polygonOffset fixes it only by nudging the patch toward
+ * the camera in proportion to the slope, and at grazing angles that nudge became
+ * tens of centimeters: the road covered the vents' grates (2 cm up). A real gap of
+ * 1 cm is invisible, yet bigger than the errors at any distance in this town.
+ * What lies on the floor must be above it: vents (2 cm), the light pools of the
+ * pickups (2 cm), bullet holes (2 cm, impacts.ts).
+ */
+const GROUND_LIFT = 0.01;
+
+/**
  * The ground patches (World.ground: streets, squares, boardwalks, rails): one flat
- * face each at y = 0, merged per texture like the boxes. They lie exactly on the
- * top of the ground box, so they use copies of the materials with polygonOffset
- * (as the decals do, see decals.ts): drawn a hair closer, they always win over the
- * ground below, but not over what lies just above it (the vents' grates, 2 cm up).
+ * face each, GROUND_LIFT above the ground, merged per texture like the boxes.
  */
 export function createGroundMeshes(patches: readonly GroundPatch[]): THREE.Mesh[] {
   const batches = new Map<string, QuadBatch>();
@@ -223,17 +242,14 @@ export function createGroundMeshes(patches: readonly GroundPatch[]): THREE.Mesh[
     }
     const halfU = (g.maxX - g.minX) / 2; // TOP's u runs along X...
     const halfV = (g.maxZ - g.minZ) / 2; // ...and its v along Z
-    const center: Vec3 = [(g.minX + g.maxX) / 2, 0, (g.minZ + g.maxZ) / 2];
-    batch.add(center, TOP, halfU, halfV, faceUV(name, look.fit, TOP, halfU, halfV));
+    const center: Vec3 = [(g.minX + g.maxX) / 2, GROUND_LIFT, (g.minZ + g.maxZ) / 2];
+    const uv = faceUV(name, look.fit, TOP, halfU, halfV);
+    if (look.fit) batch.add(center, TOP, halfU, halfV, uv);
+    else batch.addTiled(center, TOP, halfU, halfV, MAX_TILE, uv);
   }
   return [...batches].map(([name, batch]) => {
-    const material = materials.get(name)!.clone(); // same texture, its own depth nudge
-    material.polygonOffset = true;
-    material.polygonOffsetFactor = 0; // see decals.ts: no slope-scaled nudge
-    material.polygonOffsetUnits = -4;
-    addHeightFog(material);
-    const mesh = new THREE.Mesh(batch.toGeometry(), material);
-    mesh.receiveShadow = true;
+    const mesh = new THREE.Mesh(batch.toGeometry(), materials.get(name)!);
+    mesh.receiveShadow = true; // flat on the ground: it receives shadows, it doesn't cast them
     return mesh;
   });
 }
