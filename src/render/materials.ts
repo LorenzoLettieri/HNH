@@ -2,7 +2,7 @@
 // box is made of (its `look`); this file decides how each look is drawn,
 // and turns the hundreds of level boxes into a handful of meshes (quadBatch.ts).
 import * as THREE from 'three';
-import type { Box } from '../sim/world';
+import type { Box, GroundPatch } from '../sim/world';
 import { addHeightFog } from './heightFog';
 import { LEVEL_TEXTURES } from './levelTextures';
 import { BOTTOM, type FaceAxes, QuadBatch, SIDES, TOP, type Vec3, dot } from './quadBatch';
@@ -50,6 +50,10 @@ interface LookDef {
 /** Which images each look uses. Change a name here to change a material. */
 const LOOKS: Record<Look, LookDef> = {
   dirt: { side: 'floor_ground_dirt' },
+  // Ground patches (World.ground).
+  road: { side: 'road' },
+  paving: { side: 'floor_stone_sand_random' },
+  railway: { side: 'railway', fit: true }, // fitted: the rails always fall in the same place
 
   // Walls. The top of a building is hidden under its roof slab, but small things
   // (a stagecoach, a wagon) show it: wooden walls get planks on top.
@@ -133,6 +137,32 @@ const FACES: (FaceAxes & { part: 'side' | 'top' | 'bottom' })[] = [
 ];
 
 /**
+ * The texture coordinates of a face 2·halfU × 2·halfV that uses texture `name`,
+ * fitted to the face or anchored to the world (see LookDef.fit).
+ */
+function faceUV(
+  name: string,
+  fit: boolean | undefined,
+  face: FaceAxes,
+  halfU: number,
+  halfV: number,
+): (su: number, sv: number, p: Vec3) => [number, number] {
+  const { width, height } = materials.get(name)!.map!.image as HTMLImageElement;
+  // Fitted textures: how many whole copies fit on the face (at least one).
+  const copiesU = Math.max(1, Math.round((2 * halfU * PIXELS_PER_METER) / width));
+  const copiesV = Math.max(1, Math.round((2 * halfV * PIXELS_PER_METER) / height));
+  return (su, sv, p) =>
+    fit
+      ? // From 0 to `copies` across the face: the image starts at the face's corner.
+        [((su + 1) / 2) * copiesU, ((sv + 1) / 2) * copiesV]
+      : // World-anchored: the UV is the corner's position measured along the face's
+        // own right/up directions (a dot product = projection), in meters, then
+        // converted to "texture copies". Two neighboring faces on the same plane
+        // compute the same UV at the same point, so the texture has no seams.
+        [(dot(p, face.u) * PIXELS_PER_METER) / width, (dot(p, face.v) * PIXELS_PER_METER) / height];
+}
+
+/**
  * Builds the level's meshes: ONE mesh per texture, holding the faces of every box
  * that uses it ("static batching", see quadBatch.ts).
  * Requires loadMaterials() to have finished. Boxes without a look are invisible
@@ -157,27 +187,12 @@ export function createLevelMeshes(boxes: readonly Box[]): THREE.Mesh[] {
         batch = new QuadBatch();
         batches.set(name, batch);
       }
-      const { width, height } = materials.get(name)!.map!.image as HTMLImageElement;
-
       // Half the face's size along its u and v, and how far it is from the center.
       const halfU = Math.abs(dot(face.u, half));
       const halfV = Math.abs(dot(face.v, half));
       const halfN = Math.abs(dot(face.normal, half));
       const faceCenter: Vec3 = [0, 1, 2].map((i) => center[i] + face.normal[i] * halfN) as Vec3;
-      // Fitted textures: how many whole copies fit on the face (at least one).
-      const copiesU = Math.max(1, Math.round((2 * halfU * PIXELS_PER_METER) / width));
-      const copiesV = Math.max(1, Math.round((2 * halfV * PIXELS_PER_METER) / height));
-
-      batch.add(faceCenter, face, halfU, halfV, (su, sv, p) =>
-        look.fit
-          ? // From 0 to `copies` across the face: the image starts at the face's corner.
-            [((su + 1) / 2) * copiesU, ((sv + 1) / 2) * copiesV]
-          : // World-anchored: the UV is the corner's position measured along the face's
-            // own right/up directions (a dot product = projection), in meters, then
-            // converted to "texture copies". Two neighboring faces on the same plane
-            // compute the same UV at the same point, so the texture has no seams.
-            [(dot(p, face.u) * PIXELS_PER_METER) / width, (dot(p, face.v) * PIXELS_PER_METER) / height],
-      );
+      batch.add(faceCenter, face, halfU, halfV, faceUV(name, look.fit, face, halfU, halfV));
     }
   }
 
@@ -185,6 +200,39 @@ export function createLevelMeshes(boxes: readonly Box[]): THREE.Mesh[] {
     const mesh = new THREE.Mesh(batch.toGeometry(), materials.get(name)!);
     mesh.castShadow = true; // blocks sunlight
     mesh.receiveShadow = true; // shows shadows cast by others
+    return mesh;
+  });
+}
+
+/**
+ * The ground patches (World.ground: streets, squares, boardwalks, rails): one flat
+ * face each at y = 0, merged per texture like the boxes. They lie exactly on the
+ * top of the ground box, so they use copies of the materials with polygonOffset
+ * (as the decals do): drawn a hair closer, they always win over the ground below.
+ */
+export function createGroundMeshes(patches: readonly GroundPatch[]): THREE.Mesh[] {
+  const batches = new Map<string, QuadBatch>();
+  for (const g of patches) {
+    const look = LOOKS[g.look];
+    const name = look.top ?? look.side;
+    let batch = batches.get(name);
+    if (!batch) {
+      batch = new QuadBatch();
+      batches.set(name, batch);
+    }
+    const halfU = (g.maxX - g.minX) / 2; // TOP's u runs along X...
+    const halfV = (g.maxZ - g.minZ) / 2; // ...and its v along Z
+    const center: Vec3 = [(g.minX + g.maxX) / 2, 0, (g.minZ + g.maxZ) / 2];
+    batch.add(center, TOP, halfU, halfV, faceUV(name, look.fit, TOP, halfU, halfV));
+  }
+  return [...batches].map(([name, batch]) => {
+    const material = materials.get(name)!.clone(); // same texture, its own depth nudge
+    material.polygonOffset = true;
+    material.polygonOffsetFactor = -1;
+    material.polygonOffsetUnits = -4;
+    addHeightFog(material);
+    const mesh = new THREE.Mesh(batch.toGeometry(), material);
+    mesh.receiveShadow = true;
     return mesh;
   });
 }

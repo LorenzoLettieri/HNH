@@ -33,6 +33,10 @@ const IRON = 0x4c4c55;
 const RUST = 0x6a321c;
 const RUST_LIGHT = 0x8a4a26;
 const CANYON = [0x6e3424, 0x86422b, 0x5c2a1f, 0x95553a, 0x743a28, 0x45201a, 0xa8694a, 0x8a5a44];
+const ROAD = 0x806248; // packed dirt, paler than the loose dirt around it
+const GRAVEL = 0x5c544c;
+const SLEEPER = 0x4a3426;
+const RAIL = [0x3a3430, 0x958e86, 0x66605a]; // a rail seen from above: shadowed edge, polished head, side
 
 // --- Noise that tiles ---------------------------------------------------------------
 
@@ -429,6 +433,76 @@ function canyonRock(seed: number): PixelCanvas {
 }
 
 /**
+ * A packed-dirt road: smoother and paler than the loose dirt around it (wheels and
+ * hooves have pressed it flat), with pebbles, hoof prints and the cracks of dried mud.
+ * No ruts: the same texture serves streets running both ways.
+ */
+function road(seed: number): PixelCanvas {
+  const W = 128;
+  const H = 128;
+  const c = new PixelCanvas(W, H);
+  const rand = seededRandom(seed);
+  const tone = fbm(W, H, [64, 32, 16], rand);
+  const fine = tileNoise(W, H, 4, rand);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) c.set(x, y, shade(ROAD, (0.84 + tone(x, y) * 0.26) * (0.95 + fine(x, y) * 0.1)));
+  }
+  // Pebbles: a lit pixel (or two) and its shadow just below.
+  for (let i = 0; i < 90; i++) {
+    const x = Math.floor(rand() * W);
+    const y = Math.floor(rand() * H);
+    c.set(x, y, shade(ROAD, 1.3 + rand() * 0.2));
+    if (rand() < 0.5) c.set(x + 1, y, shade(ROAD, 1.2));
+    tint(c, x, y + 1, 0.7);
+  }
+  // Hoof prints: small U shapes, open on one side.
+  for (let i = 0; i < 24; i++) {
+    const x = Math.floor(rand() * W);
+    const y = Math.floor(rand() * H);
+    for (const [dx, dy] of [[0, 0], [0, 1], [1, 2], [2, 2], [3, 1], [3, 0]]) tint(c, x + dx, y + dy, 0.72);
+  }
+  for (let i = 0; i < 5; i++) crack(c, rand, rand() * W, rand() * H, 6 + rand() * 10, 0.78);
+  c.noise(rand, 0.05);
+  return c;
+}
+
+/**
+ * A railway track seen from above, 2 m wide (the whole texture): gravel ballast,
+ * a wooden sleeper every 50 cm, two rails (the polished head catches the light, the
+ * rest is rust) with the spikes that hold them. Meant to be FITTED across the track
+ * (fit: true in LOOKS), so the rails always land in the same place.
+ */
+function railway(seed: number): PixelCanvas {
+  const W = 64;
+  const H = 64;
+  const c = new PixelCanvas(W, H);
+  const rand = seededRandom(seed);
+  const clumps = tileNoise(W, H, 3, rand);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) c.set(x, y, shade(GRAVEL, 0.7 + clumps(x, y) * 0.3 + rand() * 0.25));
+  }
+  for (let y0 = 4; y0 < H; y0 += 16) {
+    const start = 3 + Math.floor(rand() * 2);
+    const end = W - 3 - Math.floor(rand() * 2);
+    const tone = 0.85 + rand() * 0.25;
+    for (let y = y0; y < y0 + 7; y++) {
+      for (let x = start; x < end; x++) {
+        const edge = y === y0 ? 1.15 : y === y0 + 6 ? 0.7 : 1; // lit top edge, shadow below
+        const grain = (x * 3 + y * 7) % 11 === 0 ? 0.85 : 1;
+        c.set(x, y, shade(SLEEPER, tone * edge * grain));
+      }
+    }
+    // Spikes on both sides of each rail.
+    for (const x of [9, 14, 49, 54]) c.set(x, y0 + 3, 0x26221f);
+  }
+  for (const left of [10, 50]) {
+    for (let y = 0; y < H; y++) RAIL.forEach((color, i) => c.set(left + i, y, shade(color, 0.95 + rand() * 0.1)));
+  }
+  c.noise(rand, 0.04);
+  return c;
+}
+
+/**
  * The painted textures, by name. They're painted once, at load time (a few
  * milliseconds), so the seeds make them identical at every load.
  */
@@ -442,4 +516,6 @@ export const LEVEL_TEXTURES: Record<string, () => THREE.Texture> = {
   timber: () => timber(51).toTexture(),
   iron_plates: () => ironPlates(61).toTexture(),
   canyon_rock: () => canyonRock(71).toTexture(),
+  road: () => road(81).toTexture(),
+  railway: () => railway(91).toTexture(),
 };

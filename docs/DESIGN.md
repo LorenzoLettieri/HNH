@@ -429,6 +429,25 @@ Obiettivo: **premiare il movimento preciso** per spostarsi, non solo per schivar
 - Tutti i percorsi sono verificati con un giocatore simulato (fisica vera, comandi scritti a mano).
 - Draw call: fino a ~930 nella vista più carica. Lo **static batching** (§9) sta diventando utile.
 
+### Materiali e texture [FATTO]
+La cittadina non è più un greybox: ogni edificio ha il suo materiale, e il "linguaggio" dei
+materiali racconta il posto (`src/levels/town.ts`, disegno in `src/render/materials.ts`).
+- **Parte "americana", di legno**: assi orizzontali verniciate e scrostate in tre colori (bianco
+  osso: hotel, telegrafo, casa; rosso sangue di bue: saloon, stalla; senape: emporio, deposito),
+  assi grezze verticali (impresario, armeria, casa a ovest), tetti a **scandole** o in **lamiera**.
+- **Parte "spagnola"**: chiesa (una missione) e bagni pubblici in **adobe** coi **coppi**.
+- **Pietra** per la prigione dello sceriffo e il piano terra dell'armaiolo, **mattoni** per banca e
+  magazzino, **ferro rivettato** steampunk per torri gemelle e piattaforme sospese, **canyon** a strati rossi.
+- **Porte e finestre** (decal, solo disegnate): un quarto delle finestre è acceso, un quarto
+  sbarrato o rotto; la banca e le celle hanno le sbarre. Di notte (High Midnight) le finestre accese
+  sono il colpo d'occhio della mappa. I buchi veri (emporio, armeria) hanno una cornice.
+- **Terreno**: strade in terra battuta, piazza del pozzo e sagrato lastricati, passerelle di legno
+  davanti agli edifici, binari sotto i vagoni e verso la miniera.
+- Le texture che il pack non aveva (assi verniciate, adobe, lamiera, scandole, pali, ferro, roccia,
+  strada, binario) sono **dipinte in codice** (`src/render/levelTextures.ts`).
+- Draw call: il livello è unito in una mesh per texture (static batching): su Main Street da 920 a ~600
+  per fotogramma, con porte, finestre e terreno compresi.
+
 ### Regole pratiche emerse (vincoli del movimento attuale)
 - **Salto massimo ≈ 1,17 m**: gradini e scalini al massimo **1 m**.
 - **Salto in corsa ≈ 5,6 m** di distanza: gap tra piattaforme ≤ 3–4 m per stare comodi.

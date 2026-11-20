@@ -19,7 +19,12 @@ export interface Box {
    * No look = invisible collider (e.g. the collision box of a prop).
    */
   look?:
+    // Ground: bare dirt; and for the ground patches (World.ground) packed road,
+    // flagstones, a railway track.
     | 'dirt'
+    | 'road'
+    | 'paving'
+    | 'railway'
     // Walls: painted clapboard (bone white, barn red, mustard), raw vertical boards,
     // adobe, grey stone, brick, corrugated tin.
     | 'clapboard'
@@ -146,9 +151,24 @@ export interface Decal {
   look: DecalLook;
 }
 
+/**
+ * A patch of ground with its own look (a street, a square, a boardwalk, rails),
+ * painted flat ON the ground (y = 0). Purely visual, like the decals: the ground
+ * under it is still the one big ground box. Patches must not overlap each other.
+ */
+export interface GroundPatch {
+  minX: number;
+  minZ: number;
+  maxX: number;
+  maxZ: number;
+  look: NonNullable<Box['look']>;
+}
+
 export interface World {
   boxes: Box[];
   props: Prop[];
+  /** Streets, squares, boardwalks, rails painted on the ground (only drawn). */
+  ground?: GroundPatch[];
   /** Doors and windows on the walls (only drawn). Optional: the test arena has none. */
   decals?: Decal[];
   /** Practice targets. Optional: not every level has them. */

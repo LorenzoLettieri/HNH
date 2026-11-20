@@ -11,7 +11,7 @@ import { jumpToWave } from './sim/waves';
 import { DEFAULT_LEVEL, LEVELS } from './levels';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
 import { lookScale, updateCameraFeel } from './render/cameraFeel';
-import { createLevelMeshes, loadMaterials } from './render/materials';
+import { createGroundMeshes, createLevelMeshes, loadMaterials } from './render/materials';
 import { createDecalMeshes } from './render/decals';
 import { ATMOSPHERES, type Atmosphere } from './render/atmospheres';
 import { applySunLight, createSunLight } from './render/sunLight';
@@ -119,6 +119,8 @@ const game = createGame(world, seed);
 await loadMaterials(); // top-level await: the game starts once textures are ready
 // All the level's boxes, merged into one mesh per texture (see createLevelMeshes).
 for (const mesh of createLevelMeshes(world.boxes)) scene.add(mesh);
+// Streets, squares, boardwalks and rails painted on the ground.
+for (const mesh of createGroundMeshes(world.ground ?? [])) scene.add(mesh);
 // Doors and windows: pictures on the walls (see decals.ts).
 for (const mesh of await createDecalMeshes(world.decals ?? [])) scene.add(mesh);
 // Props (barrels, signs, torches, lanterns, grass): models + their flames.

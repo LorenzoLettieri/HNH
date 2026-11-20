@@ -58,7 +58,7 @@
 // that you either hop over (keeping your speed) or crash into.
 // Note: wall jumps push you AWAY from the wall, so you can't climb a single
 // wall with them; they work between two close walls, or as one extra boost.
-import { box, type Box, type Decal, type DecalLook, type Facing, type Prop, type World } from '../sim/world';
+import { box, type Box, type Decal, type DecalLook, type Facing, type GroundPatch, type Prop, type World } from '../sim/world';
 import { propColliders } from '../sim/props';
 import { seedFrom } from '../sim/random';
 
@@ -421,6 +421,41 @@ const decals: Decal[] = [
   frame(22, 5.75, 25.4, 'east', 2.4, 2.9, 'doorFrame'),
 ];
 
+// --- The ground: streets, squares, boardwalks, rails ---------------------------------
+// Painted on the ground (GroundPatch in src/sim/world.ts): only drawn, the ground
+// box under them doesn't change. They must not overlap (they'd flicker).
+
+/** A ground patch from its corners (min x, min z, max x, max z). */
+function patch(minX: number, minZ: number, maxX: number, maxZ: number, look: GroundPatch['look']): GroundPatch {
+  return { minX, minZ, maxX, maxZ, look };
+}
+
+const ground: GroundPatch[] = [
+  // MAIN STREET, packed by the wagons: 10 m wide, north and south of the square.
+  patch(-5, -42, 5, -8, 'road'),
+  patch(-5, 8, 5, 42, 'road'),
+  // CROSS STREET: 7 m, from the gallows to the rail line.
+  patch(-28, -3.5, -8, 3.5, 'road'),
+  patch(11, -3.5, 28, 3.5, 'road'),
+  // The SQUARE at the crossing (the well), and the church's forecourt: flagstones.
+  patch(-8, -8, 11, 8, 'paving'),
+  patch(5, -23, 12, -8, 'paving'),
+  // BOARDWALKS in front of the buildings (under the balcony and the porches).
+  patch(-8, -19, -5.6, -9, 'planks'), // saloon
+  patch(-8, 9.5, -5.6, 18.5, 'planks'), // sheriff
+  patch(7.6, 9, 10, 19, 'planks'), // bank
+  patch(-19, -29, -9, -27, 'planks'), // hotel
+  patch(32, -35, 35, -25, 'planks'), // depot: the platform along the tracks
+  patch(33, 2, 35, 8, 'planks'), // telegraph office
+  // RAILS: the line under the wagons, and a minecart track into the mine.
+  patch(29, -42, 31, 42, 'railway'),
+  patch(35.5, 28, 37.5, 37, 'railway'),
+  // Floors: inside the general store (up to the inner face of its walls), under the sheds.
+  patch(-30.35, 11.15, -23.15, 18.85, 'planks'),
+  patch(-40, -18, -33, -12, 'paving'), // the forge
+  patch(35, -20, 42, -14, 'planks'), // the sawmill
+];
+
 // --- Cemetery: rows of tombstones and crosses ----------------------------------------
 function cemetery(cx: number, cz: number): Box[] {
   const out: Box[] = [];
@@ -496,6 +531,7 @@ export const town: World = {
   spawn: { x: 0, y: 0, z: 36 },
   props,
   decals,
+  ground,
   // The vendors (see ShopSpawn in src/sim/world.ts).
   shops: [
     { x: 18, y: 4.3, z: 22.4, kind: 'weapons' }, // armory: behind the counter
