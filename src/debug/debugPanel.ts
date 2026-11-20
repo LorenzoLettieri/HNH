@@ -73,6 +73,16 @@ export function createDebugPanel(options: {
   shop.number(tuning, 'ricochetDamage', 0, 300, 5);
   shop.number(tuning, 'lastShotRadius', 0.5, 8, 0.1);
   shop.number(tuning, 'lastShotDamage', 0, 400, 5);
+  shop.number(tuning, 'longBarrelsSpreadScale', 0.2, 1, 0.05);
+  shop.number(tuning, 'longBarrelsFalloffExtra', 0, 10, 0.5);
+  shop.number(tuning, 'dragonBurnTime', 0, 6, 0.1);
+  shop.number(tuning, 'dragonBurnInterval', 0.1, 2, 0.05);
+  shop.number(tuning, 'dragonBurnDamage', 0, 100, 1);
+  shop.number(tuning, 'muleRecoilScale', 1, 4, 0.1);
+  shop.number(tuning, 'leadStockKnockbackScale', 1, 4, 0.1);
+  shop.number(tuning, 'leadStockSlamDamage', 0, 300, 5);
+  shop.number(tuning, 'groupPushRadius', 0.5, 6, 0.1);
+  shop.number(tuning, 'groupPushScale', 0, 1.5, 0.05);
 
   // --- Style meter ---
   const style = panel.folder('Style (src/sim/config.ts, src/sim/style.ts)');

@@ -150,6 +150,22 @@ export const tuning = {
   /** Card "Ultimo colpo": radius (meters) and damage of the last round's explosion (100 = two body shots). */
   lastShotRadius: 3,
   lastShotDamage: 100,
+  /** Card "Canne lunghe": spread × this, and full damage this many meters farther. */
+  longBarrelsSpreadScale: 0.6,
+  longBarrelsFalloffExtra: 2,
+  /** Card "Fiato di drago": seconds an enemy burns, and damage every dragonBurnInterval seconds. */
+  dragonBurnTime: 2,
+  dragonBurnInterval: 0.5,
+  dragonBurnDamage: 10,
+  /** Card "Mulo": your shotgun recoil × this. */
+  muleRecoilScale: 2,
+  /** Card "Calcio di piombo": knockback × this; damage when a thrown enemy hits a wall, within this many seconds. */
+  leadStockKnockbackScale: 2,
+  leadStockSlamDamage: 50,
+  leadStockSlamTime: 0.8,
+  /** Card "Spinta di gruppo": enemies within this many meters behind the one you blasted are thrown too, at this × the strength. */
+  groupPushRadius: 2.5,
+  groupPushScale: 0.7,
   /** Minimum seconds between two shots (it's semi-automatic: one click = one shot). */
   revolverFireInterval: 0.32,
   /** A click slightly before the gun is ready still fires as soon as it is, seconds. */

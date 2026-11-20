@@ -13,7 +13,8 @@ import { BIG_BODY, getFlowField, getNavGraph, nearestNode } from './nav';
 import type { SimEvent } from './events';
 import { cellAt, getAirGrid } from './airNav';
 import { createPlayer, currentHeight, respawn, stepPlayer, type PlayerState } from './player';
-import { stepWeapon } from './weapon';
+import { refundLeadFlight, stepWeapon } from './weapon';
+import { stepStatus } from './status';
 import { stepKick } from './kick';
 import { blockPlayerWithBodies } from './bodyBlock';
 import { stepShop } from './shop';
@@ -110,7 +111,10 @@ export function stepGame(
   // During HIGH NOON the guns are bottomless (the weapon doesn't know why: it only gets the flag).
   stepWeapon(game.player, cmd, world, game.entities, events, isHighNoon(game.style), game);
   stepKick(game.player, cmd, world, game.entities, events);
+  // Fire and wall slams from the shotgun's cards: their kills are yours too.
+  stepStatus(game.player, game.entities, events);
   const playerHits = events.slice(firstNewEvent);
+  refundLeadFlight(game.player, playerHits);
   // The style multiplies what you earn. Read BEFORE stepStyle (end of the
   // tick): a kill counts with the rank you had when you pulled the trigger,
   // not with the rank that same kill is about to give you.

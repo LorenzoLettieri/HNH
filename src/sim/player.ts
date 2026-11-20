@@ -106,6 +106,11 @@ export interface PlayerState {
    * card too: it's just a fact about the jump, the weapon decides what it's worth.
    */
   wallJumpShot: boolean;
+  /**
+   * Card "Volo di piombo": shells spent on shotgun jumps since you left the
+   * ground. A kill before landing gives them back (refundLeadFlight in weapon.ts).
+   */
+  leadFlightShells: number;
 
   // --- Kick (see kick.ts) ---
   /** Ticks since the kick started (0 = not kicking). The foot lands at kickWindup. */
@@ -159,6 +164,7 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     fanShotsLeft: 0,
     slideReloadTicks: 0,
     wallJumpShot: false,
+    leadFlightShells: 0,
     kickTicks: 0,
     kickCooldownTicks: 0,
     kickHeld: false,
@@ -312,6 +318,7 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
   if (landed) {
     p.wallJumpsLeft = tuning.wallJumpsMax; // touching ground recharges wall jumps
     p.wallJumpShot = false; // ...and the wall jump's shot was missed
+    p.leadFlightShells = 0; // ...and the shotgun jump's shells are spent for good
   }
   if (!landed) p.sliding = false; // slid off a ledge: now we're just falling
 
@@ -485,6 +492,7 @@ export function respawn(p: PlayerState, world: World): void {
   p.fanQueued = false;
   p.slideReloadTicks = 0;
   p.wallJumpShot = false;
+  p.leadFlightShells = 0;
   p.switchTicks = 0;
   p.kickTicks = 0;
   p.kickCooldownTicks = 0;

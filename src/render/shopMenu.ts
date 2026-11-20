@@ -76,6 +76,42 @@ const CARD_TEXT: Record<CardId, { name: string; desc: string }> = {
     name: 'Ultimo colpo',
     desc: 'L’ultimo proiettile del tamburo esplode dove colpisce. Buono contro i gruppi.',
   },
+  longBarrels: {
+    name: 'Canne lunghe',
+    desc: 'Rosata più stretta, e il danno pieno arriva due metri più lontano.',
+  },
+  dragonBreath: {
+    name: 'Fiato di drago',
+    desc: 'Pallini incendiari: chi li prende brucia per due secondi.',
+  },
+  mule: {
+    name: 'Mulo',
+    desc: 'Il doppio del contraccolpo. Sparati ai piedi e vola. Non va d’accordo col Calcio di piombo.',
+  },
+  leadStock: {
+    name: 'Calcio di piombo',
+    desc: 'Nessun contraccolpo, il doppio della spinta. Chi sbatte contro un muro si fa male. Non va d’accordo col Mulo.',
+  },
+  pointBlankLuck: {
+    name: 'Bruciapelo fortunato',
+    desc: 'Un’uccisione a bruciapelo ti rimette la cartuccia nella canna.',
+  },
+  doubleBang: {
+    name: 'Doppio botto',
+    desc: 'Con tutte e due le canne cariche, il primo colpo le spara insieme.',
+  },
+  leadFlight: {
+    name: 'Volo di piombo',
+    desc: 'Se in volo dopo uno shotgun jump uccidi qualcuno, la cartuccia ti torna indietro.',
+  },
+  bouncingPellets: {
+    name: 'Pallini rimbalzanti',
+    desc: 'I pallini che colpiscono il pavimento rimbalzano una volta.',
+  },
+  groupPush: {
+    name: 'Spinta di gruppo',
+    desc: 'La spinta a bruciapelo travolge anche chi sta dietro al primo nemico.',
+  },
 };
 
 /** Weapon names in the upgrade panel's title. */

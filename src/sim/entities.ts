@@ -15,6 +15,11 @@ interface EntityBase {
   py: number;
   pz: number;
   health: number;
+  /** Card "Fiato di drago": ticks of fire left (status.ts). Optional: most entities never burn. */
+  burnTicks?: number;
+  /** Card "Calcio di piombo": ticks left in which hitting a wall hurts (status.ts), and its speed last tick. */
+  slamTicks?: number;
+  slamSpeed?: number;
 }
 
 export interface TargetEntity extends EntityBase {

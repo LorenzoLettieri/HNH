@@ -635,17 +635,18 @@ futuro **poligono di tiro / tutorial**.
 - **Tamburo veloce**: ricarica più rapida di un terzo. [FATTA]
 - **Colpo da cavaliere**: il primo colpo dopo un wall jump è un critico garantito (finché non tocchi terra). [FATTA]
 
-**Mazzo della doppietta** (9 carte)
-- **Canne lunghe**: rosata stretta, danno pieno fino a 8 m (oggi 6).
-- **Fiato di drago**: pallini incendiari, il nemico brucia per 2 s. [DA DECIDERE: come carta perde il malus
-  "meno spinta" che aveva come bivio?]
+**Mazzo della doppietta** (9 carte) [FATTO]
+- **Canne lunghe**: rosata stretta (×0,6), danno pieno fino a 8 m (oggi 6).
+- **Fiato di drago**: pallini incendiari, il nemico brucia per 2 s (10 danni ogni 0,5 s). Come carta **senza
+  il malus** "meno spinta" che aveva come bivio [DECISO].
 - **Mulo**: contraccolpo doppio, shotgun jump enorme. **Esclusiva con Calcio di piombo.**
-- **Calcio di piombo**: nessun contraccolpo, spinta doppia sui nemici; chi sbatte contro un muro prende danno.
-- **Bruciapelo fortunato**: uccidere a bruciapelo rimette la cartuccia.
-- **Doppio botto**: dopo la ricarica il primo sparo fa partire le due canne insieme (danno doppio, un colpo solo).
-- **Volo di piombo**: lo shotgun jump non consuma la cartuccia se uccidi qualcuno prima di toccare terra.
-- **Pallini rimbalzanti**: i pallini che toccano il pavimento rimbalzano una volta.
-- **Spinta di gruppo**: la spinta a bruciapelo colpisce anche chi sta dietro al primo nemico.
+- **Calcio di piombo**: nessun contraccolpo, spinta doppia sui nemici; chi sbatte contro un muro entro 0,8 s prende 50 danni.
+- **Bruciapelo fortunato**: uccidere a bruciapelo (entro 5 m) rimette la cartuccia.
+- **Doppio botto**: con due cartucce in canna il primo sparo fa partire le due canne insieme (due rosate, doppio contraccolpo).
+- **Volo di piombo**: lo shotgun jump (sparo verso il basso in aria) non consuma la cartuccia se uccidi qualcuno prima di
+  toccare terra (torna nella canna, o in tasca se la canna è piena).
+- **Pallini rimbalzanti**: i pallini che toccano il pavimento rimbalzano una volta (il calo col danno conta tutto il percorso).
+- **Spinta di gruppo**: la spinta a bruciapelo lancia anche chi sta entro 2,5 m dietro al primo nemico (al 70%).
 
 **Mazzo della carabina** (7 carte)
 - **Duellante**: dopo 1,5 s senza sparare il colpo successivo fa danno doppio (150 al corpo, 600 critico),

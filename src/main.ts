@@ -44,6 +44,7 @@ import { createViewmodel } from './render/weapons/viewmodel';
 import type { SimEvent } from './sim/events';
 import { initAudio, setAudioPaused } from './audio/sfx';
 import { applyParticles, createParticles, updateParticles } from './render/particles';
+import { updateBurning } from './render/burning';
 import { applyHeightFog } from './render/heightFog';
 import { applySky, createSky, directionFromAngles } from './render/sky';
 
@@ -374,6 +375,7 @@ renderer.setAnimationLoop((now: number) => {
   hounds.update(game.entities, events, camera, alpha, dt);
   bulls.update(game.entities, events, camera, alpha, dt);
   sharpshooters.update(game.entities, events, camera, alpha, dt);
+  updateBurning(game.entities, dt); // "Fiato di drago": burning enemies
   projectiles.update(game.projectiles, events, camera, alpha, dt);
   pickups.update(game.pickups, camera, alpha, now / 1000);
   vendors.update(camera, now / 1000);

@@ -30,11 +30,27 @@ export type CardId =
   | 'riderShot'
   | 'quickHand'
   | 'ricochet'
-  | 'lastShot';
+  | 'lastShot'
+  // Shotgun
+  | 'longBarrels'
+  | 'dragonBreath'
+  | 'mule'
+  | 'leadStock'
+  | 'pointBlankLuck'
+  | 'doubleBang'
+  | 'leadFlight'
+  | 'bouncingPellets'
+  | 'groupPush';
 
 export interface CardInfo {
   /** The weapon whose deck it's in. */
   weapon: WeaponId;
+  /**
+   * A card that can't live with this one (they contradict each other): once
+   * you take one, the other leaves the deck. Written on ONE of the two is
+   * enough, the check goes both ways (see `excluded`).
+   */
+  excludes?: CardId;
 }
 
 export const CARDS: Record<CardId, CardInfo> = {
@@ -52,7 +68,32 @@ export const CARDS: Record<CardId, CardInfo> = {
   ricochet: { weapon: 'revolver' },
   /** Ultimo colpo: the cylinder's last round explodes where it lands (explode in weapon.ts). */
   lastShot: { weapon: 'revolver' },
+
+  /** Canne lunghe: tighter spread, full damage farther away (fireShotgun). */
+  longBarrels: { weapon: 'shotgun' },
+  /** Fiato di drago: the pellets set enemies on fire (burnTicks, see status.ts). */
+  dragonBreath: { weapon: 'shotgun' },
+  /** Mulo: double recoil on you, a huge shotgun jump. Can't live with Calcio di piombo (no recoil). */
+  mule: { weapon: 'shotgun', excludes: 'leadStock' },
+  /** Calcio di piombo: no recoil, double knockback; thrown into a wall, an enemy takes damage (status.ts). */
+  leadStock: { weapon: 'shotgun' },
+  /** Bruciapelo fortunato: a point-blank kill puts the shell back in the barrel. */
+  pointBlankLuck: { weapon: 'shotgun' },
+  /** Doppio botto: with both barrels loaded, the first shot fires both together. */
+  doubleBang: { weapon: 'shotgun' },
+  /** Volo di piombo: a shotgun jump gives the shell back if you kill something before landing (refundLeadFlight). */
+  leadFlight: { weapon: 'shotgun' },
+  /** Pallini rimbalzanti: pellets hitting the floor bounce once. */
+  bouncingPellets: { weapon: 'shotgun' },
+  /** Spinta di gruppo: the point-blank knockback also throws whoever is right behind the enemy. */
+  groupPush: { weapon: 'shotgun' },
 };
+
+/** Is this card out of the deck because you took one that excludes it (or that it excludes)? */
+function excluded(p: PlayerState, id: CardId): boolean {
+  const taken = p.cards[CARDS[id].weapon];
+  return taken.some((t) => CARDS[t].excludes === id || CARDS[id].excludes === t);
+}
 
 /** The deck of a weapon: every card that belongs to it, in a fixed order (the draw shuffles a copy). */
 export function deckOf(weapon: WeaponId): CardId[] {
@@ -96,7 +137,7 @@ export function upgradePrice(p: PlayerState, weapon: WeaponId): number | null {
  */
 export function upgradeOffer(p: PlayerState, weapon: WeaponId): CardId[] {
   if (upgradePrice(p, weapon) === null) return [];
-  const left = deckOf(weapon).filter((id) => !p.cards[weapon].includes(id));
+  const left = deckOf(weapon).filter((id) => !p.cards[weapon].includes(id) && !excluded(p, id));
   const rng = { rng: seedFrom(p.cardSeed, WEAPONS.indexOf(weapon), upgradeLevel(p, weapon)) };
   const count = Math.min(tuning.upgradeOfferSize, left.length);
   for (let i = 0; i < count; i++) {

@@ -39,6 +39,7 @@ import type { World } from './world';
 import { damage, hitBox, isAlive, isEnemy, type Entity, type EyebatEntity } from './entities';
 import { knockBack } from './kick';
 import { random, type RandomState } from './random';
+import { ignite, markSlam } from './status';
 import { hasCard } from './upgrades';
 
 export type WeaponId = 'revolver' | 'shotgun' | 'rifle';
@@ -236,13 +237,18 @@ export function stepWeapon(
     // HIGH NOON: the cylinder never empties, there's no last round.
     const lastRound = ammo === 1 && !bottomless;
     const eventsBefore = events.length;
+    /** Rounds this shot takes out of the gun (the shotgun's cards can make it 2, or 0). */
+    let shells = 1;
     if (fanning) {
       events.push({ type: 'fire', weapon: 'revolver', barrel: 0 });
       fireFanned(p, world, entities, events, rng, lastRound);
     } else if (p.weapon === 'shotgun') {
-      // Right barrel first (2 shells left), then the left one.
-      events.push({ type: 'fire', weapon: 'shotgun', barrel: tuning.shotgunAmmo - ammo === 0 ? 0 : 1 });
-      fireShotgun(p, world, entities, events);
+      // Right barrel first (2 shells left), then the left one. Card "Doppio
+      // botto": with both loaded, both go off together.
+      const both = hasCard(p, 'doubleBang') && ammo >= 2;
+      if (both || ammo === tuning.shotgunAmmo) events.push({ type: 'fire', weapon: 'shotgun', barrel: 0 });
+      if (both || ammo !== tuning.shotgunAmmo) events.push({ type: 'fire', weapon: 'shotgun', barrel: 1 });
+      shells = fireShotgun(p, world, entities, events, both ? [0, Math.PI / 7] : [ammo === tuning.shotgunAmmo ? 0 : Math.PI / 7]);
     } else if (p.weapon === 'rifle') {
       events.push({ type: 'fire', weapon: 'rifle', barrel: 0 });
       fireRifle(p, world, entities, events, rng);
@@ -250,7 +256,7 @@ export function stepWeapon(
       events.push({ type: 'fire', weapon: 'revolver', barrel: 0 });
       fireRevolver(p, world, entities, events, lastRound);
     }
-    if (!bottomless) setCurrentAmmo(p, ammo - 1);
+    if (!bottomless) setCurrentAmmo(p, Math.min(full, ammo - shells));
     p.wallJumpShot = false; // the wall jump's shot is fired (hit or miss)
     p.fireCooldownTicks = secondsToTicks(fireInterval(p.weapon));
     p.fireBufferTicks = 0;
@@ -345,6 +351,22 @@ function aim(p: PlayerState) {
   };
 }
 
+/** Where a traced bullet stopped (see trace's `end`). */
+interface TraceEnd {
+  x: number;
+  y: number;
+  z: number;
+  /** It hit something (the level or an entity), not the sky. */
+  hit: boolean;
+  /** Vertical part of the surface's normal: ~1 = a floor. */
+  ny: number;
+  /** How far it went. */
+  distance: number;
+}
+function newEnd(): TraceEnd {
+  return { x: 0, y: 0, z: 0, hit: false, ny: 0, distance: 0 };
+}
+
 /**
  * One bullet (or pellet) along a ray: what does it hit first? Pushes the
  * 'shot' event (for impacts and blood) and returns the entity hit, if any,
@@ -358,8 +380,8 @@ function trace(
   living: Entity[],
   pellet: boolean,
   events: SimEvent[],
-  /** If given, filled with where the bullet stopped and whether it hit anything (level or entity). */
-  end?: { x: number; y: number; z: number; hit: boolean },
+  /** If given, filled with where the bullet stopped, whether it hit anything (level or entity) and the surface's normal. */
+  end?: TraceEnd,
 ): { target: Entity; distance: number; headshot: boolean } | null {
   // Two raycasts: against the level and against the (living) entities.
   // The bullet stops at whichever is closer: a target behind a wall is safe.
@@ -394,6 +416,8 @@ function trace(
     end.y = to.y;
     end.z = to.z;
     end.hit = hit !== null;
+    end.ny = hit ? hit.ny : 0;
+    end.distance = hit ? hit.distance : range;
   }
   events.push({
     type: 'shot',
@@ -457,7 +481,7 @@ function revolverBullet(
   events: SimEvent[],
   lastRound: boolean,
 ): void {
-  const end = { x: 0, y: 0, z: 0, hit: false };
+  const end = newEnd();
   const hit = trace(ox, oy, oz, dx, dy, dz, tuning.weaponRange, world, entities.filter(isAlive), false, events, end);
   if (hit) {
     const critical = hit.headshot || (p.wallJumpShot && hasCard(p, 'riderShot'));
@@ -636,35 +660,77 @@ function tilt(p: PlayerState, a: ReturnType<typeof aim>, ax: number, ay: number,
  * The damage of each pellet drops with distance (falloff): that's what makes
  * it a close-range weapon, together with the spread.
  */
-function fireShotgun(p: PlayerState, world: World, entities: Entity[], events: SimEvent[]): void {
+function fireShotgun(p: PlayerState, world: World, entities: Entity[], events: SimEvent[], barrels: number[]): number {
   const a = aim(p);
   const { ox, oy, oz, dx, dy, dz } = a;
   const living = entities.filter(isAlive);
   // Damage is summed per entity and applied once at the end: one hitmarker,
   // one 'hit' event, one kill, even if 10 pellets hit the same ghoul.
   const totals = new Map<Entity, { amount: number; headshot: boolean; pellets: number; distance: number }>();
-  const spread = Math.tan((tuning.shotgunSpread * Math.PI) / 180);
-  const barrelTwist = p.loaded.shotgun === tuning.shotgunAmmo ? 0 : Math.PI / 7;
-  for (const [ax, ay] of pelletPattern(tuning.shotgunPellets, barrelTwist)) {
-    const [px, py, pz] = tilt(p, a, ax, ay, spread);
-    const hit = trace(ox, oy, oz, px, py, pz, tuning.shotgunRange, world, living, true, events);
-    if (!hit) continue;
+  const tight = hasCard(p, 'longBarrels') ? tuning.longBarrelsSpreadScale : 1; // "Canne lunghe"
+  const spread = Math.tan((tuning.shotgunSpread * tight * Math.PI) / 180);
+  const count = (hit: ReturnType<typeof trace>, travelled: number) => {
+    if (!hit) return;
     const amount =
       tuning.shotgunPelletDamage *
-      falloff(hit.distance) *
+      falloff(p, travelled + hit.distance) *
       (hit.headshot ? tuning.shotgunHeadshotMultiplier : 1);
     const t = totals.get(hit.target) ?? { amount: 0, headshot: false, pellets: 0, distance: Infinity };
     t.amount += amount;
     t.headshot ||= hit.headshot;
     t.pellets++;
-    t.distance = Math.min(t.distance, hit.distance);
+    t.distance = Math.min(t.distance, travelled + hit.distance);
     totals.set(hit.target, t);
+  };
+  // One pattern per barrel fired (two with "Doppio botto"); the second
+  // barrel's pattern is rotated, so it fills the gaps of the first.
+  for (const twist of barrels) {
+    for (const [ax, ay] of pelletPattern(tuning.shotgunPellets, twist)) {
+      const [px, py, pz] = tilt(p, a, ax, ay, spread);
+      const end = newEnd();
+      const hit = trace(ox, oy, oz, px, py, pz, tuning.shotgunRange, world, living, true, events, end);
+      count(hit, 0);
+      // "Pallini rimbalzanti": a pellet that hit the FLOOR bounces once.
+      // A mirror on a horizontal surface only flips the vertical part of
+      // the direction. It starts a hair above the floor, with the range it
+      // has left, and its falloff counts the whole path.
+      if (!hit && end.hit && end.ny > 0.7 && hasCard(p, 'bouncingPellets')) {
+        const rest = tuning.shotgunRange - end.distance;
+        count(trace(end.x, end.y + 0.02, end.z, px, -py, pz, rest, world, living, true, events), end.distance);
+      }
+    }
   }
+
+  let pointBlankKill = false;
   for (const [target, t] of totals) {
     applyGunDamage(target, Math.round(t.amount), t.headshot, 'shotgun', t.distance, events);
-    blastBack(p, target, t.pellets, t.distance);
+    if (hasCard(p, 'dragonBreath') && isAlive(target)) ignite(target); // "Fiato di drago"
+    if (!isAlive(target) && t.distance < tuning.shotgunKnockbackRange) pointBlankKill = true;
+    blastBack(p, target, t.pellets, t.distance, entities);
   }
-  recoil(p, dx, dy, dz);
+  // The recoil on you, once per barrel. "Calcio di piombo": none.
+  const flying = !p.onGround;
+  if (!hasCard(p, 'leadStock')) for (let i = 0; i < barrels.length; i++) recoil(p, dx, dy, dz);
+  // "Volo di piombo": a shot fired downward in the air is a shotgun jump; its
+  // shells come back if you kill something before landing.
+  if (flying && dy < 0 && hasCard(p, 'leadFlight')) p.leadFlightShells += barrels.length;
+  // "Bruciapelo fortunato": a point-blank kill gives one shell back.
+  const refund = pointBlankKill && hasCard(p, 'pointBlankLuck') ? 1 : 0;
+  return barrels.length - refund;
+}
+
+/**
+ * Card "Volo di piombo": called by stepGame with this tick's hits (gun and
+ * boot). A kill while you're still in the air after a shotgun jump puts the
+ * shells back: in the barrels if there's room, else in the pocket.
+ */
+export function refundLeadFlight(p: PlayerState, hits: SimEvent[]): void {
+  if (p.leadFlightShells === 0 || p.onGround) return;
+  if (!hits.some((e) => e.type === 'hit' && e.killed)) return;
+  const toGun = Math.min(p.leadFlightShells, tuning.shotgunAmmo - p.loaded.shotgun);
+  p.loaded.shotgun += toGun;
+  p.reserve.shells = Math.min(tuning.shotgunReserveMax, p.reserve.shells + p.leadFlightShells - toGun);
+  p.leadFlightShells = 0;
 }
 
 /**
@@ -675,9 +741,12 @@ function fireShotgun(p: PlayerState, world: World, entities: Entity[], events: S
  * Below shotgunKnockbackMin: nothing. Otherwise every weak hit would put the
  * ghoul in its 'staggered' state and you could stun-lock a crowd from afar.
  */
-function blastBack(p: PlayerState, target: Entity, pellets: number, distance: number): void {
+function blastBack(p: PlayerState, target: Entity, pellets: number, distance: number, entities: Entity[]): void {
   const closeness = 1 - distance / tuning.shotgunKnockbackRange;
-  const strength = Math.max(0, closeness) * Math.min(1, pellets / tuning.shotgunPellets);
+  const strength =
+    Math.max(0, closeness) *
+    Math.min(1, pellets / tuning.shotgunPellets) *
+    (hasCard(p, 'leadStock') ? tuning.leadStockKnockbackScale : 1); // "Calcio di piombo"
   if (strength < tuning.shotgunKnockbackMin) return;
   // Direction: from you to it, flat on the ground.
   const b = hitBox(target);
@@ -691,7 +760,26 @@ function blastBack(p: PlayerState, target: Entity, pellets: number, distance: nu
     kx /= len;
     kz /= len;
   }
-  knockBack(target, kx, kz, tuning.shotgunKnockback * strength, tuning.shotgunKnockbackLift * strength);
+  throwBody(p, target, kx, kz, strength);
+  // "Spinta di gruppo": whoever stands right behind it (farther from you,
+  // within groupPushRadius of it) is thrown the same way, a bit less hard.
+  if (hasCard(p, 'groupPush')) {
+    const tx = (b.minX + b.maxX) / 2;
+    const tz = (b.minZ + b.maxZ) / 2;
+    const reach = Math.hypot(tx - p.x, tz - p.z);
+    for (const other of entities) {
+      if (other === target || !isEnemy(other) || !isAlive(other)) continue;
+      const near = Math.hypot(other.x - tx, other.z - tz) < tuning.groupPushRadius;
+      const behind = Math.hypot(other.x - p.x, other.z - p.z) > reach;
+      if (near && behind) throwBody(p, other, kx, kz, strength * tuning.groupPushScale);
+    }
+  }
+}
+
+/** One body thrown by the blast (and, with "Calcio di piombo", hurt if it hits a wall). */
+function throwBody(p: PlayerState, e: Entity, kx: number, kz: number, strength: number): void {
+  knockBack(e, kx, kz, tuning.shotgunKnockback * strength, tuning.shotgunKnockbackLift * strength);
+  if (hasCard(p, 'leadStock')) markSlam(e);
 }
 
 /**
@@ -709,7 +797,8 @@ function blastBack(p: PlayerState, target: Entity, pellets: number, distance: nu
  *   On the ground nothing vertical: no surprise launches.
  */
 function recoil(p: PlayerState, dx: number, dy: number, dz: number): void {
-  const push = tuning.shotgunSelfPush;
+  const push = tuning.shotgunSelfPush * (hasCard(p, 'mule') ? tuning.muleRecoilScale : 1); // "Mulo"
+
   if (push <= 0) return;
   let px = -dx * push;
   let pz = -dz * push;
@@ -752,9 +841,15 @@ function pelletPattern(count: number, twist: number): [number, number][] {
   return points;
 }
 
-/** Damage multiplier for a pellet that traveled `distance` meters: 1, then a straight line down to the minimum. */
-function falloff(distance: number): number {
-  const { shotgunFalloffStart: start, shotgunFalloffEnd: end, shotgunFalloffMin: min } = tuning;
+/**
+ * Damage multiplier for a pellet that traveled `distance` meters: 1, then a
+ * straight line down to the minimum. "Canne lunghe" moves both ends farther.
+ */
+function falloff(p: PlayerState, distance: number): number {
+  const extra = hasCard(p, 'longBarrels') ? tuning.longBarrelsFalloffExtra : 0;
+  const start = tuning.shotgunFalloffStart + extra;
+  const end = tuning.shotgunFalloffEnd + extra;
+  const min = tuning.shotgunFalloffMin;
   if (distance <= start) return 1;
   if (distance >= end) return min;
   return 1 - ((distance - start) / (end - start)) * (1 - min);
