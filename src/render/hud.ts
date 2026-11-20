@@ -60,7 +60,12 @@ function restartAnimation(el: HTMLElement, cls: string): void {
  * death; the answer can arrive a moment later, while the curtain is down).
  */
 export function showDeathRank(rank: number | null): void {
-  deathRank.textContent = rank === null ? '' : rank === 1 ? 'NUOVO RECORD!' : `${rank}° POSTO IN CLASSIFICA`;
+  showDeathNote(rank === null ? '' : rank === 1 ? 'NUOVO RECORD!' : `${rank}° POSTO IN CLASSIFICA`);
+}
+
+/** A line under the stats on the death screen (e.g. "practice game"). */
+export function showDeathNote(text: string): void {
+  deathRank.textContent = text;
 }
 
 /** kind: 'hot' = HIGH NOON colors, 'countdown' = small line on top. */

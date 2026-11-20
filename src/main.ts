@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { initInput, isKeyDown, isPointerLocked, isTypingInField, requestLock } from './input';
 import { loadSettings, settings } from './settings';
 import { submitScore } from './leaderboard';
+import { markPractice, practiceGame, startGame } from './fairPlay';
 import { createMenu } from './menu';
 import { createDebugPanel, debugTime } from './debug/debugPanel';
 import { buildCommand, controlSettings, updateLook, view } from './controls';
@@ -34,7 +35,7 @@ import { createMapOverlay } from './render/mapOverlay';
 import { shopInReach } from './sim/shop';
 import './render/crosshair'; // paints the crosshair once
 import { adsAmount, GEAR } from './sim/weapon';
-import { showDeathRank, updateHud } from './render/hud';
+import { showDeathNote, showDeathRank, updateHud } from './render/hud';
 import { updateAmmoHud } from './render/ammoHud';
 import { updateWeaponBar } from './render/weaponBar';
 import { updateMoneyHud } from './render/moneyHud';
@@ -159,8 +160,14 @@ applyAtmosphere(ATMOSPHERES[atmosphereIndex]);
 const debugPanel = createDebugPanel({
   onAtmosphereChange: () => applyAtmosphere(ATMOSPHERES[atmosphereIndex]),
   onPostSizeChange: () => post.refresh(),
-  onJumpToWave: (n) => jumpToWave(game, n),
-  onGiveMoney: (amount) => (game.player.money += amount),
+  onJumpToWave: (n) => {
+    markPractice('ondata scelta dal pannello di debug');
+    jumpToWave(game, n);
+  },
+  onGiveMoney: (amount) => {
+    markPractice('vildenaro regalato dal pannello di debug');
+    game.player.money += amount;
+  },
 });
 debugPanel.showAtmosphere(ATMOSPHERES[atmosphereIndex]);
 
@@ -176,6 +183,8 @@ window.addEventListener('keydown', (e) => {
   // one would move the focus again.
   if (e.code === 'Tab' && !paused && !isTypingInField(e)) e.preventDefault();
   if (e.repeat || isTypingInField(e)) return;
+  // Debug keys that change the game: this game won't count (fairPlay.ts).
+  if (['KeyB', 'KeyG', 'KeyV', 'KeyL', 'KeyJ'].includes(e.code)) markPractice('nemici o raccoglibili fatti apparire');
   if (e.code === 'KeyT') {
     atmosphereIndex = (atmosphereIndex + 1) % ATMOSPHERES.length;
     applyAtmosphere(ATMOSPHERES[atmosphereIndex]);
@@ -237,6 +246,7 @@ camera.rotation.order = 'YXZ';
 // --- Menu & settings --------------------------------------------------------
 // Saved settings first, so the menu shows (and the game uses) the right values.
 loadSettings();
+startGame(); // the first game: does it count for the leaderboard? (fairPlay.ts)
 const menu = createMenu({ onPlay: () => requestLock(renderer.domElement) });
 const shopMenu = createShopMenu({ onCloseClick: () => closeShop() });
 
@@ -338,6 +348,7 @@ renderer.setAnimationLoop((now: number) => {
   while (accumulator >= TICK_DT) {
     copyPlayer(player, prevPlayer);
     const cmd = buildCommand(game.tick);
+    if (cmd.respawn) markPractice('respawn col tasto K');
     stepGame(game, cmd, world, TICK_DT, events);
     // The renderer only *reads* the state: "were we in the air, and now we're not?"
     if (!prevPlayer.onGround && player.onGround) triggerLandingDip(-prevPlayer.vy);
@@ -394,13 +405,20 @@ renderer.setAnimationLoop((now: number) => {
   shopMenu.onEvents(events);
   shopMenu.update(player, shopNearby, paused);
   updateHud(game, events, dt);
-  // Game over: send the score. Not awaited: the game goes on (the next run
-  // starts behind the death curtain) and the answer shows up when it comes.
+  // Game over: send the score, unless it was a practice game (fairPlay.ts).
+  // Not awaited: the game goes on (the next run starts behind the death
+  // curtain) and the answer shows up when it comes.
   for (const e of events) {
     if (e.type !== 'playerDied') continue;
-    submitScore({ name: settings.playerName, score: e.score, wave: e.wave, kills: e.kills })
-      .then(showDeathRank)
-      .catch(() => showDeathRank(null)); // offline / server down: just no rank
+    const practice = practiceGame();
+    if (practice) {
+      showDeathNote(`PARTITA DI PROVA · NON IN CLASSIFICA (${practice})`);
+    } else {
+      submitScore({ name: settings.playerName, score: e.score, wave: e.wave, kills: e.kills })
+        .then(showDeathRank)
+        .catch(() => showDeathRank(null)); // offline / server down: just no rank
+    }
+    startGame(); // the simulation already started the next one
   }
   updateThreats(game.entities, player, camera, dt);
   navDebug.update(getFlowField(getNavGraph(world), game.navGoal));
