@@ -248,13 +248,22 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
   resistenza). Ciclo **pedina → carica → morso → fuga**:
   - **Pedina** a ~12 m girandoti attorno **verso le spalle** (9,5 m/s: a piedi non lo semini).
   - Quando resta **fuori dalla tua vista** per 0,5 s (oltre 55° da dove guardi, cioè fuori dallo
-    schermo, o dietro un muro) **ulula** e **carica** a 13 m/s. L'ululato è il preavviso, con il
+    schermo, o dietro un muro) **ulula** e **carica** a 12 m/s. L'ululato è il preavviso, con il
     panning stereo: ti dice da dove arriva. Carica comunque se gli lasci arrivare a 5 m o se ti pedina
     da più di 7 s (fissarlo non basta a tenerlo lontano per sempre).
+  - **La carica è impegnata** (playtest: prima era un missile a ricerca, ti mordeva nel ~93% delle
+    cariche qualunque cosa facessi, e i cani erano la prima causa di morte). All'ululato punta
+    **dove sarai** e poi può curvare solo di **70°/s**. Bot di prova su terreno aperto, cane a 14 m:
+    fermo ti morde il 94% delle volte, strafe in linea retta l'82%; uno **scatto di lato o
+    un'inversione quando è a ~5 m** (~0,4 s prima) lo fa mancare 85–90% delle volte; a 3 m è tardi.
+    Se ti manca (o sbatte contro un muro) **sbanda** frenando per 0,7 s, sollevando terra: è il
+    momento di sparargli.
   - **Morso** (15 danni, preavviso 0,25 s), poi **scappa** per 1,2 s e ricomincia.
   - Non si arrampica: se sei su un tetto raggiungibile solo arrampicandosi, ti aspetta sotto.
   - **Aspetto**: segugio scheletrico color carbone, costole e spina dorsale scoperte, cornetti, collare
-    d'ottone chiodato, crepe di brace che si accendono quando carica. Sprite con **tre viste** (lato,
+    d'ottone chiodato, crepe di brace. **Deve vedersi bene** (playtest: di giorno spariva, marrone su marrone):
+    occhi grandi, **criniera di brace** luminosa lungo la schiena che ne disegna la sagoma, **scia di braci**
+    mentre corre; tutto si accende di più quando carica. Sprite con **tre viste** (lato,
     fronte, retro) scelte dall'angolo, perché ti gira attorno e va visto di profilo.
   - **Critico**: colpi sopra **0,7 m** (testa e orecchie) = ×3, come la testa del ghoul.
   - Bot di prova (non spara mai), 3 cani: ululato in media a ~90° da dove guardi (di lato o alle
@@ -430,6 +439,33 @@ Obiettivo: **premiare il movimento preciso** per spostarsi, non solo per schivar
 - Tutti i percorsi sono verificati con un giocatore simulato (fisica vera, comandi scritti a mano).
 - Draw call: fino a ~930 nella vista più carica. Lo **static batching** (§9) sta diventando utile.
 
+### Materiali e texture [FATTO]
+La cittadina non è più un greybox: ogni edificio ha il suo materiale, e il "linguaggio" dei
+materiali racconta il posto (`src/levels/town.ts`, disegno in `src/render/materials.ts`).
+- **Parte "americana", di legno**: assi orizzontali verniciate e scrostate in tre colori (bianco
+  osso: hotel, telegrafo, casa; rosso sangue di bue: saloon, stalla; senape: emporio, deposito),
+  assi grezze verticali (impresario, armeria, casa a ovest), tetti a **scandole** o in **lamiera**.
+- **Parte "spagnola"**: chiesa (una missione) e bagni pubblici in **adobe** coi **coppi**.
+- **Pietra** per la prigione dello sceriffo e il piano terra dell'armaiolo, **mattoni** per banca e
+  magazzino, **ferro rivettato** steampunk per torri gemelle e piattaforme sospese, **canyon** a strati rossi.
+- **Porte e finestre** (decal, solo disegnate): un quarto delle finestre è acceso, un quarto
+  sbarrato o rotto; la banca e le celle hanno le sbarre. Di notte (High Midnight) le finestre accese
+  sono il colpo d'occhio della mappa. I buchi veri (emporio, armeria) hanno una cornice.
+- **Terreno**: strade in terra battuta, piazza del pozzo e sagrato lastricati, passerelle di legno
+  davanti agli edifici, binari sotto i vagoni e verso la miniera.
+- Le texture che il pack non aveva (assi verniciate, adobe, lamiera, scandole, pali, ferro, roccia,
+  strada, binario) sono **dipinte in codice** (`src/render/levelTextures.ts`).
+- Draw call: il livello è unito in una mesh per texture (static batching): su Main Street da 920 a ~600
+  per fotogramma, con porte, finestre e terreno compresi.
+
+### Leggibilità controsole (dopo un playtest) [FATTO]
+I tester vedevano poco guardando verso il sole. Causa: in High Noon il sole stava a 14°, in fondo a
+Main Street **all'altezza dei nemici**, con raggi, bagliore e nebbia fitta: un tiratore a 20 m era una
+macchia nel velo arancione. Ora (`src/render/atmospheres.ts`, `HIGH_NOON`) il sole sta a 22° (il bagliore
+è sopra i tetti, la strada prende luce e le ombre restano lunghe), raggi e bagliore più deboli, nebbia
+da 20 a 110 m invece che da 12 a 85, nebbia a terra quasi dimezzata, luce ambientale un po' più forte.
+**Regola**: l'atmosfera non deve nascondere i nemici; un nemico a 20 m deve leggersi anche controsole.
+
 ### Regole pratiche emerse (vincoli del movimento attuale)
 - **Salto massimo ≈ 1,17 m**: gradini e scalini al massimo **1 m**.
 - **Salto in corsa ≈ 5,6 m** di distanza: gap tra piattaforme ≤ 3–4 m per stare comodi.
@@ -593,6 +629,23 @@ a caso o il **livello successivo di un patto che hai già**.
 - I livelli dei patti salgono **a salti interi** ("rimette 1 colpo" → "2 colpi"), mai +10%.
 
 ---
+
+### Classifica [IN CORSO]
+Una mini classifica online tra amici: alla morte si manda nome, punti, ondata e uccisioni; top 10
+nel menu (pagina "Classifica") e il piazzamento sulla schermata di morte.
+- **Servizio: Cloudflare Worker + D1** (gratuito, non va in pausa): un piccolo endpoint in
+  TypeScript (`POST /scores`, `GET /scores`) con un database SQLite. Scelto rispetto a Firebase
+  e Supabase perché è un vero mini-backend: la validazione sta sul server, ed è il primo pezzo
+  del futuro server autoritativo. Il sito resta statico su GitHub Pages.
+- **Il client non è fidato**: chiunque può mandare un punteggio falso dalla console. Tra amici
+  va bene; il server farà solo controlli di buon senso (nome pulito, numeri plausibili, un invio
+  ogni tanto per IP).
+- **Dopo**: verifica col **replay** (seed + `InputCommand` di ogni tick): il server rigioca la
+  partita e calcola lui il punteggio. Possibile perché la simulazione è deterministica (serve
+  però un seed per partita: ora dopo la morte la partita continua con lo stesso generatore).
+- Passi: (1) [FATTO] classifica finta nel `localStorage` dietro `submitScore`/`fetchTop`
+  (`src/leaderboard.ts`), nome nel menu, piazzamento alla morte; (2) [FATTO] Worker + D1 (`server/`);
+  (3) [FATTO] `fetch` veri al posto dei finti; (4) [FATTO] partite di prova fuori classifica (`fairPlay.ts`), le tue righe evidenziate e il tuo piazzamento anche oltre il 10°, **schermata di fine partita** alla CoD Zombies con statistiche e classifica (`endScreen.ts`, `stats.ts`). **Una riga per nome** (il record; si salvano comunque tutte le partite). Prossimo, se serve: limite di invii per IP sul server.
 
 ### Bersagli d'acciaio [DECISO: tenerli]
 I bersagli di prova (piatti d'acciaio su palo, 3 colpi, si rialzano) restano: serviranno per un

@@ -2,8 +2,9 @@
 // stalks you at a distance, waits until you're not looking, then charges.
 //
 //   stalk ──(out of your sight for a moment)──▶ charge (HOWL: the warning)
-//     ▲                                            │
-//     │                                    (close) ▼
+//     ▲  ▲                                         │   │
+//     │  └──────────── skid ◀──(it ran past you)───┘   │ (close)
+//     │                                                ▼
 //   retreat ◀──(teeth close, hit or miss)────── bite
 //
 // - STALK: far away, it follows the flow field like the ghouls. Within
@@ -15,6 +16,12 @@
 //   and turning around in time is enough to shoot it or dodge it.
 //   It also charges if you let it get too close (cornered), or if it has
 //   been stalking for too long (staring at it doesn't keep it away forever).
+//   The charge is COMMITTED: at the howl it aims at where you'll be, then it
+//   can only bend its run slowly (houndChargeTurnRate), like a real animal
+//   at full speed. Running in a straight line doesn't save you (it predicts
+//   it); a sidestep or a change of direction at the right moment does.
+// - SKID: it ran past you (or into a wall). It brakes, sliding, for a
+//   moment: the time to punish it.
 // - BITE: a short wind-up, then the teeth close.
 // - RETREAT: hit and run. It runs away for a moment, then stalks again.
 //
@@ -24,6 +31,7 @@ import { moveAndCollide, overlapsAny } from './collision';
 import { secondsToTicks, tuning } from './config';
 import type { Entity, HoundEntity } from './entities';
 import type { SimEvent } from './events';
+import { interceptTime } from './eyebat';
 import { jumpTo } from './ghoul';
 import { nearestNode, type FlowField, type NavGraph, type NavLink } from './nav';
 import { currentEyeHeight, hurtPlayer, type PlayerState } from './player';
@@ -73,12 +81,20 @@ export function stepHound(
     const impatient = inRange && h.stateTicks > secondsToTicks(tuning.houndStalkMaxTime);
     if (ambush || cornered || impatient) {
       setState(h, 'charge');
+      // Commit to a direction: at where you'll be.
+      const [ax, az] = leadPoint(h, player);
+      const ad = Math.hypot(ax - h.x, az - h.z) || 1;
+      h.chargeDirX = (ax - h.x) / ad;
+      h.chargeDirZ = (az - h.z) / ad;
       events.push({ type: 'houndHowl', entityId: h.id });
     }
   } else if (h.state === 'charge') {
     if (dist < tuning.houndBiteRange && Math.abs(player.y - h.y) < 1.2 && h.biteCooldownTicks === 0) {
       setState(h, 'bite');
       events.push({ type: 'houndBite', entityId: h.id });
+    } else if ((player.x - h.x) * h.chargeDirX + (player.z - h.z) * h.chargeDirZ < 0) {
+      // You're BEHIND its charge direction (negative dot product): it ran past you.
+      setState(h, 'skid');
     } else if (h.stateTicks > secondsToTicks(tuning.houndChargeMaxTime)) {
       setState(h, 'stalk'); // you got away: start over
     }
@@ -94,6 +110,8 @@ export function stepHound(
     }
   } else if (h.state === 'retreat' && h.stateTicks > secondsToTicks(tuning.houndRetreatTime)) {
     setState(h, 'stalk');
+  } else if (h.state === 'skid' && h.stateTicks > secondsToTicks(tuning.houndSkidTime)) {
+    setState(h, 'stalk');
   }
 
   // --- 2. Where to run, and how fast, in each state ---
@@ -106,7 +124,21 @@ export function stepHound(
     else [target, link] = followFlow(h, graph, flow, target);
   } else if (h.state === 'charge') {
     speed = tuning.houndChargeSpeed;
-    if (!(sameLevel && clearPath(h, player, dist, world))) [target, link] = followFlow(h, graph, flow, target);
+    // Bend the charge toward where you'll be, but at most houndChargeTurnRate.
+    // Angles in the same convention as the yaw: direction (sin a, cos a).
+    const a = Math.atan2(h.chargeDirX, h.chargeDirZ);
+    const [ax, az] = leadPoint(h, player);
+    const want = Math.atan2(ax - h.x, az - h.z);
+    const diff = Math.atan2(Math.sin(want - a), Math.cos(want - a)); // shortest way round, [-π, π]
+    const maxTurn = ((tuning.houndChargeTurnRate * Math.PI) / 180) * dt;
+    const turned = a + Math.max(-maxTurn, Math.min(maxTurn, diff));
+    h.chargeDirX = Math.sin(turned);
+    h.chargeDirZ = Math.cos(turned);
+    // A point far ahead along that direction: no path-finding, it's a straight sprint.
+    target = [h.x + h.chargeDirX * 10, h.z + h.chargeDirZ * 10];
+  } else if (h.state === 'skid') {
+    speed = 0; // brakes: the "accelerate toward the wished velocity" below becomes a slow slide to a stop
+    target = [h.x, h.z];
   } else if (h.state === 'bite') {
     speed = tuning.houndSpeed * 0.6; // jaws open, it slows down (otherwise it would overshoot you)
   } else {
@@ -143,7 +175,9 @@ export function stepHound(
   const targetVx = len > 0 ? (wishX / Math.max(1, len)) * speed : 0;
   const targetVz = len > 0 ? (wishZ / Math.max(1, len)) * speed : 0;
   if (h.onGround) {
-    const k = Math.min(1, tuning.houndAccel * dt);
+    // Skidding the paws slip: a quarter of the grip, so it slides past you.
+    const grip = h.state === 'skid' ? tuning.houndAccel * 0.25 : tuning.houndAccel;
+    const k = Math.min(1, grip * dt);
     h.vx += (targetVx - h.vx) * k;
     h.vz += (targetVz - h.vz) * k;
     // Jump links (gaps, steps): the same ballistic jump as the ghoul.
@@ -163,8 +197,22 @@ export function stepHound(
     if (room) {
       h.vy = Math.sqrt(2 * tuning.gravity * (tuning.houndJumpHeight + 0.15));
       h.onGround = false;
+    } else if (h.state === 'charge') {
+      setState(h, 'skid'); // ran into a wall it can't hop: dazed for a moment
     }
   }
+}
+
+/**
+ * Where to charge: where you'll be when it gets there, if you keep going the
+ * same way. interceptTime (from eyebat.ts) solves "when do a runner at
+ * houndChargeSpeed and you meet?"; then you + your velocity × that time
+ * × houndLeadFactor. That's why only a CHANGE of direction makes it miss.
+ */
+function leadPoint(h: HoundEntity, player: PlayerState): [number, number] {
+  const t = interceptTime(player.x - h.x, 0, player.z - h.z, player.vx, 0, player.vz, tuning.houndChargeSpeed);
+  const lead = t * tuning.houndLeadFactor;
+  return [player.x + player.vx * lead, player.z + player.vz * lead];
 }
 
 function setState(h: HoundEntity, state: HoundEntity['state']): void {

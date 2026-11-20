@@ -8,6 +8,7 @@ import { fanSettings } from '../render/weapons/hands';
 import { shovelSettings } from '../render/weapons/shovelView';
 import type { Atmosphere } from '../render/atmospheres';
 import { copyToClipboard, createPanel, toSource, type Folder } from './panel';
+import { checkTuning, markPractice } from '../fairPlay';
 
 const ATMOSPHERE_COLORS = [
   'skyTop',
@@ -44,6 +45,11 @@ export function createDebugPanel(options: {
   onGiveMoney: (amount: number) => void;
 }): DebugPanel {
   const panel = createPanel();
+  // Any control moved in the panel: check whether the tuning still matches
+  // config.ts (fairPlay.ts). One listener on the panel's root catches the
+  // 'input' events of every slider and box inside it: event delegation,
+  // the same trick as $(document).on('input', ...) in jQuery.
+  document.getElementById('debug-panel')!.addEventListener('input', checkTuning);
 
   // --- Waves (first: it's the one you use most while testing) ---
   const waves = panel.folder('Waves (src/sim/waves.ts)');
@@ -53,7 +59,7 @@ export function createDebugPanel(options: {
 
   // --- Time ---
   const time = panel.folder('Time (slow motion, src/main.ts)');
-  time.number(debugTime, 'timeScale', 0.02, 1, 0.01);
+  time.number(debugTime, 'timeScale', 0.02, 1, 0.01, () => markPractice('rallentatore'));
 
   // --- Shop ---
   const shop = panel.folder('Shop (src/sim/config.ts, src/sim/shop.ts)');
@@ -390,6 +396,9 @@ export function createDebugPanel(options: {
   hound.number(tuning, 'houndUnseenTime', 0, 3, 0.05);
   hound.number(tuning, 'houndCloseCharge', 0, 10, 0.5);
   hound.number(tuning, 'houndStalkMaxTime', 1, 20, 0.5);
+  hound.number(tuning, 'houndChargeTurnRate', 0, 360, 5);
+  hound.number(tuning, 'houndLeadFactor', 0, 1.5, 0.05);
+  hound.number(tuning, 'houndSkidTime', 0, 2, 0.05);
   hound.number(tuning, 'houndChargeMaxTime', 0.5, 8, 0.1);
   hound.number(tuning, 'houndRetreatTime', 0, 4, 0.1);
   hound.number(tuning, 'houndHitWidth', 0.3, 2.5, 0.05);

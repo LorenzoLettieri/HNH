@@ -1,10 +1,13 @@
 // The pause / start menu shown over the game (the "overlay" in index.html).
 // Pure DOM: the markup lives in index.html, here we only wire the buttons.
 //
-// Pages: "main" (Gioca, Impostazioni, Comandi), "settings", "controls".
+// Pages: "main" (Gioca, Classifica, Impostazioni, Comandi, Schermo intero), "leaderboard", "settings", "controls".
 // Every page is a <div class="menu-page" data-page="..."> and every button
 // with data-goto="..." switches to that page: like a tiny client-side router.
 import { SENSITIVITY_MAX, SENSITIVITY_MIN, set, settings, type Settings } from './settings';
+import { DEFAULT_NAME, NAME_MAX_LENGTH } from './leaderboard';
+import { fillScoreTable } from './render/scoreTable';
+import { canLockEscape, isFullscreen, toggleFullscreen, watchFullscreen } from './fullscreen';
 
 export interface Menu {
   /** Shows the menu (back on the main page) or hides it. */
@@ -13,6 +16,9 @@ export interface Menu {
   markStarted(): void;
 }
 
+/** Players shown on the menu's leaderboard page (the server sends at most 50). */
+const LEADERBOARD_ROWS = 25;
+
 export function createMenu(options: { onPlay: () => void }): Menu {
   const overlay = document.getElementById('overlay')!;
   const title = document.getElementById('overlay-title')!;
@@ -20,7 +26,28 @@ export function createMenu(options: { onPlay: () => void }): Menu {
   const pages = overlay.querySelectorAll<HTMLElement>('.menu-page');
 
   function showPage(name: string): void {
+    currentPage = name;
     for (const page of pages) page.hidden = page.dataset.page !== name;
+    if (name === 'leaderboard') void refreshLeaderboard();
+  }
+
+  // --- Leaderboard page -----------------------------------------------------
+  const nameBox = document.getElementById('set-name') as HTMLInputElement;
+  nameBox.maxLength = NAME_MAX_LENGTH;
+  nameBox.placeholder = DEFAULT_NAME;
+  // 'change', not 'input': the name is cleaned (spaces at the ends removed),
+  // and cleaning on every keystroke would eat the space before you type the
+  // next word. 'change' fires when you leave the box or press Enter.
+  nameBox.addEventListener('change', () => {
+    set('playerName', nameBox.value);
+    nameBox.value = settings.playerName;
+  });
+  const board = document.getElementById('leaderboard-rows')!;
+
+  /** Fills the table (the top players + you if you're further down: scoreTable.ts). */
+  async function refreshLeaderboard(): Promise<void> {
+    nameBox.value = settings.playerName;
+    await fillScoreTable(board, LEADERBOARD_ROWS, settings.playerName);
   }
 
   for (const button of overlay.querySelectorAll<HTMLElement>('[data-goto]')) {
@@ -28,10 +55,29 @@ export function createMenu(options: { onPlay: () => void }): Menu {
   }
   playButton.addEventListener('click', options.onPlay);
 
-  // Esc inside a sub-page goes back to the main page.
+  // Esc inside a sub-page goes back to the main page; on the main page it
+  // resumes the game (like "Riprendi"). The browser lets us grab the mouse
+  // again only if the game itself had freed it: in full screen with the Esc
+  // key ours (fullscreen.ts). Otherwise the request is just refused.
+  let currentPage = 'main';
   window.addEventListener('keydown', (e) => {
-    if (e.code === 'Escape' && overlay.style.display !== 'none') showPage('main');
+    // defaultPrevented = main.ts already used this Esc (e.g. it closed the end
+    // screen and that opened this menu during the same key press).
+    if (e.code !== 'Escape' || e.repeat || e.defaultPrevented || overlay.style.display === 'none') return;
+    if (currentPage !== 'main') showPage('main');
+    else options.onPlay();
   });
+
+  // Full screen (fullscreen.ts): the button says what a click will do.
+  const fullscreenButton = document.getElementById('menu-fullscreen')!;
+  const escHint = document.getElementById('menu-esc-hint')!;
+  const showFullscreen = (): void => {
+    fullscreenButton.textContent = isFullscreen() ? 'Esci dallo schermo intero' : 'Schermo intero';
+    escHint.hidden = !canLockEscape();
+  };
+  fullscreenButton.addEventListener('click', () => void toggleFullscreen());
+  watchFullscreen(showFullscreen);
+  showFullscreen();
 
   // --- Settings controls --------------------------------------------------
   // Every control writes through set() (applies + saves) and every refresh

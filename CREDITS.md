@@ -29,3 +29,5 @@
   Serenity "GoldenThumbs" Skiff, CC0 (see `public/textures/README.txt`).
 - All the other (lowercase) textures: **source and license to be filled in**
   (OpenGameArt pack, author and link TBD).
+- The textures painted in code for the map (`src/render/levelTextures.ts`: clapboard, adobe, tin,
+  shingles, timber, iron plates, canyon rock, road, railway): made for this project.

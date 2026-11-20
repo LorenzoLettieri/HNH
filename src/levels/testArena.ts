@@ -80,13 +80,13 @@ export const testArena: World = {
     // --- Central platform (2 m high) with a 1 m step in front ---
     // Two jumps: step, then platform.
     box(0, 0, -6, 6, 2, 6, 'stone'),
-    box(0, 0, -2.5, 2, 1, 1, 'wood'),
+    box(0, 0, -2.5, 2, 1, 1, 'crate'),
 
     // --- East: stairs (1, 2, 3 m) leading to a long 3 m high walkway ---
     // Walk off its edges to try coyote time.
-    box(14, 0, 8, 4, 1, 2, 'wood'),
-    box(14, 0, 6, 4, 2, 2, 'wood'),
-    box(14, 0, 4, 4, 3, 2, 'wood'),
+    box(14, 0, 8, 4, 1, 2, 'crate'),
+    box(14, 0, 6, 4, 2, 2, 'crate'),
+    box(14, 0, 4, 4, 3, 2, 'crate'),
     box(14, 0, -3, 4, 3, 12, 'stone'),
 
     // --- West: a 3 m wide corridor between two walls ---
@@ -95,9 +95,9 @@ export const testArena: World = {
 
     // --- East-center: a low gate (beam at 1.1 m). Standing (1.8 m) you
     //     can't pass: crouch or slide under it. ---
-    box(8.25, 0, 0, 0.5, 1.7, 0.5, 'wood'),
-    box(11.75, 0, 0, 0.5, 1.7, 0.5, 'wood'),
-    box(10, 1.1, 0, 4, 0.6, 0.5, 'wood'),
+    box(8.25, 0, 0, 0.5, 1.7, 0.5, 'timber'),
+    box(11.75, 0, 0, 0.5, 1.7, 0.5, 'timber'),
+    box(10, 1.1, 0, 4, 0.6, 0.5, 'timber'),
 
     // --- South: pillars (wall jump practice: jump between them) ---
     box(-8, 0, 10, 1, 5, 1, 'stone'),
@@ -106,9 +106,9 @@ export const testArena: World = {
     box(8, 0, 10, 1, 5, 1, 'stone'),
 
     // --- North: a small pile of crates ---
-    box(6, 0, -14, 1, 1, 1, 'wood'),
-    box(7, 0, -14, 1, 1, 1, 'wood'),
-    box(6.5, 1, -14, 1, 1, 1, 'wood'),
-    box(-6, 0, -15, 1.5, 1.5, 1.5, 'wood'),
+    box(6, 0, -14, 1, 1, 1, 'crate'),
+    box(7, 0, -14, 1, 1, 1, 'crate'),
+    box(6.5, 1, -14, 1, 1, 1, 'crate'),
+    box(-6, 0, -15, 1.5, 1.5, 1.5, 'crate'),
   ],
 };

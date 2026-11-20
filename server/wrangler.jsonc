@@ -1,0 +1,24 @@
+// Cloudflare Worker config (like Laravel's .env + config/: what the server
+// is called, which database it talks to, its settings). Read by `wrangler`.
+{
+	"name": "hnh-leaderboard",
+	"main": "src/index.ts",
+	// The version of the Workers runtime the code is written for: Cloudflare
+	// keeps old behaviors for old dates, so updates never break a deployed Worker.
+	"compatibility_date": "2026-10-01",
+	// The D1 database (SQLite), reachable in the code as env.DB.
+	// database_id: printed by `npx wrangler d1 create hnh-leaderboard` (see server/README.md).
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "hnh-leaderboard",
+			"database_id": "38fd3a52-25ad-4abe-9faa-6a21039fd747",
+			"migrations_dir": "migrations"
+		}
+	],
+	"vars": {
+		// Pages allowed to call the leaderboard from a browser (CORS), comma separated:
+		// the game on GitHub Pages and the Vite dev server.
+		"ALLOWED_ORIGINS": "https://lorenzolettieri.github.io,http://localhost:5173"
+	}
+}

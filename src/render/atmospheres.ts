@@ -68,11 +68,14 @@ export const HIGH_NOON: Atmosphere = {
   skyCurve: 0.6,
   sunColor: 0xffc070,
   sunSize: 7,
-  sunElevation: 14,
+  // Readability (playtest): at 14° the sun sat right at the height of the enemies,
+  // at the end of Main Street. At 22° its glare is above the rooftops, the street
+  // gets sunlight, and the shadows are still long.
+  sunElevation: 22,
   sunAzimuth: 15,
-  sunGlow: 0.9,
+  sunGlow: 0.7,
   sunGlowTightness: 6,
-  sunBrightness: 3,
+  sunBrightness: 2.2,
   stars: 0,
   sunLightColor: 0xffa060,
   sunLightIntensity: 3.2,
@@ -85,14 +88,16 @@ export const HIGH_NOON: Atmosphere = {
   dustWindX: 2.2,
   dustWindZ: 0.4,
   dustBlink: 0,
-  fogNear: 12,
-  fogFar: 85,
-  groundFogDensity: 0.02,
+  // Less haze than before (fog from 12-85 m, ground mist 0.02, rays 0.7): an
+  // enemy 20 m away against the sun was a smudge in an orange veil.
+  fogNear: 20,
+  fogFar: 110,
+  groundFogDensity: 0.012,
   groundFogFalloff: 0.5,
-  godRays: 0.7,
+  godRays: 0.45,
   ambientSky: 0xc06040,
   ambientGround: 0x301510,
-  ambientIntensity: 0.7,
+  ambientIntensity: 0.85, // the sides in shadow (facing you, when you face the sun) aren't black
 };
 
 export const HIGH_MIDNIGHT: Atmosphere = {

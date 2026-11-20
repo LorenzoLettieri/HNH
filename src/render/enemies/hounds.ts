@@ -14,6 +14,7 @@ import { tuning } from '../../sim/config';
 import type { Entity, HoundEntity } from '../../sim/entities';
 import type { SimEvent } from '../../sim/events';
 import { addHeightFog } from '../heightFog';
+import { spawnDirt, spawnSnort } from '../particles';
 import { soundAt } from '../soundPosition';
 import { FRAMES, FRAME_H, FRAME_W, houndSheet } from './houndSprite';
 import { playGhoulDeath, playHowl, playSwipe } from '../../audio/sfx';
@@ -27,11 +28,22 @@ const HURT_TIME = 0.15;
 const TURN_RATE = 12;
 /** Within this angle of "straight at / away from the camera", show the front / back view. */
 const FRONT_ANGLE = (35 * Math.PI) / 180;
-/** Glow of eyes and ember cracks (HDR, blooms): smoldering while stalking, blazing when it charges. */
-const GLOW_STALK = 1.5;
-const GLOW_CHARGE = 6;
-/** While stalking it slinks low: the sprite is squashed to this height. */
-const STALK_SQUASH = 0.88;
+/**
+ * Glow of eyes, mane and ember cracks (HDR: above ~1 it blooms). Already
+ * bright while stalking (you must be able to SPOT it), blazing when it charges.
+ */
+const GLOW_STALK = 3.5;
+const GLOW_CHARGE = 7;
+/**
+ * Ember trail: puffs per second while it runs (stalking / charging), and
+ * particles per puff. A moving light catches the eye from the corner of
+ * the screen far better than a dark shape does.
+ */
+const TRAIL_STALK = 5;
+const TRAIL_CHARGE = 14;
+const TRAIL_PARTICLES = 2;
+/** Skidding after a missed charge: clods of dirt thrown forward by the paws, per second. */
+const SKID_DIRT = 30;
 
 interface HoundView {
   mesh: THREE.Mesh;
@@ -42,6 +54,8 @@ interface HoundView {
   yaw: number;
   runPhase: number;
   hurtTime: number;
+  /** Fractional trail puffs carried over between frames (so the rate doesn't depend on the FPS). */
+  trailOwed: number;
 }
 
 export interface HoundRenderer {
@@ -58,6 +72,8 @@ export function createHoundRenderer(scene: THREE.Scene): HoundRenderer {
   geometry.translate(0, height / 2, 0);
 
   const views = new Map<number, HoundView>();
+  const puff = new THREE.Vector3();
+  const up = new THREE.Vector3();
 
   function create(): HoundView {
     // Own copies of the textures (same image): each hound shows its own frame.
@@ -76,7 +92,7 @@ export function createHoundRenderer(scene: THREE.Scene): HoundRenderer {
     mesh.castShadow = true;
     mesh.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map, alphaTest: 0.5 });
     scene.add(mesh);
-    return { mesh, material, map, glowMap, yaw: 0, runPhase: 0, hurtTime: 0 };
+    return { mesh, material, map, glowMap, yaw: 0, runPhase: 0, hurtTime: 0, trailOwed: 0 };
   }
 
   /**
@@ -155,12 +171,30 @@ export function createHoundRenderer(scene: THREE.Scene): HoundRenderer {
     v.hurtTime -= dt;
     v.runPhase += speed * dt * FRAMES_PER_METER;
     const step = Math.floor(v.runPhase);
-    m.scale.y = e.state === 'stalk' || e.state === 'retreat' ? STALK_SQUASH : 1;
-    v.material.emissiveIntensity = e.state === 'charge' || e.state === 'bite' ? GLOW_CHARGE : GLOW_STALK;
+    const charging = e.state === 'charge' || e.state === 'bite';
+    v.material.emissiveIntensity = charging ? GLOW_CHARGE : GLOW_STALK;
+    if (e.state === 'skid' && e.onGround && speed > 1.5) {
+      // Paws dug in: dirt sprays ahead, the way it's sliding.
+      v.trailOwed += SKID_DIRT * dt;
+      while (v.trailOwed >= 1) {
+        v.trailOwed--;
+        puff.set(m.position.x, m.position.y + 0.05, m.position.z);
+        up.set(e.vx / speed, 0.6, e.vz / speed).normalize();
+        spawnDirt(puff, up, 2);
+      }
+    } else if (e.state !== 'dead' && e.state !== 'staggered' && speed > 1) {
+      v.trailOwed += (charging ? TRAIL_CHARGE : TRAIL_STALK) * dt;
+      while (v.trailOwed >= 1) {
+        v.trailOwed--;
+        // From the back (the mane), rising and drifting behind it.
+        puff.set(m.position.x + (Math.random() - 0.5) * 0.6, m.position.y + 0.65, m.position.z + (Math.random() - 0.5) * 0.6);
+        up.set(-e.vx * 0.05, 1, -e.vz * 0.05).normalize();
+        spawnSnort(puff, up, TRAIL_PARTICLES);
+      }
+    }
 
     if (e.state === 'dead') {
       v.material.emissiveIntensity = 0; // the fire inside goes out
-      m.scale.y = 1;
       showFrame(v, FRAMES.dead, mirror);
       const remaining = tuning.houndCorpseTime - e.stateTicks / 60;
       if (remaining < 1) m.position.y -= (1 - remaining) * 0.3; // sinks into the ground
@@ -176,7 +210,8 @@ export function createHoundRenderer(scene: THREE.Scene): HoundRenderer {
     } else {
       const f = FRAMES.side;
       // In the air (a jump, a charge over an obstacle): the stretched gallop frame.
-      const frame = hurt ? f.hurt : e.state === 'bite' ? f.bite : !e.onGround ? f.run[0] : f.run[step % 4];
+      // Skidding: frozen on the frame with the front paws planted.
+      const frame = hurt ? f.hurt : e.state === 'bite' ? f.bite : !e.onGround ? f.run[0] : e.state === 'skid' ? f.run[1] : f.run[step % 4];
       showFrame(v, frame, mirror);
     }
   }

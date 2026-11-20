@@ -18,7 +18,35 @@ export interface Box {
    * How the renderer should draw it. The simulation ignores this.
    * No look = invisible collider (e.g. the collision box of a prop).
    */
-  look?: 'dirt' | 'wood' | 'stone' | 'planks' | 'roof' | 'metal' | 'rock' | 'brick';
+  look?:
+    // Ground: bare dirt; and for the ground patches (World.ground) packed road,
+    // flagstones, a railway track.
+    | 'dirt'
+    | 'road'
+    | 'paving'
+    | 'railway'
+    // Walls: painted clapboard (bone white, barn red, mustard), raw vertical boards,
+    // adobe, grey stone, brick, corrugated tin.
+    | 'clapboard'
+    | 'clapboardRed'
+    | 'clapboardOchre'
+    | 'boards'
+    | 'adobe'
+    | 'stone'
+    | 'brick'
+    | 'tin'
+    // Wood: floors and decks, posts and beams, crates.
+    | 'planks'
+    | 'timber'
+    | 'crate'
+    // Roof slabs (the top differs, the edges and the underside are boards):
+    // wood shingles, corrugated tin, clay tiles.
+    | 'roof'
+    | 'tinRoof'
+    | 'tiles'
+    // Riveted iron (towers, floating platforms) and the canyon's rock.
+    | 'metal'
+    | 'rock';
 }
 
 /**
@@ -71,9 +99,78 @@ export interface ShopSpawn {
   kind: 'weapons';
 }
 
+/** Which way a wall faces: north = -Z, south = +Z, east = +X, west = -X. */
+export type Facing = 'north' | 'south' | 'east' | 'west';
+
+/**
+ * The pictures that can go on a wall (how each is drawn: src/render/decals.ts).
+ * Doors and windows in three states (dark, lit from inside, boarded or broken),
+ * barred windows, closed shutters, and two FRAMES with an empty middle, to put
+ * around a real opening in a wall.
+ */
+export type DecalLook =
+  | 'door'
+  | 'doorPlain'
+  | 'doorLit'
+  | 'doorGate'
+  | 'doorway'
+  | 'doorFrame'
+  | 'windowFrame'
+  | 'window'
+  | 'windowLit'
+  | 'windowBoarded'
+  | 'windowTall'
+  | 'windowTallLit'
+  | 'windowTallBroken'
+  | 'windowArched'
+  | 'windowArchedLit'
+  | 'windowArchedBroken'
+  | 'windowRound'
+  | 'windowRoundLit'
+  | 'windowRoundBoarded'
+  | 'windowBars'
+  | 'windowBarsLit'
+  | 'shutters';
+
+/**
+ * A picture on a wall: a door, a window, a frame. PURELY VISUAL: the simulation
+ * ignores it (a painted door doesn't open, a painted window isn't a hole). That's
+ * the cheap trick of old shooters: the buildings are solid blocks, the windows
+ * make them read as houses. The real openings are cut in the boxes (wallZ/wallX
+ * in the levels); a frame decal around them makes them read as doors and windows.
+ */
+export interface Decal {
+  /** Center of the picture, ON the wall's surface. */
+  x: number;
+  y: number;
+  z: number;
+  /** Which way the wall faces (the picture looks out of it). */
+  facing: Facing;
+  width: number;
+  height: number;
+  look: DecalLook;
+}
+
+/**
+ * A patch of ground with its own look (a street, a square, a boardwalk, rails),
+ * painted flat ON the ground (y = 0). Purely visual, like the decals: the ground
+ * under it is still the one big ground box. Patches must not overlap each other.
+ */
+export interface GroundPatch {
+  minX: number;
+  minZ: number;
+  maxX: number;
+  maxZ: number;
+  look: NonNullable<Box['look']>;
+}
+
 export interface World {
   boxes: Box[];
   props: Prop[];
+  /** Streets, squares, boardwalks, rails painted on the ground (only drawn). */
+  ground?: GroundPatch[];
+  /** Doors and windows on the walls (only drawn). Optional: the test arena has none. */
+  decals?: Decal[];
   /** Practice targets. Optional: not every level has them. */
   targets?: TargetSpawn[];
   /** Where enemies come into the level from. */

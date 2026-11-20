@@ -111,7 +111,9 @@ function paintSide(p: SidePose): PixelFrame {
     const top = Math.round(16 - Math.sin(t * Math.PI) * 1.5) + b;
     const bottom = Math.round(t < 0.4 ? 22 - t * 3 : 21 + (t - 0.4) * 11) + b;
     f.rect(x, top, 1, bottom - top + 1, C.hide);
-    f.set(x, top, C.hideLight); // light on the back
+    // A mane of embers along the spine: a glowing line that draws the
+    // hound's outline even against the dark (or the orange haze of noon).
+    f.set(x, top, C.ember, true);
     f.set(x, bottom, C.hideDark);
     f.set(x, bottom - 1, C.hideDark);
     // Spine ridges: a bone spike every 3 pixels.
@@ -131,14 +133,15 @@ function paintSide(p: SidePose): PixelFrame {
   f.limb(33, 19 + b, 38, 12 + hy, 6, C.hide, C.hideDark);
   f.rect(36, 7 + hy, 8, 7, C.hide); // skull
   f.rect(36, 7 + hy, 8, 1, C.hideLight);
+  embers(f, [[36, 7 + hy], [37, 7 + hy]]); // the mane goes up to the head
   f.rect(43, 10 + hy, 4, 3, C.hide); // snout (upper jaw)
   f.set(46, 10 + hy, C.outline); // nose
   f.triangle(36, 8 + hy, 39, 8 + hy, 33, 3 + hy, C.hide); // ear, swept back
   f.limb(39, 7 + hy, 41, 4 + hy, 1, C.bone, C.boneDark); // horn
   f.set(42, 3 + hy, C.bone);
-  f.rect(40, 9 + hy, 2, 1, C.eye);
-  f.set(41, 9 + hy, C.eye, true);
-  f.set(40, 9 + hy, C.eye, true);
+  // Eyes: big and glowing, the first thing you notice.
+  for (const x of [39, 40, 41]) f.set(x, 9 + hy, C.eye, true);
+  f.set(40, 10 + hy, C.eye, true);
   f.rect(39, 8 + hy, 3, 1, C.hideDark); // brow
   if (p.jawOpen) {
     // The lower jaw drops: a dark mouth with fangs and a glowing throat.
@@ -229,7 +232,7 @@ function paintFront(p: FrontPose): PixelFrame {
   f.triangle(18, 8 + b, 22, 8 + b, 16, 1 + b, C.hide); // ears
   f.triangle(27, 8 + b, 31, 8 + b, 33, 1 + b, C.hide);
   f.rect(18, 6 + b, 13, 8, C.hide);
-  f.rect(18, 6 + b, 13, 1, C.hideLight);
+  for (let x = 18; x <= 30; x++) f.set(x, 6 + b, C.ember, true); // the mane, seen head-on
   f.limb(20, 6 + b, 18, 3 + b, 1, C.bone, C.boneDark); // horns
   f.limb(29, 6 + b, 31, 3 + b, 1, C.bone, C.boneDark);
   f.rect(21, 12 + b, 7, 5, C.hide); // muzzle
@@ -240,7 +243,10 @@ function paintFront(p: FrontPose): PixelFrame {
   f.rect(20, 9 + b, 2, 1, C.hideDark);
   f.rect(27, 9 + b, 2, 1, C.hideDark);
   f.set(29, 8 + b, C.hideDark);
-  for (const x of [20, 21, 27, 28]) f.set(x, 10 + b, C.eye, true);
+  for (const x of [20, 21, 27, 28]) {
+    f.set(x, 10 + b, C.eye, true);
+    f.set(x, 11 + b, C.eye, true);
+  }
   if (p.jawOpen) {
     // Mouth wide open: fangs top and bottom, fire in the throat.
     f.rect(21, 15 + b, 7, 6, C.mouth);
@@ -275,7 +281,7 @@ function paintBack(stride: number): PixelFrame {
   f.rect(18, 15, 13, 12, C.hide);
   f.rect(18, 15, 13, 1, C.hideLight);
   for (const [x, y] of [[18, 15], [30, 15], [18, 26], [30, 26]]) f.set(x, y, -1); // rounded corners
-  for (let y = 16; y < 26; y += 2) f.set(24, y, C.bone);
+  for (let y = 15; y < 26; y++) f.set(24, y, C.ember, true); // the mane down the spine
   embers(f, [[20, 19], [21, 20], [21, 21], [28, 18], [27, 19], [27, 20]]);
   // Tail up, smoldering tip.
   f.limb(24, 15, 23, 9, 2, C.hide, C.hideDark);

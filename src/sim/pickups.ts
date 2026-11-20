@@ -240,6 +240,7 @@ function collect(game: GameState, d: Pickup): boolean {
   // Money is never "not needed": no maximum, always collected.
   if (kind === 'coin') {
     p.money += d.value;
+    game.stats.moneyEarned += d.value;
     return true;
   }
   if (kind === 'medkit') {
