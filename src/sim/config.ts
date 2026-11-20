@@ -255,7 +255,7 @@ export const tuning = {
   /** Cards a weapon can take at most. */
   upgradeMaxLevel: 3,
   /** Cards drawn on the counter to choose from. */
-  upgradeOfferSize: 3,
+  upgradeOfferSize: 2,
   // --- Vildenaro: the coins every enemy drops (see dropCoins in pickups.ts) ---
   /** Coins dropped per point of enemy weight: ghoul 1 coin, eye-bat 2, hound 3, bull 5. ALWAYS, not a chance. */
   coinsPerWeight: 1,

@@ -614,7 +614,7 @@ futuro **poligono di tiro / tutorial**.
 ## 6c. Potenziamenti delle armi [DECISO il sistema, PROPOSTO il dettaglio]
 
 **Come funziona**
-- All'**armeria**, per ogni arma che possiedi c'è "Potenzia". Il bancone mostra **3 carte pescate a caso**
+- All'**armeria**, per ogni arma che possiedi c'è "Potenzia". Il bancone mostra **2 carte pescate a caso**
   dal **mazzo di quell'arma**: ne compri una. Il prezzo **sale a ogni livello** dell'arma (come il
   Pack-a-Punch). [DA TARARE: es. 500 / 1000 / 2000; quanti livelli al massimo per arma]
 - **Rimescolare costa** (es. 100 vildenaro): il caso diventa una decisione, non una condanna.
@@ -667,7 +667,12 @@ ne mostra comunque 6 (le munizioni a schermo sono giuste).
 "Potenzia: Revolver" con il livello a rombi (◆ preso, ◇ libero), le carte del bancone come box cliccabili col
 solito doppio click, prezzo rosso se non basta. Dopo un acquisto la lista si ricostruisce con la nuova pescata;
 a mazzo finito "Per quest'arma non ho altro", al livello massimo "Al massimo". Le armi senza carte non mostrano
-la sezione. Prossimo: **rimescolare** a pagamento, poi le altre carte.
+la sezione.
+**Passo 3** [FATTO]: **interfaccia a due pannelli**. Nell'elenco dell'armeria c'è anche il **revolver** (sempre tuo);
+su un'arma che possiedi il prezzo diventa **"POTENZIA"**, e il click apre **a sinistra** dello shop il pannello
+dei potenziamenti di quell'arma (titolo, livello a rombi, le carte, "Scegli un potenziamento. Il prossimo costerà
+di più."); un altro click sulla stessa arma lo chiude. **Due carte** sul bancone invece di tre (`upgradeOfferSize`).
+Prossimo: altre carte del revolver, poi **rimescolare** a pagamento.
 
 Scartate: Proiettili d'argento, Rimbalzo (carabina), Colpo di grazia, Polso fermo, Mozzata corta,
 Leva in corsa, Sangue freddo, Ottone caldo.

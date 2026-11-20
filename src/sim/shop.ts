@@ -13,8 +13,12 @@ import { CARDS, upgradeOffer, upgradePrice, type CardId } from './upgrades';
 import { switchWeapon, type WeaponId } from './weapon';
 import type { ShopSpawn, World } from './world';
 
-/** Everything for sale. For now only weapons, so an item id IS a weapon id. */
-export type ShopItemId = Exclude<WeaponId, 'revolver'>;
+/**
+ * Everything on the armory's list: the weapons, so an item id IS a weapon id.
+ * The revolver is listed too (always yours: you start with it), because the
+ * list is also where you choose which weapon to upgrade.
+ */
+export type ShopItemId = WeaponId;
 
 /**
  * Anything the command can ask to buy: a weapon from the catalog, or an
@@ -37,6 +41,7 @@ export function shopCatalog(kind: ShopSpawn['kind']): ShopItem[] {
   switch (kind) {
     case 'weapons':
       return [
+        { id: 'revolver', price: 0 }, // never bought: you always have it
         { id: 'shotgun', price: tuning.shotgunPrice },
         { id: 'rifle', price: tuning.riflePrice },
       ];

@@ -4,17 +4,21 @@
 // can't aim, but you can still move with WASD).
 //
 // This file only DRAWS: what's for sale, prices and "is the vendor within
-// reach" come from the simulation (src/sim/shop.ts). Buying takes TWO clicks
-// on an item's box: the first turns it into "CONFERMA", the second buys (a
-// misclick in a hurry, with the horde at the door, shouldn't cost 800).
-// The second click doesn't buy anything by itself either: it queues a request (queueBuy in
-// controls.ts) that the next tick carries to the simulation, and the answer
-// comes back as an event ('purchase' / 'purchaseFailed', see onEvents).
-// At the armory, under the weapons, every weapon you own has its UPGRADE CARDS
-// (src/sim/upgrades.ts): the cards on the counter, bought the same way. The
-// list is rebuilt whenever what's for sale changes (see `signature`).
+// reach" come from the simulation (src/sim/shop.ts, src/sim/upgrades.ts).
+//
+// Two panels:
+// - the MAIN one (right): every weapon. One you don't own has its price and is
+//   bought with TWO clicks on its box: the first turns it into "CONFERMA", the
+//   second buys (a misclick in a hurry, with the horde at the door, shouldn't
+//   cost 800). One you own says "POTENZIA": a click opens...
+// - ...the UPGRADE panel, to the left of the main one: the cards on that
+//   weapon's counter (src/sim/upgrades.ts), its level as pips, bought with the
+//   same double click. A click on the same weapon again closes it.
+// A purchase click doesn't buy anything by itself: it queues a request
+// (queueBuy in controls.ts) that the next tick carries to the simulation, and
+// the answer comes back as an event ('purchase' / 'purchaseFailed', see onEvents).
 // Opening and closing (E, Esc, walking away) are wired in main.ts.
-// Markup and CSS in index.html (#shop, #shop-prompt, #grab-hint).
+// Markup and CSS in index.html (#shop, #shop-upgrades, #shop-prompt, #grab-hint).
 import { playPurchase, playPurchaseDenied } from '../audio/sfx';
 import { queueBuy } from '../controls';
 import { tuning } from '../sim/config';
@@ -22,12 +26,16 @@ import type { SimEvent } from '../sim/events';
 import type { PlayerState } from '../sim/player';
 import { ownsItem, shopCatalog, type PurchaseId, type ShopItemId } from '../sim/shop';
 import { upgradeLevel, upgradeOffer, upgradePrice, type CardId } from '../sim/upgrades';
-import { WEAPONS, type WeaponId } from '../sim/weapon';
+import type { WeaponId } from '../sim/weapon';
 import type { ShopSpawn } from '../sim/world';
 import './fonts';
 
 /** Name and one line of description for each item: the UI's words, not the simulation's. */
 const ITEM_TEXT: Record<ShopItemId, { name: string; desc: string }> = {
+  revolver: {
+    name: 'Revolver',
+    desc: 'Sei colpi, preciso, in testa fa male. Tasto destro: il fanning svuota il tamburo in un attimo.',
+  },
   shotgun: {
     name: 'Doppietta a canne mozze',
     desc: 'Due colpi, rosata larga. Da vicino non perdona, e a bruciapelo li manda a gambe all’aria.',
@@ -46,18 +54,21 @@ const CARD_TEXT: Record<CardId, { name: string; desc: string }> = {
   },
 };
 
-/** Weapon names in the upgrade sections' titles. */
+/** Weapon names in the upgrade panel's title. */
 const WEAPON_NAMES: Record<WeaponId, string> = { revolver: 'Revolver', shotgun: 'Doppietta', rifle: 'Carabina' };
 
-/** What the vendor says when you open the shop (one at random). */
 /** What he says after a purchase, and when you can't pay. */
-const THANKS = '\u201CAffare fatto. Trattala bene, e lei tratter\u00E0 bene te.\u201D';
-const CARD_THANKS = '\u201COra s\u00EC che ragiona. Torna quando vuoi altro ferro buono.\u201D';
-const NO_MONEY = '\u201CCon quei quattro spiccioli? Torna quando avrai il vildenaro, straniero.\u201D';
+const THANKS = '“Affare fatto. Trattala bene, e lei tratterà bene te.”';
+const CARD_THANKS = '“Ora sì che ragiona. Torna quando vuoi altro ferro buono.”';
+const NO_MONEY = '“Con quei quattro spiccioli? Torna quando avrai il vildenaro, straniero.”';
+/** The upgrade panel when there's nothing to choose. */
+const MAXED = 'Al massimo. Nemmeno il diavolo sa fare di meglio.';
+const NOTHING_LEFT = 'Per quest’arma non ho niente, per ora.';
 
 /** Seconds the "CONFERMA" stays up waiting for the second click, then the box goes back to normal. */
 const CONFIRM_TIME = 3;
 
+/** What the vendor says when you open the shop (one at random). */
 const GREETINGS = [
   '“Benvenuto, straniero. Qui si paga in vildenaro, niente credito.”',
   '“Fa’ in fretta: i tuoi amici morti non aspettano.”',
@@ -87,11 +98,34 @@ function noFocus(el: HTMLElement): void {
   el.addEventListener('mousedown', (e) => e.preventDefault());
 }
 
+/** One clickable box: a weapon in the main panel or a card in the upgrade panel. */
+interface Row {
+  id: PurchaseId;
+  /** The weapon this row is about (a card's weapon, for a card). */
+  weapon: WeaponId;
+  /** A card is never "already yours": once bought it leaves the counter. */
+  card: boolean;
+  price: number;
+  el: HTMLButtonElement;
+  label: HTMLElement;
+  /** The pending setTimeout that cancels "CONFERMA" (0 = not confirming). */
+  confirmTimer: number;
+  /** Not enough vildenaro (updated every frame by update()). */
+  poor: boolean;
+  /** A weapon you own: the box opens its upgrades instead of buying. */
+  owned: boolean;
+}
+
 export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu {
   const panel = document.getElementById('shop')!;
   const greeting = document.getElementById('shop-greeting')!;
   const list = document.getElementById('shop-items')!;
   const moneyEl = document.getElementById('shop-money')!;
+  const upPanel = document.getElementById('shop-upgrades')!;
+  const upTitle = document.getElementById('shop-upgrades-title')!;
+  const upPips = document.getElementById('shop-upgrades-pips')!;
+  const upList = document.getElementById('shop-upgrades-cards')!;
+  const upNote = document.getElementById('shop-upgrades-note')!;
   const prompt = document.getElementById('shop-prompt')!;
   const grabHint = document.getElementById('grab-hint')!;
   const closeButton = document.getElementById('shop-close')!;
@@ -100,21 +134,11 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
 
   let isOpen = false;
   let kind: ShopSpawn['kind'] = 'weapons';
-  /** One row per item: its state changes every frame (affordable? already yours?). */
-  interface Row {
-    /** A weapon or an upgrade card. */
-    id: PurchaseId;
-    /** A card is never "already yours": once bought it leaves the counter. */
-    card: boolean;
-    price: number;
-    el: HTMLButtonElement;
-    label: HTMLElement;
-    /** The pending setTimeout that cancels "CONFERMA" (0 = not confirming). */
-    confirmTimer: number;
-    /** Not enough vildenaro (updated every frame by update()). */
-    poor: boolean;
-  }
+  /** The weapon whose upgrade panel is open (null = closed). */
+  let selected: WeaponId | null = null;
+  /** The weapons (main panel) and the cards (upgrade panel). Their state changes every frame. */
   let rows: Row[] = [];
+  let cardRows: Row[] = [];
 
   /** Back to the normal face (timeout, a click on another item, a purchase). */
   function cancelConfirm(r: Row): void {
@@ -122,46 +146,44 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
     r.confirmTimer = 0;
     r.el.classList.remove('confirming');
   }
+  function cancelAllConfirms(): void {
+    for (const r of rows) cancelConfirm(r);
+    for (const r of cardRows) cancelConfirm(r);
+  }
 
   /**
-   * A click on an item's box. First click: "CONFERMA" (and any other item
-   * waiting for confirmation goes back to normal). Second click: buy.
-   * Not enough money: no point in confirming, the request goes straight to
-   * the simulation, which refuses it (and the vendor has his say).
+   * A click on a box.
+   * - A weapon you own: open (or close) its upgrade panel.
+   * - Otherwise, first click: "CONFERMA" (and any other box waiting for
+   *   confirmation goes back to normal). Second click: buy. Not enough money:
+   *   no point in confirming, the request goes straight to the simulation,
+   *   which refuses it (and the vendor has his say).
    */
   function onItemClick(r: Row): void {
+    if (r.owned) {
+      cancelAllConfirms();
+      selected = selected === r.weapon ? null : r.weapon;
+      return; // update() opens or closes the panel
+    }
     if (r.poor || r.confirmTimer) {
       cancelConfirm(r);
       queueBuy(r.id); // only asks: the simulation will answer with an event
       return;
     }
-    for (const other of rows) cancelConfirm(other);
+    cancelAllConfirms();
     r.el.classList.add('confirming');
     r.confirmTimer = window.setTimeout(() => cancelConfirm(r), CONFIRM_TIME * 1000);
   }
 
-  /**
-   * A string that changes whenever what's for sale changes: which weapons are
-   * yours, each weapon's level, the cards on its counter, the prices (the debug
-   * panel can change them). update() compares it every frame and rebuilds the
-   * list only when it differs. Cheaper and simpler than tracking every way the
-   * list can change (a purchase, a weapon bought, a price slider): it's the
-   * same idea as the `key` of a list in React or Vue.
-   */
-  let builtFor = '';
-  function signature(player: PlayerState): string {
-    if (kind !== 'weapons') return kind;
-    const parts: string[] = [kind];
-    for (const item of shopCatalog(kind)) parts.push(`${item.id}:${item.price}`);
-    for (const w of WEAPONS) {
-      if (!player.owned[w]) continue;
-      parts.push(`${w}:${upgradeLevel(player, w)}:${upgradePrice(player, w)}:${upgradeOffer(player, w).join(',')}`);
-    }
-    return parts.join('|');
-  }
-
-  /** One clickable box (a weapon or a card): the same markup, two faces (see onItemClick). */
-  function makeRow(id: PurchaseId, text: { name: string; desc: string }, price: number, card: boolean): Row {
+  /** Builds one box (same markup for weapons and cards: two faces, see onItemClick). */
+  function makeRow(
+    parent: HTMLElement,
+    id: PurchaseId,
+    weapon: WeaponId,
+    text: { name: string; desc: string },
+    price: number,
+    card: boolean,
+  ): Row {
     // The whole box is ONE button (spans inside, not divs: a <button> may
     // only contain "phrasing" elements). Two faces, CSS shows one of them:
     // the item, or "CONFERMA" (class .confirming on the button).
@@ -186,59 +208,87 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
     row.querySelector('.shop-confirm-price')!.textContent = `paga ${price} vildenaro`;
     const r: Row = {
       id,
+      weapon,
       card,
       price,
       el: row,
       label: row.querySelector<HTMLElement>('.shop-price')!,
       confirmTimer: 0,
       poor: false,
+      owned: false,
     };
     row.addEventListener('click', () => onItemClick(r));
     noFocus(row);
-    list.append(row);
+    parent.append(row);
     return r;
   }
 
-  /** A section title: "POTENZIA IL REVOLVER" and the level as pips (filled = cards bought). */
-  function makeSection(weapon: WeaponId, level: number, maxLevel: number): void {
-    const title = document.createElement('div');
-    title.className = 'shop-section';
-    const name = document.createElement('span');
-    name.textContent = `Potenzia: ${WEAPON_NAMES[weapon]}`;
-    const pips = document.createElement('span');
-    pips.className = 'shop-pips';
-    pips.textContent = '\u25C6'.repeat(level) + '\u25C7'.repeat(Math.max(0, maxLevel - level));
-    title.append(name, pips);
-    list.append(title);
+  /**
+   * A string that changes whenever what a list shows changes. update()
+   * compares it every frame and rebuilds a list only when it differs: cheaper
+   * and simpler than tracking every way it can change (a purchase, a price
+   * slider in the debug panel...). Same idea as the `key` of a list in React or Vue.
+   */
+  let weaponsBuiltFor = '';
+  let cardsBuiltFor = '';
+  function weaponsSignature(): string {
+    return kind + '|' + shopCatalog(kind).map((i) => `${i.id}:${i.price}`).join('|');
+  }
+  function cardsSignature(player: PlayerState): string {
+    if (selected === null) return '';
+    const w = selected;
+    return `${w}:${upgradeLevel(player, w)}:${upgradePrice(player, w)}:${upgradeOffer(player, w).join(',')}`;
   }
 
-  /** Builds the whole list: the weapons, then the upgrade cards of every weapon you own. */
-  function build(player: PlayerState): void {
+  /** The main panel: one box per weapon. */
+  function buildWeapons(): void {
     for (const r of rows) cancelConfirm(r);
     list.replaceChildren();
-    rows = shopCatalog(kind).map((item) => makeRow(item.id, ITEM_TEXT[item.id], item.price, false));
-    if (kind !== 'weapons') return;
-    for (const w of WEAPONS) {
-      if (!player.owned[w]) continue;
-      const level = upgradeLevel(player, w);
-      const price = upgradePrice(player, w);
-      const offer = upgradeOffer(player, w);
-      // A deck with no cards at all (not made yet) shows nothing. A weapon with
-      // cards keeps its section, with a line when there's nothing left to buy.
-      if (offer.length === 0 && level === 0) continue;
-      makeSection(w, level, tuning.upgradeMaxLevel);
-      if (price === null || offer.length === 0) {
-        const done = document.createElement('div');
-        done.className = 'shop-maxed';
-        done.textContent = price === null
-          ? 'Al massimo. Nemmeno il diavolo sa fare di meglio.'
-          : 'Per quest’arma non ho altro, per ora.';
-        list.append(done);
-        continue;
-      }
-      for (const card of offer) rows.push(makeRow(card, CARD_TEXT[card], price, true));
+    rows = shopCatalog(kind).map((item) => makeRow(list, item.id, item.id, ITEM_TEXT[item.id], item.price, false));
+    weaponsBuiltFor = weaponsSignature();
+  }
+
+  /** The upgrade panel of the selected weapon: title, level, the cards on the counter. */
+  function buildCards(player: PlayerState): void {
+    for (const r of cardRows) cancelConfirm(r);
+    upList.replaceChildren();
+    cardRows = [];
+    cardsBuiltFor = cardsSignature(player);
+    if (selected === null) return;
+    const w = selected;
+    const level = upgradeLevel(player, w);
+    const price = upgradePrice(player, w);
+    const offer = upgradeOffer(player, w);
+    upTitle.textContent = `Potenzia: ${WEAPON_NAMES[w]}`;
+    // The level as pips: filled = cards bought, empty = still to buy.
+    upPips.textContent = '◆'.repeat(level) + '◇'.repeat(Math.max(0, tuning.upgradeMaxLevel - level));
+    upNote.hidden = price === null || offer.length === 0; // "choose one" only when there's something to choose
+    if (price === null || offer.length === 0) {
+      const note = document.createElement('div');
+      note.className = 'shop-maxed';
+      note.textContent = price === null ? MAXED : NOTHING_LEFT;
+      upList.append(note);
+      return;
     }
-    builtFor = signature(player);
+    cardRows = offer.map((card) => makeRow(upList, card, w, CARD_TEXT[card], price, true));
+  }
+
+  /** Every frame: prices in red, "POTENZIA" on your weapons, which one is selected. */
+  function refreshRow(r: Row, player: PlayerState): void {
+    r.owned = !r.card && ownsItem(player, r.id as ShopItemId);
+    r.poor = !r.owned && player.money < r.price;
+    r.el.classList.toggle('owned', r.owned);
+    r.el.classList.toggle('poor', r.poor);
+    r.el.classList.toggle('selected', r.owned && selected === r.weapon);
+    if (r.owned && r.confirmTimer) cancelConfirm(r);
+    r.label.textContent = r.owned ? 'POTENZIA' : String(r.price);
+  }
+
+  /** Shake a box: restart a CSS animation (remove the class, force a layout so the browser notices, add it back). */
+  function shake(r: Row): void {
+    r.el.classList.remove('shake');
+    void r.el.offsetWidth;
+    r.el.classList.add('shake');
   }
 
   return {
@@ -248,32 +298,29 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
     open(k) {
       kind = k;
       isOpen = true;
+      selected = null;
       greeting.textContent = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
-      builtFor = ''; // built by the next update(), which has the player
+      weaponsBuiltFor = cardsBuiltFor = ''; // built by the next update(), which has the player
       panel.hidden = false;
     },
     close() {
       isOpen = false;
+      selected = null;
       panel.hidden = true;
-      for (const r of rows) cancelConfirm(r); // reopening never shows a stale "CONFERMA"
+      upPanel.hidden = true;
+      cancelAllConfirms(); // reopening never shows a stale "CONFERMA"
     },
     update(player, inReach, paused) {
       // The prompt: next to a vendor, shop closed, game running.
       prompt.hidden = isOpen || paused || inReach === null;
       if (!isOpen) return;
-      if (signature(player) !== builtFor) build(player);
+      if (weaponsSignature() !== weaponsBuiltFor) buildWeapons();
+      if (selected !== null && !player.owned[selected]) selected = null; // (died with the panel open)
+      if (cardsSignature(player) !== cardsBuiltFor) buildCards(player);
+      upPanel.hidden = selected === null;
       moneyEl.textContent = String(player.money);
-      for (const r of rows) {
-        const owned = !r.card && ownsItem(player, r.id as ShopItemId);
-        r.el.classList.toggle('owned', owned);
-        // Bought: the box is disabled, the price becomes "TUA". Not enough
-        // money: still clickable, so the vendor can tell you what he thinks of you.
-        r.el.classList.toggle('poor', r.poor);
-        r.poor = !owned && player.money < r.price;
-        r.el.disabled = owned;
-        if (owned && r.confirmTimer) cancelConfirm(r);
-        r.label.textContent = owned ? 'TUA' : String(r.price);
-      }
+      for (const r of rows) refreshRow(r, player);
+      for (const r of cardRows) refreshRow(r, player);
     },
     onEvents(events) {
       for (const e of events) {
@@ -283,14 +330,8 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
         } else if (e.type === 'purchaseFailed' && e.reason === 'money') {
           playPurchaseDenied();
           greeting.textContent = NO_MONEY;
-          const row = rows.find((r) => r.id === e.item);
-          // Shake the row: restart a CSS animation (remove the class, force a
-          // layout so the browser notices, add it back).
-          if (row) {
-            row.el.classList.remove('shake');
-            void row.el.offsetWidth;
-            row.el.classList.add('shake');
-          }
+          const row = [...rows, ...cardRows].find((r) => r.id === e.item);
+          if (row) shake(row);
         }
       }
     },
