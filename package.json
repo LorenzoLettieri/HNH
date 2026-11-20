@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "models": "tools/blender/.venv/bin/python tools/blender/leg.py && tools/blender/.venv/bin/python tools/blender/shotgun.py"
+    "models": "tools/blender/.venv/bin/python tools/blender/leg.py && tools/blender/.venv/bin/python tools/blender/shotgun.py && tools/blender/.venv/bin/python tools/blender/rifle.py && tools/blender/.venv/bin/python tools/blender/rifle_arms.py"
   },
   "dependencies": {
     "three": "0.187.0"

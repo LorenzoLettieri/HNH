@@ -14,7 +14,11 @@
 //          wrist of the stock, index on the trigger, in the shotgun's
 //          coordinates; posed with the gun where the viewmodel holds it
 //          (viewmodelSettings.shotgun*), so the shoulder comes out right.
-// No skeleton in the file: the left arm is moved as a whole. (The original
+// No skeleton in the file: the left arm is moved as a whole.
+//
+// The carbine's two arms are in a file of their own, public/models/
+// rifleArms.glb, made by a script (tools/blender/rifle_arms.py) with the
+// same rig, sleeves and materials: see createRifleHands below. (The original
 // rig, with IK and 18 animations, is in assets-src/ for when we need it.)
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -28,6 +32,21 @@ export interface Hands {
   rightShotgun: THREE.Group;
 }
 
+/** Crisp pixels, never culled: what every arm model needs once loaded. */
+function prepareArms(scene: THREE.Object3D): void {
+  scene.traverse((o) => {
+    if (!(o instanceof THREE.Mesh)) return;
+    // Never skipped by frustum culling: the arms are always close to the eye.
+    o.frustumCulled = false;
+    const m = o.material as THREE.MeshStandardMaterial;
+    if (m.map) {
+      m.map.magFilter = THREE.NearestFilter;
+      m.map.minFilter = THREE.NearestFilter;
+      m.map.generateMipmaps = false;
+    }
+  });
+}
+
 /**
  * Returns the two groups right away; the models are added inside them when
  * the file has loaded (asynchronous, like fetch()).
@@ -39,17 +58,7 @@ export function createHands(): Hands {
   const left = new THREE.Group();
   const rightShotgun = new THREE.Group();
   new GLTFLoader().load(`${import.meta.env.BASE_URL}models/arms.glb`, (gltf) => {
-    gltf.scene.traverse((o) => {
-      if (!(o instanceof THREE.Mesh)) return;
-      // Never skipped by frustum culling: the arms are always close to the eye.
-      o.frustumCulled = false;
-      const m = o.material as THREE.MeshStandardMaterial;
-      if (m.map) {
-        m.map.magFilter = THREE.NearestFilter;
-        m.map.minFilter = THREE.NearestFilter;
-        m.map.generateMipmaps = false;
-      }
-    });
+    prepareArms(gltf.scene);
     const armR = gltf.scene.getObjectByName('Arm_R');
     const armL = gltf.scene.getObjectByName('Arm_L');
     const armRS = gltf.scene.getObjectByName('Arm_R_Shotgun');
@@ -58,6 +67,50 @@ export function createHands(): Hands {
     if (armRS) rightShotgun.add(armRS);
   });
   return { right, left, rightShotgun };
+}
+
+export interface RifleHands {
+  /** Both go inside the carbine's group (the file is in its coordinates). */
+  right: THREE.Group;
+  left: THREE.Group;
+  /** How open the lever is (0..1): the right hand follows it (morph target weight). */
+  setLever(open: number): void;
+}
+
+/**
+ * The carbine's arms (public/models/rifleArms.glb):
+ *   Arm_R_Rifle  the right arm on the wrist of the stock, fingers through
+ *          the lever's loop. It has a MORPH TARGET (a "shape key" in
+ *          Blender): the same vertices in a second pose, with the hand
+ *          ridden down by the open lever. The game blends between the two
+ *          shapes with a weight 0..1 (setLever): every vertex moves in a
+ *          straight line from one shape to the other. Cheaper than a
+ *          skeleton, and for a small move like this one it looks the same.
+ *   Arm_L_Rifle  the left arm, its hand under the fore-end.
+ */
+export function createRifleHands(): RifleHands {
+  const right = new THREE.Group();
+  const left = new THREE.Group();
+  const morphMeshes: THREE.Mesh[] = []; // the meshes whose morph target follows the lever
+  new GLTFLoader().load(`${import.meta.env.BASE_URL}models/rifleArms.glb`, (gltf) => {
+    prepareArms(gltf.scene);
+    const armR = gltf.scene.getObjectByName('Arm_R_Rifle');
+    const armL = gltf.scene.getObjectByName('Arm_L_Rifle');
+    if (armR) right.add(armR);
+    if (armL) left.add(armL);
+    // A mesh with two materials (skin, sleeve) comes out of the glTF loader
+    // as a group of two meshes, one per material: each has the morph target.
+    armR?.traverse((o) => {
+      if (o instanceof THREE.Mesh && o.morphTargetInfluences?.length) morphMeshes.push(o);
+    });
+  });
+  return {
+    right,
+    left,
+    setLever(open) {
+      for (const m of morphMeshes) m.morphTargetInfluences![0] = open;
+    },
+  };
 }
 
 // --- Fanning animation --------------------------------------------------------

@@ -1,0 +1,373 @@
+// The lever-action carbine in your hands: public/models/rifle.glb, our own
+// model, made by tools/blender/rifle.py from "Rifle" by CreativeTrio (the
+// original is in assets-src/rifle/). Already in the viewmodel's conventions
+// (barrel along -Z, meters, origin = the right hand on the wrist of the
+// stock) and split into moving parts, each with its ORIGIN on its pivot:
+//
+//   frame          doesn't move
+//   ├── lever      origin on its pin: rotation.x > 0 swings the loop down (open)
+//   ├── hammer     origin on its screw: modeled cocked (0); < 0 = fallen (fired)
+//   ├── trigger    origin at its top: < 0 = pulled
+//   ├── bolt       the end of the bolt: slides back (+z) when the lever opens
+//   ├── case       a spent case in the chamber (only a template: hidden)
+//   └── round      a live round at the loading gate (reload)
+//
+// THE LEVER, the part that has to feel good. After every shot:
+//   1. the shot: hammer falls, trigger back, the gun kicks (viewmodel.ts);
+//   2. a beat, then the hand THROWS the lever open: it isn't keyframed, it's
+//      a tiny physics simulation (Lever below): a constant push, so it
+//      accelerates all the way and SLAMS into its stop, bouncing back a
+//      little, like a ball hitting the floor. As it opens it drags the bolt
+//      back, the bolt cocks the hammer, and the spent case flies out of the
+//      top, spinning;
+//   3. the hand SLAMS it shut, harder: it bounces on the frame and latches,
+//      and the hit jolts the whole gun (an impulse to its pose spring);
+//   4. the gun settles. Everything follows the gun's own timeline:
+//      keyframes of the whole gun through a damped spring (elastic.ts), so
+//      the throw and the snap carry momentum.
+// The timeline is in fractions of tuning.rifleFireInterval (debug panel), and
+// the sounds in audio/sfx.ts (playCarbineLever) use the same numbers.
+//
+// THE RELOAD, one round at a time like the simulation: the gun turns its
+// right side toward you (where the loading gate is), and every round slides
+// up to the gate and is pushed in, with a little dip of the gun at each push.
+// Everything here is cosmetic: ammo and timing are decided by the simulation.
+import * as THREE from 'three';
+import { secondsToTicks, tuning } from '../../sim/config';
+import type { PlayerState } from '../../sim/player';
+import type { LeverTimes } from '../../audio/sfx';
+import { ELASTIC_STEP, PoseSpring, ZERO_POSE, phase, poseAt, smoothstep, type GunPose } from './elastic';
+import { loadGunModel } from './gunModel';
+import { createRifleHands } from './hands';
+
+// --- The lever ---------------------------------------------------------------
+/** How far the lever swings open, radians: the stop it slams into. */
+const LEVER_OPEN = 0.85;
+/** How hard the hand throws it open / slams it shut, rad/s² (a constant push: it accelerates all the way). */
+const LEVER_THROW = 300;
+const LEVER_SLAM = 520;
+/** Speed kept when it hits a stop (0 = dead stop, 1 = bounces forever). */
+const LEVER_BOUNCE_OPEN = 0.3;
+const LEVER_BOUNCE_SHUT = 0.2;
+/** Below this speed a bounce is over: it rests against the stop, rad/s. */
+const LEVER_REST_SPEED = 0.6;
+/** How much a slam into a stop jolts the gun (per rad/s of the lever's speed). */
+const SLAM_JOLT_PITCH = 0.04;
+const SLAM_JOLT_Y = 0.012;
+
+// --- Hammer, trigger, bolt -----------------------------------------------------
+/** The hammer after the shot, radians (fallen forward onto the firing pin). */
+const HAMMER_FIRED = -0.55;
+/** A bit past full cock while the bolt holds it back (lever open). */
+const HAMMER_OVERCOCK = 0.12;
+/** How far the trigger goes back when pulled, radians. */
+const TRIGGER_PULL = -0.3;
+/** How far the bolt slides back with the lever fully open, meters. */
+const BOLT_TRAVEL = 0.03;
+
+// --- The lever cycle: timeline in fractions of rifleFireInterval ---------------
+/** When the hand throws the lever open (after the recoil)... */
+export const LEVER_THROW_AT = 0.2;
+/** ...and when it slams it shut. */
+export const LEVER_SHUT_AT = 0.47;
+/** The spent case flies out when the lever is this open (fraction of LEVER_OPEN). */
+const EJECT_AT = 0.65;
+
+/**
+ * When the moments of the cycle happen, seconds after the shot, for the
+ * sounds (audio/sfx.ts). The lever accelerates at a constant rate from a
+ * stop, so the time to cover an angle is the school formula for uniform
+ * acceleration: angle = ½·a·t², so t = √(2·angle / a).
+ */
+export function leverTimes(interval: number): LeverTimes {
+  const throwAt = LEVER_THROW_AT * interval;
+  const shutStart = LEVER_SHUT_AT * interval;
+  const travel = (angle: number, acc: number) => Math.sqrt((2 * angle) / acc);
+  return {
+    throwAt,
+    openAt: throwAt + travel(LEVER_OPEN, LEVER_THROW),
+    ejectAt: throwAt + travel(LEVER_OPEN * EJECT_AT, LEVER_THROW),
+    shutStart,
+    shutAt: shutStart + travel(LEVER_OPEN, LEVER_SLAM),
+  };
+}
+
+// --- The spent cases in flight -------------------------------------------------
+/** Speed of a case leaving the gun, m/s, in camera space: right, up, toward you. */
+const CASE_SPEED = { x: 0.6, y: 1.5, z: 0.25 };
+/** Random extra on each axis, so no two cases fly the same. */
+const CASE_SCATTER = 0.3;
+/** How fast it tumbles, rad/s. */
+const CASE_SPIN = 25;
+/** Gravity for the cases, m/s² (a bit less than real: we want to see them go). */
+const CASE_GRAVITY = 7;
+/** Seconds before a case is gone (it's off the screen by then). */
+const CASE_LIFE = 0.7;
+
+// --- The gun's pose: a damped spring chasing keyframes ---------------------------
+const POSE_STIFFNESS = 900;
+const POSE_DAMPING_RATIO = 0.45;
+const Z = ZERO_POSE;
+/** [t, pose] of the lever cycle (t = fraction of rifleFireInterval since the shot). */
+const CYCLE_KEYS: [number, GunPose][] = [
+  [0, Z],
+  [LEVER_THROW_AT - 0.04, { x: 0, y: 0.004, z: 0, pitch: 0.02, yaw: 0, roll: 0.04 }], // wind-up
+  [LEVER_THROW_AT + 0.07, { x: -0.004, y: 0.01, z: 0.008, pitch: 0.07, yaw: 0.03, roll: -0.25 }], // throw: canted more, the action in view
+  [LEVER_SHUT_AT, { x: -0.004, y: 0.01, z: 0.008, pitch: 0.06, yaw: 0.03, roll: -0.22 }],
+  [LEVER_SHUT_AT + 0.08, { x: 0, y: -0.004, z: 0, pitch: -0.03, yaw: 0, roll: 0.04 }], // snapped back
+  [0.8, Z],
+  [1, Z],
+];
+/**
+ * The reload pose: rolled onto its left side, so the RIGHT side (where the
+ * loading gate is) faces up toward you; closer, muzzle up a little.
+ */
+const RELOAD_POSE: GunPose = { x: -0.07, y: 0.02, z: 0.05, pitch: 0.25, yaw: 0.15, roll: 1.15 };
+/** The dip of the gun when a round is pushed in, as a speed kick to the spring. */
+const PUSH_DIP_Y = -0.15;
+const PUSH_DIP_PITCH = -0.5;
+
+// --- Reload: one round through the gate --------------------------------------------
+/** Where a round comes from, relative to its place in the gate (right, down, back), meters. */
+const ROUND_FROM = new THREE.Vector3(0.05, -0.04, 0.06);
+/** Lined up behind the gate, tip at the opening. */
+const ROUND_READY = new THREE.Vector3(0.004, 0, 0.035);
+/** Pushed in: forward and inward. */
+const ROUND_IN = new THREE.Vector3(-0.008, 0, -0.03);
+/** Phases of each round, fractions of rifleReloadPerRound: ready by... pushed in by... */
+const ROUND_READY_AT = 0.5;
+const ROUND_IN_AT = 0.92; // just before the simulation counts it in ('reloadRound': the click)
+
+/**
+ * The lever as a tiny physics simulation: one angle and its speed. The hand
+ * pushes it toward one of its two stops with a CONSTANT force (so it keeps
+ * accelerating until it hits), and every stop bounces it back with part of
+ * its speed: a few smaller and smaller hops, then it rests. Compared to a
+ * keyframe this gets the two things that make it satisfying for free: the
+ * speed is highest exactly at the impact, and the impact has a rebound.
+ */
+class Lever {
+  angle = 0;
+  vel = 0;
+  /** Speed of the last impact against a stop (consumed by whoever reacts to it). */
+  impact = 0;
+
+  reset(): void {
+    this.angle = 0;
+    this.vel = 0;
+  }
+
+  step(open: boolean, dt: number): void {
+    this.vel += (open ? LEVER_THROW : -LEVER_SLAM) * dt;
+    this.angle += this.vel * dt;
+    if (this.angle >= LEVER_OPEN && this.vel > 0) {
+      this.angle = LEVER_OPEN;
+      this.hit(LEVER_BOUNCE_OPEN);
+    } else if (this.angle <= 0 && this.vel < 0) {
+      this.angle = 0;
+      this.hit(LEVER_BOUNCE_SHUT);
+    }
+  }
+
+  private hit(bounce: number): void {
+    if (Math.abs(this.vel) > LEVER_REST_SPEED * 4) this.impact = this.vel; // a real slam, not a resting nudge
+    this.vel = -this.vel * bounce;
+    if (Math.abs(this.vel) < LEVER_REST_SPEED) this.vel = 0;
+  }
+}
+
+interface FlyingCase {
+  mesh: THREE.Object3D;
+  vel: THREE.Vector3;
+  spin: THREE.Vector3;
+  age: number;
+}
+
+export interface RifleView {
+  /** Goes inside the viewmodel holder. Its origin is the right hand on the wrist of the stock. */
+  root: THREE.Group;
+  /** Muzzle, in root coordinates. */
+  muzzle: THREE.Vector3;
+  onShot(): void;
+  /** Stop every animation (weapon switched away). */
+  cancel(): void;
+  /** Advance the animations. Returns the pose offsets of the whole gun. */
+  update(dt: number, player: PlayerState): GunPose;
+}
+
+/** `flightSpace`: where the spent cases fly (the viewmodel scene: they leave the gun behind). */
+export function createRifleView(flightSpace: THREE.Object3D): RifleView {
+  const root = new THREE.Group();
+
+  // Parts, filled in when the file has loaded. Until then the animations
+  // move these empty stand-ins (the code works either way).
+  const parts = {
+    lever: new THREE.Object3D(),
+    hammer: new THREE.Object3D(),
+    trigger: new THREE.Object3D(),
+    bolt: new THREE.Object3D(),
+    case: null as THREE.Object3D | null,
+    round: null as THREE.Object3D | null,
+  };
+  let boltRest = 0;
+  const roundRest = new THREE.Vector3();
+  root.add(
+    loadGunModel('rifle.glb', (model) => {
+      parts.lever = model.getObjectByName('lever') ?? parts.lever;
+      parts.hammer = model.getObjectByName('hammer') ?? parts.hammer;
+      parts.trigger = model.getObjectByName('trigger') ?? parts.trigger;
+      parts.bolt = model.getObjectByName('bolt') ?? parts.bolt;
+      parts.case = model.getObjectByName('case') ?? null;
+      parts.round = model.getObjectByName('round') ?? null;
+      boltRest = parts.bolt.position.z;
+      if (parts.case) parts.case.visible = false; // only a template for the flying ones
+      if (parts.round) {
+        roundRest.copy(parts.round.position);
+        parts.round.visible = false;
+      }
+    }),
+  );
+
+  // Two hands (see hands.ts): the right one on the wrist with its fingers in
+  // the lever's loop, the left one under the fore-end. The right hand has a
+  // MORPH TARGET (a second shape of the same mesh, the "lever open" pose):
+  // its weight follows the lever, so the hand rides down with it.
+  const hands = createRifleHands();
+  root.add(hands.right, hands.left);
+
+  const lever = new Lever();
+  const spring = new PoseSpring(POSE_STIFFNESS, POSE_DAMPING_RATIO);
+  let leftover = 0;
+  let sinceShot = Infinity; // seconds since the last shot
+  let hammer = 0; // current hammer angle (0 = cocked)
+  let cocked = true; // the bolt has pushed the hammer back since the last shot
+  let ejected = true; // the case of the last shot is already out
+  let lastRoundK = 0; // progress of the round being pushed in (to catch the push moment)
+  const flying: FlyingCase[] = [];
+  const v = new THREE.Vector3();
+
+  function ejectCase(): void {
+    if (!parts.case) return;
+    // A copy of the template, moved into the flight space at the same place
+    // on screen (attach() keeps the world transform while changing parent).
+    const mesh = parts.case.clone();
+    mesh.visible = true;
+    parts.case.parent!.add(mesh);
+    root.updateWorldMatrix(true, true);
+    flightSpace.attach(mesh);
+    const r = () => (Math.random() * 2 - 1) * CASE_SCATTER;
+    flying.push({
+      mesh,
+      vel: new THREE.Vector3(CASE_SPEED.x + r() * 0.5, CASE_SPEED.y + r(), CASE_SPEED.z + r() * 0.5),
+      spin: new THREE.Vector3(CASE_SPIN * (0.6 + Math.random() * 0.4), CASE_SPIN * 0.2 * r(), CASE_SPIN * 0.5),
+      age: 0,
+    });
+  }
+
+  function clearCases(): void {
+    for (const c of flying) c.mesh.removeFromParent();
+    flying.length = 0;
+  }
+
+  return {
+    root,
+    muzzle: new THREE.Vector3(0, 0.056, -0.727),
+    onShot() {
+      sinceShot = 0;
+      cocked = false;
+      ejected = false;
+      hammer = HAMMER_FIRED; // the hammer falls at once: it's what fired the shot
+    },
+    cancel() {
+      sinceShot = Infinity;
+      lever.reset();
+      cocked = true;
+      ejected = true;
+      hammer = 0;
+      clearCases();
+    },
+    update(dt, player) {
+      const interval = tuning.rifleFireInterval;
+      const perRoundTicks = secondsToTicks(tuning.rifleReloadPerRound);
+      const reloading = player.reloadTicks > 0;
+      // Progress of the round being pushed in (0..1), -1 while the gun is
+      // still on its way to the gate (the first round's start time).
+      const roundK = reloading && player.reloadTicks <= perRoundTicks ? 1 - player.reloadTicks / perRoundTicks : -1;
+      // The moment a round goes in: a dip of the gun (a kick to the spring's speed).
+      if (lastRoundK < ROUND_IN_AT && roundK >= ROUND_IN_AT) {
+        spring.vel.y += PUSH_DIP_Y;
+        spring.vel.pitch += PUSH_DIP_PITCH;
+      }
+      lastRoundK = roundK;
+
+      // --- Lever and gun pose, in small fixed steps (springs need them) ---
+      leftover += Math.min(dt, 0.1);
+      while (leftover >= ELASTIC_STEP) {
+        leftover -= ELASTIC_STEP;
+        sinceShot += ELASTIC_STEP;
+        const t = sinceShot / interval;
+        const open = t >= LEVER_THROW_AT && t < LEVER_SHUT_AT;
+        lever.step(open, ELASTIC_STEP);
+        if (lever.impact !== 0) {
+          // The lever hit a stop: the whole gun feels it. Shut (negative
+          // speed) jolts it more than open: that's the "CLACK" of the cycle.
+          const k = Math.abs(lever.impact) * (lever.impact < 0 ? 1 : 0.5);
+          spring.vel.pitch += SLAM_JOLT_PITCH * k;
+          spring.vel.y += SLAM_JOLT_Y * k;
+          lever.impact = 0;
+        }
+        const target = reloading ? RELOAD_POSE : t < 1 ? poseAt(CYCLE_KEYS, t) : Z;
+        spring.step(target, ELASTIC_STEP);
+      }
+      const open = lever.angle / LEVER_OPEN; // 0 = shut, 1 = fully open
+
+      // --- The parts the lever drives ---
+      parts.lever.rotation.x = lever.angle;
+      // The bolt rides back with the lever (+z = toward you).
+      parts.bolt.position.z = boltRest + BOLT_TRAVEL * open;
+      // The hammer: fallen after the shot; the bolt pushes it back as the
+      // lever opens (a bit past full cock), and it settles at full cock
+      // when the lever closes.
+      if (!cocked && open > 0.8) cocked = true;
+      const hammerTarget = cocked ? HAMMER_OVERCOCK * open : HAMMER_FIRED + (HAMMER_OVERCOCK - HAMMER_FIRED) * Math.min(1, open / 0.8);
+      hammer = cocked || open > 0 ? hammerTarget : hammer;
+      parts.hammer.rotation.x = hammer;
+      // The trigger: pulled at the shot, released soon after.
+      parts.trigger.rotation.x = TRIGGER_PULL * (1 - smoothstep(phase(sinceShot, 0.04, 0.14)));
+      // The right hand rides along with the lever (its morph target, see above).
+      hands.setLever(open);
+
+      // --- The spent case: out when the lever is open enough ---
+      if (!ejected && open >= EJECT_AT) {
+        ejected = true;
+        ejectCase();
+      }
+      for (let i = flying.length - 1; i >= 0; i--) {
+        const c = flying[i];
+        c.age += dt;
+        c.vel.y -= CASE_GRAVITY * dt;
+        c.mesh.position.addScaledVector(c.vel, dt);
+        c.mesh.rotation.x += c.spin.x * dt;
+        c.mesh.rotation.y += c.spin.y * dt;
+        c.mesh.rotation.z += c.spin.z * dt;
+        if (c.age > CASE_LIFE) {
+          c.mesh.removeFromParent();
+          flying.splice(i, 1);
+        }
+      }
+
+      // --- Reload: the round slides up to the gate and is pushed in ---
+      if (parts.round) {
+        parts.round.visible = roundK >= 0 && roundK < ROUND_IN_AT + 0.04;
+        if (parts.round.visible) {
+          const a = smoothstep(phase(roundK, 0, ROUND_READY_AT));
+          const b = smoothstep(phase(roundK, ROUND_READY_AT + 0.1, ROUND_IN_AT));
+          v.copy(ROUND_FROM).lerp(ROUND_READY, a).lerp(ROUND_IN, b);
+          parts.round.position.copy(roundRest).add(v);
+        }
+      }
+
+      return { ...spring.pose };
+    },
+  };
+}

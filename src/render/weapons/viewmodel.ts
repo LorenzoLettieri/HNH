@@ -16,7 +16,9 @@ import { createFanning, createHands } from './hands';
 import { createKickLeg } from './kickLeg';
 import { createShotgunView } from './shotgunView';
 import { createRevolverReload } from './revolverReload';
-import type { WeaponId } from '../../sim/weapon';
+import { createRifleView } from './rifleView';
+import { adsAmount, type WeaponId } from '../../sim/weapon';
+import { smoothstep } from './elastic';
 
 /** Mutable so the debug panel can change them. */
 export const viewmodelSettings = {
@@ -59,6 +61,31 @@ export const viewmodelSettings = {
   shotgunRecoilBack: 0.11,
   shotgunRecoilRecovery: 7,
   shotgunViewKick: 0.06,
+
+  // --- Lever-action carbine (origin of its model: the right hand on the wrist) ---
+  /** From the hip: low on the right, the barrel going into depth. (The arms in arms.glb are posed for this pose.) */
+  rifleX: 0.2,
+  rifleY: -0.105,
+  rifleZ: -0.34,
+  riflePitch: 0.06,
+  rifleYaw: 0.14,
+  rifleRoll: -0.55,
+  /**
+   * Aimed down the sights: the barrel straight ahead, centered, and lifted so
+   * that the line from the rear sight's notch to the front sight's tip (0.0753
+   * above the origin, see tools/blender/rifle.py) passes through the eye.
+   */
+  rifleAdsX: 0,
+  rifleAdsY: -0.0753,
+  rifleAdsZ: -0.22,
+  rifleRecoil: 0.22,
+  rifleRecoilBack: 0.06,
+  rifleRecoilRecovery: 9,
+  rifleViewKick: 0.04,
+  /** Aimed, the gun kicks up less (so the sights come back on target): fraction of the recoil. */
+  rifleAdsRecoil: 0.45,
+  /** Aimed, sway and bob are this fraction of the normal ones (steady hands). */
+  rifleAdsSteady: 0.15,
 
   /** How far below the screen a weapon starts when you switch to it, meters. */
   switchDrop: 0.22,
@@ -177,6 +204,16 @@ export function createViewmodel(): Viewmodel {
   const shotgunFlash = createFlash(flashMap);
   shotgun.root.add(shotgunFlash);
 
+  // The lever-action carbine (see rifleView.ts). Its spent cases fly in the
+  // scene itself: once out of the gun they don't follow its sway.
+  const rifle = createRifleView(scene);
+  rifle.root.visible = false;
+  holder.add(rifle.root);
+  const rifleFlash = createFlash(flashMap);
+  rifleFlash.position.copy(rifle.muzzle);
+  rifle.root.add(rifleFlash);
+  let ads = 0; // 0 = from the hip, 1 = aimed down the sights (smoothed)
+
   // Animation state.
   let kick = 0; // 0..1, recoil amount
   let kickWeapon: WeaponId = 'revolver'; // which gun's recoil numbers apply
@@ -203,6 +240,13 @@ export function createViewmodel(): Viewmodel {
       kick = 1;
       kickWeapon = weapon;
       flashTime = 0.05;
+      if (weapon === 'rifle') {
+        viewKick = s.rifleViewKick * (1 - 0.5 * ads);
+        rifle.onShot();
+        rifleFlash.material.rotation = Math.random() * Math.PI;
+        rifleFlash.scale.setScalar(0.13 + Math.random() * 0.05);
+        return;
+      }
       if (weapon === 'shotgun') {
         viewKick = s.shotgunViewKick;
         shotgunFlash.position.copy(shotgun.muzzles[barrel]);
@@ -218,8 +262,9 @@ export function createViewmodel(): Viewmodel {
       flash.scale.setScalar(0.09 + Math.random() * 0.05);
     },
     onReload(weapon) {
+      // (The carbine's reload follows the simulation's timer directly: rifleView.ts.)
       if (weapon === 'shotgun') shotgun.onReload();
-      else revolverReload.start();
+      else if (weapon === 'revolver') revolverReload.start();
     },
     onKick() {
       kickTime = 0;
@@ -259,23 +304,33 @@ export function createViewmodel(): Viewmodel {
         switchDrop = 1;
         revolverReload.cancel(); // a reload in progress was cancelled by the switch
         shotgun.cancel();
+        rifle.cancel();
         flashTime = 0;
       }
       revolver.visible = shownWeapon === 'revolver';
       shotgun.root.visible = shownWeapon === 'shotgun';
+      rifle.root.visible = shownWeapon === 'rifle';
+      const isRifle = shownWeapon === 'rifle';
+      // Aiming down the sights: the simulation says how far (it takes
+      // rifleAdsTime); here it's only smoothed between ticks and eased.
+      ads = approach(ads, isRifle ? adsAmount(player) : 0, 30, dt);
+      const aimed = smoothstep(ads);
+      const steady = 1 - (1 - s.rifleAdsSteady) * aimed;
       const switchTotal = secondsToTicks(tuning.weaponSwitchTime);
       const switchTarget = switchTotal > 0 ? player.switchTicks / switchTotal : 0;
       switchDrop = approach(switchDrop, Math.min(switchDrop, switchTarget), 30, dt);
       const isShotgun = shownWeapon === 'shotgun';
 
       // --- Recoil, flash, view kick: instant hit, exponential recovery ---
-      kick = approach(kick, 0, kickWeapon === 'shotgun' ? s.shotgunRecoilRecovery : s.recoilRecovery, dt);
+      const recovery = { revolver: s.recoilRecovery, shotgun: s.shotgunRecoilRecovery, rifle: s.rifleRecoilRecovery };
+      kick = approach(kick, 0, recovery[kickWeapon], dt);
       viewKick = approach(viewKick, 0, 12, dt);
       flashTime -= dt;
-      flash.visible = flashTime > 0 && !isShotgun;
+      flash.visible = flashTime > 0 && shownWeapon === 'revolver';
       shotgunFlash.visible = flashTime > 0 && isShotgun;
-      flashLight.intensity = flashTime > 0 ? (isShotgun ? 5 : 3) : 0;
-      const activeFlash = isShotgun ? shotgunFlash : flash;
+      rifleFlash.visible = flashTime > 0 && isRifle && ads < 0.5; // aimed: the flash would fill the sights
+      flashLight.intensity = flashTime > 0 ? (isShotgun ? 5 : isRifle ? 4 : 3) : 0;
+      const activeFlash = isShotgun ? shotgunFlash : isRifle ? rifleFlash : flash;
       flashLight.position.copy(activeFlash.position).applyMatrix4(activeFlash.parent!.matrixWorld);
 
       // --- Cylinder turns to the next chamber; hammer re-cocks after a shot ---
@@ -286,6 +341,7 @@ export function createViewmodel(): Viewmodel {
 
       // --- Shotgun: elastic reload (see shotgunView.ts) ---
       const shotgunPose = shotgun.update(dt, player);
+      const riflePose = rifle.update(dt, player);
 
       // --- Reload: flick open, cases out, rounds in, flick shut, spin (see revolverReload.ts) ---
       const rr = revolverReload.update(dt, tuning.revolverReloadTime, gun);
@@ -295,7 +351,7 @@ export function createViewmodel(): Viewmodel {
         cylinderTarget = Math.ceil(cylinderAngle / (Math.PI / 3)) * (Math.PI / 3);
       }
       gun.cylinder.rotation.z = cylinderAngle;
-      const rp = isShotgun ? shotgunPose : rr.pose;
+      const rp = isShotgun ? shotgunPose : isRifle ? riflePose : rr.pose;
       const reload = revolverReload.active && !isShotgun ? 1 : 0; // hides the left hand
 
 
@@ -313,16 +369,16 @@ export function createViewmodel(): Viewmodel {
       }
 
       // --- Sway: the gun lags behind when you turn the mouse ---
-      swayX = approach(swayX, THREE.MathUtils.clamp(dYaw * s.sway, -0.04, 0.04), 12, dt);
-      swayY = approach(swayY, THREE.MathUtils.clamp(-dPitch * s.sway, -0.04, 0.04), 12, dt);
+      swayX = approach(swayX, THREE.MathUtils.clamp(dYaw * s.sway, -0.04, 0.04) * steady, 12, dt);
+      swayY = approach(swayY, THREE.MathUtils.clamp(-dPitch * s.sway, -0.04, 0.04) * steady, 12, dt);
 
       // --- Bob while running on the ground ---
       const speed = Math.hypot(player.vx, player.vz);
       const running = player.onGround && !player.sliding ? Math.min(speed / tuning.maxGroundSpeed, 1.5) : 0;
       bobAmount = approach(bobAmount, running, 8, dt);
       bobPhase += dt * (4 + speed * 0.9);
-      const bobX = Math.sin(bobPhase) * s.bob * bobAmount;
-      const bobY = -Math.abs(Math.cos(bobPhase)) * s.bob * bobAmount;
+      const bobX = Math.sin(bobPhase) * s.bob * bobAmount * steady;
+      const bobY = -Math.abs(Math.cos(bobPhase)) * s.bob * bobAmount * steady;
 
       // --- Falling lifts the gun, jumping lowers it (inertia) ---
       fallOffset = approach(fallOffset, THREE.MathUtils.clamp(-player.vy * 0.003, -0.03, 0.03), 10, dt);
@@ -333,11 +389,22 @@ export function createViewmodel(): Viewmodel {
       // --- Compose the final pose ---
       // Each weapon has its own rest pose and recoil; everything else
       // (sway, bob, slide, kick, switch) is shared.
+      // The carbine's rest pose blends from the hip pose to the aimed one.
+      const lerp = (a: number, b: number) => a + (b - a) * aimed;
       const rest = isShotgun
         ? { x: s.shotgunX, y: s.shotgunY, z: s.shotgunZ, pitch: s.shotgunPitch, yaw: s.shotgunYaw, roll: s.shotgunRoll }
-        : { x: s.x, y: s.y, z: s.z, pitch: 0, yaw: -0.04, roll: 0 };
-      const recoilUp = kickWeapon === 'shotgun' ? s.shotgunRecoil : s.recoil;
-      const recoilBack = kickWeapon === 'shotgun' ? s.shotgunRecoilBack : 0.05;
+        : isRifle
+          ? {
+              x: lerp(s.rifleX, s.rifleAdsX),
+              y: lerp(s.rifleY, s.rifleAdsY),
+              z: lerp(s.rifleZ, s.rifleAdsZ),
+              pitch: lerp(s.riflePitch, 0),
+              yaw: lerp(s.rifleYaw, 0),
+              roll: lerp(s.rifleRoll, 0),
+            }
+          : { x: s.x, y: s.y, z: s.z, pitch: 0, yaw: -0.04, roll: 0 };
+      const recoilUp = { revolver: s.recoil, shotgun: s.shotgunRecoil, rifle: s.rifleRecoil * lerp(1, s.rifleAdsRecoil) }[kickWeapon];
+      const recoilBack = { revolver: 0.05, shotgun: s.shotgunRecoilBack, rifle: s.rifleRecoilBack }[kickWeapon];
       // The reloads move the whole gun too: `rp` = pose offsets (elastic.ts).
       holder.position.set(
         rest.x + swayX + bobX + rp.x - slideTilt * 0.02 + legOut * 0.04,

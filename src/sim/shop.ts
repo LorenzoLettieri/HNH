@@ -25,7 +25,10 @@ export interface ShopItem {
 export function shopCatalog(kind: ShopSpawn['kind']): ShopItem[] {
   switch (kind) {
     case 'weapons':
-      return [{ id: 'shotgun', price: tuning.shotgunPrice }];
+      return [
+        { id: 'shotgun', price: tuning.shotgunPrice },
+        { id: 'rifle', price: tuning.riflePrice },
+      ];
   }
 }
 
@@ -68,8 +71,13 @@ export function stepShop(p: PlayerState, cmd: InputCommand, world: World, events
   // straight to your hands (you bought it to use it, right now).
   p.owned[id] = true;
   if (id === 'shotgun') {
-    p.shells = tuning.shotgunAmmo;
-    p.reserve.shotgun = Math.max(p.reserve.shotgun, tuning.shotgunReserveStart);
+    p.loaded.shotgun = tuning.shotgunAmmo;
+    p.reserve.shells = Math.max(p.reserve.shells, tuning.shotgunReserveStart);
+  }
+  if (id === 'rifle') {
+    // The carbine shoots the revolver's bullets: a box of them comes with it.
+    p.loaded.rifle = tuning.rifleAmmo;
+    p.reserve.bullets = Math.min(tuning.revolverReserveMax, p.reserve.bullets + tuning.rifleBuyBullets);
   }
   switchWeapon(p, id, events);
   events.push({ type: 'purchase', item: id, price: item.price });

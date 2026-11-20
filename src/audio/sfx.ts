@@ -206,6 +206,66 @@ export function playShotgunReload(duration: number): void {
   noiseBurst({ start: at(0.875), duration: 0.025, volume: 0.35, filter: 'bandpass', frequency: 3200, q: 5 }); // lever back
 }
 
+/**
+ * The carbine's shot: the same recipe again, tuned between the two. A long
+ * barrel means a SHARPER crack than the revolver (more highs) but a big
+ * charge: a solid punch, and a long echo rolling off the canyon walls.
+ */
+export function playCarbineShot(): void {
+  if (!ctx) return;
+  const v = 0.92 + Math.random() * 0.16;
+  noiseBurst({ duration: 0.06, volume: 1.0, filter: 'highpass', frequency: 2600 * v }); // crack
+  noiseBurst({ duration: 0.4, volume: 1.1, filter: 'lowpass', frequency: 3000 * v, frequencyEnd: 180 }); // blast
+  thump({ duration: 0.3, volume: 1.0, from: 170 * v, to: 38 }); // punch
+  noiseBurst({ start: 0.22, duration: 0.7, volume: 0.24, filter: 'lowpass', frequency: 1000, frequencyEnd: 140 }); // echo...
+  noiseBurst({ start: 0.55, duration: 0.9, volume: 0.1, filter: 'lowpass', frequency: 650, frequencyEnd: 110 }); // ...and farther
+}
+
+/** When the moments of the lever cycle happen, seconds after the shot (computed by rifleView.ts). */
+export interface LeverTimes {
+  throwAt: number; // the hand starts throwing it open
+  openAt: number; // it slams into its open stop
+  ejectAt: number; // the spent case flies out
+  shutStart: number; // the hand slams it back
+  shutAt: number; // it slams into the frame and latches
+}
+
+/**
+ * The carbine's lever, timed on the animation (render/weapons/rifleView.ts,
+ * where the lever is physics: these times come from its numbers): the bolt
+ * scraping back, a bright CLA- when it hits the open stop, the case spinning
+ * out (a high "tink", and it lands a bit later), the bolt scraping forward
+ * and a heavy -CLACK when it slams shut, with the little click of the latch.
+ * The open hit is light and high, the shut one heavy and low: that contrast
+ * is what makes the "cla-CLACK".
+ */
+export function playCarbineLever(t: LeverTimes): void {
+  noiseBurst({ start: t.throwAt, duration: t.openAt - t.throwAt + 0.01, volume: 0.12, filter: 'bandpass', frequency: 1200, frequencyEnd: 3200, q: 2 }); // scrape back
+  noiseBurst({ start: t.openAt, duration: 0.04, volume: 0.6, filter: 'bandpass', frequency: 2600, q: 3 }); // CLA-
+  thump({ start: t.openAt, duration: 0.035, volume: 0.22, from: 700, to: 350 });
+  noiseBurst({ start: t.ejectAt, duration: 0.05, volume: 0.22, filter: 'bandpass', frequency: 6000, q: 10 }); // case out
+  noiseBurst({ start: t.shutStart, duration: t.shutAt - t.shutStart + 0.01, volume: 0.12, filter: 'bandpass', frequency: 3000, frequencyEnd: 1000, q: 2 }); // scrape forward
+  noiseBurst({ start: t.shutAt, duration: 0.07, volume: 1.0, filter: 'bandpass', frequency: 1400, q: 2 }); // -CLACK
+  thump({ start: t.shutAt, duration: 0.07, volume: 0.5, from: 360, to: 140 });
+  noiseBurst({ start: t.shutAt + 0.012, duration: 0.02, volume: 0.3, filter: 'bandpass', frequency: 4200, q: 6 }); // latch
+  // The case hits the ground somewhere behind you, and bounces once.
+  for (const [k, vol] of [[0.42, 0.12], [0.5, 0.06]]) {
+    noiseBurst({ start: t.ejectAt + k, duration: 0.03, volume: vol, filter: 'bandpass', frequency: 6400 + Math.random() * 800, q: 12 });
+  }
+}
+
+/** Carbine reload, the start: the gun is turned over to show the loading gate. */
+export function playCarbineReloadStart(): void {
+  noiseBurst({ duration: 0.15, volume: 0.25, filter: 'bandpass', frequency: 600, frequencyEnd: 1300, q: 1.5 });
+}
+
+/** A round pushed in through the loading gate: the gate's spring clicks, the round thocks into the tube. */
+export function playCarbineRoundIn(): void {
+  noiseBurst({ duration: 0.02, volume: 0.3, filter: 'bandpass', frequency: 3800, q: 6 }); // gate
+  noiseBurst({ start: 0.015, duration: 0.05, volume: 0.35, filter: 'bandpass', frequency: 900, q: 3 }); // thock
+  thump({ start: 0.015, duration: 0.05, volume: 0.2, from: 260, to: 170 });
+}
+
 /** Weapon switch: a leather-and-metal rustle as the new gun comes up. */
 export function playWeaponSwitch(): void {
   noiseBurst({ duration: 0.12, volume: 0.3, filter: 'bandpass', frequency: 700, frequencyEnd: 1500, q: 1.5 });

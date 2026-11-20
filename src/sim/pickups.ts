@@ -30,13 +30,20 @@ import { random } from './random';
 import { moveAndCollide } from './collision';
 import { enemyCost } from './waves';
 import { styleMultiplier } from './style';
-import type { WeaponId } from './weapon';
+import { AMMO_TYPE, WEAPONS, type AmmoType, type WeaponId } from './weapon';
 import type { World } from './world';
 
 export type PickupKind = 'bullets' | 'shells' | 'medkit' | 'coin';
 
-/** Which weapon's pockets each kind of ammo fills. */
-const AMMO_FOR: Record<'bullets' | 'shells', WeaponId> = { bullets: 'revolver', shells: 'shotgun' };
+/**
+ * Is this kind of ammo any use to you? Yes if you own at least one weapon
+ * that shoots it (bullets: the revolver, which you always have, and the
+ * carbine; shells: the shotgun). The pickup kinds 'bullets' and 'shells'
+ * are the same names as the pockets (AmmoType in weapon.ts).
+ */
+function usesAmmo(owned: Record<WeaponId, boolean>, ammo: AmmoType): boolean {
+  return WEAPONS.some((w) => owned[w] && AMMO_TYPE[w] === ammo);
+}
 
 export interface Pickup {
   /** Unique (shares the counter with the entities): the renderer keeps one mesh per id. */
@@ -161,7 +168,7 @@ export function createPickup(game: GameState, kind: PickupKind, x: number, y: nu
 function pickKind(roll: number, owned: Record<WeaponId, boolean>): PickupKind {
   // Ammo for a weapon you don't own never drops: its weight becomes 0
   // (the other kinds split its share: that's the beauty of weights).
-  const ammo = (kind: 'bullets' | 'shells', w: number) => (owned[AMMO_FOR[kind]] ? w : 0);
+  const ammo = (kind: AmmoType, w: number) => (usesAmmo(owned, kind) ? w : 0);
   const weights: [PickupKind, number][] = [
     ['bullets', ammo('bullets', tuning.dropWeightBullets)],
     ['shells', ammo('shells', tuning.dropWeightShells)],
@@ -240,12 +247,11 @@ function collect(game: GameState, d: Pickup): boolean {
     p.health = Math.min(tuning.playerMaxHealth, p.health + tuning.medkitHeal);
     return true;
   }
-  // Ammo: rounds for one weapon, up to what its pockets hold.
-  const weapon = AMMO_FOR[kind];
-  if (!p.owned[weapon]) return false; // (the J debug key can drop it anyway: it stays on the ground)
-  const max = weapon === 'shotgun' ? tuning.shotgunReserveMax : tuning.revolverReserveMax;
-  if (p.reserve[weapon] >= max) return false;
+  // Ammo: rounds for one pocket, up to what it holds.
+  if (!usesAmmo(p.owned, kind)) return false; // (the J debug key can drop it anyway: it stays on the ground)
+  const max = kind === 'shells' ? tuning.shotgunReserveMax : tuning.revolverReserveMax;
+  if (p.reserve[kind] >= max) return false;
   const amount = kind === 'shells' ? tuning.ammoPickupShells : tuning.ammoPickupBullets;
-  p.reserve[weapon] = Math.min(max, p.reserve[weapon] + amount);
+  p.reserve[kind] = Math.min(max, p.reserve[kind] + amount);
   return true;
 }

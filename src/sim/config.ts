@@ -169,6 +169,28 @@ export const tuning = {
   /** Debug: reloading doesn't use up the reserve. */
   infiniteAmmo: false,
 
+  // --- Lever-action carbine ("la carabina a leva", see weapon.ts) ---
+  /** Rounds in the magazine tube. It shoots the revolver's bullets (same pocket). */
+  rifleAmmo: 8,
+  /** Seconds between two shots: the time to work the lever (the animation is stretched on it). */
+  rifleFireInterval: 0.62,
+  /** Seconds to bring the gun to the loading gate before the first round. */
+  rifleReloadStart: 0.3,
+  /** Seconds to push each round in through the gate (it reloads one at a time). */
+  rifleReloadPerRound: 0.38,
+  /** A click stops the reload: seconds before it can fire (the gun comes back up). */
+  rifleReloadInterrupt: 0.12,
+  /** Damage per bullet (50% more than the revolver: 2 body shots on most things). */
+  rifleDamage: 75,
+  /** Critical multiplier: 75 × 4 = 300, a headshot kills almost anything. */
+  rifleHeadshotMultiplier: 4,
+  /** From the hip the bullet goes off the aim, up to this many degrees; aimed down the sights: 0. */
+  rifleHipSpread: 2.5,
+  /** Seconds to raise the gun to the eye (and to lower it). */
+  rifleAdsTime: 0.18,
+  /** Bullets that come with it when you buy it (in your pocket, shared with the revolver). */
+  rifleBuyBullets: 24,
+
   // --- Drops and pickups (see pickups.ts) ---
   /** Drop chance per point of enemy weight (ghoulCost 1 → 30%, eyebatCost 2 → 60%, houndCost 3 → 80% (the cap), bull too). */
   dropChancePerWeight: 0.3,
@@ -211,6 +233,8 @@ export const tuning = {
   shopReachHeight: 1.5,
   /** Price of the shotgun at the armory, in vildenaro (a ghoul drops 10, × the style multiplier). */
   shotgunPrice: 800,
+  /** Price of the lever-action carbine at the armory. */
+  riflePrice: 1200,
   // --- Vildenaro: the coins every enemy drops (see dropCoins in pickups.ts) ---
   /** Coins dropped per point of enemy weight: ghoul 1 coin, eye-bat 2, hound 3, bull 5. ALWAYS, not a chance. */
   coinsPerWeight: 1,

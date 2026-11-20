@@ -93,7 +93,7 @@ export function stepGame(
   stepShop(game.player, cmd, world, events);
   const firstNewEvent = events.length;
   // During HIGH NOON the guns are bottomless (the weapon doesn't know why: it only gets the flag).
-  stepWeapon(game.player, cmd, world, game.entities, events, isHighNoon(game.style));
+  stepWeapon(game.player, cmd, world, game.entities, events, isHighNoon(game.style), game);
   stepKick(game.player, cmd, world, game.entities, events);
   const playerHits = events.slice(firstNewEvent);
   // The style multiplies what you earn. Read BEFORE stepStyle (end of the

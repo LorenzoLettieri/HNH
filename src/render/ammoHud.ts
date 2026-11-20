@@ -7,7 +7,7 @@
 // and remove elements and toggle CSS classes.
 import { tuning } from '../sim/config';
 import type { PlayerState } from '../sim/player';
-import { currentAmmo, magazineSize, type WeaponId } from '../sim/weapon';
+import { AMMO_TYPE, currentAmmo, magazineSize, type WeaponId } from '../sim/weapon';
 import './fonts'; // the number is written in Rye
 
 const box = document.getElementById('ammo-box')!;
@@ -46,6 +46,6 @@ export function updateAmmoHud(player: PlayerState): void {
   box.classList.toggle('reloading', player.reloadTicks > 0);
 
   // Spare rounds ("∞" with the debug infinite ammo); empty pockets turn red.
-  reserveEl.textContent = tuning.infiniteAmmo ? '∞' : String(player.reserve[player.weapon]);
-  box.classList.toggle('dry', !tuning.infiniteAmmo && player.reserve[player.weapon] === 0);
+  reserveEl.textContent = tuning.infiniteAmmo ? '∞' : String(player.reserve[AMMO_TYPE[player.weapon]]);
+  box.classList.toggle('dry', !tuning.infiniteAmmo && player.reserve[AMMO_TYPE[player.weapon]] === 0);
 }

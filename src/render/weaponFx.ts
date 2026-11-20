@@ -9,6 +9,10 @@ import {
   playKickImpact,
   playKickSwing,
   playReload,
+  playCarbineShot,
+  playCarbineLever,
+  playCarbineReloadStart,
+  playCarbineRoundIn,
   playShot,
   playShotgun,
   playShotgunReload,
@@ -18,6 +22,7 @@ import {
 } from '../audio/sfx';
 import type { WeaponId } from '../sim/weapon';
 import { createImpacts } from './impacts';
+import { leverTimes } from './weapons/rifleView';
 import { showHitmarker } from './hitmarker';
 import { spawnBlood, spawnSparks } from './particles';
 
@@ -62,7 +67,10 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
           case 'fire':
             // The gun went off: sound, light, recoil (once per trigger pull).
             if (e.weapon === 'shotgun') playShotgun();
-            else playShot();
+            else if (e.weapon === 'rifle') {
+              playCarbineShot();
+              playCarbineLever(leverTimes(tuning.rifleFireInterval)); // cla-CLACK, timed on the animation
+            } else playShot();
             camera.getWorldDirection(forward);
             flash.position.copy(camera.position).addScaledVector(forward, 0.8);
             flashTime = FLASH_DURATION;
@@ -99,8 +107,12 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
             break;
           case 'reloadStart':
             if (e.weapon === 'shotgun') playShotgunReload(tuning.shotgunReloadTime);
+            else if (e.weapon === 'rifle') playCarbineReloadStart();
             else playReload(tuning.revolverReloadTime);
             for (const f of fx.onReload) f(e.weapon);
+            break;
+          case 'reloadRound':
+            playCarbineRoundIn();
             break;
           case 'reloadEnd':
             break;

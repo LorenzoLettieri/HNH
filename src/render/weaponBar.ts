@@ -59,6 +59,27 @@ const SILHOUETTES: Record<WeaponId, Silhouette> = {
       for (let y = 5; y < 10; y++) ctx.fillRect(Math.round(6 - (y - 5) * 0.8), y, 4, 1); // grip
     },
   },
+  // Lever-action carbine, 44 × 11: long barrel with the magazine tube under
+  // it, the receiver, hammer, the lever's loop, and the stock dropping back.
+  rifle: {
+    width: 44,
+    height: 11,
+    draw(ctx) {
+      ctx.fillRect(18, 1, 26, 2); // barrel
+      ctx.fillRect(43, 0, 1, 1); // front sight
+      ctx.fillRect(22, 3, 21, 1); // magazine tube
+      ctx.fillRect(18, 3, 8, 2); // fore-end
+      ctx.fillRect(11, 1, 8, 5); // receiver
+      ctx.fillRect(10, 0, 2, 1); // hammer
+      // The lever: a loop under the wrist (a hollow rectangle).
+      ctx.fillRect(7, 7, 7, 1);
+      ctx.fillRect(7, 9, 7, 1);
+      ctx.fillRect(7, 7, 1, 3);
+      ctx.fillRect(13, 6, 1, 4);
+      // Stock: each row starts further back, so it slants down to the butt.
+      for (let y = 2; y < 9; y++) ctx.fillRect(Math.round(1 + (8 - y) * 0.1), y, 11 - Math.max(0, y - 5) * 3, 1);
+    },
+  },
 };
 
 const bar = document.getElementById('weapon-bar')!;

@@ -1,17 +1,26 @@
 // The player's guns: switching, firing, cooldown, ammo and reloading. Pure
 // simulation: what happens visually/audibly is decided elsewhere, from the events.
 //
-// Two weapons for now, both available from the start:
+// Three weapons (you start with the revolver, the others are bought):
 // - the REVOLVER: one precise hitscan bullet, 6 rounds;
 // - the DOUBLE-BARREL SHOTGUN ("la doppietta"): a cone of pellets, 2 shells,
-//   devastating up close, weak far away, and its recoil pushes YOU in the air.
+//   devastating up close, weak far away, and its recoil pushes YOU in the air;
+// - the LEVER-ACTION CARBINE ("la carabina a leva"): slow (you work the lever
+//   after every shot), hard-hitting, made for far targets and critical hits.
+//   From the hip it's a bit imprecise; AIMING DOWN THE SIGHTS (right mouse
+//   button, the "alternate fire") makes it perfectly accurate. It reloads one
+//   round at a time through the loading gate, and a click interrupts the
+//   reload to shoot.
 // The shared rules (one click = one shot, fire buffer, reload, switching) are
 // written once; only "what comes out of the barrel" differs.
 //
 // AMMO has two levels, like in Doom/Quake: the rounds IN the gun (cylinder,
-// barrels) and the spare ones in your pockets (`p.reserve`). Firing uses the
-// first, reloading moves the second into the first. The pockets are refilled
-// only by pickups: whoever stands still runs dry.
+// barrels, magazine tube: `p.loaded`) and the spare ones in your pockets
+// (`p.reserve`). Firing uses the first, reloading moves the second into the
+// first. The pockets are refilled only by pickups: whoever stands still runs dry.
+// The pockets hold AMMO TYPES, not weapons: the revolver and the carbine
+// shoot the same cartridge (.44-40, like the real Colt and Winchester of the
+// 1870s: cowboys loved them for exactly this), so they share the bullets.
 //
 // BOTTOMLESS (the HIGH NOON climax, see style.ts): the gun in your hands is
 // always full and firing doesn't use rounds. No reloading: you just shoot.
@@ -23,28 +32,68 @@ import { raycastBoxes } from './raycast';
 import type { World } from './world';
 import { damage, hitBox, isAlive, isEnemy, type Entity, type EyebatEntity } from './entities';
 import { knockBack } from './kick';
+import { random, type RandomState } from './random';
 
-export type WeaponId = 'revolver' | 'shotgun';
-/** Weapon slots, in order: key 1 = revolver, key 2 = shotgun. */
-export const WEAPONS: readonly WeaponId[] = ['revolver', 'shotgun'];
+export type WeaponId = 'revolver' | 'shotgun' | 'rifle';
+/** Weapon slots, in order: key 1 = revolver, key 2 = shotgun, key 3 = carbine. */
+export const WEAPONS: readonly WeaponId[] = ['revolver', 'shotgun', 'rifle'];
+
+/** What's in your pockets: kinds of cartridges. */
+export type AmmoType = 'bullets' | 'shells';
+/** Which cartridges each weapon shoots (and so which pocket its reload empties). */
+export const AMMO_TYPE: Record<WeaponId, AmmoType> = { revolver: 'bullets', shotgun: 'shells', rifle: 'bullets' };
 
 /** Rounds a full weapon holds. (Functions, not constants: tuning changes at runtime.) */
 export function magazineSize(w: WeaponId): number {
-  return w === 'shotgun' ? tuning.shotgunAmmo : tuning.revolverAmmo;
+  switch (w) {
+    case 'revolver':
+      return tuning.revolverAmmo;
+    case 'shotgun':
+      return tuning.shotgunAmmo;
+    case 'rifle':
+      return tuning.rifleAmmo;
+  }
 }
 function fireInterval(w: WeaponId): number {
-  return w === 'shotgun' ? tuning.shotgunFireInterval : tuning.revolverFireInterval;
+  switch (w) {
+    case 'revolver':
+      return tuning.revolverFireInterval;
+    case 'shotgun':
+      return tuning.shotgunFireInterval;
+    case 'rifle':
+      return tuning.rifleFireInterval;
+  }
 }
-export function reloadTime(w: WeaponId): number {
-  return w === 'shotgun' ? tuning.shotgunReloadTime : tuning.revolverReloadTime;
+/** Seconds of a reload. For the carbine: the FIRST round (bringing the gun to the gate + one round). */
+function reloadTime(w: WeaponId): number {
+  switch (w) {
+    case 'revolver':
+      return tuning.revolverReloadTime;
+    case 'shotgun':
+      return tuning.shotgunReloadTime;
+    case 'rifle':
+      return tuning.rifleReloadStart + tuning.rifleReloadPerRound;
+  }
+}
+/**
+ * Does it reload one round at a time? (The carbine: each round is pushed
+ * through the loading gate on its own, so a reload can be stopped halfway.)
+ */
+export function reloadsOneByOne(w: WeaponId): boolean {
+  return w === 'rifle';
 }
 /** Rounds left in the weapon you're holding. */
 export function currentAmmo(p: PlayerState): number {
-  return p.weapon === 'shotgun' ? p.shells : p.ammo;
+  return p.loaded[p.weapon];
 }
 function setCurrentAmmo(p: PlayerState, n: number): void {
-  if (p.weapon === 'shotgun') p.shells = n;
-  else p.ammo = n;
+  p.loaded[p.weapon] = n;
+}
+
+/** How far into aiming down the sights you are: 0 = from the hip, 1 = fully aimed. */
+export function adsAmount(p: PlayerState): number {
+  const full = secondsToTicks(tuning.rifleAdsTime);
+  return full > 0 ? Math.min(1, p.adsTicks / full) : p.adsTicks > 0 ? 1 : 0;
 }
 
 export function stepWeapon(
@@ -54,7 +103,9 @@ export function stepWeapon(
   entities: Entity[],
   events: SimEvent[],
   /** HIGH NOON: the magazine never empties. */
-  bottomless = false,
+  bottomless: boolean,
+  /** The game's random generator (the carbine's hip-fire spread). */
+  rng: RandomState,
 ): void {
   // Timers.
   if (p.fireCooldownTicks > 0) p.fireCooldownTicks--;
@@ -75,17 +126,27 @@ export function stepWeapon(
   const target = selectedWeapon(p, cmd.weaponSelect);
   if (target !== p.weapon) switchWeapon(p, target, events);
 
+  const pocket = AMMO_TYPE[p.weapon];
+  const oneByOne = reloadsOneByOne(p.weapon);
+  const full = magazineSize(p.weapon);
+
   // Reloading: count down, then move rounds from the pockets into the gun.
   // The rounds are taken only at the END: a reload interrupted by a weapon
-  // switch costs nothing (and gives nothing).
+  // switch costs nothing (and gives nothing). The carbine moves ONE round
+  // each time, then starts counting again for the next one, until the tube
+  // is full or the pocket is empty.
   if (p.reloadTicks > 0) {
     p.reloadTicks--;
     if (p.reloadTicks === 0) {
       const loaded = currentAmmo(p);
-      const moved = Math.min(magazineSize(p.weapon) - loaded, tuning.infiniteAmmo ? Infinity : p.reserve[p.weapon]);
+      const wanted = oneByOne ? 1 : full - loaded;
+      const moved = Math.min(wanted, tuning.infiniteAmmo ? Infinity : p.reserve[pocket]);
       setCurrentAmmo(p, loaded + moved);
-      if (!tuning.infiniteAmmo) p.reserve[p.weapon] -= moved;
-      events.push({ type: 'reloadEnd' });
+      if (!tuning.infiniteAmmo) p.reserve[pocket] -= moved;
+      if (oneByOne && moved > 0) events.push({ type: 'reloadRound' });
+      const more = oneByOne && currentAmmo(p) < full && (tuning.infiniteAmmo || p.reserve[pocket] > 0);
+      if (more) p.reloadTicks = secondsToTicks(tuning.rifleReloadPerRound);
+      else events.push({ type: 'reloadEnd' });
     }
   }
 
@@ -95,11 +156,25 @@ export function stepWeapon(
   p.fireHeld = cmd.fire;
   if (clicked) p.fireBufferTicks = secondsToTicks(tuning.revolverFireBuffer);
 
+  // A click during a one-by-one reload, with at least one round in: stop
+  // reloading and shoot (after a moment: the gun comes back up from the gate).
+  if (oneByOne && p.reloadTicks > 0 && clicked && currentAmmo(p) > 0) {
+    p.reloadTicks = 0;
+    p.fireCooldownTicks = Math.max(p.fireCooldownTicks, secondsToTicks(tuning.rifleReloadInterrupt));
+    events.push({ type: 'reloadEnd' });
+  }
+
+  // Aiming down the sights (the carbine's alternate fire, right mouse
+  // button): it takes rifleAdsTime to get the gun up to the eye, and the
+  // same to lower it. Not while reloading or bringing the gun up.
+  const aimAllowed = cmd.altFire && p.weapon === 'rifle' && p.reloadTicks === 0 && p.switchTicks === 0;
+  const adsFull = secondsToTicks(tuning.rifleAdsTime);
+  p.adsTicks = aimAllowed ? Math.min(adsFull, p.adsTicks + 1) : Math.max(0, p.adsTicks - 1);
+
   const ammo = currentAmmo(p);
-  const full = magazineSize(p.weapon);
   // Nothing in the pockets = no reload. You hear the click and that's it:
   // switch weapon, kick, or go find ammo.
-  const canReload = tuning.infiniteAmmo || p.reserve[p.weapon] > 0;
+  const canReload = tuning.infiniteAmmo || p.reserve[pocket] > 0;
   if (ammo === 0 && clicked && !canReload && p.reloadTicks === 0 && p.switchTicks === 0) {
     events.push({ type: 'dryFire' });
     p.fireBufferTicks = 0;
@@ -123,6 +198,9 @@ export function stepWeapon(
       // Right barrel first (2 shells left), then the left one.
       events.push({ type: 'fire', weapon: 'shotgun', barrel: tuning.shotgunAmmo - ammo === 0 ? 0 : 1 });
       fireShotgun(p, world, entities, events);
+    } else if (p.weapon === 'rifle') {
+      events.push({ type: 'fire', weapon: 'rifle', barrel: 0 });
+      fireRifle(p, world, entities, events, rng);
     } else {
       events.push({ type: 'fire', weapon: 'revolver', barrel: 0 });
       fireRevolver(p, world, entities, events);
@@ -139,6 +217,7 @@ export function switchWeapon(p: PlayerState, w: WeaponId, events: SimEvent[]): v
   p.switchTicks = secondsToTicks(tuning.weaponSwitchTime);
   p.reloadTicks = 0;
   p.fireCooldownTicks = 0;
+  p.adsTicks = 0;
   events.push({ type: 'weaponSwitch', weapon: w });
 }
 
@@ -259,6 +338,48 @@ function fireRevolver(p: PlayerState, world: World, entities: Entity[], events: 
 }
 
 /**
+ * Carbine: one hitscan bullet like the revolver's, but heavier and with a
+ * bigger critical multiplier (a headshot kills almost anything). From the
+ * hip it goes a little off the aim: a random direction inside a cone of
+ * rifleHipSpread degrees, which shrinks to nothing as you aim down the
+ * sights. "Random inside a disc": a random angle around the aim and a
+ * random distance from the center, sqrt(r) so that the points are spread
+ * evenly over the disc (without the sqrt they would bunch up in the middle).
+ */
+function fireRifle(p: PlayerState, world: World, entities: Entity[], events: SimEvent[], rng: RandomState): void {
+  const a = aim(p);
+  const spread = Math.tan((tuning.rifleHipSpread * Math.PI) / 180) * (1 - adsAmount(p));
+  const angle = random(rng) * Math.PI * 2;
+  const r = Math.sqrt(random(rng));
+  const [dx, dy, dz] = tilt(p, a, Math.cos(angle) * r, Math.sin(angle) * r, spread);
+  const hit = trace(a.ox, a.oy, a.oz, dx, dy, dz, tuning.weaponRange, world, entities.filter(isAlive), false, events);
+  if (hit) {
+    const amount = tuning.rifleDamage * (hit.headshot ? tuning.rifleHeadshotMultiplier : 1);
+    applyGunDamage(hit.target, amount, hit.headshot, events);
+  }
+}
+
+/**
+ * The aim direction tilted by (ax, ay) × spread: ax to the right, ay up
+ * (a point of a unit disc), spread = tan of the cone's half-angle.
+ * Two directions perpendicular to the aim do the tilting: `right` is
+ * horizontal (it only depends on the yaw), `up` = right × forward.
+ */
+function tilt(p: PlayerState, a: ReturnType<typeof aim>, ax: number, ay: number, spread: number): [number, number, number] {
+  const { dx, dy, dz } = a;
+  const rx = Math.cos(p.yaw);
+  const rz = -Math.sin(p.yaw);
+  const ux = -rz * dy; // cross product (rx, 0, rz) × (dx, dy, dz), simplified
+  const uy = rz * dx - rx * dz;
+  const uz = rx * dy;
+  const px = dx + (rx * ax + ux * ay) * spread;
+  const py = dy + uy * ay * spread;
+  const pz = dz + (rz * ax + uz * ay) * spread;
+  const len = Math.hypot(px, py, pz);
+  return [px / len, py / len, pz / len];
+}
+
+/**
  * Shotgun: many pellets in a cone. Each pellet is a hitscan ray like the
  * revolver's bullet, just slightly off the aim direction.
  *
@@ -272,30 +393,16 @@ function fireRevolver(p: PlayerState, world: World, entities: Entity[], events: 
  * it a close-range weapon, together with the spread.
  */
 function fireShotgun(p: PlayerState, world: World, entities: Entity[], events: SimEvent[]): void {
-  const { ox, oy, oz, dx, dy, dz } = aim(p);
-  // Two directions perpendicular to the aim, to tilt the pellets around it:
-  // `right` is horizontal (it only depends on the yaw), `up` = right × forward.
-  const rx = Math.cos(p.yaw);
-  const rz = -Math.sin(p.yaw);
-  const ux = -rz * dy; // cross product (rx, 0, rz) × (dx, dy, dz), simplified
-  const uy = rz * dx - rx * dz;
-  const uz = rx * dy;
-
+  const a = aim(p);
+  const { ox, oy, oz, dx, dy, dz } = a;
   const living = entities.filter(isAlive);
   // Damage is summed per entity and applied once at the end: one hitmarker,
   // one 'hit' event, one kill, even if 10 pellets hit the same ghoul.
   const totals = new Map<Entity, { amount: number; headshot: boolean; pellets: number; distance: number }>();
   const spread = Math.tan((tuning.shotgunSpread * Math.PI) / 180);
-  const barrelTwist = p.shells === tuning.shotgunAmmo ? 0 : Math.PI / 7;
+  const barrelTwist = p.loaded.shotgun === tuning.shotgunAmmo ? 0 : Math.PI / 7;
   for (const [ax, ay] of pelletPattern(tuning.shotgunPellets, barrelTwist)) {
-    // Tilt the aim direction by (ax, ay) × spread, then normalize.
-    let px = dx + (rx * ax + ux * ay) * spread;
-    let py = dy + uy * ay * spread;
-    let pz = dz + (rz * ax + uz * ay) * spread;
-    const len = Math.hypot(px, py, pz);
-    px /= len;
-    py /= len;
-    pz /= len;
+    const [px, py, pz] = tilt(p, a, ax, ay, spread);
     const hit = trace(ox, oy, oz, px, py, pz, tuning.shotgunRange, world, living, true, events);
     if (!hit) continue;
     const amount =

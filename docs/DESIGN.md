@@ -325,7 +325,7 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
   - **Proiettili più veloci, collisione "a spazzata"**: a 90 m/s il proiettile fa 1,5 m per tick, quindi non
     basta controllare dov'è arrivato (ti passerebbe attraverso): si controlla tutto il segmento percorso
     nel tick contro la scatola del giocatore **ingrandita del raggio del proiettile** (somma di Minkowski).
-- **Calcio (melee)** [FATTO, da tarare]: F o tasto destro. Colpisce **tutto** in un cono davanti
+- **Calcio (melee)** [FATTO, da tarare]: **F** (il tasto destro ora è il **fuoco alternativo** delle armi). Colpisce **tutto** in un cono davanti
   (1,6 m, ±45°), 25 danni (mezzo ghoul base: è uno strumento, non l'arma principale), e **spinge via**
   (13 m/s in avanti, 5 m/s in alto): il ghoul vola via, interrompe artigliata e balzo, e resta a terra
   0,5 s. Si può calciare mentre si ricarica. Ricarica di 0,55 s.
@@ -491,7 +491,7 @@ Punteggio e moneta sono **separati**:
 - **Acquisto** [FATTO]: **si parte col solo revolver**. Il click su "Compra" non tocca il gioco: diventa
   una richiesta nel comando di input del tick dopo, e la **simulazione** controlla tutto (venditore a
   portata, già tua, vildenaro) e risponde con un evento. Comprata, la doppietta arriva carica, con 12
-  cartucce in tasca, e **finisce subito in mano**. Senza soldi: la riga trema e il venditore ti sfotte.
+  cartucce in tasca, e **finisce subito in mano** (la carabina: 1200, carica, con 24 proiettili). Senza soldi: la riga trema e il venditore ti sfotte.
   **Doppio click** [FATTO]: tutto il box dell'articolo è cliccabile; il primo click lo trasforma in
   "CONFERMA · paga 800 vildenaro", il secondo compra (la conferma scade dopo 3 s). Un click sbagliato
   di fretta, con l'orda alla porta, non deve costare 800.
@@ -537,7 +537,7 @@ futuro **poligono di tiro / tutorial**.
 
 ## 6. Armi (bozza)
 
-- **Revolver** — preciso, hitscan, "fanning" (raffica rapida col tasto destro).
+- **Revolver** — preciso, hitscan, "fanning" (raffica rapida col tasto destro: idea, non ancora fatto).
 - **Doppietta (canne mozze)** [FATTO] — tasto 2. Due colpi, 12 pallini in una **rosata fissa** (non casuale:
   impari cosa fa), danno pieno fino a 6 m e poi in calo fino al 25% a 22 m: devastante da vicino, quasi
   inutile lontano. Ricarica da sola quando le canne sono vuote. **A bruciapelo (entro 5 m) i nemici volano
@@ -546,6 +546,18 @@ futuro **poligono di tiro / tutorial**.
   andando non ti rallenta; in aria, sparare verso il basso ti spinge su (annulla la caduta: shotgun jump),
   sparare in alto non ti schiaccia a terra.
   **Si compra all'armeria** per 800 vildenaro (si parte col solo revolver).
+- **Carabina a leva** [FATTO, da tarare] — tasto 3. L'arma **per i nemici lontani e i colpi critici**:
+  75 danni al corpo (1,5× il revolver), **critico ×4** (300: una testa uccide quasi tutto), 8 colpi nel
+  serbatoio, un colpo ogni **0,62 s** (il tempo di **azionare la leva**, che è il pezzo forte
+  dell'animazione). **Usa gli stessi proiettili del revolver** (.44-40, come Colt e Winchester del 1873:
+  la tasca è una sola), così non serve un nuovo tipo di munizione a terra. **Dall'anca non è precisa**
+  (fino a 2,5° fuori mira, a caso); **col tasto destro si mira dal mirino (ADS)**: zoom (FOV 75 → 50),
+  mouse più lento in proporzione, precisione perfetta, mirino a croce nascosto, meno rinculo. Mirare
+  richiede 0,18 s e non si può durante la ricarica. **Ricarica un colpo alla volta** dallo sportello
+  laterale (0,3 s per portarla allo sportello + 0,38 s a colpo): un click la interrompe e spari (dopo
+  0,12 s). **Si compra all'armeria** per 1200 vildenaro, con 24 proiettili in tasca.
+- **Fuoco alternativo (tasto destro)** [DECISO]: ogni arma può averne uno. Per ora solo la carabina
+  (mira dal mirino); per il revolver l'idea è il fanning, per la doppietta da decidere.
 - **Lazo / rampino** — mobilità (aggancio a punti della mappa) e utilità (tirare a sé i nemici?).
 
 ---

@@ -26,6 +26,10 @@ const ITEM_TEXT: Record<ShopItemId, { name: string; desc: string }> = {
     name: 'Doppietta a canne mozze',
     desc: 'Due colpi, rosata larga. Da vicino non perdona, e a bruciapelo li manda a gambe all’aria.',
   },
+  rifle: {
+    name: 'Carabina a leva',
+    desc: 'Otto colpi, stesse cartucce del revolver. Lenta, ma da lontano e in testa non sbaglia. Tasto destro per mirare.',
+  },
 };
 
 /** What the vendor says when you open the shop (one at random). */

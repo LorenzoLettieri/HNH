@@ -75,6 +75,8 @@ export type SimEvent =
   | { type: 'kickLand'; hits: number }
   | { type: 'dryFire' } // pulled the trigger with an empty cylinder
   | { type: 'reloadStart'; weapon: WeaponId }
+  /** The carbine pushed one round into its magazine tube (it reloads one at a time). */
+  | { type: 'reloadRound' }
   | { type: 'reloadEnd' }
   /** You bought something at a shop (sound, the panel's thanks). */
   | { type: 'purchase'; item: ShopItemId; price: number }

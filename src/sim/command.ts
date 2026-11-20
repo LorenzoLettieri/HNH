@@ -15,13 +15,18 @@ export interface InputCommand {
   crouch: boolean;
   /** Fire button held (left mouse). */
   fire: boolean;
+  /**
+   * Alternate fire held (right mouse button): what it does depends on the
+   * weapon. The carbine aims down the sights; the others nothing, for now.
+   */
+  altFire: boolean;
   /** Kick button held (melee). */
   kick: boolean;
   /** Reload button held. */
   reload: boolean;
   /**
    * Weapon change asked this tick: 0 = none, 1..N = that slot (1 = revolver,
-   * 2 = shotgun), -1 = next weapon, -2 = previous (mouse wheel, Q).
+   * 2 = shotgun, 3 = carbine), -1 = next weapon, -2 = previous (mouse wheel, Q).
    */
   weaponSelect: number;
   /** Go back to the spawn point (debug/testing). */

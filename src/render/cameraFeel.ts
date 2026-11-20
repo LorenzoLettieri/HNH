@@ -3,15 +3,25 @@
 // - field of view widens with speed (the classic "sense of speed" trick);
 // - the camera tilts (rolls) a little when strafing, more while sliding;
 // - crouching lowers the eyes smoothly instead of snapping;
-// - getting hit snaps the head away from the hit (a damped spring).
+// - getting hit snaps the head away from the hit (a damped spring);
+// - aiming down the carbine's sights narrows the FOV: a zoom.
+//
+// THE ZOOM: a narrower field of view shows a smaller slice of the world on
+// the same screen, so everything looks bigger. That's all a zoom is. But
+// then the same mouse movement would sweep across MORE of the screen:
+// lookScale() tells the controls how much to slow the mouse down so the
+// aim "feels" the same under the zoom (main.ts passes it on).
 import * as THREE from 'three';
 import { tuning } from '../sim/config';
 import type { PlayerState } from '../sim/player';
+import { adsAmount } from '../sim/weapon';
 
 /** Mutable so the debug panel can change them. */
 export const cameraFeelSettings = {
   /** Vertical field of view at normal speed, degrees. */
   baseFov: 75,
+  /** Vertical FOV aimed down the carbine's sights, degrees (75 → 50 = a 1.6× zoom). */
+  adsFov: 50,
   /** Extra degrees of FOV at full speed. */
   speedFovExtra: 12,
   /** Speed (m/s) where the FOV starts widening... */
@@ -39,6 +49,17 @@ export const cameraFeelSettings = {
 };
 
 let fov = cameraFeelSettings.baseFov;
+let ads = 0; // 0 = from the hip, 1 = aimed (smoothed between ticks)
+
+/**
+ * How much to scale the mouse right now: 1 normally, less when zoomed in.
+ * The ratio of the tangents of the half-FOVs is the ratio of how big the
+ * same angle looks on screen (the projection divides by the tangent).
+ */
+export function lookScale(camera: THREE.PerspectiveCamera): number {
+  const half = (deg: number) => Math.tan(THREE.MathUtils.degToRad(deg) / 2);
+  return half(camera.fov) / half(cameraFeelSettings.baseFov);
+}
 let roll = 0;
 let eyeHeight = tuning.eyeHeight;
 // Hit snap: one damped spring per axis (angle in radians and its speed).
@@ -98,8 +119,11 @@ export function updateCameraFeel(
   // 1. Speed FOV: 0 below speedFovStart, 1 at speedFovFull, linear in between.
   const t = THREE.MathUtils.clamp((speed - s.speedFovStart) / (s.speedFovFull - s.speedFovStart), 0, 1);
   fov = approach(fov, s.baseFov + s.speedFovExtra * t, s.fovRate, dt);
-  if (Math.abs(camera.fov - fov) > 0.01) {
-    camera.fov = fov;
+  // The zoom goes on top, faster than the speed FOV: aiming must be snappy.
+  ads = approach(ads, adsAmount(player), 30, dt);
+  const zoomed = fov + (s.adsFov - fov) * ads * ads * (3 - 2 * ads); // smoothstep
+  if (Math.abs(camera.fov - zoomed) > 0.01) {
+    camera.fov = zoomed;
     camera.updateProjectionMatrix(); // the projection matrix depends on the FOV
   }
 

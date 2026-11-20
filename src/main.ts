@@ -2,15 +2,15 @@ import * as THREE from 'three';
 import { initInput, isKeyDown, isPointerLocked, isTypingInField, requestLock } from './input';
 import { loadSettings } from './settings';
 import { createMenu } from './menu';
-import { createDebugPanel } from './debug/debugPanel';
-import { buildCommand, updateLook, view } from './controls';
+import { createDebugPanel, debugTime } from './debug/debugPanel';
+import { buildCommand, controlSettings, updateLook, view } from './controls';
 import { TICK_DT } from './sim/config';
 import { copyPlayer, createPlayer } from './sim/player';
 import { createGame, spawnBullInFront, spawnSharpshooterInFront, spawnEyebatInFront, spawnHoundInFront, dropPickupsInFront, stepGame } from './sim/game';
 import { jumpToWave } from './sim/waves';
 import { DEFAULT_LEVEL, LEVELS } from './levels';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
-import { updateCameraFeel } from './render/cameraFeel';
+import { lookScale, updateCameraFeel } from './render/cameraFeel';
 import { createBoxMesh, loadMaterials } from './render/materials';
 import { ATMOSPHERES, type Atmosphere } from './render/atmospheres';
 import { applySunLight, createSunLight } from './render/sunLight';
@@ -31,6 +31,7 @@ import { createShopMenu } from './render/shopMenu';
 import { createMapOverlay } from './render/mapOverlay';
 import { shopInReach } from './sim/shop';
 import './render/crosshair'; // paints the crosshair once
+import { adsAmount, WEAPONS } from './sim/weapon';
 import { updateHud } from './render/hud';
 import { updateAmmoHud } from './render/ammoHud';
 import { updateWeaponBar } from './render/weaponBar';
@@ -278,6 +279,10 @@ const prevPlayer = createPlayer();
 
 // Debug: start from a given spot with ?pos=x,y,z&look=yaw,pitch (degrees)
 // in the URL. Handy to jump straight to the thing you're working on.
+// ?slow=0.2: slow motion from the start (see debugTime).
+if (params.get('slow')) debugTime.timeScale = Number(params.get('slow'));
+// ?guns=all: start with every weapon (to try them without going to the shop).
+if (params.get('guns') === 'all') for (const w of WEAPONS) game.player.owned[w] = true;
 const startPos = params.get('pos')?.split(',').map(Number);
 const startLook = params.get('look')?.split(',').map(Number);
 if (startPos?.length === 3) [player.x, player.y, player.z] = startPos;
@@ -302,6 +307,7 @@ window.addEventListener('resize', () => {
 // always advances in fixed TICK_DT steps. The accumulator stores the
 // "leftover" time that isn't enough for a full tick yet.
 let accumulator = 0;
+const crosshair = document.getElementById('crosshair')!;
 let lastViewYaw = view.yaw;
 let lastViewPitch = view.pitch;
 let lastTime = performance.now();
@@ -317,7 +323,7 @@ renderer.setAnimationLoop((now: number) => {
   // Paused: the simulation doesn't advance (no time goes into the
   // accumulator) and everything animated by the game gets dt = 0: the scene
   // freezes like a photo, but keeps being drawn (the overlay sits on top).
-  const dt = paused ? 0 : frameTime;
+  const dt = paused ? 0 : frameTime * debugTime.timeScale;
   accumulator += dt;
   const events: SimEvent[] = [];
   while (accumulator >= TICK_DT) {
@@ -347,6 +353,9 @@ renderer.setAnimationLoop((now: number) => {
   camera.rotation.x = view.pitch + viewKick; // the punch is only visual: aim is unaffected
   camera.rotation.y = view.yaw;
   const eyeHeight = updateCameraFeel(camera, player, dt);
+  controlSettings.lookScale = lookScale(camera); // zoomed in: slower mouse
+  // Aimed down the sights the crosshair goes away: the sights ARE the crosshair.
+  crosshair.style.opacity = adsAmount(player) > 0.6 ? '0' : '';
   camera.position.set(
     prevPlayer.x + (player.x - prevPlayer.x) * alpha,
     prevPlayer.y + (player.y - prevPlayer.y) * alpha + eyeHeight - updateLandingDip(dt),

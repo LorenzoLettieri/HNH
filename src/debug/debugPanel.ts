@@ -26,6 +26,14 @@ export interface DebugPanel {
   showAtmosphere(a: Atmosphere): void;
 }
 
+/**
+ * Slow motion, to look at animations frame by frame: the time of each frame
+ * is multiplied by this before going to the simulation and the effects
+ * (main.ts). The sounds aren't slowed: they go out of sync. Also from the
+ * URL: ?slow=0.2.
+ */
+export const debugTime = { timeScale: 1 };
+
 export function createDebugPanel(options: {
   onAtmosphereChange: () => void;
   onPostSizeChange: () => void;
@@ -42,10 +50,15 @@ export function createDebugPanel(options: {
   waves.number(jump, 'wave', 1, 60, 1);
   waves.button('Go to this wave', () => options.onJumpToWave(jump.wave));
 
+  // --- Time ---
+  const time = panel.folder('Time (slow motion, src/main.ts)');
+  time.number(debugTime, 'timeScale', 0.02, 1, 0.01);
+
   // --- Shop ---
   const shop = panel.folder('Shop (src/sim/config.ts, src/sim/shop.ts)');
   shop.number(tuning, 'shopReach', 1, 6, 0.1);
   shop.number(tuning, 'shotgunPrice', 0, 3000, 50);
+  shop.number(tuning, 'riflePrice', 0, 3000, 50);
   shop.button('+500 vildenaro', () => options.onGiveMoney(500));
 
   // --- Style meter ---
@@ -155,6 +168,31 @@ export function createDebugPanel(options: {
   sg.number(viewmodelSettings, 'shotgunRecoilBack', 0, 0.3, 0.005);
   sg.number(viewmodelSettings, 'shotgunRecoilRecovery', 1, 30, 0.5);
   sg.number(viewmodelSettings, 'shotgunViewKick', 0, 0.2, 0.005);
+  const rifle = panel.folder('Carbine (src/sim/config.ts + render/weapons/viewmodel.ts, rifleView.ts)');
+  rifle.number(tuning, 'rifleDamage', 5, 300, 5);
+  rifle.number(tuning, 'rifleHeadshotMultiplier', 1, 6, 0.25);
+  rifle.number(tuning, 'rifleFireInterval', 0.2, 1.5, 0.01);
+  rifle.number(tuning, 'rifleHipSpread', 0, 10, 0.25);
+  rifle.number(tuning, 'rifleAdsTime', 0, 0.5, 0.01);
+  rifle.number(tuning, 'rifleAmmo', 1, 15, 1);
+  rifle.number(tuning, 'rifleReloadStart', 0, 1, 0.01);
+  rifle.number(tuning, 'rifleReloadPerRound', 0.1, 1, 0.01);
+  rifle.number(tuning, 'rifleReloadInterrupt', 0, 0.5, 0.01);
+  rifle.number(tuning, 'rifleBuyBullets', 0, 72, 1);
+  rifle.number(cameraFeelSettings, 'adsFov', 20, 75, 1);
+  rifle.number(viewmodelSettings, 'rifleX', -0.3, 0.3, 0.005);
+  rifle.number(viewmodelSettings, 'rifleY', -0.3, 0.1, 0.005);
+  rifle.number(viewmodelSettings, 'rifleZ', -0.6, 0, 0.005);
+  rifle.number(viewmodelSettings, 'riflePitch', -0.5, 0.5, 0.01);
+  rifle.number(viewmodelSettings, 'rifleYaw', -0.3, 0.3, 0.005);
+  rifle.number(viewmodelSettings, 'rifleRoll', -0.5, 0.5, 0.01);
+  rifle.number(viewmodelSettings, 'rifleAdsY', -0.15, 0, 0.001);
+  rifle.number(viewmodelSettings, 'rifleAdsZ', -0.4, 0, 0.005);
+  rifle.number(viewmodelSettings, 'rifleRecoil', 0, 1, 0.01);
+  rifle.number(viewmodelSettings, 'rifleRecoilBack', 0, 0.2, 0.005);
+  rifle.number(viewmodelSettings, 'rifleRecoilRecovery', 1, 30, 0.5);
+  rifle.number(viewmodelSettings, 'rifleViewKick', 0, 0.2, 0.005);
+  rifle.number(viewmodelSettings, 'rifleAdsRecoil', 0, 1, 0.05);
   const kick = panel.folder('Kick (src/sim/config.ts, src/sim/kick.ts)');
   kick.number(tuning, 'kickWindup', 0, 0.3, 0.01);
   kick.number(tuning, 'kickCooldown', 0.1, 2, 0.05);

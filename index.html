@@ -280,6 +280,9 @@
       .round.revolver { width: 7px; height: 24px; background: linear-gradient(#8c8478 0 25%, #a08048 25% 90%, #6a5228 90%); }
       /* Shotgun: a fat shell, dark red paper hull and a tall brass base. */
       .round.shotgun { width: 13px; height: 30px; background: linear-gradient(to right, rgba(255, 255, 255, 0.12) 0 2px, transparent 2px), linear-gradient(#7a1a10 0 68%, #9a7a40 68% 90%, #6a5228 90%); }
+      /* Carbine: the same .44-40 as the revolver, but 8 of them in a row: a bit slimmer, gap smaller. */
+      .round.rifle { width: 6px; height: 24px; background: linear-gradient(#8c8478 0 25%, #b08c4c 25% 90%, #6a5228 90%); }
+      #ammo-rounds:has(.rifle) { gap: 4px; }
       /* Spent: only a dim outline is left. */
       .round.spent { background: transparent; box-shadow: inset 0 0 0 1px #4a3c2a, 2px 2px 0 rgba(0, 0, 0, 0.5); }
       #ammo-reserve {
@@ -477,9 +480,10 @@
             <tr><th colspan="2">Combattimento</th></tr>
             <tr><td><kbd>Click sinistro</kbd></td><td>Spara</td></tr>
             <tr><td><kbd>R</kbd></td><td>Ricarica</td></tr>
-            <tr><td><kbd>1</kbd> / <kbd>2</kbd></td><td>Revolver / doppietta</td></tr>
+            <tr><td><kbd>1</kbd> / <kbd>2</kbd> / <kbd>3</kbd></td><td>Revolver / doppietta / carabina a leva</td></tr>
             <tr><td><kbd>Q</kbd> / <kbd>Rotellina</kbd></td><td>Cambia arma</td></tr>
-            <tr><td><kbd>F</kbd> / <kbd>Click destro</kbd></td><td>Calcio</td></tr>
+            <tr><td><kbd>Click destro</kbd> (tieni premuto)</td><td>Fuoco alternativo · carabina: mira con il mirino</td></tr>
+            <tr><td><kbd>F</kbd></td><td>Calcio</td></tr>
             <tr><th colspan="2">Gioco</th></tr>
             <tr><td><kbd>E</kbd></td><td>Vicino a un venditore: apri/chiudi lo shop (il gioco non si ferma; anche Esc lo chiude)</td></tr>
             <tr><td><kbd>Tab</kbd> (tieni premuto)</td><td>Mappa: dove sei, i nemici, gli shop</td></tr>

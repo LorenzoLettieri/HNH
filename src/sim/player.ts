@@ -3,7 +3,7 @@ import { findWall, moveAndCollide, overlapsAny } from './collision';
 import type { World } from './world';
 import { ventUnder } from './props';
 import { secondsToTicks, tuning } from './config';
-import type { WeaponId } from './weapon';
+import type { AmmoType, WeaponId } from './weapon';
 
 // Pure data: no Three.js, no DOM. Can be copied, compared, sent over the network.
 export interface PlayerState {
@@ -43,16 +43,22 @@ export interface PlayerState {
   weapon: WeaponId;
   /** Ticks left before the weapon you just switched to is ready (0 = ready). */
   switchTicks: number;
-  /** Rounds left in the revolver's cylinder. */
-  ammo: number;
-  /** Shells left in the shotgun's barrels. */
-  shells: number;
   /**
-   * Spare rounds in your pockets, per weapon: the reload moves them into the
-   * gun. A Record keyed by WeaponId (plain data, serializable): adding a
-   * weapon = adding a key.
+   * Rounds IN each weapon (revolver's cylinder, shotgun's barrels, carbine's
+   * magazine tube). A Record keyed by WeaponId (plain data, serializable):
+   * adding a weapon = adding a key.
    */
-  reserve: Record<WeaponId, number>;
+  loaded: Record<WeaponId, number>;
+  /**
+   * Spare rounds in your pockets, per AMMO TYPE (the revolver and the
+   * carbine share the bullets): the reload moves them into the gun.
+   */
+  reserve: Record<AmmoType, number>;
+  /**
+   * Aiming down the sights (the carbine): ticks spent raising the gun to the
+   * eye, from 0 (from the hip) up to rifleAdsTime. See adsAmount in weapon.ts.
+   */
+  adsTicks: number;
   /**
    * Which weapons you own. You start with the revolver; the others are
    * bought at the armory (shop.ts). Slots you don't own are skipped.
@@ -108,9 +114,9 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     groundTicks: 999,
     weapon: 'revolver',
     switchTicks: 0,
-    ammo: tuning.revolverAmmo,
-    shells: tuning.shotgunAmmo,
+    loaded: fullWeapons(),
     reserve: startingReserve(),
+    adsTicks: 0,
     owned: startingWeapons(),
     money: 0,
     fireCooldownTicks: 0,
@@ -130,6 +136,7 @@ export function copyPlayer(from: PlayerState, to: PlayerState): void {
   // both players would share the same pockets. Copy it by value (a shallow
   // copy is enough: inside it there are only numbers).
   to.reserve = { ...from.reserve };
+  to.loaded = { ...from.loaded };
   to.owned = { ...from.owned }; // same story
 }
 
@@ -393,13 +400,18 @@ function airSteer(p: PlayerState, wishX: number, wishZ: number, dt: number): voi
 }
 
 /** Spare rounds at the start: only for the weapons you start with (the shotgun's come when you buy it). */
-function startingReserve(): Record<WeaponId, number> {
-  return { revolver: tuning.revolverReserveStart, shotgun: 0 };
+function startingReserve(): Record<AmmoType, number> {
+  return { bullets: tuning.revolverReserveStart, shells: 0 };
+}
+
+/** Every weapon full (the ones you don't own too: they come loaded when you buy them). */
+function fullWeapons(): Record<WeaponId, number> {
+  return { revolver: tuning.revolverAmmo, shotgun: tuning.shotgunAmmo, rifle: tuning.rifleAmmo };
 }
 
 /** You start with the revolver only. */
 function startingWeapons(): Record<WeaponId, boolean> {
-  return { revolver: true, shotgun: false };
+  return { revolver: true, shotgun: false, rifle: false };
 }
 
 export function respawn(p: PlayerState, world: World): void {
@@ -410,9 +422,9 @@ export function respawn(p: PlayerState, world: World): void {
   p.crouched = false;
   p.sliding = false;
   p.health = tuning.playerMaxHealth;
-  p.ammo = tuning.revolverAmmo;
-  p.shells = tuning.shotgunAmmo;
+  p.loaded = fullWeapons();
   p.reserve = startingReserve();
+  p.adsTicks = 0;
   p.owned = startingWeapons(); // dead = start over: what you bought is gone
   p.weapon = 'revolver';
   p.money = 0; // dead = the game starts over: empty pockets
