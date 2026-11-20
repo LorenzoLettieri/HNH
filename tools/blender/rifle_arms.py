@@ -88,9 +88,9 @@ RIGHT = dict(
 LEFT = dict(
     # Under the fore-end, palm up, fingers wrapping around its right side.
     palm=Vector((-0.012, 0.29, -0.004)),
-    fingers=Vector((1.0, 0.3, 0.45)),
+    fingers=Vector((1.0, 0.3, -0.1)),
     index=Vector((0.0, 1.0, 0.0)),
-    follow=0.55,
+    follow=0.85,
     elbow=Vector((-0.6, -0.15, -0.3)),
     curl=dict(index=0.8, middle=0.85, ring=0.9, pinky=0.95, thumb=0.3),
     # The fore-end is farther than a real arm reaches from where the gun is
@@ -203,6 +203,13 @@ def pose_hand(arm, side, hand, gun, lever_angle=0.0):
         pb.rotation_euler = (angle, 0, 0)
     arm.pose.bones[f'hand.{side}'].scale = (HAND_SCALE,) * 3
     bpy.context.view_layer.update()
+    if os.environ.get('PALM_DEBUG'):
+        pb = arm.pose.bones
+        f = (pb[f'f_middle.01.{side}'].head - pb[f'hand.{side}'].head).normalized()
+        curl = pb[f'f_middle.03.{side}'].tail - pb[f'f_middle.01.{side}'].head
+        n = (curl - f * curl.dot(f)).normalized()
+        back = to_rig.to_3x3().normalized().inverted()
+        print(side, 'palm faces', tuple(round(x, 2) for x in back @ n), 'fingers', tuple(round(x, 2) for x in back @ f))
     got = arm.pose.bones[f'hand.{side}'].head
     shoulder = arm.pose.bones[f'upper_arm.{side}'].head
     print(f'{side} lever={lever_angle:.2f} wrist target {tuple(round(x, 3) for x in wrist)} got {tuple(round(x, 3) for x in got)}'
