@@ -14,6 +14,8 @@ import { PixelCanvas } from '../props/pixelCanvas';
 import { createRevolverModel } from './revolverModel';
 import { createFanning, createHands } from './hands';
 import { createKickLeg } from './kickLeg';
+import { createShovelView } from './shovelView';
+import type { MeleeTool } from '../../sim/kick';
 import { createShotgunView } from './shotgunView';
 import { createRevolverReload } from './revolverReload';
 import { createRifleView } from './rifleView';
@@ -38,7 +40,7 @@ export const viewmodelSettings = {
   sway: 0.5,
   /** Up-down/side bob while running. */
   bob: 0.012,
-  /** Camera dip when the boot lands, radians (visual only). */
+  /** Camera dip when the boot (or the shovel) lands, radians (visual only). */
   kickViewPunch: 0.03,
 
   // --- Shotgun (the origin of its model is the right hand on the grip) ---
@@ -139,8 +141,8 @@ export interface Viewmodel {
   onShot(weapon: WeaponId, barrel: number): void;
   /** A reload starts and lasts `seconds` (the revolver's timeline is stretched to fit). */
   onReload(weapon: WeaponId, seconds: number): void;
-  /** The kick started: play the leg animation (see kickLeg.ts). */
-  onKick(): void;
+  /** The melee attack started: play the leg (kickLeg.ts) or the shovel swing (shovelView.ts). */
+  onKick(tool: MeleeTool): void;
   applyAtmosphere(a: Atmosphere): void;
   setAspect(aspect: number): void;
   /**
@@ -195,8 +197,12 @@ export function createViewmodel(): Viewmodel {
   // sway and bob don't shake it.
   const leg = createKickLeg();
   scene.add(leg.root);
+  // The shovel: in the scene too, same reason.
+  const shovel = createShovelView();
+  scene.add(shovel.root);
   let kickTime = Infinity; // seconds since the kick started (Infinity = none)
   let kickPunched = true; // the camera dip of this kick already happened
+  let kickTool: MeleeTool = 'kick'; // what's swinging (the dip comes at its own wind-up)
 
   const flashMap = flashTexture();
   const flash = createFlash(flashMap);
@@ -272,10 +278,12 @@ export function createViewmodel(): Viewmodel {
         revolverReload.start();
       }
     },
-    onKick() {
+    onKick(tool) {
       kickTime = 0;
       kickPunched = false;
-      leg.play();
+      kickTool = tool;
+      if (tool === 'shovel') shovel.play();
+      else leg.play();
     },
     applyAtmosphere(a) {
       ambient.color.set(a.ambientSky);
@@ -368,8 +376,10 @@ export function createViewmodel(): Viewmodel {
       // (the body twists when you kick). At the moment of contact, a small
       // camera dip: the "weight" of the impact.
       kickTime += dt;
-      const legOut = leg.update(dt);
-      if (!kickPunched && kickTime >= tuning.kickWindup) {
+      // The shovel swings from the left: same twist of the body, the gun moves aside the same way.
+      const legOut = Math.max(leg.update(dt), shovel.update(dt));
+      const windup = kickTool === 'shovel' ? tuning.shovelWindup : tuning.kickWindup;
+      if (!kickPunched && kickTime >= windup) {
         kickPunched = true;
         viewKick -= s.kickViewPunch;
       }

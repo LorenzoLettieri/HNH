@@ -12,5 +12,7 @@ site: what the game loads lives in `public/`. Authors and licenses are in
   left out the FBX and the "Old Versions" folder.
 - `rifle/`: "Rifle" by CreativeTrio (Poly Pizza), the original of
   `public/models/rifle.glb` (made from it by `tools/blender/rifle.py`).
+- `shovel/`: "Shovel" by Quaternius (Poly Pizza, CC0), the original of
+  `public/models/shovel.glb` (made from it by `tools/blender/shovel.py`).
 - `double-barrel/`: "Shotgun Double Barrel" by CreativeTrio (Poly Pizza), the
   original of `public/models/doubleBarrel.glb`.

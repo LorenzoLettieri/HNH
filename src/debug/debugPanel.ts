@@ -5,6 +5,7 @@ import { postSettings } from '../render/postprocess';
 import { cameraFeelSettings } from '../render/cameraFeel';
 import { viewmodelSettings } from '../render/weapons/viewmodel';
 import { fanSettings } from '../render/weapons/hands';
+import { shovelSettings } from '../render/weapons/shovelView';
 import type { Atmosphere } from '../render/atmospheres';
 import { copyToClipboard, createPanel, toSource, type Folder } from './panel';
 
@@ -279,6 +280,16 @@ export function createDebugPanel(options: {
   shovel.number(tuning, 'shovelDamage', 0, 300, 5);
   shovel.number(tuning, 'shovelKnockback', 0, 40, 0.5);
   shovel.number(tuning, 'shovelLift', 0, 15, 0.5);
+  // The swing on screen (render/weapons/shovelView.ts).
+  shovel.number(shovelSettings, 'gripX', -0.5, 0.5, 0.01);
+  shovel.number(shovelSettings, 'gripY', -0.8, 0, 0.01);
+  shovel.number(shovelSettings, 'gripZ', -0.6, 0.2, 0.01);
+  shovel.number(shovelSettings, 'cockYaw', -2, 2, 0.05);
+  shovel.number(shovelSettings, 'followYaw', -2, 2, 0.05);
+  shovel.number(shovelSettings, 'pitch', -1, 2, 0.05);
+  shovel.number(shovelSettings, 'roll', -3.2, 3.2, 0.05);
+  shovel.number(shovelSettings, 'raiseTime', 0, 0.3, 0.01);
+  shovel.number(shovelSettings, 'dropTime', 0.05, 0.6, 0.01);
   gun.number(viewmodelSettings, 'fov', 30, 100, 1);
   gun.number(viewmodelSettings, 'x', -0.3, 0.3, 0.005);
   gun.number(viewmodelSettings, 'y', -0.3, 0.1, 0.005);

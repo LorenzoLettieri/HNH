@@ -15,6 +15,9 @@
   if CC-BY, this line is the attribution). Split into moving parts (lever, hammer, trigger, bolt), scaled
   and turned for the viewmodel, a rear sight and two cartridges added, by `tools/blender/rifle.py`;
   the original is `assets-src/rifle/`.
+- `shovel.glb`: **Shovel** by Quaternius, CC0. From Poly Pizza (https://poly.pizza/m/oNBQSf87ZJ).
+  Scaled and turned for the viewmodel (origin on the grip) by `tools/blender/shovel.py`;
+  the original is `assets-src/shovel/`.
 - `rifleArms.glb`: made from PSX First Person Arms (below), posed on our carbine by `tools/blender/rifle_arms.py`.
 - `assets-src/psx-arms/`: **PSX First Person Arms** by Drillimpact, CC0. From itch.io:
   https://drillimpact.itch.io/psx-first-person-arms-free (original files).

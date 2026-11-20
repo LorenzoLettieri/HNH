@@ -23,6 +23,7 @@ import {
   playWeaponSwitch,
 } from '../audio/sfx';
 import type { WeaponId } from '../sim/weapon';
+import type { MeleeTool } from '../sim/kick';
 import { createImpacts } from './impacts';
 import { leverTimes } from './weapons/rifleView';
 import { showHitmarker } from './hitmarker';
@@ -46,7 +47,7 @@ export interface WeaponFx {
   onShot: ((weapon: WeaponId, barrel: number) => void)[];
   /** A reload starts: which weapon, and how many seconds it lasts (the simulation says: cards can change it). */
   onReload: ((weapon: WeaponId, seconds: number) => void)[];
-  onKick: (() => void)[];
+  onKick: ((tool: MeleeTool) => void)[];
 }
 
 export function createWeaponFx(scene: THREE.Scene): WeaponFx {
@@ -130,7 +131,7 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
           }
           case 'kickStart':
             playKickSwing();
-            for (const f of fx.onKick) f();
+            for (const f of fx.onKick) f(e.tool);
             break;
           case 'kickLand':
             if (e.hits > 0) playKickImpact(e.hits);
