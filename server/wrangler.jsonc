@@ -12,13 +12,8 @@
 		{
 			"binding": "DB",
 			"database_name": "hnh-leaderboard",
-			"database_id": "PASTE-THE-DATABASE-ID-HERE",
+			"database_id": "38fd3a52-25ad-4abe-9faa-6a21039fd747",
 			"migrations_dir": "migrations"
-		},
-		{
-			"binding": "hnh_leaderboard",
-			"database_name": "hnh-leaderboard",
-			"database_id": "38fd3a52-25ad-4abe-9faa-6a21039fd747"
 		}
 	],
 	"vars": {
