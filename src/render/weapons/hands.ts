@@ -1,7 +1,10 @@
 // The gunslinger's arms: bare arms from "PSX First Person Arms" by
 // Drillimpact (CC0, original in assets-src/psx-arms/), posed in Blender on
 // our revolver and saved as a standalone model, public/models/arms.glb
-// (static meshes: the pose is baked into the vertices), with three objects:
+// (static meshes: the pose is baked into the vertices). Each arm wears a
+// rolled-up plaid shirt sleeve (a low-poly tube around the posed arm with a
+// fat roll halfway down the forearm, red/black/cream tartan 32x32 texture,
+// material "shirt_plaid"), added in Blender too. Three objects:
 //   Arm_R  wrapped around the revolver's grip, in the gun's coordinates
 //          (origin = the right hand on the grip): it goes in at the origin;
 //   Arm_L  open hand, palm down, origin = PALM CENTER (the point the
