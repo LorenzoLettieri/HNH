@@ -81,6 +81,12 @@ export interface PlayerState {
   fireHeld: boolean;
   /** Ticks left until the reload finishes (0 = not reloading). */
   reloadTicks: number;
+  /** Was alternate fire held during the previous tick? (fanning starts on a new press) */
+  altFireHeld: boolean;
+  /** The buffered click was a right click: when the gun is ready, start fanning instead of one shot. */
+  fanQueued: boolean;
+  /** Shots still to fire in the fanning burst (0 = not fanning). See weapon.ts. */
+  fanShotsLeft: number;
 
   // --- Kick (see kick.ts) ---
   /** Ticks since the kick started (0 = not kicking). The foot lands at kickWindup. */
@@ -127,6 +133,9 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     fireBufferTicks: 0,
     fireHeld: false,
     reloadTicks: 0,
+    altFireHeld: false,
+    fanQueued: false,
+    fanShotsLeft: 0,
     kickTicks: 0,
     kickCooldownTicks: 0,
     kickHeld: false,
@@ -440,6 +449,8 @@ export function respawn(p: PlayerState, world: World): void {
   p.weapon = 'revolver';
   p.money = 0; // dead = the game starts over: empty pockets
   p.reloadTicks = 0;
+  p.fanShotsLeft = 0;
+  p.fanQueued = false;
   p.switchTicks = 0;
   p.kickTicks = 0;
   p.kickCooldownTicks = 0;

@@ -22,6 +22,12 @@
 // shoot the same cartridge (.44-40, like the real Colt and Winchester of the
 // 1870s: cowboys loved them for exactly this), so they share the bullets.
 //
+// FANNING (the revolver's alternate fire, right mouse button): one press
+// empties the whole cylinder in a quick burst, the left hand slapping the
+// hammer back each time. Lots of damage in a fraction of a second, but every
+// bullet goes a little off the aim: it's for things up close (a ghoul in
+// your face, a bull stunned against a wall), not for far targets.
+//
 // BOTTOMLESS (the HIGH NOON climax, see style.ts): the gun in your hands is
 // always full and firing doesn't use rounds. No reloading: you just shoot.
 import type { InputCommand } from './command';
@@ -154,7 +160,22 @@ export function stepWeapon(
   // tick before). The click is buffered a little, like the jump.
   const clicked = cmd.fire && !p.fireHeld;
   p.fireHeld = cmd.fire;
-  if (clicked) p.fireBufferTicks = secondsToTicks(tuning.revolverFireBuffer);
+  if (clicked) {
+    p.fireBufferTicks = secondsToTicks(tuning.revolverFireBuffer);
+    p.fanQueued = false;
+  }
+  // Fanning (the revolver's right click) uses the same buffer: the press is
+  // remembered for a moment, and when the gun is ready the burst starts.
+  // For the rest of the code it's a click like any other (an empty
+  // cylinder: reload or dry click), only the shot is different.
+  const altClicked = cmd.altFire && !p.altFireHeld;
+  p.altFireHeld = cmd.altFire;
+  const fanClicked = altClicked && p.weapon === 'revolver';
+  if (fanClicked) {
+    p.fireBufferTicks = secondsToTicks(tuning.revolverFireBuffer);
+    p.fanQueued = true;
+  }
+  const pressed = clicked || fanClicked;
 
   // A click during a one-by-one reload, with at least one round in: stop
   // reloading and shoot (after a moment: the gun comes back up from the gate).
@@ -175,7 +196,7 @@ export function stepWeapon(
   // Nothing in the pockets = no reload. You hear the click and that's it:
   // switch weapon, kick, or go find ammo.
   const canReload = tuning.infiniteAmmo || p.reserve[pocket] > 0;
-  if (ammo === 0 && clicked && !canReload && p.reloadTicks === 0 && p.switchTicks === 0) {
+  if (ammo === 0 && pressed && !canReload && p.reloadTicks === 0 && p.switchTicks === 0) {
     events.push({ type: 'dryFire' });
     p.fireBufferTicks = 0;
   }
@@ -183,9 +204,10 @@ export function stepWeapon(
   // second shot's cooldown is over): with 2 shells, pressing R every time
   // would be a chore. The revolver waits for R or a click on an empty cylinder.
   const autoReload = p.weapon === 'shotgun' && ammo === 0 && p.fireCooldownTicks === 0;
-  const wantsReload = canReload && ((cmd.reload && ammo < full) || (ammo === 0 && clicked) || autoReload);
-  if (wantsReload && p.reloadTicks === 0 && p.switchTicks === 0) {
-    if (ammo === 0 && clicked && !autoReload) events.push({ type: 'dryFire' });
+  // (Not in the middle of a fanning burst: R waits for the burst to end.)
+  const wantsReload = canReload && ((cmd.reload && ammo < full) || (ammo === 0 && pressed) || autoReload);
+  if (wantsReload && p.reloadTicks === 0 && p.switchTicks === 0 && p.fanShotsLeft === 0) {
+    if (ammo === 0 && pressed && !autoReload) events.push({ type: 'dryFire' });
     p.reloadTicks = secondsToTicks(reloadTime(p.weapon));
     p.fireBufferTicks = 0;
     events.push({ type: 'reloadStart', weapon: p.weapon });
@@ -193,8 +215,18 @@ export function stepWeapon(
   }
 
   const ready = p.fireCooldownTicks === 0 && p.reloadTicks === 0 && p.switchTicks === 0 && ammo > 0;
-  if (p.fireBufferTicks > 0 && ready) {
-    if (p.weapon === 'shotgun') {
+  // A queued right click on the revolver starts the burst: as many shots as
+  // there are rounds in the cylinder. From then on the gun fires by itself,
+  // one shot every revolverFanInterval, until the burst is over.
+  if (p.fireBufferTicks > 0 && ready && p.fanQueued && p.weapon === 'revolver') {
+    p.fanShotsLeft = ammo;
+  }
+  const fanning = p.fanShotsLeft > 0;
+  if ((p.fireBufferTicks > 0 || fanning) && ready) {
+    if (fanning) {
+      events.push({ type: 'fire', weapon: 'revolver', barrel: 0 });
+      fireFanned(p, world, entities, events, rng);
+    } else if (p.weapon === 'shotgun') {
       // Right barrel first (2 shells left), then the left one.
       events.push({ type: 'fire', weapon: 'shotgun', barrel: tuning.shotgunAmmo - ammo === 0 ? 0 : 1 });
       fireShotgun(p, world, entities, events);
@@ -208,6 +240,13 @@ export function stepWeapon(
     if (!bottomless) setCurrentAmmo(p, ammo - 1);
     p.fireCooldownTicks = secondsToTicks(fireInterval(p.weapon));
     p.fireBufferTicks = 0;
+    p.fanQueued = false;
+    if (fanning) {
+      p.fanShotsLeft--;
+      // The next shot of the burst comes quickly; after the last one the
+      // hand needs a moment before the revolver is back to normal.
+      p.fireCooldownTicks = secondsToTicks(p.fanShotsLeft > 0 ? tuning.revolverFanInterval : tuning.revolverFanRecovery);
+    }
   }
 }
 
@@ -218,6 +257,8 @@ export function switchWeapon(p: PlayerState, w: WeaponId, events: SimEvent[]): v
   p.reloadTicks = 0;
   p.fireCooldownTicks = 0;
   p.adsTicks = 0;
+  p.fanShotsLeft = 0; // a fanning burst stops: the revolver is put away
+  p.fanQueued = false;
   events.push({ type: 'weaponSwitch', weapon: w });
 }
 
@@ -341,6 +382,25 @@ function applyGunDamage(
 function fireRevolver(p: PlayerState, world: World, entities: Entity[], events: SimEvent[]): void {
   const { ox, oy, oz, dx, dy, dz } = aim(p);
   const hit = trace(ox, oy, oz, dx, dy, dz, tuning.weaponRange, world, entities.filter(isAlive), false, events);
+  if (hit) {
+    const amount = tuning.revolverDamage * (hit.headshot ? tuning.headshotMultiplier : 1);
+    applyGunDamage(hit.target, amount, hit.headshot, 'revolver', hit.distance, events);
+  }
+}
+
+/**
+ * One bullet of a fanning burst: the revolver's bullet (same damage, same
+ * critical hits), but off the aim by up to revolverFanSpread degrees, in a
+ * random direction: the hand slapping the hammer shakes the gun. The same
+ * "random point in a disc" as the carbine's hip fire (see fireRifle).
+ */
+function fireFanned(p: PlayerState, world: World, entities: Entity[], events: SimEvent[], rng: RandomState): void {
+  const a = aim(p);
+  const spread = Math.tan((tuning.revolverFanSpread * Math.PI) / 180);
+  const angle = random(rng) * Math.PI * 2;
+  const r = Math.sqrt(random(rng));
+  const [dx, dy, dz] = tilt(p, a, Math.cos(angle) * r, Math.sin(angle) * r, spread);
+  const hit = trace(a.ox, a.oy, a.oz, dx, dy, dz, tuning.weaponRange, world, entities.filter(isAlive), false, events);
   if (hit) {
     const amount = tuning.revolverDamage * (hit.headshot ? tuning.headshotMultiplier : 1);
     applyGunDamage(hit.target, amount, hit.headshot, 'revolver', hit.distance, events);

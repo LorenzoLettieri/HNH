@@ -17,7 +17,8 @@ export interface InputCommand {
   fire: boolean;
   /**
    * Alternate fire held (right mouse button): what it does depends on the
-   * weapon. The carbine aims down the sights; the others nothing, for now.
+   * weapon. The carbine aims down the sights; the revolver FANS the whole
+   * cylinder in a burst (a press starts it); the shotgun nothing, for now.
    */
   altFire: boolean;
   /** Kick button held (melee). */
