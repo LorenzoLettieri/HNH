@@ -54,6 +54,10 @@
       .board { width: 100%; margin-top: 16px; border-collapse: collapse; text-align: left; }
       .board th { padding: 4px 8px; color: #d02010; font: bold 13px Georgia, 'Times New Roman', serif; letter-spacing: 1px; border-bottom: 1px solid #5a3a20; }
       .board td { padding: 3px 8px; }
+      /* The menu's long leaderboard scrolls inside its box; the header row stays on top (sticky). */
+      .board-scroll { max-height: 46vh; overflow-y: auto; margin-top: 16px; }
+      .board-scroll .board { margin-top: 0; }
+      .board-scroll thead th { position: sticky; top: 0; background: rgb(28, 12, 6); }
       .board td:nth-child(1), .board td:nth-child(3), .board td:nth-child(4) { text-align: right; }
       .board td:nth-child(2) { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .board tr.first td { color: #ffd060; }
@@ -544,11 +548,13 @@
             <span>Il tuo nome</span>
             <input type="text" id="set-name" autocomplete="off" spellcheck="false" />
           </label>
-          <table class="board">
-            <thead><tr><th>#</th><th>Nome</th><th>Ondata</th><th>Punti</th></tr></thead>
-            <tbody id="leaderboard-rows"></tbody>
-          </table>
-          <p class="hint">La classifica è online, condivisa con tutti quelli che giocano. Il punteggio viene inviato quando muori.</p>
+          <div class="board-scroll">
+            <table class="board">
+              <thead><tr><th>#</th><th>Nome</th><th>Ondata</th><th>Punti</th></tr></thead>
+              <tbody id="leaderboard-rows"></tbody>
+            </table>
+          </div>
+          <p class="hint">La classifica è online, condivisa con tutti quelli che giocano: per ogni nome conta solo il record. Il punteggio viene inviato quando muori.</p>
           <button class="back" data-goto="main">Indietro</button>
         </div>
 

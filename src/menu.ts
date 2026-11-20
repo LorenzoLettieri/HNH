@@ -5,7 +5,7 @@
 // Every page is a <div class="menu-page" data-page="..."> and every button
 // with data-goto="..." switches to that page: like a tiny client-side router.
 import { SENSITIVITY_MAX, SENSITIVITY_MIN, set, settings, type Settings } from './settings';
-import { DEFAULT_NAME, LEADERBOARD_SIZE, NAME_MAX_LENGTH } from './leaderboard';
+import { DEFAULT_NAME, NAME_MAX_LENGTH } from './leaderboard';
 import { fillScoreTable } from './render/scoreTable';
 import { canLockEscape, isFullscreen, toggleFullscreen, watchFullscreen } from './fullscreen';
 
@@ -15,6 +15,9 @@ export interface Menu {
   /** After the first game start: "Gioca" becomes "Riprendi", the title "PAUSA". */
   markStarted(): void;
 }
+
+/** Players shown on the menu's leaderboard page (the server sends at most 50). */
+const LEADERBOARD_ROWS = 25;
 
 export function createMenu(options: { onPlay: () => void }): Menu {
   const overlay = document.getElementById('overlay')!;
@@ -41,10 +44,10 @@ export function createMenu(options: { onPlay: () => void }): Menu {
   });
   const board = document.getElementById('leaderboard-rows')!;
 
-  /** Fills the table (top 10 + your best if it's further down: scoreTable.ts). */
+  /** Fills the table (the top players + you if you're further down: scoreTable.ts). */
   async function refreshLeaderboard(): Promise<void> {
     nameBox.value = settings.playerName;
-    await fillScoreTable(board, LEADERBOARD_SIZE);
+    await fillScoreTable(board, LEADERBOARD_ROWS, settings.playerName);
   }
 
   for (const button of overlay.querySelectorAll<HTMLElement>('[data-goto]')) {

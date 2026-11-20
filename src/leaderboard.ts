@@ -1,13 +1,12 @@
 // Leaderboard: the best games, with the player's name.
 //
 // The scores live on our server, a Cloudflare Worker (server/ in the repo,
-// see server/README.md). The game talks to it with two async functions:
-//   submitScore() → POST /scores, answers with the position
-//   fetchTop()    → GET  /scores, the top 10
-//   fetchEntry()  → GET  /scores/:id, one row with its position
-// Which rows are yours: the server answers every submit with the new row's
-// id, and this browser remembers your ids (MINE_KEY). No accounts: clear the
-// browser's data and the game forgets which rows were yours.
+// see server/README.md). The game talks to it with async functions:
+//   submitScore() → POST /scores, answers with where the player stands
+//   fetchTop()    → GET  /scores?limit=N, ONE row per player: their best game
+//   fetchPlayer() → GET  /scores/player?name=X, a player's best with its position
+// A player = a name (upper/lower case don't matter): no accounts, so whoever
+// uses your nickname plays as you. Fine among friends.
 // Both can fail (offline, server down, too slow): callers must cope, and the
 // game never waits for them.
 //
@@ -35,14 +34,16 @@ export interface ScoreEntry {
 /** What the game sends at the end of a run (the date is added here). */
 export type ScoreSubmit = Omit<ScoreEntry, 'id' | 'date'>;
 
-/** Where a score ended up: rank 1 = first, out of `total` scores. */
+/** Where a player stands: rank 1 = first, out of `total` players. */
 export interface Placement {
   rank: number;
   total: number;
 }
 
-/** How many rows the leaderboard keeps. */
-export const LEADERBOARD_SIZE = 10;
+/** The answer to a submit: where you stand now, and whether this game is your new best. */
+export interface SubmitResult extends Placement {
+  personalBest: boolean;
+}
 /** Longest name accepted (the server will enforce the same). */
 export const NAME_MAX_LENGTH = 16;
 /** Name used when the player didn't write one. */
@@ -58,69 +59,32 @@ export function cleanName(name: string): string {
   return clean === '' ? DEFAULT_NAME : clean;
 }
 
-// --- Your rows (remembered in this browser) --------------------------------
-
-const MINE_KEY = 'hnh.myScores';
-/** How many of your scores to remember (the best ones). */
-const MINE_KEEP = 20;
-
-interface MyScore {
-  id: number;
-  score: number;
-}
-
-function loadMine(): MyScore[] {
-  // Like settings.ts: storage can throw and the saved text can be anything.
-  try {
-    const saved: unknown = JSON.parse(localStorage.getItem(MINE_KEY) ?? '[]');
-    return Array.isArray(saved) ? saved.filter((m: MyScore) => Number.isInteger(m?.id) && Number.isFinite(m?.score)) : [];
-  } catch {
-    return [];
-  }
-}
-
-function rememberMine(mine: MyScore): void {
-  const all = [...loadMine(), mine].sort((a, b) => b.score - a.score).slice(0, MINE_KEEP);
-  try {
-    localStorage.setItem(MINE_KEY, JSON.stringify(all));
-  } catch {
-    // Can't save (private mode): your rows just won't be highlighted.
-  }
-}
-
-/** Is this row one of yours? */
-export function isMine(id: number): boolean {
-  return loadMine().some((m) => m.id === id);
-}
-
-/** The id of your best score, or null if you never sent one from here. */
-export function myBestId(): number | null {
-  return loadMine()[0]?.id ?? null; // kept sorted, best first
+/** Same player? Names compared like the server does: case doesn't matter. */
+export function samePlayer(a: string, b: string): boolean {
+  return cleanName(a).toLowerCase() === cleanName(b).toLowerCase();
 }
 
 // --- API used by the game --------------------------------------------------
 
 /**
- * Sends the result of a game. Resolves to where it ended up, or null if the
- * server didn't say (games with 0 points aren't sent at all). Rejects
- * (throws) if the server can't be reached.
+ * Sends the result of a game. Resolves to where the player stands now, or
+ * null if the server didn't say. Rejects (throws) if it can't be reached.
  */
-export async function submitScore(run: ScoreSubmit): Promise<Placement | null> {
-  if (run.score <= 0) return null;
-  const answer = (await request('POST', '/scores', { ...run, name: cleanName(run.name) })) as Partial<Placement & { id: number }>;
-  if (typeof answer.id === 'number') rememberMine({ id: answer.id, score: run.score });
+export async function submitScore(run: ScoreSubmit): Promise<SubmitResult | null> {
+  const answer = (await request('POST', '/scores', { ...run, name: cleanName(run.name) })) as Partial<SubmitResult>;
   if (typeof answer.rank !== 'number' || typeof answer.total !== 'number') return null;
-  return { rank: answer.rank, total: answer.total };
+  return { rank: answer.rank, total: answer.total, personalBest: answer.personalBest === true };
 }
 
-/** The leaderboard, best first. Rejects if the server can't be reached. */
-export async function fetchTop(): Promise<ScoreEntry[]> {
-  return (await request('GET', '/scores')) as ScoreEntry[];
+/** The leaderboard (one row per player), best first. Rejects if the server can't be reached. */
+export async function fetchTop(limit: number): Promise<ScoreEntry[]> {
+  return (await request('GET', `/scores?limit=${limit}`)) as ScoreEntry[];
 }
 
-/** One row with its position. Rejects if the server can't be reached or there's no such row. */
-export async function fetchEntry(id: number): Promise<ScoreEntry & Placement> {
-  return (await request('GET', `/scores/${id}`)) as ScoreEntry & Placement;
+/** A player's best game with its position. Rejects if unreachable or the name never played. */
+export async function fetchPlayer(name: string): Promise<ScoreEntry & Placement> {
+  // encodeURIComponent: a name like "Doc & Wyatt" must not break the URL (& starts a new parameter).
+  return (await request('GET', `/scores/player?name=${encodeURIComponent(cleanName(name))}`)) as ScoreEntry & Placement;
 }
 
 /**

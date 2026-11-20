@@ -6,7 +6,7 @@
 //
 // Plain DOM: markup and CSS in index.html (#death). Timings in constants below.
 import { playBell } from '../audio/sfx';
-import type { Placement } from '../leaderboard';
+import type { SubmitResult } from '../leaderboard';
 import { STYLE_RANKS } from '../sim/style';
 import type { Stats } from '../sim/stats';
 import { TICK_DT } from '../sim/config';
@@ -20,17 +20,19 @@ const ROW_GAP = 0.22;
 const COUNT_TIME = 0.6;
 /** Seconds before Space/Enter can close it: you were probably pressing Space when you died. */
 const INPUT_DELAY = 1.2;
-/** Rows in the leaderboard box (your best is added below if it's further down). */
-const BOARD_ROWS = 5;
+/** Players in the leaderboard box (you're added below if you're further down). */
+const BOARD_ROWS = 8;
 
 /** What the screen needs to know about the game that just ended. */
 export interface GameOver {
   wave: number;
   stats: Stats;
+  /** Your nickname: your row in the leaderboard. */
+  playerName: string;
   /** Why it's a practice game (not sent), or null. */
   practice: string | null;
   /** The answer of the leaderboard (null = no answer), or null if nothing was sent. */
-  placement: Promise<Placement | null> | null;
+  placement: Promise<SubmitResult | null> | null;
 }
 
 export interface EndScreen {
@@ -82,26 +84,28 @@ export function createEndScreen(options: { onRestart: () => void; onMenu: () => 
       board.replaceChildren();
       if (game.practice) {
         placementLine.textContent = `PARTITA DI PROVA · NON IN CLASSIFICA (${game.practice})`;
-        void fillScoreTable(board, BOARD_ROWS);
+        void fillScoreTable(board, BOARD_ROWS, game.playerName);
       } else if (!game.placement) {
         placementLine.textContent = 'NESSUN PUNTO, NIENTE CLASSIFICA';
-        void fillScoreTable(board, BOARD_ROWS);
+        void fillScoreTable(board, BOARD_ROWS, game.playerName);
       } else {
         placementLine.textContent = 'INVIO IL PUNTEGGIO…';
         game.placement
           .then((p) => {
             if (id !== gameId) return; // another game ended meanwhile
+            // One row per player: a game that isn't your best doesn't move you.
             if (!p) placementLine.textContent = '';
-            else if (p.rank === 1) {
+            else if (p.personalBest && p.rank === 1) {
               placementLine.textContent = 'NUOVO RECORD!';
               placementLine.className = 'record';
-            } else placementLine.textContent = `${p.rank}° POSTO SU ${p.total}`;
+            } else if (p.personalBest) placementLine.textContent = `RECORD PERSONALE · ${p.rank}° SU ${p.total}`;
+            else placementLine.textContent = `IL TUO RECORD RESTA ${p.rank}° SU ${p.total}`;
           })
           .catch(() => {
             if (id === gameId) placementLine.textContent = 'CLASSIFICA NON RAGGIUNGIBILE';
           })
           .finally(() => {
-            if (id === gameId) void fillScoreTable(board, BOARD_ROWS);
+            if (id === gameId) void fillScoreTable(board, BOARD_ROWS, game.playerName);
           });
       }
     },

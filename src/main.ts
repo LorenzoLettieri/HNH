@@ -459,7 +459,7 @@ renderer.setAnimationLoop((now: number) => {
       : submitScore({ name: settings.playerName, score: e.stats.score, wave: e.wave, kills: e.stats.kills });
     if (shopMenu.isOpen) shopMenu.close();
     grabPending = false;
-    endScreen.open({ wave: e.wave, stats: e.stats, practice, placement });
+    endScreen.open({ wave: e.wave, stats: e.stats, playerName: settings.playerName, practice, placement });
     document.exitPointerLock(); // free the mouse for the buttons
     updatePause();
     startGame(); // fairPlay: the next game starts clean

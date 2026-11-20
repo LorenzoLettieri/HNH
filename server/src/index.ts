@@ -4,9 +4,13 @@
 // on its machines for every HTTP request. No server to keep running: like a
 // Laravel app where public/index.php is all there is, and the routes are the
 // `if`s below. Three routes:
-//   GET  /scores      → the top 10, JSON (each row with its id)
-//   GET  /scores/:id  → one row with its position and how many there are: { ..., rank, total }
-//   POST /scores      → { name, score, wave, kills } → { id, rank, total } (rank 1 = first)
+//   GET  /scores?limit=25        → the leaderboard: ONE row per player (name),
+//                                  their best game, best first (limit 1..50, default 10)
+//   GET  /scores/player?name=X   → that player's best game, with its position: { ..., rank, total }
+//   POST /scores                 → { name, score, wave, kills } → { rank, total, personalBest }
+//                                  (rank of the player's best, which is this game if personalBest)
+// Every game is stored (the table keeps the whole history); the "one row per
+// player" is decided when reading, by the queries below.
 //
 // The client is NOT trusted: anyone can POST any number. Here we only keep out
 // what is clearly wrong (bad types, impossible numbers, junk names); a real
@@ -19,7 +23,9 @@ interface Env {
 }
 
 // Same rules as src/leaderboard.ts in the game (the server is the one that counts).
-const LEADERBOARD_SIZE = 10;
+/** Rows of GET /scores when the client doesn't say, and the most it may ask for. */
+const DEFAULT_LIMIT = 10;
+const MAX_LIMIT = 50;
 const NAME_MAX_LENGTH = 16;
 const DEFAULT_NAME = 'Pistolero';
 
@@ -41,51 +47,75 @@ export default {
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
 
     if (url.pathname === '/scores') {
-      if (request.method === 'GET') return json(await top(env.DB), 200, cors);
+      if (request.method === 'GET') {
+        // ?limit=25: a query-string parameter, like $request->query('limit').
+        // Too many → the most allowed; not a number → the default.
+        const asked = Number(url.searchParams.get('limit') ?? DEFAULT_LIMIT);
+        const limit = Number.isInteger(asked) && asked >= 1 ? Math.min(asked, MAX_LIMIT) : DEFAULT_LIMIT;
+        return json(await top(env.DB, limit), 200, cors);
+      }
       if (request.method === 'POST') return submit(request, env.DB, cors);
       return json({ error: 'method not allowed' }, 405, cors);
     }
-    // /scores/42: a route parameter, read with a regular expression (what
-    // Laravel does for you with Route::get('/scores/{id}', ...)).
-    const one = url.pathname.match(/^\/scores\/(\d+)$/);
-    if (one && request.method === 'GET') {
-      const row = await byId(env.DB, Number(one[1]));
-      return row ? json(row, 200, cors) : json({ error: 'not found' }, 404, cors);
+    if (url.pathname === '/scores/player' && request.method === 'GET') {
+      const best = await playerBest(env.DB, cleanName(url.searchParams.get('name') ?? ''));
+      return best ? json({ ...best, ...(await position(env.DB, best)) }, 200, cors) : json({ error: 'not found' }, 404, cors);
     }
     return json({ error: 'not found' }, 404, cors);
   },
 } satisfies ExportedHandler<Env>;
 
-/** The columns sent to the game (created_at is called `date` there). */
-const COLUMNS = 'id, name, score, wave, kills, created_at AS date';
+/**
+ * Every player's best game. A CTE (WITH ... AS) is a named sub-query, like a
+ * temporary view. ROW_NUMBER() OVER (PARTITION BY ...) is a "window
+ * function": it numbers the rows inside each group (here: each name, upper
+ * or lower case doesn't matter) in the given order, without collapsing them
+ * like GROUP BY would. Row number 1 of each group = that player's best game.
+ * (Eloquent has no shortcut for this: in Laravel it would be a DB::raw too.)
+ */
+const BEST = `WITH best AS (
+  SELECT id, name, score, wave, kills, created_at AS date,
+         ROW_NUMBER() OVER (PARTITION BY lower(name) ORDER BY score DESC, id ASC) AS n
+  FROM scores
+)`;
 
-/** The top rows, best first; same score: who got there first (lower id). */
-async function top(db: D1Database): Promise<unknown[]> {
+interface Row {
+  id: number;
+  name: string;
+  score: number;
+  wave: number;
+  kills: number;
+  date: number;
+}
+
+/** The leaderboard: best first; same score: who got there first (lower id). */
+async function top(db: D1Database, limit: number): Promise<Row[]> {
   const { results } = await db
-    .prepare(`SELECT ${COLUMNS} FROM scores ORDER BY score DESC, id ASC LIMIT ?`)
-    .bind(LEADERBOARD_SIZE)
-    .all();
+    .prepare(`${BEST} SELECT id, name, score, wave, kills, date FROM best WHERE n = 1 ORDER BY score DESC, id ASC LIMIT ?`)
+    .bind(limit)
+    .all<Row>();
   return results;
 }
 
-/** One row with its position, or null if there's no such id. */
-async function byId(db: D1Database, id: number): Promise<unknown> {
-  const row = await db.prepare(`SELECT ${COLUMNS} FROM scores WHERE id = ?`).bind(id).first<{ score: number }>();
-  if (!row) return null;
-  return { ...row, ...(await position(db, id, row.score)) };
+/** A player's best game, or null if that name never played. */
+async function playerBest(db: D1Database, name: string): Promise<Row | null> {
+  return db
+    .prepare(`${BEST} SELECT id, name, score, wave, kills, date FROM best WHERE n = 1 AND lower(name) = lower(?)`)
+    .bind(name)
+    .first<Row>();
 }
 
 /**
- * Position of a row = how many rows are ahead of it, + 1 (same order as
- * top()), and how many rows there are. db.batch() sends both queries in one
- * trip to the database instead of two.
+ * Position of a player's best game = how many players have a better best,
+ * + 1 (same order as top()), and how many players there are. db.batch()
+ * sends both queries in one trip to the database instead of two.
  */
-async function position(db: D1Database, id: number, score: number): Promise<{ rank: number; total: number }> {
-  const [ahead, all] = await db.batch<{ n: number }>([
-    db.prepare('SELECT COUNT(*) AS n FROM scores WHERE score > ?1 OR (score = ?1 AND id < ?2)').bind(score, id),
-    db.prepare('SELECT COUNT(*) AS n FROM scores'),
+async function position(db: D1Database, best: Row): Promise<{ rank: number; total: number }> {
+  const [ahead, all] = await db.batch<{ c: number }>([
+    db.prepare(`${BEST} SELECT COUNT(*) AS c FROM best WHERE n = 1 AND (score > ?1 OR (score = ?1 AND id < ?2))`).bind(best.score, best.id),
+    db.prepare(`${BEST} SELECT COUNT(*) AS c FROM best WHERE n = 1`),
   ]);
-  return { rank: ahead.results[0].n + 1, total: all.results[0].n };
+  return { rank: ahead.results[0].c + 1, total: all.results[0].c };
 }
 
 async function submit(request: Request, db: D1Database, cors: Headers): Promise<Response> {
@@ -116,8 +146,10 @@ async function submit(request: Request, db: D1Database, cors: Headers): Promise<
     .prepare('INSERT INTO scores (name, score, wave, kills, created_at) VALUES (?, ?, ?, ?, ?) RETURNING id')
     .bind(name, score, wave, kills, Date.now())
     .first<{ id: number }>();
-  // The game keeps the id: it's how it recognizes its own rows later.
-  return json({ id: row!.id, ...(await position(db, row!.id, score)) }, 201, cors);
+  // Where does the player stand now? Their best game may be this one (a new
+  // personal best) or an older one.
+  const best = (await playerBest(db, name))!;
+  return json({ ...(await position(db, best)), personalBest: best.id === row!.id }, 201, cors);
 }
 
 /** A whole number in [min, max], or null. */
