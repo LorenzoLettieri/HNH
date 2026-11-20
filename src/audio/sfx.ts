@@ -213,15 +213,42 @@ export function playDryFire(): void {
   thump({ duration: 0.04, volume: 0.2, from: 900, to: 500 });
 }
 
-/** Reload: cylinder opens, rounds go in (a few clicks), cylinder snaps shut. */
+/**
+ * The gunslinger's reload of the revolver, timed on the animation
+ * (render/weapons/revolverReload.ts: same fractions of the reload time):
+ * whoosh of the flick + CLACK of the crane hitting its stop, the ejector
+ * click, six brass cases tinkling on the ground, six rounds clicking in,
+ * whoosh + SNAP of the cylinder shutting, and the ratchet of the spin,
+ * slowing down.
+ */
 export function playReload(duration: number): void {
-  noiseBurst({ duration: 0.05, volume: 0.4, filter: 'bandpass', frequency: 2200, q: 3 }); // open
+  const at = (k: number) => k * duration;
+  // Flick open.
+  noiseBurst({ start: at(0.02), duration: 0.08, volume: 0.15, filter: 'bandpass', frequency: 600, frequencyEnd: 1800, q: 1 });
+  noiseBurst({ start: at(0.08), duration: 0.05, volume: 0.5, filter: 'bandpass', frequency: 2200, q: 3 });
+  thump({ start: at(0.08), duration: 0.04, volume: 0.2, from: 500, to: 250 });
+  // Ejector rod.
+  noiseBurst({ start: at(0.16), duration: 0.03, volume: 0.3, filter: 'bandpass', frequency: 3000, q: 4 });
+  // Six empty cases falling: high, short "tink"s, a bit scattered in time.
   for (let i = 0; i < 6; i++) {
-    const t = 0.15 + (i / 6) * (duration - 0.35);
-    noiseBurst({ start: t, duration: 0.025, volume: 0.25, filter: 'bandpass', frequency: 4000, q: 6 });
+    const k = 0.24 + i * 0.012 + Math.random() * 0.03;
+    noiseBurst({ start: at(k), duration: 0.03, volume: 0.15, filter: 'bandpass', frequency: 5500 + Math.random() * 1500, q: 10 });
   }
-  noiseBurst({ start: duration - 0.12, duration: 0.06, volume: 0.6, filter: 'bandpass', frequency: 1600, q: 2 }); // snap
-  thump({ start: duration - 0.12, duration: 0.05, volume: 0.3, from: 400, to: 200 });
+  // Six rounds in: the end of each slide (INSERT_START 0.38, INSERT_TIME 0.055).
+  for (let i = 0; i < 6; i++) {
+    const k = 0.38 + (i + 1) * 0.055 - 0.012;
+    noiseBurst({ start: at(k), duration: 0.025, volume: 0.22, filter: 'bandpass', frequency: 4000, q: 6 });
+  }
+  // Flick shut: whoosh and a heavy SNAP.
+  noiseBurst({ start: at(0.78), duration: 0.07, volume: 0.15, filter: 'bandpass', frequency: 1800, frequencyEnd: 600, q: 1 });
+  noiseBurst({ start: at(0.84), duration: 0.06, volume: 0.7, filter: 'bandpass', frequency: 1600, q: 2 });
+  thump({ start: at(0.84), duration: 0.05, volume: 0.35, from: 400, to: 200 });
+  // The spin: ratchet clicks further and further apart.
+  let k = 0.86;
+  for (let gap = 0.012; k < 0.99; gap *= 1.35) {
+    noiseBurst({ start: at(k), duration: 0.012, volume: 0.12, filter: 'bandpass', frequency: 3600, q: 6 });
+    k += gap;
+  }
 }
 
 /**

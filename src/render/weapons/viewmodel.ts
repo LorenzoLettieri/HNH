@@ -15,6 +15,7 @@ import { createRevolverModel } from './revolverModel';
 import { createFanning, createHands } from './hands';
 import { createKickLeg } from './kickLeg';
 import { createShotgunView } from './shotgunView';
+import { createRevolverReload } from './revolverReload';
 import type { WeaponId } from '../../sim/weapon';
 
 /** Mutable so the debug panel can change them. */
@@ -184,7 +185,7 @@ export function createViewmodel(): Viewmodel {
   let cylinderAngle = 0;
   let cylinderTarget = 0;
   let hammerTime = 1; // seconds since the last shot
-  let reloadTime = -1; // seconds since the reload started (-1 = not reloading)
+  const revolverReload = createRevolverReload(); // the gunslinger's reload (see revolverReload.ts)
   let swayX = 0;
   let swayY = 0;
   let bobPhase = 0;
@@ -218,7 +219,7 @@ export function createViewmodel(): Viewmodel {
     },
     onReload(weapon) {
       if (weapon === 'shotgun') shotgun.onReload();
-      else reloadTime = 0;
+      else revolverReload.start();
     },
     onKick() {
       kickTime = 0;
@@ -256,7 +257,7 @@ export function createViewmodel(): Viewmodel {
       if (player.weapon !== shownWeapon) {
         shownWeapon = player.weapon;
         switchDrop = 1;
-        reloadTime = -1; // a reload in progress was cancelled by the switch
+        revolverReload.cancel(); // a reload in progress was cancelled by the switch
         shotgun.cancel();
         flashTime = 0;
       }
@@ -283,23 +284,19 @@ export function createViewmodel(): Viewmodel {
       const cocked = Math.min(1, Math.max(0, (hammerTime - 0.06) / (tuning.revolverFireInterval * 0.6)));
       gun.hammer.rotation.x = HAMMER_FIRED * (1 - cocked); // 0 = cocked, as modeled
 
-      // --- Reload: tilt the gun away, spin the cylinder, bring it back ---
-      let reload = 0;
-      if (reloadTime >= 0) {
-        reloadTime += dt;
-        const t = reloadTime / tuning.revolverReloadTime;
-        if (t >= 1) reloadTime = -1;
-        else {
-          reload = Math.sin(Math.PI * t); // 0 → 1 → 0: down, then back up
-          cylinderAngle += dt * 25 * reload; // the classic cylinder spin
-          cylinderTarget = cylinderAngle;
-        }
+      // --- Reload: flick open, cases out, rounds in, flick shut, spin (see revolverReload.ts) ---
+      const rr = revolverReload.update(dt, tuning.revolverReloadTime, gun);
+      if (rr.spin > 0) {
+        cylinderAngle += rr.spin * dt;
+        // Stop on a chamber: the next multiple of 60° ahead.
+        cylinderTarget = Math.ceil(cylinderAngle / (Math.PI / 3)) * (Math.PI / 3);
       }
       gun.cylinder.rotation.z = cylinderAngle;
+      const rp = isShotgun ? null : rr.pose;
+      const reload = revolverReload.active && !isShotgun ? 1 : 0; // hides the left hand
 
       // --- Shotgun: reload swing (see shotgunView.ts) ---
       const shotgunReload = shotgun.update(dt, player);
-      if (isShotgun) reload = 0; // the revolver's reload pose doesn't apply
 
       // --- Left hand: fanning, ready pose between shots (lowered while reloading) ---
       fanning.update(dt, hands.left, reload);
@@ -344,15 +341,15 @@ export function createViewmodel(): Viewmodel {
       // see it from the side: the barrels drop, the shells fly out.
       const sr = shotgunReload;
       holder.position.set(
-        rest.x + swayX + bobX - reload * 0.04 - slideTilt * 0.02 + legOut * 0.04 - sr * 0.04,
-        rest.y + swayY + bobY + fallOffset - reload * 0.07 - slideTilt * 0.03 - legOut * 0.05 + sr * 0.03
+        rest.x + swayX + bobX + (rp?.x ?? 0) - slideTilt * 0.02 + legOut * 0.04 - sr * 0.04,
+        rest.y + swayY + bobY + fallOffset + (rp?.y ?? 0) - slideTilt * 0.03 - legOut * 0.05 + sr * 0.03
           - switchDrop * s.switchDrop,
-        rest.z + kick * recoilBack - sr * 0.05,
+        rest.z + kick * recoilBack + (rp?.z ?? 0) - sr * 0.05,
       );
       holder.rotation.set(
-        rest.pitch + kick * recoilUp + reload * 0.4 - swayY * 2 - switchDrop * 0.6 + sr * 0.2,
-        rest.yaw + swayX * 2 + sr * 0.75,
-        rest.roll + reload * 1.1 + slideTilt * 0.35 - legOut * 0.25 + sr * 0.15,
+        rest.pitch + kick * recoilUp + (rp?.pitch ?? 0) - swayY * 2 - switchDrop * 0.6 + sr * 0.2,
+        rest.yaw + swayX * 2 + (rp?.yaw ?? 0) + sr * 0.75,
+        rest.roll + (rp?.roll ?? 0) + slideTilt * 0.35 - legOut * 0.25 + sr * 0.15,
       );
       return viewKick;
     },
