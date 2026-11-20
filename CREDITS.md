@@ -9,7 +9,7 @@
   Modified for the game (brown grip, cylinder and hammer as separate parts, scaled and turned for the viewmodel).
 - `doubleBarrel.glb`: **Shotgun Double Barrel** by CreativeTrio. From Poly Pizza: https://poly.pizza/m/k0fA37Awl8
   (**license to be checked** on that page: CC0 or CC-BY; if CC-BY, this line is the attribution).
-- `arms.glb`, `leg.glb`, `shotgun.glb`: made for this project (`tools/blender/`).
+- `arms.glb`, `leg.glb`, `shotgun.glb`: made for this project (`leg.glb` and `shotgun.glb` by the scripts in `tools/blender/`).
 
 ## Textures (`public/textures/`)
 - `Brick_0`, `Brick_1`, `Cobble*`, `Dead_Ground`, `Metal_Plate`, `Pipe`, `Tile`, `Wood_0`:

@@ -1,10 +1,12 @@
-// The gunslinger's arms: leather gloves with gauntlet cuffs and the sleeves of
-// a duster coat. A real model with a skeleton, made in Blender by
-// tools/blender/arms.py and exported as public/models/arms.glb.
-// The right hand is wrapped around the revolver's grip; the left hand "fans"
-// the hammer at every shot — the classic western gunslinger move. For now the
-// left arm is moved as a whole by the keyframes below (the skeleton is in the
-// file, ready for real animations: fingers, reload...).
+// The gunslinger's arms: bare hands and a shirt with rolled-up sleeves,
+// low-poly with flat colors like the guns. A standalone model,
+// public/models/arms.glb, with two objects:
+//   Arm_R  wrapped around the revolver's grip, in the gun's coordinates
+//          (origin = the right hand on the grip): it goes in at the origin;
+//   Arm_L  open hand, palm down, origin = PALM CENTER (the point the
+//          keyframes below move): it "fans" the hammer at every shot, the
+//          classic western gunslinger move.
+// Rigid meshes, no skeleton: the left arm is moved as a whole.
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
@@ -18,7 +20,7 @@ export interface Hands {
 /**
  * Returns the two groups right away; the models are added inside them when
  * the file has loaded (asynchronous, like fetch()).
- * The model's coordinates are already the holder's (see arms.py), so the
+ * The model's coordinates are already the gun's (origin = grip), so the
  * right arm just goes in at the origin of the gun's group.
  */
 export function createHands(): Hands {
@@ -27,7 +29,7 @@ export function createHands(): Hands {
   new GLTFLoader().load(`${import.meta.env.BASE_URL}models/arms.glb`, (gltf) => {
     gltf.scene.traverse((o) => {
       if (!(o instanceof THREE.Mesh)) return;
-      // Skinned meshes: don't let Three.js skip them because of a stale bounding box.
+      // Never skipped by frustum culling: the arms are always close to the eye.
       o.frustumCulled = false;
       const m = o.material as THREE.MeshStandardMaterial;
       if (m.map) {
