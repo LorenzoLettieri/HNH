@@ -546,13 +546,34 @@ Punteggio e moneta sono **separati**:
   quando hai premuto il grilletto (non con quello che quell'uccisione ti fa raggiungere). Sul meter dello
   Stile, sotto la barra, c'è scritto quanto vale il rank ("×2,5").
 
+**Progressione nella partita** [DECISO, novembre 2026]: due strati con ruoli netti.
+- **Potenziamenti delle armi**: si comprano all'armeria col vildenaro, scegliendo 1 carta tra 3 pescate
+  dal mazzo dell'arma. È lo strato affidabile, quello su cui si pianifica. Vedi §6c.
+- **Patti**: vengono dagli **eventi sulla mappa** (sotto). È lo strato di rischio e caso, quello che
+  rende diversa ogni partita. [DA DECIDERE: l'elenco dei patti]
+- **Niente meta-progressione** che renda più forte la partita dopo (almeno per la v1). Se un giorno
+  servirà, solo sblocchi "orizzontali" (carte o patti nuovi nel mazzo), mai statistiche.
+- **Niente level-up a esperienza** con un menu ogni 30 s: il gioco non si ferma, e la build non deve
+  sostituire mira e movimento (al contrario dei survivor-like come Megabonk, dove l'attacco è automatico).
+- Scartato: **arma che sale di livello usandola** (stile Roboquest). Spingerebbe a usare sempre la stessa
+  arma (noi vogliamo il contrario: munizioni separate, premio "cambio lampo"), sarebbe un secondo binario
+  di potere che non passa dallo Stile, e il livello arriverebbe nel mezzo di uno scontro.
+
 [DA DECIDERE]
-- Listino: quali potenziamenti (danno, caricatore, ricarica, salute massima; **movimento**: wall jump
-  extra, doppio salto, scatto, slide più lungo, lazo più lungo) e prezzi che crescono.
+- Potenziamenti del **movimento** (wall jump extra, doppio salto, slide più lungo, lazo più lungo):
+  carte dell'emporio o patti?
 - Si comprano anche le munizioni?
 
-Altro, indipendente dallo shop:
-- **Eventi sulla mappa** che spostano il giocatore (altari da attivare, forzieri sui punti alti).
+**Eventi sulla mappa** [DECISO l'idea, da progettare]: ogni tot ondate compare un evento (stile gli
+eventi di Diablo 4) **durante un'ondata**, annunciato e facoltativo. Avviarlo **costa vildenaro**
+(tensione voluta: potenziamento sicuro allo shop o scommessa?); completarlo dà la scelta di un **patto**
+a caso o il **livello successivo di un patto che hai già**.
+- Gli obiettivi devono **far muovere**, non tenere fermi in un cerchio (sarebbe camping per regolamento):
+  uccisioni dentro un raggio largo (15–20 m), più punti in sequenza (tre campane sui tetti in 60 s),
+  trasportare qualcosa (un teschio fino all'altare), un bersaglio marcato da uccidere prima che scappi,
+  raggiungere un rank di Stile vicino all'altare. "Resta qui" solo se la zona si sposta.
+- Fallire non deve voler dire solo soldi buttati: rimborso parziale o un patto "scarso" (1 su 2).
+- I livelli dei patti salgono **a salti interi** ("rimette 1 colpo" → "2 colpi"), mai +10%.
 
 ---
 
@@ -587,6 +608,58 @@ futuro **poligono di tiro / tutorial**.
 - **Fuoco alternativo (tasto destro)** [DECISO]: ogni arma può averne uno. Revolver: fanning;
   carabina: mira dal mirino; doppietta: da decidere.
 - **Lazo / rampino** — mobilità (aggancio a punti della mappa) e utilità (tirare a sé i nemici?).
+
+---
+
+## 6c. Potenziamenti delle armi [DECISO il sistema, PROPOSTO il dettaglio]
+
+**Come funziona**
+- All'**armeria**, per ogni arma che possiedi c'è "Potenzia". Il bancone mostra **3 carte pescate a caso**
+  dal **mazzo di quell'arma**: ne compri una. Il prezzo **sale a ogni livello** dell'arma (come il
+  Pack-a-Punch). [DA TARARE: es. 500 / 1000 / 2000; quanti livelli al massimo per arma]
+- **Rimescolare costa** (es. 100 vildenaro): il caso diventa una decisione, non una condanna.
+- La pescata resta **salvata nello stato** finché non compri o rimescoli: chiudere e riaprire lo shop
+  non pesca carte nuove gratis. La pesca usa il generatore col seed (`rng` del `GameState`).
+- Ogni carta si prende **una volta sola**; presa, esce dal mazzo. Alcune carte sono **esclusive tra loro**:
+  prenderne una toglie l'altra dal mazzo (è lì che sopravvivono i "bivi").
+- Si perdono alla morte, come le armi. Tutto deciso dalla **simulazione** (un domani lo fa il server).
+- Regole per ogni carta: cambia **come** giochi, non solo quanto sei forte; il danno sale **a salti interi**
+  (regola dei breakpoint, §3), mai a percentuali; l'effetto **si vede o si sente**.
+
+**Mazzo del revolver** (7 carte)
+- **Tamburo del becchino**: 8 colpi invece di 6; il fanning svuota tutto il tamburo.
+- **Mano lesta**: fanning più stretto e veloce; ogni uccisione durante la raffica aggiunge un colpo alla raffica.
+- **Ricochet**: dopo un headshot il colpo rimbalza sul corpo del nemico più vicino.
+- **Ricarica in scivolata**: scivolare rimette un colpo nel tamburo ogni 0,3 s.
+- **Ultimo colpo**: l'ultimo proiettile del tamburo esplode (piccola area, buono contro i gruppi).
+- **Tamburo veloce**: ricarica più rapida di un terzo.
+- **Colpo da cavaliere**: il primo colpo dopo un wall jump è un critico garantito.
+
+**Mazzo della doppietta** (9 carte)
+- **Canne lunghe**: rosata stretta, danno pieno fino a 8 m (oggi 6).
+- **Fiato di drago**: pallini incendiari, il nemico brucia per 2 s. [DA DECIDERE: come carta perde il malus
+  "meno spinta" che aveva come bivio?]
+- **Mulo**: contraccolpo doppio, shotgun jump enorme. **Esclusiva con Calcio di piombo.**
+- **Calcio di piombo**: nessun contraccolpo, spinta doppia sui nemici; chi sbatte contro un muro prende danno.
+- **Bruciapelo fortunato**: uccidere a bruciapelo rimette la cartuccia.
+- **Doppio botto**: dopo la ricarica il primo sparo fa partire le due canne insieme (danno doppio, un colpo solo).
+- **Volo di piombo**: lo shotgun jump non consuma la cartuccia se uccidi qualcuno prima di toccare terra.
+- **Pallini rimbalzanti**: i pallini che toccano il pavimento rimbalzano una volta.
+- **Spinta di gruppo**: la spinta a bruciapelo colpisce anche chi sta dietro al primo nemico.
+
+**Mazzo della carabina** (7 carte)
+- **Duellante**: dopo 1,5 s senza sparare il colpo successivo fa danno doppio (150 al corpo, 600 critico),
+  con un "tic" quando è pronto.
+- **Leva da pistolero**: niente imprecisione dall'anca (in aria e a terra) e leva più veloce. Mirare
+  serve ancora per lo zoom e per Cannocchiale.
+- **Perforante**: il colpo attraversa tutti i nemici in fila.
+- **Cannocchiale**: zoom più forte; mirando il critico vale ×6 invece di ×4.
+- **Quickscope**: un colpo entro 0,2 s dall'inizio della mira è un critico garantito.
+- **Marchio**: il colpo marca il nemico, il colpo successivo su di lui fa danno doppio.
+- **Due alla volta**: la ricarica infila due colpi per volta.
+
+Scartate: Proiettili d'argento, Rimbalzo (carabina), Colpo di grazia, Polso fermo, Mozzata corta,
+Leva in corsa, Sangue freddo, Ottone caldo.
 
 ---
 
@@ -632,7 +705,7 @@ futuro **poligono di tiro / tutorial**.
    [FATTO: monete, contatore, moltiplicatore]
 6. **Shop**: venditore (sprite), tasto E, menu che non mette in pausa, primo acquisto: la doppietta.
    [FATTO: armeria, venditore, tasto E e menu, acquisto della doppietta]
-7. Potenziamenti all'emporio.
+7. **Potenziamenti delle armi** all'armeria (mazzi di carte, §6c), poi **eventi e patti**.
 8. Lazo / rampino.
 
 ---
@@ -641,7 +714,8 @@ futuro **poligono di tiro / tutorial**.
 
 - Struttura definitiva della partita (ondate vs run a tempo) e cosa succede tra le ondate.
 - Nomi definitivi dei rank di stile.
-- Morte: si ricomincia da capo? Progressione persistente tra le partite?
+- Morte: si ricomincia da capo (niente progressione persistente per la v1, vedi §5).
+- Elenco dei patti e degli eventi.
 - Multiplayer co-op alle orde (in futuro): come si condivide lo stile?
 
 ---
