@@ -208,7 +208,8 @@ export function createLevelMeshes(boxes: readonly Box[]): THREE.Mesh[] {
  * The ground patches (World.ground: streets, squares, boardwalks, rails): one flat
  * face each at y = 0, merged per texture like the boxes. They lie exactly on the
  * top of the ground box, so they use copies of the materials with polygonOffset
- * (as the decals do): drawn a hair closer, they always win over the ground below.
+ * (as the decals do, see decals.ts): drawn a hair closer, they always win over the
+ * ground below, but not over what lies just above it (the vents' grates, 2 cm up).
  */
 export function createGroundMeshes(patches: readonly GroundPatch[]): THREE.Mesh[] {
   const batches = new Map<string, QuadBatch>();
@@ -228,7 +229,7 @@ export function createGroundMeshes(patches: readonly GroundPatch[]): THREE.Mesh[
   return [...batches].map(([name, batch]) => {
     const material = materials.get(name)!.clone(); // same texture, its own depth nudge
     material.polygonOffset = true;
-    material.polygonOffsetFactor = -1;
+    material.polygonOffsetFactor = 0; // see decals.ts: no slope-scaled nudge
     material.polygonOffsetUnits = -4;
     addHeightFog(material);
     const mesh = new THREE.Mesh(batch.toGeometry(), material);

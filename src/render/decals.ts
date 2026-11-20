@@ -146,9 +146,16 @@ async function decalMaterial(def: DecalDef): Promise<THREE.MeshStandardMaterial>
     alphaTest: 0.5,
     // The decal lies exactly on the wall: the two would fight over the same depth
     // ("z-fighting") and flicker. polygonOffset nudges the decal's depth a hair
-    // toward the camera, without moving it.
+    // toward the camera, without moving it. The nudge has two parts:
+    // - units: a fixed number of the smallest depth steps the depth buffer can
+    //   tell apart. Tiny, and just what two surfaces on the SAME plane need.
+    // - factor: proportional to how steeply the surface recedes from the camera.
+    //   Seen at a grazing angle (a street you look down, a wall you run along)
+    //   that becomes tens of centimeters: the decal would then cover what stands
+    //   just in front of the surface (the vents' grates, 2 cm above the street,
+    //   vanished until you were close). So: units only.
     polygonOffset: true,
-    polygonOffsetFactor: -1,
+    polygonOffsetFactor: 0,
     polygonOffsetUnits: -4,
   });
   if (def.glow) {
