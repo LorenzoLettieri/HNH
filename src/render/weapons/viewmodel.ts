@@ -284,6 +284,9 @@ export function createViewmodel(): Viewmodel {
       const cocked = Math.min(1, Math.max(0, (hammerTime - 0.06) / (tuning.revolverFireInterval * 0.6)));
       gun.hammer.rotation.x = HAMMER_FIRED * (1 - cocked); // 0 = cocked, as modeled
 
+      // --- Shotgun: elastic reload (see shotgunView.ts) ---
+      const shotgunPose = shotgun.update(dt, player);
+
       // --- Reload: flick open, cases out, rounds in, flick shut, spin (see revolverReload.ts) ---
       const rr = revolverReload.update(dt, tuning.revolverReloadTime, gun);
       if (rr.spin > 0) {
@@ -292,11 +295,9 @@ export function createViewmodel(): Viewmodel {
         cylinderTarget = Math.ceil(cylinderAngle / (Math.PI / 3)) * (Math.PI / 3);
       }
       gun.cylinder.rotation.z = cylinderAngle;
-      const rp = isShotgun ? null : rr.pose;
+      const rp = isShotgun ? shotgunPose : rr.pose;
       const reload = revolverReload.active && !isShotgun ? 1 : 0; // hides the left hand
 
-      // --- Shotgun: reload swing (see shotgunView.ts) ---
-      const shotgunReload = shotgun.update(dt, player);
 
       // --- Left hand: fanning, ready pose between shots (lowered while reloading) ---
       fanning.update(dt, hands.left, reload);
@@ -337,19 +338,17 @@ export function createViewmodel(): Viewmodel {
         : { x: s.x, y: s.y, z: s.z, pitch: 0, yaw: -0.04, roll: 0 };
       const recoilUp = kickWeapon === 'shotgun' ? s.shotgunRecoil : s.recoil;
       const recoilBack = kickWeapon === 'shotgun' ? s.shotgunRecoilBack : 0.05;
-      // Shotgun reload: the gun swings across, muzzle to the left, so you
-      // see it from the side: the barrels drop, the shells fly out.
-      const sr = shotgunReload;
+      // The reloads move the whole gun too: `rp` = pose offsets (elastic.ts).
       holder.position.set(
-        rest.x + swayX + bobX + (rp?.x ?? 0) - slideTilt * 0.02 + legOut * 0.04 - sr * 0.04,
-        rest.y + swayY + bobY + fallOffset + (rp?.y ?? 0) - slideTilt * 0.03 - legOut * 0.05 + sr * 0.03
+        rest.x + swayX + bobX + rp.x - slideTilt * 0.02 + legOut * 0.04,
+        rest.y + swayY + bobY + fallOffset + rp.y - slideTilt * 0.03 - legOut * 0.05
           - switchDrop * s.switchDrop,
-        rest.z + kick * recoilBack + (rp?.z ?? 0) - sr * 0.05,
+        rest.z + kick * recoilBack + rp.z,
       );
       holder.rotation.set(
-        rest.pitch + kick * recoilUp + (rp?.pitch ?? 0) - swayY * 2 - switchDrop * 0.6 + sr * 0.2,
-        rest.yaw + swayX * 2 + (rp?.yaw ?? 0) + sr * 0.75,
-        rest.roll + (rp?.roll ?? 0) + slideTilt * 0.35 - legOut * 0.25 + sr * 0.15,
+        rest.pitch + kick * recoilUp + rp.pitch - swayY * 2 - switchDrop * 0.6,
+        rest.yaw + swayX * 2 + rp.yaw,
+        rest.roll + rp.roll + slideTilt * 0.35 - legOut * 0.25,
       );
       return viewKick;
     },

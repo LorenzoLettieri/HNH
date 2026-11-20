@@ -28,6 +28,7 @@
 // makes sure it ends up open/shut.
 // Everything is cosmetic: ammo and timing are decided by the simulation.
 import * as THREE from 'three';
+import { ELASTIC_STEP, Hinge, PoseSpring, ZERO_POSE, phase, poseAt, smoothstep, type GunPose } from './elastic';
 import type { RevolverModel } from './revolverModel';
 
 /** How far the crane swings the cylinder out, radians (the stop it bounces against). */
@@ -59,16 +60,7 @@ const CLOSE_START = 0.78; // the flick the other way throws it shut (and it latc
 const SPIN_START = 0.85; // a spin for show...
 const SPIN_END = 1; // ...that slows down until the end
 
-/** Pose of the whole gun: offsets from its rest pose (meters and radians). */
-export interface GunPose {
-  x: number;
-  y: number;
-  z: number;
-  pitch: number; // + = muzzle up
-  yaw: number; // + = muzzle to the left
-  roll: number; // + = tilted left (counterclockwise as you see it)
-}
-const ZERO: GunPose = { x: 0, y: 0, z: 0, pitch: 0, yaw: 0, roll: 0 };
+const ZERO = ZERO_POSE;
 
 // [t, pose]: where the gun wants to be (the spring adds the elasticity).
 const KEYS: [number, GunPose][] = [
@@ -86,33 +78,6 @@ const KEYS: [number, GunPose][] = [
   [1, ZERO],
 ];
 
-function smoothstep(t: number): number {
-  const k = Math.min(1, Math.max(0, t));
-  return k * k * (3 - 2 * k);
-}
-/** Progress 0..1 of `t` between `a` and `b` (clamped). */
-function phase(t: number, a: number, b: number): number {
-  return Math.min(1, Math.max(0, (t - a) / (b - a)));
-}
-function poseAt(t: number): GunPose {
-  for (let i = 0; i < KEYS.length - 1; i++) {
-    const [ta, a] = KEYS[i];
-    const [tb, b] = KEYS[i + 1];
-    if (t <= tb) {
-      const k = smoothstep((t - ta) / (tb - ta));
-      return {
-        x: a.x + (b.x - a.x) * k,
-        y: a.y + (b.y - a.y) * k,
-        z: a.z + (b.z - a.z) * k,
-        pitch: a.pitch + (b.pitch - a.pitch) * k,
-        yaw: a.yaw + (b.yaw - a.yaw) * k,
-        roll: a.roll + (b.roll - a.roll) * k,
-      };
-    }
-  }
-  return ZERO;
-}
-
 export interface RevolverReload {
   start(): void;
   cancel(): void;
@@ -125,20 +90,11 @@ export interface RevolverReload {
   update(dt: number, duration: number, gun: RevolverModel): { pose: GunPose; spin: number };
 }
 
-const CHANNELS = ['x', 'y', 'z', 'pitch', 'yaw', 'roll'] as const;
-/** Small fixed steps for the springs: stable even when a frame is long. */
-const STEP = 1 / 240;
-
 export function createRevolverReload(): RevolverReload {
   let time = -1; // seconds since the reload started (-1 = not reloading)
-  // The gun pose and its velocity (per channel): the spring's state.
-  const pose: GunPose = { ...ZERO };
-  const vel: GunPose = { ...ZERO };
-  // The crane: angle, angular velocity, latched shut.
-  let crane = 0;
-  let craneVel = 0;
-  let latched = true;
-  let leftover = 0; // time not yet simulated (less than one STEP)
+  const spring = new PoseSpring(POSE_STIFFNESS, POSE_DAMPING_RATIO);
+  const crane = new Hinge(CRANE_OPEN, CRANE_ASSIST, CRANE_DAMPING, CRANE_BOUNCE);
+  let leftover = 0; // time not yet simulated (less than one step)
   const down = new THREE.Vector3();
   const q = new THREE.Quaternion();
   return {
@@ -147,60 +103,28 @@ export function createRevolverReload(): RevolverReload {
     },
     start() {
       time = 0;
-      latched = true;
+      crane.reset();
     },
     cancel() {
       time = -1;
-      crane = 0;
-      craneVel = 0;
-      latched = true;
+      crane.reset();
     },
     update(dt, duration, gun) {
-      // --- Springs and the crane, in small fixed steps ---
+      // --- Gun pose spring and crane, in small fixed steps ---
       leftover += Math.min(dt, 0.1);
-      const damping = 2 * POSE_DAMPING_RATIO * Math.sqrt(POSE_STIFFNESS);
-      while (leftover >= STEP) {
-        leftover -= STEP;
+      while (leftover >= ELASTIC_STEP) {
+        leftover -= ELASTIC_STEP;
         if (time >= 0) {
-          time += STEP;
+          time += ELASTIC_STEP;
           if (time >= duration) time = -1;
         }
         const t = time >= 0 ? time / duration : -1;
-        const target = t < 0 ? ZERO : poseAt(t);
-        // Gun pose: each channel is a damped spring pulled toward the keyframes
-        // (semi-implicit Euler: velocity first, then position with the new velocity).
-        let rollAcc = 0;
-        for (const c of CHANNELS) {
-          const acc = POSE_STIFFNESS * (target[c] - pose[c]) - damping * vel[c];
-          vel[c] += acc * STEP;
-          pose[c] += vel[c] * STEP;
-          if (c === 'roll') rollAcc = acc;
-        }
-        // Crane: inertia (the gun turns clockwise = negative roll acceleration,
-        // the cylinder lags behind = it swings OUT) + a weak spring toward
-        // where it should be + damping.
-        const open = t >= OPEN_START && t < CLOSE_START;
-        if (open) latched = false;
-        if (latched) {
-          crane = 0;
-          craneVel = 0;
-          continue;
-        }
-        const goal = open ? CRANE_OPEN : 0;
-        const craneAcc = -CRANE_INERTIA * rollAcc + CRANE_ASSIST * (goal - crane) - CRANE_DAMPING * craneVel;
-        craneVel += craneAcc * STEP;
-        crane += craneVel * STEP;
-        if (crane > CRANE_OPEN) {
-          crane = CRANE_OPEN; // the stop: bounce back a little
-          craneVel = -craneVel * CRANE_BOUNCE;
-        }
-        if (crane <= 0) {
-          crane = 0;
-          craneVel = 0;
-          if (!open) latched = true; // shut and latched: CLICK
-        }
+        spring.step(t < 0 ? ZERO : poseAt(KEYS, t), ELASTIC_STEP);
+        // Inertia: the gun turns clockwise (negative roll acceleration), the
+        // cylinder lags behind, i.e. it swings OUT (positive angle).
+        crane.step(-CRANE_INERTIA * spring.acc.roll, t >= OPEN_START && t < CLOSE_START, ELASTIC_STEP);
       }
-      gun.crane.rotation.z = crane;
+      gun.crane.rotation.z = crane.angle;
 
       const t = time >= 0 ? time / duration : -1;
 
@@ -237,7 +161,7 @@ export function createRevolverReload(): RevolverReload {
 
       // --- Spin: once shut, a flourish that slows down ---
       const spin = t >= SPIN_START ? 40 * (1 - phase(t, SPIN_START, SPIN_END)) : 0;
-      return { pose: { ...pose }, spin };
+      return { pose: { ...spring.pose }, spin };
     },
   };
 }

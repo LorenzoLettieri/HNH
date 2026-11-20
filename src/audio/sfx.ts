@@ -183,22 +183,27 @@ export function playShotgun(): void {
 }
 
 /**
- * Shotgun reload, timed on the animation: CLACK (break open), two spent
- * shells "plink" out, two new ones slide in (thock, thock), CLACK (shut) and
- * the two hammers clicking back.
+ * Shotgun reload, timed on the animation (render/weapons/shotgunView.ts:
+ * the barrels there are physics, so these moments are measured): the thumb
+ * clicks the top lever, whoosh of the jerk down, CLACK of the barrels hitting
+ * their stop, two spent shells "plink" out, two new ones slide in (thock,
+ * thock), whoosh of the flick up, SNAP shut and the lever springing back.
  */
 export function playShotgunReload(duration: number): void {
   const at = (k: number) => k * duration;
-  noiseBurst({ start: at(0.04), duration: 0.06, volume: 0.6, filter: 'bandpass', frequency: 1300, q: 2 }); // open
-  thump({ start: at(0.04), duration: 0.05, volume: 0.3, from: 300, to: 160 });
-  for (const k of [0.2, 0.25]) noiseBurst({ start: at(k), duration: 0.05, volume: 0.25, filter: 'bandpass', frequency: 5200, q: 8 }); // shells out
-  for (const k of [0.52, 0.66]) {
+  noiseBurst({ start: at(0.01), duration: 0.03, volume: 0.3, filter: 'bandpass', frequency: 2600, q: 4 }); // lever
+  noiseBurst({ start: at(0.05), duration: 0.08, volume: 0.15, filter: 'bandpass', frequency: 500, frequencyEnd: 1500, q: 1 }); // jerk
+  noiseBurst({ start: at(0.135), duration: 0.06, volume: 0.6, filter: 'bandpass', frequency: 1300, q: 2 }); // barrels open
+  thump({ start: at(0.135), duration: 0.05, volume: 0.3, from: 300, to: 160 });
+  for (const k of [0.17, 0.21]) noiseBurst({ start: at(k), duration: 0.05, volume: 0.25, filter: 'bandpass', frequency: 5200, q: 8 }); // shells out
+  for (const k of [0.56, 0.7]) {
     noiseBurst({ start: at(k), duration: 0.04, volume: 0.35, filter: 'bandpass', frequency: 900, q: 3 }); // shell in
     thump({ start: at(k), duration: 0.04, volume: 0.2, from: 250, to: 180 });
   }
-  noiseBurst({ start: at(0.82), duration: 0.07, volume: 0.8, filter: 'bandpass', frequency: 1500, q: 2 }); // snap shut
-  thump({ start: at(0.82), duration: 0.06, volume: 0.4, from: 350, to: 150 });
-  for (const k of [0.91, 0.96]) noiseBurst({ start: at(k), duration: 0.025, volume: 0.35, filter: 'bandpass', frequency: 3200, q: 5 }); // hammers
+  noiseBurst({ start: at(0.79), duration: 0.07, volume: 0.15, filter: 'bandpass', frequency: 1500, frequencyEnd: 500, q: 1 }); // flick
+  noiseBurst({ start: at(0.86), duration: 0.07, volume: 0.8, filter: 'bandpass', frequency: 1500, q: 2 }); // snap shut
+  thump({ start: at(0.86), duration: 0.06, volume: 0.4, from: 350, to: 150 });
+  noiseBurst({ start: at(0.875), duration: 0.025, volume: 0.35, filter: 'bandpass', frequency: 3200, q: 5 }); // lever back
 }
 
 /** Weapon switch: a leather-and-metal rustle as the new gun comes up. */
