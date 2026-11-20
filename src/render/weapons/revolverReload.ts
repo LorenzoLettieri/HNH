@@ -17,12 +17,31 @@
 //   - the PARTS: crane angle, rounds sliding out/in (they are children of
 //     the cylinder, which is a child of the crane: moving the crane carries
 //     them along, like nested elements in the DOM).
+// ELASTIC: the keyframes are only where the gun WANTS to be. The real pose
+// follows them through a damped spring (like cameraFeel's hurt kick): it
+// lags a little, overshoots and settles, so every move has momentum. Before
+// each flick there's a small wind-up the other way (anticipation, the oldest
+// trick of animation). And the cylinder is not animated at all: it's a
+// little PHYSICS simulation, pushed by the gun's angular acceleration
+// (inertia: whip the gun clockwise and the cylinder stays behind, i.e. it
+// swings out), with hard stops it bounces against and a weak spring that
+// makes sure it ends up open/shut.
 // Everything is cosmetic: ammo and timing are decided by the simulation.
 import * as THREE from 'three';
 import type { RevolverModel } from './revolverModel';
 
-/** How far the crane swings the cylinder out, radians. */
+/** How far the crane swings the cylinder out, radians (the stop it bounces against). */
 const CRANE_OPEN = 1.45;
+/** How much the gun's angular acceleration throws the cylinder (inertia). */
+const CRANE_INERTIA = 1.5;
+/** The weak spring that makes sure the cylinder ends up open/shut, and its damping. */
+const CRANE_ASSIST = 300;
+const CRANE_DAMPING = 9;
+/** How much speed the cylinder keeps when it hits the open stop (0 = dead stop, 1 = full bounce). */
+const CRANE_BOUNCE = 0.35;
+/** The spring the gun pose follows the keyframes with: stiffness (ω², 1/s²) and damping ratio (< 1 = overshoots). */
+const POSE_STIFFNESS = 1400;
+const POSE_DAMPING_RATIO = 0.42;
 /** How far back the ejector pushes the cases, meters. */
 const EJECT_STROKE = 0.035;
 /** Gravity for the falling cases, m/s² (a bit less than real: we want to see them go). */
@@ -31,15 +50,14 @@ const FALL_GRAVITY = 6;
 const INSERT_TIME = 0.055;
 
 // Timeline (fractions of the reload time).
-const OPEN_START = 0.03; // the flick throws the cylinder out...
-const OPEN_END = 0.1; // ...and it bounces against its stop
+const OPEN_START = 0.04; // the cylinder is unlatched: the flick throws it out
 const EJECT_START = 0.14; // muzzle up: the ejector pushes the cases back
 const FALL_START = 0.2; // then they fall
 const FALL_END = 0.33; // gone
 const INSERT_START = 0.38; // round i slides in from INSERT_START + i·INSERT_TIME
-const CLOSE_START = 0.8; // the flick the other way snaps it shut
-const CLOSE_END = 0.84;
-const SPIN_END = 1; // the cylinder spins down until the end
+const CLOSE_START = 0.78; // the flick the other way throws it shut (and it latches)
+const SPIN_START = 0.85; // a spin for show...
+const SPIN_END = 1; // ...that slows down until the end
 
 /** Pose of the whole gun: offsets from its rest pose (meters and radians). */
 export interface GunPose {
@@ -52,17 +70,19 @@ export interface GunPose {
 }
 const ZERO: GunPose = { x: 0, y: 0, z: 0, pitch: 0, yaw: 0, roll: 0 };
 
-// [t, pose]. Between two keys the pose is blended with smoothstep.
+// [t, pose]: where the gun wants to be (the spring adds the elasticity).
 const KEYS: [number, GunPose][] = [
   [0, ZERO],
-  [0.05, { x: 0.01, y: 0.005, z: 0, pitch: 0.05, yaw: 0, roll: -0.35 }], // FLICK clockwise
-  [0.12, { x: -0.02, y: 0.01, z: 0, pitch: 0.15, yaw: 0.1, roll: 0.45 }], // swing back: cylinder out
+  [0.025, { x: -0.005, y: 0, z: 0, pitch: -0.03, yaw: 0, roll: 0.18 }], // wind-up...
+  [0.06, { x: 0.012, y: 0.005, z: 0, pitch: 0.05, yaw: 0, roll: -0.45 }], // ...FLICK clockwise
+  [0.13, { x: -0.02, y: 0.01, z: 0, pitch: 0.15, yaw: 0.1, roll: 0.45 }], // swing back: cylinder out
   [0.2, { x: -0.04, y: 0.03, z: 0.02, pitch: 0.95, yaw: 0.15, roll: 0.35 }], // muzzle up: cases out
   [0.3, { x: -0.04, y: 0.03, z: 0.02, pitch: 0.95, yaw: 0.15, roll: 0.35 }],
   [0.38, { x: -0.03, y: 0.05, z: 0.07, pitch: 0.1, yaw: 0.45, roll: 0.5 }], // loading: closer, cylinder toward you
-  [0.76, { x: -0.03, y: 0.05, z: 0.07, pitch: 0.1, yaw: 0.45, roll: 0.5 }],
-  [0.8, { x: -0.03, y: 0.03, z: 0.04, pitch: 0.05, yaw: 0.25, roll: 0.95 }], // FLICK the other way
-  [0.87, { x: -0.01, y: 0, z: 0, pitch: 0, yaw: 0, roll: -0.08 }], // small overshoot
+  [0.74, { x: -0.03, y: 0.05, z: 0.07, pitch: 0.1, yaw: 0.45, roll: 0.5 }],
+  [0.77, { x: -0.03, y: 0.045, z: 0.06, pitch: 0.12, yaw: 0.4, roll: 0.25 }], // wind-up...
+  [0.8, { x: -0.03, y: 0.03, z: 0.04, pitch: 0.05, yaw: 0.25, roll: 1.05 }], // ...FLICK the other way
+  [0.88, ZERO],
   [1, ZERO],
 ];
 
@@ -74,13 +94,6 @@ function smoothstep(t: number): number {
 function phase(t: number, a: number, b: number): number {
   return Math.min(1, Math.max(0, (t - a) / (b - a)));
 }
-/** Overshoots a little past 1 and settles back ("ease out back"): something hitting a stop. */
-function easeOutBack(t: number): number {
-  const c = 1.7;
-  const k = t - 1;
-  return 1 + (c + 1) * k * k * k + c * k * k;
-}
-
 function poseAt(t: number): GunPose {
   for (let i = 0; i < KEYS.length - 1; i++) {
     const [ta, a] = KEYS[i];
@@ -112,8 +125,20 @@ export interface RevolverReload {
   update(dt: number, duration: number, gun: RevolverModel): { pose: GunPose; spin: number };
 }
 
+const CHANNELS = ['x', 'y', 'z', 'pitch', 'yaw', 'roll'] as const;
+/** Small fixed steps for the springs: stable even when a frame is long. */
+const STEP = 1 / 240;
+
 export function createRevolverReload(): RevolverReload {
   let time = -1; // seconds since the reload started (-1 = not reloading)
+  // The gun pose and its velocity (per channel): the spring's state.
+  const pose: GunPose = { ...ZERO };
+  const vel: GunPose = { ...ZERO };
+  // The crane: angle, angular velocity, latched shut.
+  let crane = 0;
+  let craneVel = 0;
+  let latched = true;
+  let leftover = 0; // time not yet simulated (less than one STEP)
   const down = new THREE.Vector3();
   const q = new THREE.Quaternion();
   return {
@@ -122,29 +147,62 @@ export function createRevolverReload(): RevolverReload {
     },
     start() {
       time = 0;
+      latched = true;
     },
     cancel() {
       time = -1;
+      crane = 0;
+      craneVel = 0;
+      latched = true;
     },
     update(dt, duration, gun) {
-      let t = -1;
-      if (time >= 0) {
-        time += dt;
-        t = time / duration;
-        if (t >= 1) {
-          time = -1;
-          t = -1;
+      // --- Springs and the crane, in small fixed steps ---
+      leftover += Math.min(dt, 0.1);
+      const damping = 2 * POSE_DAMPING_RATIO * Math.sqrt(POSE_STIFFNESS);
+      while (leftover >= STEP) {
+        leftover -= STEP;
+        if (time >= 0) {
+          time += STEP;
+          if (time >= duration) time = -1;
+        }
+        const t = time >= 0 ? time / duration : -1;
+        const target = t < 0 ? ZERO : poseAt(t);
+        // Gun pose: each channel is a damped spring pulled toward the keyframes
+        // (semi-implicit Euler: velocity first, then position with the new velocity).
+        let rollAcc = 0;
+        for (const c of CHANNELS) {
+          const acc = POSE_STIFFNESS * (target[c] - pose[c]) - damping * vel[c];
+          vel[c] += acc * STEP;
+          pose[c] += vel[c] * STEP;
+          if (c === 'roll') rollAcc = acc;
+        }
+        // Crane: inertia (the gun turns clockwise = negative roll acceleration,
+        // the cylinder lags behind = it swings OUT) + a weak spring toward
+        // where it should be + damping.
+        const open = t >= OPEN_START && t < CLOSE_START;
+        if (open) latched = false;
+        if (latched) {
+          crane = 0;
+          craneVel = 0;
+          continue;
+        }
+        const goal = open ? CRANE_OPEN : 0;
+        const craneAcc = -CRANE_INERTIA * rollAcc + CRANE_ASSIST * (goal - crane) - CRANE_DAMPING * craneVel;
+        craneVel += craneAcc * STEP;
+        crane += craneVel * STEP;
+        if (crane > CRANE_OPEN) {
+          crane = CRANE_OPEN; // the stop: bounce back a little
+          craneVel = -craneVel * CRANE_BOUNCE;
+        }
+        if (crane <= 0) {
+          crane = 0;
+          craneVel = 0;
+          if (!open) latched = true; // shut and latched: CLICK
         }
       }
-
-      // --- Crane: thrown open by the first flick, snapped shut by the second ---
-      let crane = 0;
-      if (t >= 0) {
-        // Opening hits its stop and bounces (ease out back); closing accelerates
-        // into the frame (squared: slow start, fast end) and stops dead.
-        crane = CRANE_OPEN * easeOutBack(phase(t, OPEN_START, OPEN_END)) * (1 - phase(t, CLOSE_START, CLOSE_END) ** 2);
-      }
       gun.crane.rotation.z = crane;
+
+      const t = time >= 0 ? time / duration : -1;
 
       // --- Rounds ---
       // "Down" for the falling cases is the screen's down (the viewmodel scene
@@ -178,8 +236,8 @@ export function createRevolverReload(): RevolverReload {
       });
 
       // --- Spin: once shut, a flourish that slows down ---
-      const spin = t >= CLOSE_END ? 40 * (1 - phase(t, CLOSE_END, SPIN_END)) : 0;
-      return { pose: t < 0 ? ZERO : poseAt(t), spin };
+      const spin = t >= SPIN_START ? 40 * (1 - phase(t, SPIN_START, SPIN_END)) : 0;
+      return { pose: { ...pose }, spin };
     },
   };
 }
