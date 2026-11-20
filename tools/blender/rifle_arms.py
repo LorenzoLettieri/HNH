@@ -50,7 +50,7 @@ RENDER = '--render' in sys.argv
 # The gun's hip pose in the game (viewmodelSettings.rifle*): position in
 # meters and rotation in radians, in THREE.JS coordinates (x right, y up,
 # z toward you), Euler order XYZ.
-VIEW = dict(x=0.2, y=-0.105, z=-0.34, pitch=0.06, yaw=0.14, roll=-0.55)
+VIEW = dict(x=0.18, y=-0.12, z=-0.36, pitch=0.05, yaw=0.1, roll=-0.15)
 
 # The lever (from rifle.py): pin position (carbine coordinates, Blender
 # axes: x right, y forward, z up) and how far it opens (rifleView.ts).
@@ -83,19 +83,19 @@ LEFT = dict(
     wrist=Vector((-0.045, 0.31, -0.06)),
     fingers=Vector((1.0, 0.3, 0.45)),
     index=Vector((0.0, 1.0, 0.0)),
-    elbow=Vector((-0.25, 0.05, -0.6)),
+    elbow=Vector((-0.6, -0.15, -0.3)),
     curl=dict(index=0.8, middle=0.85, ring=0.9, pinky=0.95, thumb=0.3),
     # The fore-end is farther than a real arm reaches from where the gun is
     # held on screen: the shoulder is moved forward (eye space, meters:
     # right, forward, up). It's out of the view anyway: every FPS cheats so.
-    shoulder=Vector((0.22, 0.34, -0.14)),
+    shoulder=Vector((0.0, 0.3, -0.12)),
 )
 
 # --- The rolled-up shirt sleeves (like arms.glb's) ----------------------------
 SLEEVE_SIDES = 8
-SLEEVE_RADIUS_UPPER = 0.058  # around the upper arm
-SLEEVE_RADIUS_ELBOW = 0.05
-SLEEVE_RADIUS_FOREARM = 0.046
+SLEEVE_RADIUS_UPPER = 0.07  # around the upper arm
+SLEEVE_RADIUS_ELBOW = 0.068
+SLEEVE_RADIUS_FOREARM = 0.06
 SLEEVE_ROLL = 0.42  # where the roll sits, fraction of the forearm from the elbow
 SLEEVE_ROLL_WIDTH = 0.035  # meters
 SLEEVE_ROLL_EXTRA = 0.011  # how much fatter the roll is

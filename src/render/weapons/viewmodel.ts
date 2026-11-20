@@ -64,12 +64,12 @@ export const viewmodelSettings = {
 
   // --- Lever-action carbine (origin of its model: the right hand on the wrist) ---
   /** From the hip: low on the right, the barrel going into depth. (The arms in arms.glb are posed for this pose.) */
-  rifleX: 0.2,
-  rifleY: -0.105,
-  rifleZ: -0.34,
-  riflePitch: 0.06,
-  rifleYaw: 0.14,
-  rifleRoll: -0.55,
+  rifleX: 0.18,
+  rifleY: -0.12,
+  rifleZ: -0.36,
+  riflePitch: 0.05,
+  rifleYaw: 0.1,
+  rifleRoll: -0.15,
   /**
    * Aimed down the sights: the barrel straight ahead, centered, and lifted so
    * that the line from the rear sight's notch to the front sight's tip (0.0753
