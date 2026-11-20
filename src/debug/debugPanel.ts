@@ -4,6 +4,7 @@ import { tuning } from '../sim/config';
 import { postSettings } from '../render/postprocess';
 import { cameraFeelSettings } from '../render/cameraFeel';
 import { viewmodelSettings } from '../render/weapons/viewmodel';
+import { fanSettings } from '../render/weapons/hands';
 import type { Atmosphere } from '../render/atmospheres';
 import { copyToClipboard, createPanel, toSource, type Folder } from './panel';
 
@@ -170,7 +171,10 @@ export function createDebugPanel(options: {
   gun.number(viewmodelSettings, 'viewKick', 0, 0.1, 0.005);
   gun.number(viewmodelSettings, 'sway', 0, 2, 0.05);
   gun.number(viewmodelSettings, 'bob', 0, 0.04, 0.001);
-  gun.number(viewmodelSettings, 'fanDuration', 0.05, 0.6, 0.01);
+  gun.number(fanSettings, 'strikeTime', 0.05, 0.3, 0.01);
+  gun.number(fanSettings, 'readyHold', 0, 3, 0.05);
+  gun.number(fanSettings, 'raiseRate', 2, 60, 1);
+  gun.number(fanSettings, 'lowerRate', 1, 30, 0.5);
   gun.button('Copy viewmodel values', () => copyToClipboard(toSource(viewmodelSettings)));
 
   // --- Ghouls ---

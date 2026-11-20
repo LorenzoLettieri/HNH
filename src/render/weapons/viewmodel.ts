@@ -12,7 +12,7 @@ import type { Atmosphere } from '../atmospheres';
 import { directionFromAngles } from '../sky';
 import { PixelCanvas } from '../props/pixelCanvas';
 import { createRevolverModel } from './revolverModel';
-import { createHands, poseLeftHand } from './hands';
+import { createFanning, createHands } from './hands';
 import { createKickLeg } from './kickLeg';
 import { createShotgunView } from './shotgunView';
 import type { WeaponId } from '../../sim/weapon';
@@ -35,8 +35,6 @@ export const viewmodelSettings = {
   sway: 0.5,
   /** Up-down/side bob while running. */
   bob: 0.012,
-  /** Duration of the left-hand fanning swipe, seconds (if longer than the fire interval, fast shooting restarts it midway). */
-  fanDuration: 0.4,
   /** Camera dip when the boot lands, radians (visual only). */
   kickViewPunch: 0.03,
 
@@ -148,7 +146,7 @@ export function createViewmodel(): Viewmodel {
   const revolver = new THREE.Group();
   revolver.add(gun.root, hands.left);
   holder.add(revolver);
-  let fanTime = 1; // 0..1 progress of the fanning swipe (≥ 1 = idle)
+  const fanning = createFanning(); // the left hand's fanning (see hands.ts)
   scene.add(holder);
 
   // The shotgun, with its own hands and animations (see shotgunView.ts).
@@ -205,7 +203,7 @@ export function createViewmodel(): Viewmodel {
         shotgunFlash.scale.setScalar(0.15 + Math.random() * 0.06);
         return;
       }
-      fanTime = 0;
+      fanning.onShot();
       viewKick = s.viewKick;
       cylinderTarget += Math.PI / 3; // next chamber: 360° / 6
       hammerTime = 0;
@@ -297,10 +295,8 @@ export function createViewmodel(): Viewmodel {
       const shotgunReload = shotgun.update(dt, player);
       if (isShotgun) reload = 0; // the revolver's reload pose doesn't apply
 
-      // --- Left hand: fanning swipe after each shot (hidden while reloading) ---
-      fanTime = Math.min(1, fanTime + dt / s.fanDuration);
-      poseLeftHand(hands.left, fanTime);
-      hands.left.position.y -= reload * 0.15; // tucked away during the reload
+      // --- Left hand: fanning, ready pose between shots (lowered while reloading) ---
+      fanning.update(dt, hands.left, reload);
 
       // --- Kick: the boot swings out; the gun is pulled aside to make room ---
       // (the body twists when you kick). At the moment of contact, a small

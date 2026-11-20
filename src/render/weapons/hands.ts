@@ -49,37 +49,51 @@ export function createHands(): Hands {
 }
 
 // --- Fanning animation --------------------------------------------------------
-// Keyframes of the left hand, in the gun holder's coordinates. The palm
-// starts raised above-left, sweeps over the hammer (which sits around
-// y = 0.06…0.085, z = 0.02), follows through to the right, then returns.
-interface Pose {
-  t: number; // 0..1 along the animation
-  x: number;
+// McCree-style fanning (his "Deadeye"): the left forearm lies HORIZONTAL
+// across the screen, the hand flat like a blade just above the hammer. At
+// every shot the hand sweeps over the hammer and comes back; between shots it
+// stays there, READY, and only after `readyHold` seconds without shooting it
+// drops out of the screen.
+//
+// Two layers, added together (the same idea as layered animations in a game
+// engine, or a CSS transform made of two translates):
+//   1. presence: 0 = out of the screen (LOWERED), 1 = READY pose. It eases
+//      toward 1 right after a shot and back to 0 when the hold is over.
+//   2. strike: a short sweep, as an OFFSET from wherever the hand is, played
+//      at every shot (keyframes below).
+// Positions are in the gun holder's coordinates (x right, y up, z back): the
+// palm center, which is the origin of the Arm_L model.
+
+/** Mutable so the debug panel can change them. */
+export const fanSettings = {
+  /** Duration of the sweep over the hammer, seconds (keep it below the revolver's fire interval). */
+  strikeTime: 0.17,
+  /** How long the hand waits in the ready pose after the last shot, seconds. */
+  readyHold: 1.2,
+  /** How fast the hand comes up into the ready pose (higher = snappier). */
+  raiseRate: 30,
+  /** How fast it goes down when the hold is over. */
+  lowerRate: 7,
+};
+
+/** The ready pose: the palm center just above-left of the hammer (where Arm_L was posed in Blender). */
+const READY = { x: -0.04, y: 0.085, z: 0.0, roll: 0 };
+/** Out of the screen: straight down from the ready pose, so the horizontal arm just sinks. */
+const LOWERED = { x: -0.05, y: -0.22, z: 0.03, roll: 0.15 };
+
+interface Key {
+  t: number; // 0..1 along the strike
+  x: number; // offset from the current pose, meters
   y: number;
   z: number;
-  roll: number; // tilt of the palm, radians
-  /**
-   * How to move INTO this pose from the previous one:
-   * - 'smooth' (default): slow start and slow end (ease-in-out). Note: it
-   *   stops for an instant at the keyframe.
-   * - 'linear': constant speed, no stop: good for a continuous slow drift.
-   * - 'in': starts slow and accelerates (ease-in): good for "falling away".
-   */
-  ease?: 'smooth' | 'linear' | 'in';
+  roll: number; // radians
 }
-
-// The strike goes UPWARD: the palm rises from under the gun and slaps the
-// hammer. The contact comes early (8%), because the shot fires the instant
-// you click. Then the hand sinks SLOWLY below the hammer, without stopping
-// (emphasis: the pose reads clearly), and finally falls out of the screen.
-const IDLE: Pose = { t: 1, x: -0.05, y: -0.26, z: 0.03, roll: 0.1, ease: 'in' }; // below the screen
-const FAN: Pose[] = [
-  { t: 0, x: -0.035, y: -0.03, z: 0.03, roll: 0.15 }, // low, under the gun, winding up
-  { t: 0.08, x: -0.006, y: 0.084, z: 0.025, roll: 0 }, // CONTACT: palm slaps the hammer upward
-  { t: 0.15, x: -0.002, y: 0.098, z: 0.028, roll: -0.05 }, // small overshoot past it
-  { t: 0.25, x: -0.008, y: 0.05, z: 0.03, roll: 0, ease: 'linear' }, // drops under the hammer...
-  { t: 0.65, x: -0.016, y: 0.0, z: 0.03, roll: 0.05, ease: 'linear' }, // ...keeps sinking, slowly
-  IDLE, // then falls out of view, accelerating
+// The edge of the hand hits the hammer at the start (the shot fires the
+// instant you click), sweeps back toward you and to the right, then returns.
+const STRIKE: Key[] = [
+  { t: 0, x: -0.02, y: 0.01, z: -0.025, roll: 0.05 }, // in front of the hammer, already moving
+  { t: 0.3, x: 0.025, y: -0.012, z: 0.03, roll: -0.12 }, // swept past it, toward you
+  { t: 1, x: 0, y: 0, z: 0, roll: 0 }, // back to ready
 ];
 
 /** Smooth start and end (no sudden jumps): the classic "smoothstep" curve. */
@@ -87,30 +101,54 @@ function smoothstep(t: number): number {
   return t * t * (3 - 2 * t);
 }
 
-/**
- * Places the left hand for animation progress `t` (0..1; ≥ 1 = idle).
- * Finds the two keyframes around `t` and blends between them.
- */
-export function poseLeftHand(hand: THREE.Group, t: number): void {
-  let pose = IDLE;
-  if (t < 1) {
-    for (let i = 0; i < FAN.length - 1; i++) {
-      const a = FAN[i];
-      const b = FAN[i + 1];
-      if (t >= a.t && t <= b.t) {
-        const u = (t - a.t) / (b.t - a.t);
-        const k = b.ease === 'linear' ? u : b.ease === 'in' ? u * u : smoothstep(u);
-        pose = {
-          t,
-          x: a.x + (b.x - a.x) * k,
-          y: a.y + (b.y - a.y) * k,
-          z: a.z + (b.z - a.z) * k,
-          roll: a.roll + (b.roll - a.roll) * k,
-        };
-        break;
-      }
+/** The strike offset at progress t (0..1), blending between the two keyframes around it. */
+function strikeOffset(t: number): Key {
+  for (let i = 0; i < STRIKE.length - 1; i++) {
+    const a = STRIKE[i];
+    const b = STRIKE[i + 1];
+    if (t <= b.t) {
+      const k = smoothstep((t - a.t) / (b.t - a.t));
+      return {
+        t,
+        x: a.x + (b.x - a.x) * k,
+        y: a.y + (b.y - a.y) * k,
+        z: a.z + (b.z - a.z) * k,
+        roll: a.roll + (b.roll - a.roll) * k,
+      };
     }
   }
-  hand.position.set(pose.x, pose.y, pose.z);
-  hand.rotation.set(0, 0, pose.roll);
+  return STRIKE[STRIKE.length - 1];
+}
+
+export interface Fanning {
+  /** A shot was fired: play the strike, (re)start the ready hold. */
+  onShot(): void;
+  /** Advance and place the hand. `hide` (0..1) pushes it out of view (e.g. during the reload). */
+  update(dt: number, hand: THREE.Group, hide: number): void;
+}
+
+export function createFanning(): Fanning {
+  let sinceShot = Infinity; // seconds since the last shot
+  let presence = 0;
+  return {
+    onShot() {
+      sinceShot = 0;
+    },
+    update(dt, hand, hide) {
+      sinceShot += dt;
+      const s = fanSettings;
+      const wanted = sinceShot < s.readyHold && hide < 0.5 ? 1 : 0;
+      const rate = wanted > presence ? s.raiseRate : s.lowerRate;
+      presence = wanted + (presence - wanted) * Math.exp(-rate * dt);
+      const p = presence;
+      const t = sinceShot / s.strikeTime;
+      const k = t < 1 ? strikeOffset(t) : { x: 0, y: 0, z: 0, roll: 0 };
+      hand.position.set(
+        LOWERED.x + (READY.x - LOWERED.x) * p + k.x,
+        LOWERED.y + (READY.y - LOWERED.y) * p + k.y,
+        LOWERED.z + (READY.z - LOWERED.z) * p + k.z,
+      );
+      hand.rotation.set(0, 0, LOWERED.roll + (READY.roll - LOWERED.roll) * p + k.roll);
+    },
+  };
 }
