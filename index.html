@@ -56,7 +56,9 @@
       .board td { padding: 3px 8px; }
       .board td:nth-child(1), .board td:nth-child(3), .board td:nth-child(4) { text-align: right; }
       .board td:nth-child(2) { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .board tbody tr:nth-child(1) td { color: #ffd060; }
+      .board tr.first td { color: #ffd060; }
+      .board tr.mine td { background: rgba(208, 32, 16, 0.25); color: #fff0c0; font-weight: bold; }
+      .board tr.note td { opacity: 0.6; text-align: center; }
       .hint { font-size: 12px; opacity: 0.7; text-align: left; max-width: 420px; }
       /* Commands list: key on the left, action on the right. */
       .keys { border-collapse: collapse; margin: 0 auto; text-align: left; }

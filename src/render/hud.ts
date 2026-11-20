@@ -4,6 +4,7 @@
 // and the death summary.
 // Plain HTML/CSS elements (see index.html), updated from here.
 import { tuning } from '../sim/config';
+import type { Placement } from '../leaderboard';
 import type { SimEvent } from '../sim/events';
 import type { PlayerState } from '../sim/player';
 import { playBell, playPickup, playPlayerHurt } from '../audio/sfx';
@@ -59,8 +60,10 @@ function restartAnimation(el: HTMLElement, cls: string): void {
  * The leaderboard's answer on the death screen (main.ts sends the score at
  * death; the answer can arrive a moment later, while the curtain is down).
  */
-export function showDeathRank(rank: number | null): void {
-  showDeathNote(rank === null ? '' : rank === 1 ? 'NUOVO RECORD!' : `${rank}° POSTO IN CLASSIFICA`);
+export function showDeathRank(placement: Placement | null): void {
+  if (!placement) showDeathNote('');
+  else if (placement.rank === 1) showDeathNote('NUOVO RECORD!');
+  else showDeathNote(`${placement.rank}° IN CLASSIFICA SU ${placement.total}`);
 }
 
 /** A line under the stats on the death screen (e.g. "practice game"). */

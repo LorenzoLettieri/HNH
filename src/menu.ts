@@ -5,7 +5,8 @@
 // Every page is a <div class="menu-page" data-page="..."> and every button
 // with data-goto="..." switches to that page: like a tiny client-side router.
 import { SENSITIVITY_MAX, SENSITIVITY_MIN, set, settings, type Settings } from './settings';
-import { DEFAULT_NAME, fetchTop, NAME_MAX_LENGTH } from './leaderboard';
+import { DEFAULT_NAME, LEADERBOARD_SIZE, NAME_MAX_LENGTH } from './leaderboard';
+import { fillScoreTable } from './render/scoreTable';
 
 export interface Menu {
   /** Shows the menu (back on the main page) or hides it. */
@@ -38,34 +39,10 @@ export function createMenu(options: { onPlay: () => void }): Menu {
   });
   const board = document.getElementById('leaderboard-rows')!;
 
-  /**
-   * Asks for the leaderboard and fills the table. Async: with the real server
-   * the answer takes a moment (or never comes), so first a "loading" row.
-   */
+  /** Fills the table (top 10 + your best if it's further down: scoreTable.ts). */
   async function refreshLeaderboard(): Promise<void> {
     nameBox.value = settings.playerName;
-    board.replaceChildren(row(['…', 'carico la classifica', '', '']));
-    try {
-      const top = await fetchTop();
-      if (top.length === 0) {
-        board.replaceChildren(row(['', 'nessuna partita, ancora', '', '']));
-        return;
-      }
-      board.replaceChildren(...top.map((e, i) => row([`${i + 1}`, e.name, `${e.wave}`, `${e.score}`])));
-    } catch {
-      board.replaceChildren(row(['', 'classifica non raggiungibile', '', '']));
-    }
-  }
-
-  /**
-   * One table row. textContent, never innerHTML: names are typed by players,
-   * and a name like "<img onerror=...>" in innerHTML would run as code (XSS,
-   * the same reason Blade escapes {{ }} by default).
-   */
-  function row(cells: string[]): HTMLTableRowElement {
-    const tr = document.createElement('tr');
-    for (const text of cells) tr.appendChild(document.createElement('td')).textContent = text;
-    return tr;
+    await fillScoreTable(board, LEADERBOARD_SIZE);
   }
 
   for (const button of overlay.querySelectorAll<HTMLElement>('[data-goto]')) {

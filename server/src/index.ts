@@ -3,9 +3,10 @@
 // A Worker is ONE function, fetch(request) → response, that Cloudflare runs
 // on its machines for every HTTP request. No server to keep running: like a
 // Laravel app where public/index.php is all there is, and the routes are the
-// `if`s below. Two routes:
-//   GET  /scores  → the top 10, JSON
-//   POST /scores  → { name, score, wave, kills } → { rank } (1 = first, null = not in the top 10)
+// `if`s below. Three routes:
+//   GET  /scores      → the top 10, JSON (each row with its id)
+//   GET  /scores/:id  → one row with its position and how many there are: { ..., rank, total }
+//   POST /scores      → { name, score, wave, kills } → { id, rank, total } (rank 1 = first)
 //
 // The client is NOT trusted: anyone can POST any number. Here we only keep out
 // what is clearly wrong (bad types, impossible numbers, junk names); a real
@@ -44,17 +45,47 @@ export default {
       if (request.method === 'POST') return submit(request, env.DB, cors);
       return json({ error: 'method not allowed' }, 405, cors);
     }
+    // /scores/42: a route parameter, read with a regular expression (what
+    // Laravel does for you with Route::get('/scores/{id}', ...)).
+    const one = url.pathname.match(/^\/scores\/(\d+)$/);
+    if (one && request.method === 'GET') {
+      const row = await byId(env.DB, Number(one[1]));
+      return row ? json(row, 200, cors) : json({ error: 'not found' }, 404, cors);
+    }
     return json({ error: 'not found' }, 404, cors);
   },
 } satisfies ExportedHandler<Env>;
 
+/** The columns sent to the game (created_at is called `date` there). */
+const COLUMNS = 'id, name, score, wave, kills, created_at AS date';
+
 /** The top rows, best first; same score: who got there first (lower id). */
 async function top(db: D1Database): Promise<unknown[]> {
   const { results } = await db
-    .prepare('SELECT name, score, wave, kills, created_at AS date FROM scores ORDER BY score DESC, id ASC LIMIT ?')
+    .prepare(`SELECT ${COLUMNS} FROM scores ORDER BY score DESC, id ASC LIMIT ?`)
     .bind(LEADERBOARD_SIZE)
     .all();
   return results;
+}
+
+/** One row with its position, or null if there's no such id. */
+async function byId(db: D1Database, id: number): Promise<unknown> {
+  const row = await db.prepare(`SELECT ${COLUMNS} FROM scores WHERE id = ?`).bind(id).first<{ score: number }>();
+  if (!row) return null;
+  return { ...row, ...(await position(db, id, row.score)) };
+}
+
+/**
+ * Position of a row = how many rows are ahead of it, + 1 (same order as
+ * top()), and how many rows there are. db.batch() sends both queries in one
+ * trip to the database instead of two.
+ */
+async function position(db: D1Database, id: number, score: number): Promise<{ rank: number; total: number }> {
+  const [ahead, all] = await db.batch<{ n: number }>([
+    db.prepare('SELECT COUNT(*) AS n FROM scores WHERE score > ?1 OR (score = ?1 AND id < ?2)').bind(score, id),
+    db.prepare('SELECT COUNT(*) AS n FROM scores'),
+  ]);
+  return { rank: ahead.results[0].n + 1, total: all.results[0].n };
 }
 
 async function submit(request: Request, db: D1Database, cors: Headers): Promise<Response> {
@@ -85,13 +116,8 @@ async function submit(request: Request, db: D1Database, cors: Headers): Promise<
     .prepare('INSERT INTO scores (name, score, wave, kills, created_at) VALUES (?, ?, ?, ?, ?) RETURNING id')
     .bind(name, score, wave, kills, Date.now())
     .first<{ id: number }>();
-  // Position = how many rows are ahead of it, + 1. Same order as top().
-  const ahead = await db
-    .prepare('SELECT COUNT(*) AS n FROM scores WHERE score > ?1 OR (score = ?1 AND id < ?2)')
-    .bind(score, row!.id)
-    .first<{ n: number }>();
-  const rank = ahead!.n + 1;
-  return json({ rank: rank <= LEADERBOARD_SIZE ? rank : null }, 201, cors);
+  // The game keeps the id: it's how it recognizes its own rows later.
+  return json({ id: row!.id, ...(await position(db, row!.id, score)) }, 201, cors);
 }
 
 /** A whole number in [min, max], or null. */
