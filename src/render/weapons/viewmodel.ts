@@ -39,17 +39,21 @@ export const viewmodelSettings = {
   kickViewPunch: 0.03,
 
   // --- Shotgun (the origin of its model is the right hand on the grip) ---
-  shotgunX: 0.12,
-  shotgunY: -0.1,
-  shotgunZ: -0.32,
-  /** Barrels raised, radians: held one-handed, fairly upright (the arm in arms.glb is posed for this). */
-  shotgunPitch: 0.35,
-  /** Turned inward, toward the crosshair, radians. */
-  shotgunYaw: 0.03,
+  shotgunX: 0.15,
+  shotgunY: -0.15,
+  shotgunZ: -0.28,
+  /** Barrels raised (+) or lowered (-), radians. (The arm in arms.glb is posed for this pose.) */
+  shotgunPitch: -0.06,
+  /**
+   * Turned left (+) or right (-), radians. Slightly to the RIGHT: a barrel
+   * pointing straight ahead would run into the vanishing point, the center
+   * of the screen; turned outward a little, it goes into depth on the right.
+   */
+  shotgunYaw: -0.2,
   /** Tilted on its side (roll), radians: shows a bit more of the gun's flank. */
   shotgunRoll: 0.05,
   /** Kick up on each shot, radians: heavier than the revolver... */
-  shotgunRecoil: 0.2,
+  shotgunRecoil: 0.3,
   /** ...and it slams back into your shoulder, meters. */
   shotgunRecoilBack: 0.11,
   shotgunRecoilRecovery: 7,
