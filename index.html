@@ -374,6 +374,7 @@
         position: fixed; right: 4vw; top: 50%; transform: translateY(-50%); width: 400px; max-width: 92vw;
         box-sizing: border-box; padding: 18px 22px; z-index: 4; color: #e0c890; font: 15px Georgia, serif;
         background: rgba(28, 12, 6, 0.93); border: 3px solid #9a7434; box-shadow: 0 0 0 3px #120604, 6px 8px 0 3px #000;
+        max-height: 92vh; overflow-y: auto; /* weapons + upgrade cards: on a short screen, scroll */
       }
       #shop[hidden], #shop-prompt[hidden] { display: none; }
       #shop h2 { margin: 0; font: 34px 'Rye', Georgia, serif; letter-spacing: 3px; color: #d8a838; text-shadow: 2px 2px 0 #000; }
@@ -399,6 +400,15 @@
       .shop-item.owned .shop-price { color: #8a7a62; }
       .shop-item.owned .shop-item-name { color: #a89070; }
       .shop-item-confirm { display: none; text-align: center; }
+      /* Upgrade cards (src/sim/upgrades.ts): a title per weapon, its level as pips, smaller boxes. */
+      .shop-section {
+        display: flex; justify-content: space-between; align-items: baseline; margin: 16px 0 2px; padding-bottom: 3px;
+        font: 15px 'Rye', Georgia, serif; letter-spacing: 2px; color: #d8a838; border-bottom: 1px solid #5a3a20;
+      }
+      .shop-pips { font: 14px monospace; letter-spacing: 3px; color: #f0d878; }
+      .shop-item.shop-card { min-height: 0; margin: 6px 0; padding: 7px 12px; }
+      .shop-card .shop-item-name { font-size: 15px; }
+      .shop-maxed { margin: 6px 0; font-style: italic; font-size: 13px; color: #8a7a62; }
       .shop-item.confirming { background: #5a2a14; border-color: #f0d878; }
       .shop-item.confirming .shop-item-face { display: none; }
       .shop-item.confirming .shop-item-confirm { display: block; animation: shop-confirm 0.15s ease-out; }

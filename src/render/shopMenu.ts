@@ -10,13 +10,19 @@
 // The second click doesn't buy anything by itself either: it queues a request (queueBuy in
 // controls.ts) that the next tick carries to the simulation, and the answer
 // comes back as an event ('purchase' / 'purchaseFailed', see onEvents).
+// At the armory, under the weapons, every weapon you own has its UPGRADE CARDS
+// (src/sim/upgrades.ts): the cards on the counter, bought the same way. The
+// list is rebuilt whenever what's for sale changes (see `signature`).
 // Opening and closing (E, Esc, walking away) are wired in main.ts.
 // Markup and CSS in index.html (#shop, #shop-prompt, #grab-hint).
 import { playPurchase, playPurchaseDenied } from '../audio/sfx';
 import { queueBuy } from '../controls';
+import { tuning } from '../sim/config';
 import type { SimEvent } from '../sim/events';
 import type { PlayerState } from '../sim/player';
-import { ownsItem, shopCatalog, type ShopItemId } from '../sim/shop';
+import { ownsItem, shopCatalog, type PurchaseId, type ShopItemId } from '../sim/shop';
+import { upgradeLevel, upgradeOffer, upgradePrice, type CardId } from '../sim/upgrades';
+import { WEAPONS, type WeaponId } from '../sim/weapon';
 import type { ShopSpawn } from '../sim/world';
 import './fonts';
 
@@ -32,9 +38,21 @@ const ITEM_TEXT: Record<ShopItemId, { name: string; desc: string }> = {
   },
 };
 
+/** The upgrade cards' words (docs/DESIGN.md §6c). Every card needs one: a missing one is a compile error. */
+const CARD_TEXT: Record<CardId, { name: string; desc: string }> = {
+  undertakerCylinder: {
+    name: 'Tamburo del becchino',
+    desc: 'Otto colpi nel tamburo invece di sei. Il fanning li svuota tutti.',
+  },
+};
+
+/** Weapon names in the upgrade sections' titles. */
+const WEAPON_NAMES: Record<WeaponId, string> = { revolver: 'Revolver', shotgun: 'Doppietta', rifle: 'Carabina' };
+
 /** What the vendor says when you open the shop (one at random). */
 /** What he says after a purchase, and when you can't pay. */
 const THANKS = '\u201CAffare fatto. Trattala bene, e lei tratter\u00E0 bene te.\u201D';
+const CARD_THANKS = '\u201COra s\u00EC che ragiona. Torna quando vuoi altro ferro buono.\u201D';
 const NO_MONEY = '\u201CCon quei quattro spiccioli? Torna quando avrai il vildenaro, straniero.\u201D';
 
 /** Seconds the "CONFERMA" stays up waiting for the second click, then the box goes back to normal. */
@@ -84,7 +102,10 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
   let kind: ShopSpawn['kind'] = 'weapons';
   /** One row per item: its state changes every frame (affordable? already yours?). */
   interface Row {
-    id: ShopItemId;
+    /** A weapon or an upgrade card. */
+    id: PurchaseId;
+    /** A card is never "already yours": once bought it leaves the counter. */
+    card: boolean;
     price: number;
     el: HTMLButtonElement;
     label: HTMLElement;
@@ -119,46 +140,105 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
     r.confirmTimer = window.setTimeout(() => cancelConfirm(r), CONFIRM_TIME * 1000);
   }
 
-  /** Builds the item list. Only when opening: prices can change from the debug panel. */
-  function fill(): void {
-    list.replaceChildren();
-    rows = shopCatalog(kind).map((item) => {
-      const text = ITEM_TEXT[item.id];
-      // The whole box is ONE button (spans inside, not divs: a <button> may
-      // only contain "phrasing" elements). Two faces, CSS shows one of them:
-      // the item, or "CONFERMA" (class .confirming on the button).
-      const row = document.createElement('button');
-      row.className = 'shop-item';
-      row.innerHTML = `
-        <span class="shop-item-face">
-          <span class="shop-item-text">
-            <span class="shop-item-name"></span>
-            <span class="shop-item-desc"></span>
-          </span>
-          <span class="shop-price"></span>
+  /**
+   * A string that changes whenever what's for sale changes: which weapons are
+   * yours, each weapon's level, the cards on its counter, the prices (the debug
+   * panel can change them). update() compares it every frame and rebuilds the
+   * list only when it differs. Cheaper and simpler than tracking every way the
+   * list can change (a purchase, a weapon bought, a price slider): it's the
+   * same idea as the `key` of a list in React or Vue.
+   */
+  let builtFor = '';
+  function signature(player: PlayerState): string {
+    if (kind !== 'weapons') return kind;
+    const parts: string[] = [kind];
+    for (const item of shopCatalog(kind)) parts.push(`${item.id}:${item.price}`);
+    for (const w of WEAPONS) {
+      if (!player.owned[w]) continue;
+      parts.push(`${w}:${upgradeLevel(player, w)}:${upgradePrice(player, w)}:${upgradeOffer(player, w).join(',')}`);
+    }
+    return parts.join('|');
+  }
+
+  /** One clickable box (a weapon or a card): the same markup, two faces (see onItemClick). */
+  function makeRow(id: PurchaseId, text: { name: string; desc: string }, price: number, card: boolean): Row {
+    // The whole box is ONE button (spans inside, not divs: a <button> may
+    // only contain "phrasing" elements). Two faces, CSS shows one of them:
+    // the item, or "CONFERMA" (class .confirming on the button).
+    const row = document.createElement('button');
+    row.className = card ? 'shop-item shop-card' : 'shop-item';
+    row.innerHTML = `
+      <span class="shop-item-face">
+        <span class="shop-item-text">
+          <span class="shop-item-name"></span>
+          <span class="shop-item-desc"></span>
         </span>
-        <span class="shop-item-confirm">
-          <span class="shop-confirm-word">CONFERMA</span>
-          <span class="shop-confirm-price"></span>
-        </span>`;
-      // textContent, not innerHTML, for the words: never build HTML out of strings
-      // with data inside (same reason you escape output in a Blade template).
-      row.querySelector('.shop-item-name')!.textContent = text.name;
-      row.querySelector('.shop-item-desc')!.textContent = text.desc;
-      row.querySelector('.shop-confirm-price')!.textContent = `paga ${item.price} vildenaro`;
-      const r: Row = {
-        id: item.id,
-        price: item.price,
-        el: row,
-        label: row.querySelector<HTMLElement>('.shop-price')!,
-        confirmTimer: 0,
-        poor: false,
-      };
-      row.addEventListener('click', () => onItemClick(r));
-      noFocus(row);
-      list.append(row);
-      return r;
-    });
+        <span class="shop-price"></span>
+      </span>
+      <span class="shop-item-confirm">
+        <span class="shop-confirm-word">CONFERMA</span>
+        <span class="shop-confirm-price"></span>
+      </span>`;
+    // textContent, not innerHTML, for the words: never build HTML out of strings
+    // with data inside (same reason you escape output in a Blade template).
+    row.querySelector('.shop-item-name')!.textContent = text.name;
+    row.querySelector('.shop-item-desc')!.textContent = text.desc;
+    row.querySelector('.shop-confirm-price')!.textContent = `paga ${price} vildenaro`;
+    const r: Row = {
+      id,
+      card,
+      price,
+      el: row,
+      label: row.querySelector<HTMLElement>('.shop-price')!,
+      confirmTimer: 0,
+      poor: false,
+    };
+    row.addEventListener('click', () => onItemClick(r));
+    noFocus(row);
+    list.append(row);
+    return r;
+  }
+
+  /** A section title: "POTENZIA IL REVOLVER" and the level as pips (filled = cards bought). */
+  function makeSection(weapon: WeaponId, level: number, maxLevel: number): void {
+    const title = document.createElement('div');
+    title.className = 'shop-section';
+    const name = document.createElement('span');
+    name.textContent = `Potenzia: ${WEAPON_NAMES[weapon]}`;
+    const pips = document.createElement('span');
+    pips.className = 'shop-pips';
+    pips.textContent = '\u25C6'.repeat(level) + '\u25C7'.repeat(Math.max(0, maxLevel - level));
+    title.append(name, pips);
+    list.append(title);
+  }
+
+  /** Builds the whole list: the weapons, then the upgrade cards of every weapon you own. */
+  function build(player: PlayerState): void {
+    for (const r of rows) cancelConfirm(r);
+    list.replaceChildren();
+    rows = shopCatalog(kind).map((item) => makeRow(item.id, ITEM_TEXT[item.id], item.price, false));
+    if (kind !== 'weapons') return;
+    for (const w of WEAPONS) {
+      if (!player.owned[w]) continue;
+      const level = upgradeLevel(player, w);
+      const price = upgradePrice(player, w);
+      const offer = upgradeOffer(player, w);
+      // A deck with no cards at all (not made yet) shows nothing. A weapon with
+      // cards keeps its section, with a line when there's nothing left to buy.
+      if (offer.length === 0 && level === 0) continue;
+      makeSection(w, level, tuning.upgradeMaxLevel);
+      if (price === null || offer.length === 0) {
+        const done = document.createElement('div');
+        done.className = 'shop-maxed';
+        done.textContent = price === null
+          ? 'Al massimo. Nemmeno il diavolo sa fare di meglio.'
+          : 'Per quest’arma non ho altro, per ora.';
+        list.append(done);
+        continue;
+      }
+      for (const card of offer) rows.push(makeRow(card, CARD_TEXT[card], price, true));
+    }
+    builtFor = signature(player);
   }
 
   return {
@@ -169,7 +249,7 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
       kind = k;
       isOpen = true;
       greeting.textContent = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
-      fill();
+      builtFor = ''; // built by the next update(), which has the player
       panel.hidden = false;
     },
     close() {
@@ -181,9 +261,10 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
       // The prompt: next to a vendor, shop closed, game running.
       prompt.hidden = isOpen || paused || inReach === null;
       if (!isOpen) return;
+      if (signature(player) !== builtFor) build(player);
       moneyEl.textContent = String(player.money);
       for (const r of rows) {
-        const owned = ownsItem(player, r.id);
+        const owned = !r.card && ownsItem(player, r.id as ShopItemId);
         r.el.classList.toggle('owned', owned);
         // Bought: the box is disabled, the price becomes "TUA". Not enough
         // money: still clickable, so the vendor can tell you what he thinks of you.
@@ -198,7 +279,7 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
       for (const e of events) {
         if (e.type === 'purchase') {
           playPurchase();
-          greeting.textContent = THANKS;
+          greeting.textContent = e.item in CARD_TEXT ? CARD_THANKS : THANKS;
         } else if (e.type === 'purchaseFailed' && e.reason === 'money') {
           playPurchaseDenied();
           greeting.textContent = NO_MONEY;

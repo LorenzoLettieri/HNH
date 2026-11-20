@@ -41,8 +41,6 @@ export function createDebugPanel(options: {
   onJumpToWave: (wave: number) => void;
   /** Debug: vildenaro for free, to try the shop. */
   onGiveMoney: (amount: number) => void;
-  /** Debug, until the shop's panel shows the cards: buy the first card on the revolver's counter. */
-  onBuyRevolverCard: () => void;
 }): DebugPanel {
   const panel = createPanel();
 
@@ -67,7 +65,6 @@ export function createDebugPanel(options: {
   shop.number(tuning, 'upgradeMaxLevel', 0, 6, 1);
   shop.number(tuning, 'upgradeOfferSize', 1, 5, 1);
   shop.number(tuning, 'undertakerExtraRounds', 0, 6, 1);
-  shop.button('Buy revolver card (at the armory)', options.onBuyRevolverCard);
 
   // --- Style meter ---
   const style = panel.folder('Style (src/sim/config.ts, src/sim/style.ts)');

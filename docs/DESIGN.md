@@ -662,7 +662,12 @@ futuro **poligono di tiro / tutorial**.
 acquisto controllato dalla simulazione (armeria a portata, arma tua, carta sul bancone, soldi) e la prima
 carta, **Tamburo del becchino**. Il pannello dello shop non mostra ancora le carte: per provarla c'è un
 bottone nel pannello debug. Il modello 3D del revolver ha 6 camere: con 8 colpi l'animazione di ricarica
-ne mostra comunque 6 (le munizioni a schermo sono giuste). Prossimo: le carte nel pannello dello shop.
+ne mostra comunque 6 (le munizioni a schermo sono giuste).
+**Passo 2** [FATTO]: le carte **nel pannello dello shop**, sotto le armi: per ogni arma che possiedi un titolo
+"Potenzia: Revolver" con il livello a rombi (◆ preso, ◇ libero), le carte del bancone come box cliccabili col
+solito doppio click, prezzo rosso se non basta. Dopo un acquisto la lista si ricostruisce con la nuova pescata;
+a mazzo finito "Per quest'arma non ho altro", al livello massimo "Al massimo". Le armi senza carte non mostrano
+la sezione. Prossimo: **rimescolare** a pagamento, poi le altre carte.
 
 Scartate: Proiettili d'argento, Rimbalzo (carabina), Colpo di grazia, Polso fermo, Mozzata corta,
 Leva in corsa, Sangue freddo, Ottone caldo.
