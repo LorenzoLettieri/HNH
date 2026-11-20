@@ -5,7 +5,9 @@
 //   desired velocity = (where I want to be − where I am), capped at my speed
 //   velocity        += (desired − velocity) × accel × dt     (smooth turns)
 // plus a push away from other eye-bats, and a hop upward when something is
-// in the way. Collisions with the level use the same moveAndCollide as
+// in the way. When it can't fly straight to its point (walls, roofs: you're
+// inside a building, or it is) it follows the air flow field (airNav.ts),
+// a path through the doors and windows. Collisions with the level use the same moveAndCollide as
 // everything else, so it slides along walls instead of going through them.
 //
 // Shooting is a tiny state machine:
@@ -15,6 +17,7 @@
 // enough, you must change direction.
 // The charge is the WARNING (docs/DESIGN.md, "leggibilità"): you see the eye
 // blaze and hear the whine before the shot, so getting hit is your fault.
+import { airLineFree, airSteer, getAirFlow, type AirGrid } from './airNav';
 import { moveAndCollide, overlapsAny } from './collision';
 import { secondsToTicks, tuning } from './config';
 import type { EyebatEntity } from './entities';
@@ -30,10 +33,13 @@ const LOOKAHEAD = 0.5;
 /** Gravity on a dead eye-bat, m/s² (same feel as everything else falling). */
 const FALL_GRAVITY = 20;
 
+/** How far short of a wall/ceiling the orbit goal stops (see step 1), meters. */
+const GOAL_MARGIN = 1.2;
+
 /** While charging it slows down to this fraction of its speed (it "aims"). */
 const CHARGE_SLOWDOWN = 0.25;
 
-export function stepEyebat(b: EyebatEntity, game: GameState, world: World, dt: number, events: SimEvent[]): void {
+export function stepEyebat(b: EyebatEntity, game: GameState, world: World, air: AirGrid, dt: number, events: SimEvent[]): void {
   const player = game.player;
   b.stateTicks++;
   const r = tuning.eyebatRadius;
@@ -62,9 +68,46 @@ export function stepEyebat(b: EyebatEntity, game: GameState, world: World, dt: n
   // A slow up/down drift so a group doesn't fly at one exact height.
   // Based on the tick count (b.stateTicks) and the id: deterministic.
   const drift = Math.sin(b.stateTicks * 0.03 + b.id) * 1.2;
-  const goalX = player.x + Math.cos(ahead) * tuning.eyebatOrbitDistance;
-  const goalZ = player.z + Math.sin(ahead) * tuning.eyebatOrbitDistance;
-  const goalY = player.y + tuning.eyebatHoverHeight + drift - r; // b.y is the bottom of the body
+  let goalX = player.x + Math.cos(ahead) * tuning.eyebatOrbitDistance;
+  let goalY = player.y + tuning.eyebatHoverHeight + drift - r; // b.y is the bottom of the body
+  let goalZ = player.z + Math.sin(ahead) * tuning.eyebatOrbitDistance;
+
+  // Keep the goal on YOUR side of walls and ceilings: a ray from your eyes
+  // to the goal; if it hits something, the goal moves back along the ray,
+  // GOAL_MARGIN short of the hit. Indoors the orbit shrinks to the room
+  // (under the ceiling, between the walls) instead of being out in the street.
+  const eyeX = player.x;
+  const eyeYp = player.y + currentEyeHeight(player);
+  const eyeZ = player.z;
+  {
+    const dx = goalX - eyeX;
+    const dy = goalY + r - eyeYp;
+    const dz = goalZ - eyeZ;
+    const len = Math.hypot(dx, dy, dz);
+    const hit = len > 0.001 ? raycastBoxes(eyeX, eyeYp, eyeZ, dx / len, dy / len, dz / len, len, world.boxes) : null;
+    if (hit) {
+      const keep = Math.max(0, hit.distance - GOAL_MARGIN) / len;
+      goalX = eyeX + dx * keep;
+      goalY = eyeYp + dy * keep - r;
+      goalZ = eyeZ + dz * keep;
+    }
+  }
+
+  // Can it fly straight to the goal? If not (the goal is inside the
+  // building and it's outside, or the other way round) it follows the AIR
+  // FLOW FIELD toward you (airNav.ts): around the walls, through the doors
+  // and windows. As soon as the way is clear it goes back to orbiting.
+  // Positions on the grid are body CENTERS (b.y is the bottom: + r).
+  let following = false;
+  if (!airLineFree(air, b.x, b.y + r, b.z, goalX, goalY + r, goalZ)) {
+    const step = airSteer(air, getAirFlow(air, game.airGoal), b.x, b.y + r, b.z);
+    if (step) {
+      goalX = step.x;
+      goalY = step.y - r;
+      goalZ = step.z;
+      following = true;
+    }
+  }
 
   // --- 2. Desired velocity: toward the goal, slowing down near it ----------
   let wx = goalX - b.x;
@@ -72,8 +115,10 @@ export function stepEyebat(b: EyebatEntity, game: GameState, world: World, dt: n
   let wz = goalZ - b.z;
   const dist = Math.hypot(wx, wy, wz);
   // "Arrive" behaviour: full speed when far, slower within 3 m, so it
-  // doesn't overshoot and wobble around the goal.
-  const speed = tuning.eyebatSpeed * Math.min(1, dist / 3) * (b.state === 'charge' ? CHARGE_SLOWDOWN : 1);
+  // doesn't overshoot and wobble around the goal. Not while following the
+  // path: its goal is always the next cell, a few meters ahead.
+  const arrive = following ? 1 : Math.min(1, dist / 3);
+  const speed = tuning.eyebatSpeed * arrive * (b.state === 'charge' ? CHARGE_SLOWDOWN : 1);
   if (dist > 0.001) {
     wx = (wx / dist) * speed;
     wy = (wy / dist) * speed;
@@ -102,8 +147,9 @@ export function stepEyebat(b: EyebatEntity, game: GameState, world: World, dt: n
   // (Not along its current velocity: pressed against a wall, collisions
   // zero the velocity, the probe would stay where it is and never see the
   // wall. It would stay stuck there forever.)
+  // Only when flying straight: the path of the flow field already avoids everything.
   const wishH = Math.hypot(wx, wz);
-  if (wishH > 0.001) {
+  if (!following && wishH > 0.001) {
     const ahead = Math.max(1, wishH * LOOKAHEAD);
     const aheadX = b.x + (wx / wishH) * ahead;
     const aheadZ = b.z + (wz / wishH) * ahead;

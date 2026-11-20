@@ -11,7 +11,8 @@ import { stepSharpshooter } from './sharpshooter';
 import { createWaveState, scoreHits, stepWaves, wavePressure, type Stats, type WaveState } from './waves';
 import { BIG_BODY, getFlowField, getNavGraph, nearestNode } from './nav';
 import type { SimEvent } from './events';
-import { createPlayer, respawn, stepPlayer, type PlayerState } from './player';
+import { cellAt, getAirGrid } from './airNav';
+import { createPlayer, currentHeight, respawn, stepPlayer, type PlayerState } from './player';
 import { stepWeapon } from './weapon';
 import { stepKick } from './kick';
 import { blockPlayerWithBodies } from './bodyBlock';
@@ -35,6 +36,8 @@ export interface GameState {
   navGoal: number;
   /** The same, on the graph for big bodies (bulls): another graph, other node numbers. */
   navGoalBig: number;
+  /** Goal of the fliers' air flow field: the grid cell of the player's chest (airNav.ts). */
+  airGoal: number;
   /** Enemy projectiles in flight (fireballs...). */
   projectiles: Projectile[];
   /** Things on the ground to collect (enemy drops), see pickups.ts. */
@@ -59,6 +62,7 @@ export function createGame(world: World, seed = 1): GameState {
     style: createStyle(),
     navGoal: -1,
     navGoalBig: -1,
+    airGoal: -1,
     projectiles: [],
     pickups: [],
     rng: seed,
@@ -114,11 +118,17 @@ export function stepGame(
     if (big >= 0) game.navGoalBig = big;
   }
   const flow = getFlowField(graph, game.navGoal);
+  // Fliers: the cell of the 3D air grid your chest is in, also in mid-air (they fly).
+  const air = getAirGrid(world, tuning.eyebatRadius);
+  if (game.tick % 15 === 0) {
+    const p = game.player;
+    game.airGoal = cellAt(air, p.x, p.y + currentHeight(p) * 0.6, p.z);
+  }
   const pressure = wavePressure(game.wave.number);
 
   for (const e of game.entities) {
     if (e.type === 'target') stepTarget(e);
-    else if (e.type === 'eyebat') stepEyebat(e, game, world, dt, events);
+    else if (e.type === 'eyebat') stepEyebat(e, game, world, air, dt, events);
     else if (e.type === 'sharpshooter') stepSharpshooter(e, game, world, graph, dt, events);
     else if (e.type === 'hound') stepHound(e, game.player, game.entities, world, graph, flow, dt, events);
     else if (e.type === 'bull') {
