@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import type { Box } from '../sim/world';
 import { addHeightFog } from './heightFog';
+import { LEVEL_TEXTURES } from './levelTextures';
 
 /** The material names a visible box can have. */
 type Look = NonNullable<Box['look']>;
@@ -23,7 +24,9 @@ export const PIXELS_PER_METER = 32;
 const BASE = import.meta.env.BASE_URL;
 
 /**
- * How a look is drawn. Texture names are files in public/textures/ (without `.png`).
+ * How a look is drawn. A texture name is either one painted in code (the names in
+ * LEVEL_TEXTURES, src/render/levelTextures.ts) or a file in public/textures/
+ * (without `.png`).
  * The 4 sides of a box use `side`; the top and the underside can have their own
  * texture (if missing, they use `side` too): a roof slab with tiles on top and
  * planks underneath, a stone block with paving on top...
@@ -51,9 +54,9 @@ const LOOKS: Record<Look, LookDef> = {
   planks: { side: 'floor_wood_planks' },
   // Roof slabs: tiles on top; the edges and the underside (the ceiling, seen from
   // inside a building or under the eaves) are boards.
-  roof: { side: 'floor_wood_planks', top: 'roof_clay_red_center' },
-  metal: { side: 'Metal_Plate' },
-  rock: { side: 'wall_rock' },
+  roof: { side: 'floor_wood_planks', top: 'shingles' },
+  metal: { side: 'iron_plates' },
+  rock: { side: 'canyon_rock' },
   brick: { side: 'Brick_1' },
 };
 
@@ -79,7 +82,7 @@ async function loadPixelTexture(url: string): Promise<THREE.Texture> {
 /** One material per texture (not per look: two looks using the same image share it). */
 const materials = new Map<string, THREE.MeshStandardMaterial>();
 
-/** Downloads all textures (in parallel) and builds the materials. Call once at startup. */
+/** Paints or downloads (in parallel) all textures and builds the materials. Call once at startup. */
 export async function loadMaterials(): Promise<void> {
   const names = new Set<string>();
   for (const look of Object.values(LOOKS)) {
@@ -89,7 +92,8 @@ export async function loadMaterials(): Promise<void> {
   }
   await Promise.all(
     [...names].map(async (name) => {
-      const map = await loadPixelTexture(`${BASE}textures/${name}.png`);
+      const paint = LEVEL_TEXTURES[name];
+      const map = paint ? paint() : await loadPixelTexture(`${BASE}textures/${name}.png`);
       const material = new THREE.MeshStandardMaterial({ map, roughness: 1 });
       addHeightFog(material);
       materials.set(name, material);
