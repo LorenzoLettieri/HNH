@@ -457,6 +457,14 @@ materiali racconta il posto (`src/levels/town.ts`, disegno in `src/render/materi
 - Draw call: il livello è unito in una mesh per texture (static batching): su Main Street da 920 a ~600
   per fotogramma, con porte, finestre e terreno compresi.
 
+### Leggibilità controsole (dopo un playtest) [FATTO]
+I tester vedevano poco guardando verso il sole. Causa: in High Noon il sole stava a 14°, in fondo a
+Main Street **all'altezza dei nemici**, con raggi, bagliore e nebbia fitta: un tiratore a 20 m era una
+macchia nel velo arancione. Ora (`src/render/atmospheres.ts`, `HIGH_NOON`) il sole sta a 22° (il bagliore
+è sopra i tetti, la strada prende luce e le ombre restano lunghe), raggi e bagliore più deboli, nebbia
+da 20 a 110 m invece che da 12 a 85, nebbia a terra quasi dimezzata, luce ambientale un po' più forte.
+**Regola**: l'atmosfera non deve nascondere i nemici; un nemico a 20 m deve leggersi anche controsole.
+
 ### Regole pratiche emerse (vincoli del movimento attuale)
 - **Salto massimo ≈ 1,17 m**: gradini e scalini al massimo **1 m**.
 - **Salto in corsa ≈ 5,6 m** di distanza: gap tra piattaforme ≤ 3–4 m per stare comodi.
