@@ -96,8 +96,9 @@ export type SimEvent =
   /** The foot lands: how many things it hit (0 = kicked the air). */
   | { type: 'kickLand'; hits: number }
   | { type: 'dryFire' } // pulled the trigger with an empty cylinder
-  | { type: 'reloadStart'; weapon: WeaponId }
-  /** The carbine pushed one round into its magazine tube (it reloads one at a time). */
+  /** A reload starts; `seconds` = how long it lasts (cards can change it: the animation and the sounds follow). */
+  | { type: 'reloadStart'; weapon: WeaponId; seconds: number }
+  /** One round pushed into a gun: the carbine's one-by-one reload, or the revolver's "Ricarica in scivolata" card. */
   | { type: 'reloadRound' }
   | { type: 'reloadEnd' }
   /** You bought something at a shop (sound, the panel's thanks). */

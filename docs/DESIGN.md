@@ -627,13 +627,13 @@ futuro **poligono di tiro / tutorial**.
   (regola dei breakpoint, §3), mai a percentuali; l'effetto **si vede o si sente**.
 
 **Mazzo del revolver** (7 carte)
-- **Tamburo del becchino**: 8 colpi invece di 6; il fanning svuota tutto il tamburo.
+- **Tamburo del becchino**: 8 colpi invece di 6; il fanning svuota tutto il tamburo. [FATTA]
 - **Mano lesta**: fanning più stretto e veloce; ogni uccisione durante la raffica aggiunge un colpo alla raffica.
 - **Ricochet**: dopo un headshot il colpo rimbalza sul corpo del nemico più vicino.
-- **Ricarica in scivolata**: scivolare rimette un colpo nel tamburo ogni 0,3 s.
+- **Ricarica in scivolata**: scivolare rimette un colpo nel tamburo ogni 0,3 s. [FATTA]
 - **Ultimo colpo**: l'ultimo proiettile del tamburo esplode (piccola area, buono contro i gruppi).
-- **Tamburo veloce**: ricarica più rapida di un terzo.
-- **Colpo da cavaliere**: il primo colpo dopo un wall jump è un critico garantito.
+- **Tamburo veloce**: ricarica più rapida di un terzo. [FATTA]
+- **Colpo da cavaliere**: il primo colpo dopo un wall jump è un critico garantito (finché non tocchi terra). [FATTA]
 
 **Mazzo della doppietta** (9 carte)
 - **Canne lunghe**: rosata stretta, danno pieno fino a 8 m (oggi 6).
@@ -672,7 +672,12 @@ la sezione.
 su un'arma che possiedi il prezzo diventa **"POTENZIA"**, e il click apre **a sinistra** dello shop il pannello
 dei potenziamenti di quell'arma (titolo, livello a rombi, le carte, "Scegli un potenziamento. Il prossimo costerà
 di più."); un altro click sulla stessa arma lo chiude. **Due carte** sul bancone invece di tre (`upgradeOfferSize`).
-Prossimo: altre carte del revolver, poi **rimescolare** a pagamento.
+**Passo 4** [FATTO, da tarare]: altre tre carte del revolver (4 in tutto). **Tamburo veloce**: ricarica in 2/3 del
+tempo (animazione e suoni si accorciano con lei). **Ricarica in scivolata**: un colpo dalla tasca ogni 0,3 s di
+scivolata col revolver in mano (non durante ricarica o fanning; il timer riparte a ogni scivolata, così non si
+sfrutta a colpetti). **Colpo da cavaliere**: dopo un wall jump il primo colpo è critico ovunque colpisca, finché
+non tocchi terra (un colpo a vuoto lo spreca; vale anche per il primo colpo del fanning).
+Prossimo: **rimescolare** a pagamento.
 
 Scartate: Proiettili d'argento, Rimbalzo (carabina), Colpo di grazia, Polso fermo, Mozzata corta,
 Leva in corsa, Sangue freddo, Ottone caldo.

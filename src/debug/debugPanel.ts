@@ -65,6 +65,8 @@ export function createDebugPanel(options: {
   shop.number(tuning, 'upgradeMaxLevel', 0, 6, 1);
   shop.number(tuning, 'upgradeOfferSize', 1, 5, 1);
   shop.number(tuning, 'undertakerExtraRounds', 0, 6, 1);
+  shop.number(tuning, 'fastCylinderReloadScale', 0.2, 1, 0.01);
+  shop.number(tuning, 'slideReloadInterval', 0.05, 1, 0.01);
 
   // --- Style meter ---
   const style = panel.folder('Style (src/sim/config.ts, src/sim/style.ts)');

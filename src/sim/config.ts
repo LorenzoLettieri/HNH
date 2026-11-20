@@ -137,6 +137,10 @@ export const tuning = {
   revolverAmmo: 6,
   /** Card "Tamburo del becchino" (upgrades.ts): extra rounds in the cylinder. */
   undertakerExtraRounds: 2,
+  /** Card "Tamburo veloce": the reload takes this fraction of revolverReloadTime (animation and sounds follow). */
+  fastCylinderReloadScale: 0.67,
+  /** Card "Ricarica in scivolata": seconds of sliding for each round pushed into the cylinder. */
+  slideReloadInterval: 0.3,
   /** Minimum seconds between two shots (it's semi-automatic: one click = one shot). */
   revolverFireInterval: 0.32,
   /** A click slightly before the gun is ready still fires as soon as it is, seconds. */

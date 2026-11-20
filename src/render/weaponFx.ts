@@ -37,7 +37,8 @@ export interface WeaponFx {
   update(dt: number): void;
   /** Listeners for other modules (e.g. the viewmodel recoil). */
   onShot: ((weapon: WeaponId, barrel: number) => void)[];
-  onReload: ((weapon: WeaponId) => void)[];
+  /** A reload starts: which weapon, and how many seconds it lasts (the simulation says: cards can change it). */
+  onReload: ((weapon: WeaponId, seconds: number) => void)[];
   onKick: (() => void)[];
 }
 
@@ -106,10 +107,10 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
             playDryFire();
             break;
           case 'reloadStart':
-            if (e.weapon === 'shotgun') playShotgunReload(tuning.shotgunReloadTime);
+            if (e.weapon === 'shotgun') playShotgunReload(e.seconds);
             else if (e.weapon === 'rifle') playCarbineReloadStart();
-            else playReload(tuning.revolverReloadTime);
-            for (const f of fx.onReload) f(e.weapon);
+            else playReload(e.seconds);
+            for (const f of fx.onReload) f(e.weapon, e.seconds);
             break;
           case 'reloadRound':
             playCarbineRoundIn();

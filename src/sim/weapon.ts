@@ -74,11 +74,14 @@ function fireInterval(w: WeaponId): number {
       return tuning.rifleFireInterval;
   }
 }
-/** Seconds of a reload. For the carbine: the FIRST round (bringing the gun to the gate + one round). */
-function reloadTime(w: WeaponId): number {
+/**
+ * Seconds of a reload. For the carbine: the FIRST round (bringing the gun to
+ * the gate + one round). The player, because cards can change it.
+ */
+function reloadTime(p: PlayerState, w: WeaponId): number {
   switch (w) {
     case 'revolver':
-      return tuning.revolverReloadTime;
+      return tuning.revolverReloadTime * (hasCard(p, 'fastCylinder') ? tuning.fastCylinderReloadScale : 1);
     case 'shotgun':
       return tuning.shotgunReloadTime;
     case 'rifle':
@@ -139,6 +142,7 @@ export function stepWeapon(
   const pocket = AMMO_TYPE[p.weapon];
   const oneByOne = reloadsOneByOne(p.weapon);
   const full = magazineSize(p, p.weapon);
+  stepSlideReload(p, full, events);
 
   // Reloading: count down, then move rounds from the pockets into the gun.
   // The rounds are taken only at the END: a reload interrupted by a weapon
@@ -212,9 +216,10 @@ export function stepWeapon(
   const wantsReload = canReload && ((cmd.reload && ammo < full) || (ammo === 0 && pressed) || autoReload);
   if (wantsReload && p.reloadTicks === 0 && p.switchTicks === 0 && p.fanShotsLeft === 0) {
     if (ammo === 0 && pressed && !autoReload) events.push({ type: 'dryFire' });
-    p.reloadTicks = secondsToTicks(reloadTime(p.weapon));
+    const seconds = reloadTime(p, p.weapon);
+    p.reloadTicks = secondsToTicks(seconds);
     p.fireBufferTicks = 0;
-    events.push({ type: 'reloadStart', weapon: p.weapon });
+    events.push({ type: 'reloadStart', weapon: p.weapon, seconds });
     return;
   }
 
@@ -242,6 +247,7 @@ export function stepWeapon(
       fireRevolver(p, world, entities, events);
     }
     if (!bottomless) setCurrentAmmo(p, ammo - 1);
+    p.wallJumpShot = false; // the wall jump's shot is fired (hit or miss)
     p.fireCooldownTicks = secondsToTicks(fireInterval(p.weapon));
     p.fireBufferTicks = 0;
     p.fanQueued = false;
@@ -252,6 +258,31 @@ export function stepWeapon(
       p.fireCooldownTicks = secondsToTicks(p.fanShotsLeft > 0 ? tuning.revolverFanInterval : tuning.revolverFanRecovery);
     }
   }
+}
+
+/**
+ * Card "Ricarica in scivolata": while you slide with the revolver in your
+ * hands, a round goes from the pocket into the cylinder every
+ * slideReloadInterval seconds. Not during a normal reload or a fanning
+ * burst (they own the cylinder). The timer restarts at every new slide:
+ * a short slide gives nothing, so it can't be spammed with taps.
+ */
+function stepSlideReload(p: PlayerState, full: number, events: SimEvent[]): void {
+  const active =
+    p.sliding && p.weapon === 'revolver' && hasCard(p, 'slideReload') && p.reloadTicks === 0 && p.fanShotsLeft === 0;
+  if (!active) {
+    p.slideReloadTicks = 0;
+    return;
+  }
+  if (p.slideReloadTicks === 0) p.slideReloadTicks = secondsToTicks(tuning.slideReloadInterval);
+  if (--p.slideReloadTicks > 0) return;
+  const pocket = AMMO_TYPE.revolver;
+  if (currentAmmo(p) < full && (tuning.infiniteAmmo || p.reserve[pocket] > 0)) {
+    setCurrentAmmo(p, currentAmmo(p) + 1);
+    if (!tuning.infiniteAmmo) p.reserve[pocket]--;
+    events.push({ type: 'reloadRound' });
+  }
+  p.slideReloadTicks = secondsToTicks(tuning.slideReloadInterval); // next round, if you keep sliding
 }
 
 /** Puts `w` in your hands. Also used by the shop: a weapon you just bought goes straight to your hands. */
@@ -386,10 +417,20 @@ function applyGunDamage(
 function fireRevolver(p: PlayerState, world: World, entities: Entity[], events: SimEvent[]): void {
   const { ox, oy, oz, dx, dy, dz } = aim(p);
   const hit = trace(ox, oy, oz, dx, dy, dz, tuning.weaponRange, world, entities.filter(isAlive), false, events);
-  if (hit) {
-    const amount = tuning.revolverDamage * (hit.headshot ? tuning.headshotMultiplier : 1);
-    applyGunDamage(hit.target, amount, hit.headshot, 'revolver', hit.distance, events);
-  }
+  revolverHit(p, hit, events);
+}
+
+/**
+ * Damage of a revolver bullet that hit something (a normal shot or a fanned
+ * one). Card "Colpo da cavaliere": the first shot after a wall jump is a
+ * critical hit wherever it lands. (wallJumpShot is cleared by every shot, in
+ * stepWeapon: a miss wastes it.)
+ */
+function revolverHit(p: PlayerState, hit: ReturnType<typeof trace>, events: SimEvent[]): void {
+  if (!hit) return;
+  const critical = hit.headshot || (p.wallJumpShot && hasCard(p, 'riderShot'));
+  const amount = tuning.revolverDamage * (critical ? tuning.headshotMultiplier : 1);
+  applyGunDamage(hit.target, amount, critical, 'revolver', hit.distance, events);
 }
 
 /**
@@ -405,10 +446,7 @@ function fireFanned(p: PlayerState, world: World, entities: Entity[], events: Si
   const r = Math.sqrt(random(rng));
   const [dx, dy, dz] = tilt(p, a, Math.cos(angle) * r, Math.sin(angle) * r, spread);
   const hit = trace(a.ox, a.oy, a.oz, dx, dy, dz, tuning.weaponRange, world, entities.filter(isAlive), false, events);
-  if (hit) {
-    const amount = tuning.revolverDamage * (hit.headshot ? tuning.headshotMultiplier : 1);
-    applyGunDamage(hit.target, amount, hit.headshot, 'revolver', hit.distance, events);
-  }
+  revolverHit(p, hit, events);
 }
 
 /**

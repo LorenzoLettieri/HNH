@@ -52,6 +52,18 @@ const CARD_TEXT: Record<CardId, { name: string; desc: string }> = {
     name: 'Tamburo del becchino',
     desc: 'Otto colpi nel tamburo invece di sei. Il fanning li svuota tutti.',
   },
+  fastCylinder: {
+    name: 'Tamburo veloce',
+    desc: 'Ricarichi in due terzi del tempo. Le dita sanno già dove andare.',
+  },
+  slideReload: {
+    name: 'Ricarica in scivolata',
+    desc: 'Mentre scivoli col revolver in mano, un colpo entra nel tamburo ogni 0,3 secondi.',
+  },
+  riderShot: {
+    name: 'Colpo da cavaliere',
+    desc: 'Il primo colpo dopo un salto sul muro è sempre critico, ovunque colpisca. Finché non tocchi terra.',
+  },
 };
 
 /** Weapon names in the upgrade panel's title. */

@@ -137,7 +137,8 @@ export interface Viewmodel {
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
   onShot(weapon: WeaponId, barrel: number): void;
-  onReload(weapon: WeaponId): void;
+  /** A reload starts and lasts `seconds` (the revolver's timeline is stretched to fit). */
+  onReload(weapon: WeaponId, seconds: number): void;
   /** The kick started: play the leg animation (see kickLeg.ts). */
   onKick(): void;
   applyAtmosphere(a: Atmosphere): void;
@@ -223,6 +224,8 @@ export function createViewmodel(): Viewmodel {
   let cylinderTarget = 0;
   let hammerTime = 1; // seconds since the last shot
   const revolverReload = createRevolverReload(); // the gunslinger's reload (see revolverReload.ts)
+  /** How long the reload in progress lasts: the simulation says, in the 'reloadStart' event. */
+  let revolverReloadTime = tuning.revolverReloadTime;
   let swayX = 0;
   let swayY = 0;
   let bobPhase = 0;
@@ -261,10 +264,13 @@ export function createViewmodel(): Viewmodel {
       flash.material.rotation = Math.random() * Math.PI;
       flash.scale.setScalar(0.09 + Math.random() * 0.05);
     },
-    onReload(weapon) {
+    onReload(weapon, seconds) {
       // (The carbine's reload follows the simulation's timer directly: rifleView.ts.)
       if (weapon === 'shotgun') shotgun.onReload();
-      else if (weapon === 'revolver') revolverReload.start();
+      else if (weapon === 'revolver') {
+        revolverReloadTime = seconds; // "Tamburo veloce" makes it shorter
+        revolverReload.start();
+      }
     },
     onKick() {
       kickTime = 0;
@@ -344,7 +350,7 @@ export function createViewmodel(): Viewmodel {
       const riflePose = rifle.update(dt, player);
 
       // --- Reload: flick open, cases out, rounds in, flick shut, spin (see revolverReload.ts) ---
-      const rr = revolverReload.update(dt, tuning.revolverReloadTime, gun);
+      const rr = revolverReload.update(dt, revolverReloadTime, gun);
       if (rr.spin > 0) {
         cylinderAngle += rr.spin * dt;
         // Stop on a chamber: the next multiple of 60° ahead.

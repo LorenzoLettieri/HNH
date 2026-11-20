@@ -98,6 +98,14 @@ export interface PlayerState {
   fanQueued: boolean;
   /** Shots still to fire in the fanning burst (0 = not fanning). See weapon.ts. */
   fanShotsLeft: number;
+  /** Card "Ricarica in scivolata": ticks of sliding still needed for the next round (weapon.ts). */
+  slideReloadTicks: number;
+  /**
+   * You wall-jumped and haven't fired or landed since: the card "Colpo da
+   * cavaliere" makes that shot a critical hit (weapon.ts). Set without the
+   * card too: it's just a fact about the jump, the weapon decides what it's worth.
+   */
+  wallJumpShot: boolean;
 
   // --- Kick (see kick.ts) ---
   /** Ticks since the kick started (0 = not kicking). The foot lands at kickWindup. */
@@ -149,6 +157,8 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     altFireHeld: false,
     fanQueued: false,
     fanShotsLeft: 0,
+    slideReloadTicks: 0,
+    wallJumpShot: false,
     kickTicks: 0,
     kickCooldownTicks: 0,
     kickHeld: false,
@@ -250,7 +260,10 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
     p.wallJumpsLeft > 0 &&
     p.wallJumpCooldownTicks === 0
   ) {
-    if (tryWallJump(p, world)) events.push({ type: 'wallJump', left: p.wallJumpsLeft });
+    if (tryWallJump(p, world)) {
+      events.push({ type: 'wallJump', left: p.wallJumpsLeft });
+      p.wallJumpShot = true;
+    }
   }
 
   // Both timers count down by one each tick.
@@ -296,7 +309,10 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
   // Landing after a flight: say how long it was (the style rewards long ones).
   if (landed && !wasOnGround && p.airTicks > 0) events.push({ type: 'land', airTicks: p.airTicks });
   p.airTicks = landed ? 0 : p.airTicks + 1;
-  if (landed) p.wallJumpsLeft = tuning.wallJumpsMax; // touching ground recharges wall jumps
+  if (landed) {
+    p.wallJumpsLeft = tuning.wallJumpsMax; // touching ground recharges wall jumps
+    p.wallJumpShot = false; // ...and the wall jump's shot was missed
+  }
   if (!landed) p.sliding = false; // slid off a ledge: now we're just falling
 
   // 7. Fell off the world (or asked to): back to the spawn point.
@@ -467,6 +483,8 @@ export function respawn(p: PlayerState, world: World): void {
   p.reloadTicks = 0;
   p.fanShotsLeft = 0;
   p.fanQueued = false;
+  p.slideReloadTicks = 0;
+  p.wallJumpShot = false;
   p.switchTicks = 0;
   p.kickTicks = 0;
   p.kickCooldownTicks = 0;
