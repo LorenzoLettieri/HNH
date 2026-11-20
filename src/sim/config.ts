@@ -790,6 +790,31 @@ export const tuning = {
   styleStreakTime: 1.5,
   /** ...and gives this × (kills in the streak - 1): DOPPIA +20, TRIPLA +40, ... */
   styleStreak: 20,
+  // Movement: style that keeps the chain alive without shooting.
+  /** Above this horizontal speed (m/s) you earn style continuously (running is 8: bhop, slide, wall jumps)... */
+  styleSpeedMin: 10,
+  /** ...this many points per second at styleSpeedMin, more the faster you go (× speed / styleSpeedMin). */
+  styleSpeed: 10,
+  /** Seconds in the air: from this flight time on, landing gives style ("IN VOLO 1,8 s")... */
+  styleAirTimeMin: 1,
+  /** ...this many points per second of flight. */
+  styleAirTime: 25,
+  /** A wall jump: this × how many wall jumps in this flight (the third is worth 3×). */
+  styleWallJump: 15,
+  /** A bunny hop: this × how many hops in a row (up to 5×). */
+  styleBhop: 8,
+  /** A jump out of a slide. */
+  styleSlideJump: 15,
+  /** Launched by a steam vent. */
+  styleVent: 10,
+  /** An enemy projectile flew past you by a hair ("PER UN PELO")... */
+  styleNearMiss: 30,
+  /** ...closer than this to your chest, meters. */
+  styleNearMissDistance: 1.2,
+  /** A charging bull ran past you without hitting you ("OLÉ")... */
+  styleTorero: 50,
+  /** ...and you were at most this far to its side, meters. */
+  styleToreroDistance: 3,
   /** Style points lost per point of damage taken (ghoul claw 20 → 60 points). */
   styleHurtPerDamage: 3,
   /**

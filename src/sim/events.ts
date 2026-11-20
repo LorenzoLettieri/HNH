@@ -46,6 +46,18 @@ export type SimEvent =
       target: Entity['type'];
     }
   | { type: 'playerHurt'; damage: number; fromX: number; fromZ: number }
+  /** You jumped off the ground. `hop` = right after landing (bunny hop), `slide` = out of a slide. */
+  | { type: 'jump'; hop: boolean; slide: boolean }
+  /** You kicked off a wall. `left` = wall jumps still available before touching the ground. */
+  | { type: 'wallJump'; left: number }
+  /** A steam vent launched you. */
+  | { type: 'ventLaunch' }
+  /** You touched the ground after `airTicks` ticks in the air. */
+  | { type: 'land'; airTicks: number }
+  /** An enemy projectile flew past you, close, without hitting you. */
+  | { type: 'nearMiss'; kind: 'fireball' | 'bullet' }
+  /** A charging bull missed you: it ran past (it skids). `side` = how far to its side you were, meters. */
+  | { type: 'bullMiss'; entityId: number; side: number }
   /** A stylish action gave you style points (the HUD lists them under the meter). */
   | { type: 'styleAward'; award: StyleAward; points: number; count?: number }
   /** You reached the top style rank: the HIGH NOON climax starts (bottomless guns for a few seconds). */

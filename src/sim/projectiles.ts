@@ -35,6 +35,8 @@ export interface Projectile {
   vz: number;
   /** Ticks before it fizzles out on its own (if it never hits anything). */
   ticksLeft: number;
+  /** It already flew past you, close (a 'nearMiss' is reported once per projectile). */
+  grazed?: boolean;
 }
 
 /**
@@ -102,6 +104,25 @@ export function stepProjectiles(
       events.push({ type: 'playerHurt', damage: p.damage, fromX: p.x - dx * 5, fromZ: p.z - dz * 5 });
       events.push({ type: 'projectileHit', kind: p.kind, x: p.x, y: p.y, z: p.z, nx: -dx, ny: -dy, nz: -dz, player: true });
       continue;
+    }
+    // Missed you, but by a hair? The point of this tick's segment closest to
+    // your chest: project (chest - start) onto the direction (dot product),
+    // clamped to the segment. If that point is INSIDE the segment (not at
+    // its end), the projectile is passing you right now; at the end it's
+    // still coming (next tick it might hit).
+    if (!p.grazed && player.health > 0) {
+      const cx = player.x - p.x;
+      const cy = player.y + currentHeight(player) / 2 - p.y;
+      const cz = player.z - p.z;
+      const t = cx * dx + cy * dy + cz * dz;
+      const reach = wall ? wall.distance : step;
+      if (t > 0 && t < reach) {
+        const miss = Math.hypot(cx - dx * t, cy - dy * t, cz - dz * t);
+        if (miss < tuning.styleNearMissDistance) {
+          p.grazed = true;
+          events.push({ type: 'nearMiss', kind: p.kind });
+        }
+      }
     }
     if (wall) {
       events.push({ type: 'projectileHit', kind: p.kind, x: wall.x, y: wall.y, z: wall.z, nx: wall.nx, ny: wall.ny, nz: wall.nz, player: false });

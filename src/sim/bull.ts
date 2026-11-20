@@ -254,6 +254,12 @@ function charge(b: BullEntity, player: PlayerState, others: Entity[], world: Wor
   // you're behind it: it overshot you.
   const ahead = (player.x - b.x) * b.dirX + (player.z - b.z) * b.dirZ;
   if (ahead < -tuning.bullOvershoot || b.stateTicks > secondsToTicks(tuning.bullChargeMaxTime)) {
+    // It ran past you without touching you: a dodge. How far to the side you
+    // were (cross product with its direction): the style wants it close.
+    if (!b.chargeHit && ahead < -tuning.bullOvershoot) {
+      const side = Math.abs((player.x - b.x) * b.dirZ - (player.z - b.z) * b.dirX);
+      events.push({ type: 'bullMiss', entityId: b.id, side });
+    }
     setState(b, 'skid');
   }
 }

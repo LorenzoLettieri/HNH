@@ -22,6 +22,8 @@ import type { StyleAward } from '../sim/style';
 interface AwardLook {
   name: string | ((count: number) => string);
   minor?: boolean;
+  /** Continuous (speed): repeats add up the points, without "×n". */
+  plain?: boolean;
 }
 const STYLE_AWARD_NAMES: Record<StyleAward, AwardLook> = {
   hit: { name: 'COLPO', minor: true },
@@ -41,6 +43,14 @@ const STYLE_AWARD_NAMES: Record<StyleAward, AwardLook> = {
   closeCall: { name: 'SUL FILO' },
   multiKill: { name: (n) => (n === 2 ? 'DUE PICCIONI' : `STRAGE ×${n}`) },
   streak: { name: (n) => STREAK_NAMES[n - 2] ?? `MASSACRO ×${n}` },
+  speed: { name: 'VELOCITÀ', minor: true, plain: true },
+  airTime: { name: (tenths) => `IN VOLO ${(tenths / 10).toFixed(1).replace('.', ',')} s` },
+  wallJump: { name: (n) => (n > 1 ? `WALL JUMP ×${n}` : 'WALL JUMP') },
+  bhop: { name: (n) => (n > 1 ? `BHOP ×${n}` : 'BHOP'), minor: true },
+  slideJump: { name: 'SLIDE JUMP', minor: true },
+  vent: { name: 'SFIATATOIO', minor: true },
+  nearMiss: { name: 'PER UN PELO' },
+  torero: { name: 'OLÉ!' },
 };
 /** Kills in quick sequence: the name for 2, 3, 4, 5 kills; then MASSACRO ×n. */
 const STREAK_NAMES = ['DOPPIA', 'TRIPLA', 'QUADRUPLA', 'CINQUINA'];
@@ -128,7 +138,7 @@ function add(award: StyleAward, points: number, count: number | undefined): void
     el,
     name,
     points: pts,
-    counted: count !== undefined,
+    counted: count !== undefined || look.plain === true,
     award,
     count: count ?? 1,
     total: points,

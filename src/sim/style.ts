@@ -26,8 +26,8 @@
 // For now only hits and kills give style. Movement (speed, air time, wall
 // jumps) and variety come in the next steps.
 import type { SimEvent } from './events';
-import { secondsToTicks, tuning } from './config';
-import type { PlayerState } from './player';
+import { secondsToTicks, TICK_DT, tuning } from './config';
+import { horizontalSpeed, type PlayerState } from './player';
 
 export interface StyleState {
   /** Points of the current chain (0 = no chain). */
@@ -46,7 +46,16 @@ export interface StyleState {
   sinceSwitchTicks: number;
   /** Ticks spent aiming down the sights without a break (for "QUICKSCOPE"). */
   aimTicks: number;
+  /** Counts the ticks (to hand out the speed points at a steady pace). */
+  tick: number;
+  /** Bunny hops in a row (a jump that isn't a hop starts over). */
+  bhops: number;
+  /** Speed points earned but not given yet: they're handed out every SPEED_EVERY ticks, in one line. */
+  speedPoints: number;
 }
+
+/** How often the speed points become an award (ticks): one line every half second, not 60 a second. */
+const SPEED_EVERY = 30;
 
 /** The ranks, lowest first (western names: proposals, see DESIGN.md). */
 export const STYLE_RANKS = [
@@ -83,7 +92,16 @@ export type StyleAward =
   | 'closeCall'
   // Several kills.
   | 'multiKill' // with one shot: `count` = how many
-  | 'streak'; // one after the other: `count` = kills in the streak
+  | 'streak' // one after the other: `count` = kills in the streak
+  // Movement.
+  | 'speed'
+  | 'airTime' // `count` = tenths of a second in the air
+  | 'wallJump' // `count` = wall jumps in this flight
+  | 'bhop' // `count` = hops in a row
+  | 'slideJump'
+  | 'vent'
+  | 'nearMiss' // a projectile missed you by a hair
+  | 'torero'; // a bull's charge missed you by a hair
 
 export function createStyle(): StyleState {
   return {
@@ -94,6 +112,9 @@ export function createStyle(): StyleState {
     streakTicks: 0,
     sinceSwitchTicks: 9999,
     aimTicks: 0,
+    tick: 0,
+    bhops: 0,
+    speedPoints: 0,
   };
 }
 
@@ -164,6 +185,22 @@ export function stepStyle(style: StyleState, player: PlayerState, events: SimEve
   for (let i = from; i < end; i++) {
     const e = events[i];
     if (e.type === 'playerHurt') lost += e.damage * tuning.styleHurtPerDamage;
+
+    // Movement.
+    if (e.type === 'land' && e.airTicks * TICK_DT >= tuning.styleAirTimeMin) {
+      const seconds = e.airTicks * TICK_DT;
+      award('airTime', Math.round(seconds * tuning.styleAirTime), Math.round(seconds * 10));
+    }
+    if (e.type === 'wallJump') {
+      const n = tuning.wallJumpsMax - e.left; // 1st, 2nd, 3rd of this flight
+      award('wallJump', tuning.styleWallJump * n, n);
+    }
+    if (e.type === 'jump' && e.hop) award('bhop', tuning.styleBhop * Math.min(style.bhops, 5), style.bhops);
+    if (e.type === 'jump' && e.slide) award('slideJump', tuning.styleSlideJump);
+    if (e.type === 'ventLaunch') award('vent', tuning.styleVent);
+    if (e.type === 'nearMiss') award('nearMiss', tuning.styleNearMiss);
+    if (e.type === 'bullMiss' && e.side <= tuning.styleToreroDistance) award('torero', tuning.styleTorero);
+
     // Your hits on enemies, not the steel targets (metal). (A bull's charge
     // shoves enemies without damage: it never produces 'hit' events.)
     if (e.type !== 'hit' || e.surface !== 'flesh') continue;
@@ -224,6 +261,18 @@ export function stepStyle(style: StyleState, player: PlayerState, events: SimEve
     if (style.streak >= 2) award('streak', tuning.styleStreak * (style.streak - 1), style.streak);
   }
 
+  // Speed: points keep coming while you're fast, handed out twice a second.
+  // (`speedPoints` is the "piggy bank": fractions of a point add up every tick.)
+  const speed = horizontalSpeed(player);
+  if (speed >= tuning.styleSpeedMin) {
+    style.speedPoints += tuning.styleSpeed * (speed / tuning.styleSpeedMin) * TICK_DT;
+  }
+  if (style.speedPoints >= 1 && style.tick % SPEED_EVERY === 0) {
+    const points = Math.floor(style.speedPoints);
+    style.speedPoints -= points;
+    award('speed', points);
+  }
+
   // Something stylish: more points, and the countdown starts again from the top.
   if (gained > 0) {
     style.points += gained;
@@ -250,8 +299,15 @@ export function stepStyle(style: StyleState, player: PlayerState, events: SimEve
  * Updated every tick, chain or not.
  */
 function remember(style: StyleState, player: PlayerState, events: SimEvent[], from: number, end: number): void {
+  style.tick++;
   style.sinceSwitchTicks++;
-  for (let i = from; i < end; i++) if (events[i].type === 'weaponSwitch') style.sinceSwitchTicks = 0;
+  for (let i = from; i < end; i++) {
+    const e = events[i];
+    if (e.type === 'weaponSwitch') style.sinceSwitchTicks = 0;
+    // A hop extends the run of bunny hops, any other jump starts a new one.
+    if (e.type === 'jump') style.bhops = e.hop ? style.bhops + 1 : 0;
+  }
+
   // Aiming: counts up while the carbine is (even partly) at the eye.
   style.aimTicks = player.adsTicks > 0 ? style.aimTicks + 1 : 0;
   if (style.streakTicks > 0) style.streakTicks--;

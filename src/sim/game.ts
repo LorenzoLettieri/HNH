@@ -88,7 +88,7 @@ export function stepGame(
     e.py = e.y;
     e.pz = e.z;
   }
-  stepPlayer(game.player, cmd, world, dt);
+  stepPlayer(game.player, cmd, world, dt, events);
   // Shopping first: a weapon bought this tick is in your hands for the rest of it.
   stepShop(game.player, cmd, world, events);
   const firstNewEvent = events.length;

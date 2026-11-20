@@ -88,6 +88,18 @@ export function createDebugPanel(options: {
   style.number(tuning, 'styleMultiKill', 0, 200, 5);
   style.number(tuning, 'styleStreakTime', 0.2, 5, 0.1);
   style.number(tuning, 'styleStreak', 0, 200, 5);
+  style.number(tuning, 'styleSpeedMin', 0, 30, 0.5);
+  style.number(tuning, 'styleSpeed', 0, 100, 1);
+  style.number(tuning, 'styleAirTimeMin', 0, 5, 0.1);
+  style.number(tuning, 'styleAirTime', 0, 200, 5);
+  style.number(tuning, 'styleWallJump', 0, 100, 1);
+  style.number(tuning, 'styleBhop', 0, 100, 1);
+  style.number(tuning, 'styleSlideJump', 0, 100, 1);
+  style.number(tuning, 'styleVent', 0, 100, 1);
+  style.number(tuning, 'styleNearMiss', 0, 200, 5);
+  style.number(tuning, 'styleNearMissDistance', 0, 5, 0.1);
+  style.number(tuning, 'styleTorero', 0, 200, 5);
+  style.number(tuning, 'styleToreroDistance', 0, 10, 0.25);
   style.number(tuning, 'styleHighNoonTime', 1, 20, 0.5);
   style.number(tuning, 'styleMultiplierPerRank', 0, 2, 0.05);
   style.button('Copy values', () => copyToClipboard(toSource(tuning)));

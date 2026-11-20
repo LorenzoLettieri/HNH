@@ -4,6 +4,7 @@ import type { World } from './world';
 import { ventUnder } from './props';
 import { secondsToTicks, tuning } from './config';
 import type { AmmoType, WeaponId } from './weapon';
+import type { SimEvent } from './events';
 
 // Pure data: no Three.js, no DOM. Can be copied, compared, sent over the network.
 export interface PlayerState {
@@ -37,6 +38,8 @@ export interface PlayerState {
   wallJumpCooldownTicks: number;
   /** Ticks spent on the ground since the last landing (big number = "long ago"). */
   groundTicks: number;
+  /** Ticks spent in the air since leaving the ground (0 on the ground). */
+  airTicks: number;
 
   // --- Weapons (see weapon.ts) ---
   /** The weapon in your hands. */
@@ -112,6 +115,7 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     wallJumpsLeft: tuning.wallJumpsMax,
     wallJumpCooldownTicks: 0,
     groundTicks: 999,
+    airTicks: 0,
     weapon: 'revolver',
     switchTicks: 0,
     loaded: fullWeapons(),
@@ -156,7 +160,7 @@ export function horizontalSpeed(p: PlayerState): number {
 }
 
 /** Advances the player by exactly one tick of `dt` seconds. */
-export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: number): void {
+export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: number, events: SimEvent[]): void {
   p.yaw = cmd.yaw;
   p.pitch = cmd.pitch;
 
@@ -181,6 +185,7 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
   if (p.onGround) {
     const vent = ventUnder(world.props, p.x, p.y, p.z);
     if (vent) {
+      events.push({ type: 'ventLaunch' });
       p.vy = vent.up;
       p.vx += vent.pushX ?? 0;
       p.vz += vent.pushZ ?? 0;
@@ -206,6 +211,7 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
     // A "hop": jumping again shortly after landing. Reward it with a bit of speed.
     const isHop = p.onGround && p.groundTicks <= secondsToTicks(tuning.bhopGraceTime);
     if (isHop) addSpeedAlongVelocity(p, tuning.bhopBoost);
+    events.push({ type: 'jump', hop: isHop, slide: p.sliding });
     p.vy = tuning.jumpSpeed;
     p.onGround = false;
     p.sliding = false; // slide-jump: the slide ends, its speed stays with you
@@ -220,7 +226,7 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
     p.wallJumpsLeft > 0 &&
     p.wallJumpCooldownTicks === 0
   ) {
-    tryWallJump(p, world);
+    if (tryWallJump(p, world)) events.push({ type: 'wallJump', left: p.wallJumpsLeft });
   }
 
   // Both timers count down by one each tick.
@@ -263,6 +269,9 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
   p.onGround = landed;
   // Count ticks on the ground: 0 on the landing tick, then 1, 2, ...
   p.groundTicks = landed ? (wasOnGround ? p.groundTicks + 1 : 0) : 0;
+  // Landing after a flight: say how long it was (the style rewards long ones).
+  if (landed && !wasOnGround && p.airTicks > 0) events.push({ type: 'land', airTicks: p.airTicks });
+  p.airTicks = landed ? 0 : p.airTicks + 1;
   if (landed) p.wallJumpsLeft = tuning.wallJumpsMax; // touching ground recharges wall jumps
   if (!landed) p.sliding = false; // slid off a ledge: now we're just falling
 
@@ -313,9 +322,9 @@ function updateCrouchAndSlide(p: PlayerState, crouchHeld: boolean, world: World)
  * and a speed boost ALONG the wall in the direction you're looking.
  * Run along a wall, jump, and you're launched forward and up.
  */
-function tryWallJump(p: PlayerState, world: World): void {
+function tryWallJump(p: PlayerState, world: World): boolean {
   const wall = findWall(p, tuning.playerRadius, currentHeight(p), tuning.wallJumpReach, world.boxes);
-  if (!wall) return;
+  if (!wall) return false;
 
   // 1. Remove the part of our velocity going INTO the wall (dot product with
   //    the normal): we keep only the motion parallel to the wall.
@@ -349,6 +358,7 @@ function tryWallJump(p: PlayerState, world: World): void {
   p.wallJumpsLeft--;
   p.wallJumpCooldownTicks = secondsToTicks(tuning.wallJumpCooldown);
   p.jumpBufferTicks = 0;
+  return true;
 }
 
 /**
@@ -415,6 +425,7 @@ function startingWeapons(): Record<WeaponId, boolean> {
 }
 
 export function respawn(p: PlayerState, world: World): void {
+  p.airTicks = 0;
   p.x = world.spawn.x;
   p.y = world.spawn.y;
   p.z = world.spawn.z;
