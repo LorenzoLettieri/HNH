@@ -562,7 +562,10 @@ futuro **poligono di tiro / tutorial**.
 
 ## 6. Armi (bozza)
 
-- **Revolver** — preciso, hitscan, "fanning" (raffica rapida col tasto destro: idea, non ancora fatto).
+- **Revolver** — preciso, hitscan. **Fanning** [FATTO, da tarare] col tasto destro: una pressione svuota
+  **tutto il tamburo** in raffica (un colpo ogni 0,08 s invece di 0,22), ma ogni proiettile devia a caso
+  fino a 5° dalla mira. Tanto danno in un attimo, solo da vicino (ghoul addosso, toro stordito). Dopo
+  la raffica 0,3 s di recupero; R durante la raffica aspetta che finisca; cambiare arma la interrompe.
 - **Doppietta (canne mozze)** [FATTO] — tasto 2. Due colpi, 12 pallini in una **rosata fissa** (non casuale:
   impari cosa fa), danno pieno fino a 6 m e poi in calo fino al 25% a 22 m: devastante da vicino, quasi
   inutile lontano. Ricarica da sola quando le canne sono vuote. **A bruciapelo (entro 5 m) i nemici volano
@@ -581,8 +584,8 @@ futuro **poligono di tiro / tutorial**.
   richiede 0,18 s e non si può durante la ricarica. **Ricarica un colpo alla volta** dallo sportello
   laterale (0,3 s per portarla allo sportello + 0,38 s a colpo): un click la interrompe e spari (dopo
   0,12 s). **Si compra all'armeria** per 1200 vildenaro, con 24 proiettili in tasca.
-- **Fuoco alternativo (tasto destro)** [DECISO]: ogni arma può averne uno. Per ora solo la carabina
-  (mira dal mirino); per il revolver l'idea è il fanning, per la doppietta da decidere.
+- **Fuoco alternativo (tasto destro)** [DECISO]: ogni arma può averne uno. Revolver: fanning;
+  carabina: mira dal mirino; doppietta: da decidere.
 - **Lazo / rampino** — mobilità (aggancio a punti della mappa) e utilità (tirare a sé i nemici?).
 
 ---

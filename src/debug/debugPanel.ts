@@ -153,6 +153,9 @@ export function createDebugPanel(options: {
   gun.number(tuning, 'revolverReserveStart', 0, 200, 1);
   gun.number(tuning, 'revolverReserveMax', 0, 200, 1);
   gun.number(tuning, 'revolverDamage', 5, 200, 5);
+  gun.number(tuning, 'revolverFanInterval', 0.02, 0.3, 0.01);
+  gun.number(tuning, 'revolverFanSpread', 0, 20, 0.5);
+  gun.number(tuning, 'revolverFanRecovery', 0, 1, 0.05);
   gun.number(tuning, 'headshotMultiplier', 1, 5, 0.25);
   const drops = panel.folder('Drops (src/sim/config.ts + pickups.ts)');
   drops.number(tuning, 'dropChancePerWeight', 0, 1, 0.05);

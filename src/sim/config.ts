@@ -150,6 +150,16 @@ export const tuning = {
    * breakpoint table in docs/DESIGN.md): 50 = one shot on a basic ghoul.
    */
   revolverDamage: 50,
+  /**
+   * FANNING (the revolver's alternate fire, right mouse button): the left
+   * hand slaps the hammer again and again and the whole cylinder goes out
+   * in a burst. Seconds between two shots of the burst (normal fire: revolverFireInterval).
+   */
+  revolverFanInterval: 0.08,
+  /** Fanning is imprecise: each bullet goes off the aim, up to this many degrees. */
+  revolverFanSpread: 5,
+  /** After the burst: seconds before the revolver can fire again (it's usually empty anyway). */
+  revolverFanRecovery: 0.3,
   /** Headshot damage multiplier: this is an aim game, headshots are king. */
   headshotMultiplier: 3,
   /** Max shooting distance, meters. */
