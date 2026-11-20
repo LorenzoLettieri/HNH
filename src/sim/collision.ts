@@ -30,6 +30,15 @@ export interface MoveResult {
  * Handling one axis at a time makes the "which way do I push back?" question
  * trivial (the opposite of the direction we just moved), and it gives sliding
  * along walls for free: hitting a wall on X zeroes only vx, vz keeps going.
+ *
+ * The direction of the move is read BEFORE checking the boxes (dirX, dirZ, dirY):
+ * the body can overlap several boxes at once, and the first one hit sets the
+ * speed to 0. Reading the speed again for the second box, it would say "not
+ * moving" and leave us inside it. That happened landing on a roof from high up:
+ * at 24 m/s the feet go down 40 cm per tick, more than the roof slab (30 cm), so
+ * they ended up inside the building block AND the slab; the block pushed them up
+ * to its top (9.0 m), the slab (9.0..9.3) didn't push at all, and the next
+ * sideways step found us inside the slab and shoved us out over the edge.
  */
 export function moveAndCollide(
   b: Body,
@@ -39,33 +48,36 @@ export function moveAndCollide(
   dt: number,
 ): MoveResult {
   // --- X ---
+  const dirX = Math.sign(b.vx);
   b.x += b.vx * dt;
   for (const w of boxes) {
     if (!overlaps(b, radius, height, w)) continue;
     // Moving right → we entered the box from its left face: stop just before it.
-    if (b.vx > 0) b.x = w.minX - radius;
-    else if (b.vx < 0) b.x = w.maxX + radius;
+    if (dirX > 0) b.x = w.minX - radius;
+    else if (dirX < 0) b.x = w.maxX + radius;
     b.vx = 0;
   }
 
   // --- Z ---
+  const dirZ = Math.sign(b.vz);
   b.z += b.vz * dt;
   for (const w of boxes) {
     if (!overlaps(b, radius, height, w)) continue;
-    if (b.vz > 0) b.z = w.minZ - radius;
-    else if (b.vz < 0) b.z = w.maxZ + radius;
+    if (dirZ > 0) b.z = w.minZ - radius;
+    else if (dirZ < 0) b.z = w.maxZ + radius;
     b.vz = 0;
   }
 
   // --- Y ---
   let landed = false;
+  const dirY = Math.sign(b.vy);
   b.y += b.vy * dt;
   for (const w of boxes) {
     if (!overlaps(b, radius, height, w)) continue;
-    if (b.vy < 0) {
+    if (dirY < 0) {
       b.y = w.maxY; // falling → feet on top of the box
       landed = true;
-    } else if (b.vy > 0) {
+    } else if (dirY > 0) {
       b.y = w.minY - height; // rising → head against the ceiling
     }
     b.vy = 0;
