@@ -50,7 +50,7 @@ RENDER = '--render' in sys.argv
 # The gun's hip pose in the game (viewmodelSettings.rifle*): position in
 # meters and rotation in radians, in THREE.JS coordinates (x right, y up,
 # z toward you), Euler order XYZ.
-VIEW = dict(x=0.18, y=-0.12, z=-0.36, pitch=0.05, yaw=0.1, roll=-0.15)
+VIEW = dict(x=0.15, y=-0.15, z=-0.36, pitch=0.05, yaw=0.01, roll=0.05)
 
 # The lever (from rifle.py): pin position (carbine coordinates, Blender
 # axes: x right, y forward, z up) and how far it opens (rifleView.ts).
@@ -62,27 +62,35 @@ HAND_SCALE = 0.82
 
 # --- Where the hands go, carbine coordinates (Blender axes) --------------
 # Each hand is described by:
-#   wrist   where the hand bone starts (the wrist joint);
-#   fingers the direction from the wrist to the knuckles;
-#   index   the direction from the pinky's knuckle to the index's;
+#   palm    where the CENTER OF THE PALM goes (the contact with the gun);
+#           the wrist is worked out from it;
+#   fingers the direction from the wrist to the knuckles (wanted);
+#   index   the direction from the pinky's knuckle to the index's (wanted);
+#   follow  how much of that wanted orientation the hand takes, 0..1: 0 =
+#           the hand just continues the forearm (a straight wrist), 1 = all
+#           of it. A real wrist only bends so far: forcing an orientation
+#           that doesn't fit the forearm twists the skin around the joint
+#           like a candy wrapper (the wrist shrinks to a dot);
 #   elbow   a point the elbow bends toward (the IK "pole");
 #   curl    how much each finger bends (radians per joint: 3 joints).
 RIGHT = dict(
     # On the right side of the wrist of the stock, the palm against it,
     # the knuckle line along the wrist (index forward, toward the trigger),
     # the fingers wrapping under it through the lever's loop.
-    wrist=Vector((0.03, -0.005, 0.03)),
-    fingers=Vector((-0.2, 0.2, -1.0)),
+    palm=Vector((0.03, -0.012, 0.012)),
+    fingers=Vector((-0.2, 0.25, -1.0)),
     index=Vector((0.0, 1.0, 0.3)),
+    follow=0.55,
     elbow=Vector((0.3, -0.25, -0.35)),
     curl=dict(index=0.35, middle=0.9, ring=0.95, pinky=1.0, thumb=0.5),
     shoulder=Vector((0, 0, 0)),
 )
 LEFT = dict(
     # Under the fore-end, palm up, fingers wrapping around its right side.
-    wrist=Vector((-0.045, 0.31, -0.06)),
+    palm=Vector((-0.012, 0.29, -0.004)),
     fingers=Vector((1.0, 0.3, 0.45)),
     index=Vector((0.0, 1.0, 0.0)),
+    follow=0.55,
     elbow=Vector((-0.6, -0.15, -0.3)),
     curl=dict(index=0.8, middle=0.85, ring=0.9, pinky=0.95, thumb=0.3),
     # The fore-end is farther than a real arm reaches from where the gun is
@@ -150,14 +158,17 @@ def pose_hand(arm, side, hand, gun, lever_angle=0.0):
              @ Matrix.Translation(-LEVER_PIN))
     to_rig = gun @ lever
     rot3 = to_rig.to_3x3().normalized()
-    wrist = to_rig @ hand['wrist']
-    # The rotation that takes the rest frame onto the wanted one...
-    wanted = frame(rot3 @ hand['fingers'], rot3 @ hand['index'])
-    turn = wanted @ rest_hand_frame(arm, side).inverted()
-    # ...applied to the IK bone's rest orientation.
+    palm = to_rig @ hand['palm']
     ik = arm.pose.bones[f'handIK.{side}']
     rest = ik.bone.matrix_local.to_3x3().normalized()
-    ik.matrix = Matrix.LocRotScale(wrist, (turn @ rest).to_quaternion(), Vector((1, 1, 1)))
+    # The wanted orientation: the rotation that takes the rest frame onto
+    # the wanted one, applied to the IK bone's rest orientation.
+    wanted = frame(rot3 @ hand['fingers'], rot3 @ hand['index']) @ rest_hand_frame(arm, side).inverted() @ rest
+    # Where the palm's center is, seen from the wrist, in the hand's own
+    # (rest) coordinates: a bit more than halfway to the middle knuckle.
+    b = arm.data.bones
+    head = b[f'hand.{side}'].head_local
+    palm_local = rest.inverted() @ ((b[f'f_middle.01.{side}'].head_local - head) * 0.55) * HAND_SCALE
     # Shoulder shift (eye space → rig: the rig looks along -Y, its right is -X).
     sh = hand['shoulder']
     arm.pose.bones[f'shoulder.{side}'].location = (0, 0, 0)
@@ -166,6 +177,24 @@ def pose_hand(arm, side, hand, gun, lever_angle=0.0):
     sb.matrix = Matrix.Translation(Vector((-sh.x, -sh.y, sh.z))) @ sb.matrix
     pole = arm.pose.bones[f'elbowIK.{side}']
     pole.matrix = Matrix.Translation(to_rig @ hand['elbow'])
+    # The hand's orientation and the wrist's position depend on each other
+    # (and on where IK puts the forearm), so a few rounds settle them:
+    #   1. the NEUTRAL orientation = the forearm's, carried over to the hand
+    #      as it is in the rest pose (a straight wrist);
+    #   2. the hand turns from neutral toward the wanted orientation by
+    #      `follow` (slerp: the "lerp" of rotations, along the shortest arc);
+    #   3. the wrist goes where it puts the palm on the contact point.
+    rot = wanted
+    wrist = palm - rot @ palm_local
+    forearm = arm.pose.bones[f'forearm.{side}']
+    for _ in range(5):
+        ik.matrix = Matrix.LocRotScale(wrist, rot.to_quaternion(), Vector((1, 1, 1)))
+        bpy.context.view_layer.update()
+        neutral = (forearm.matrix.to_3x3().normalized()
+                   @ forearm.bone.matrix_local.to_3x3().normalized().inverted() @ rest)
+        rot = neutral.to_quaternion().slerp(wanted.to_quaternion(), hand['follow']).to_matrix()
+        wrist = palm - rot @ palm_local
+    ik.matrix = Matrix.LocRotScale(wrist, rot.to_quaternion(), Vector((1, 1, 1)))
     # Fingers: each first joint bends (the other two copy it, see the rig's constraints).
     for name, angle in hand['curl'].items():
         bone = 'thumb.02' if name == 'thumb' else f'f_{name}.01'
