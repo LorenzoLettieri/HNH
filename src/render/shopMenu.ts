@@ -26,7 +26,7 @@ import type { SimEvent } from '../sim/events';
 import type { PlayerState } from '../sim/player';
 import { ownsItem, shopCatalog, type PurchaseId, type ShopItemId } from '../sim/shop';
 import { upgradeLevel, upgradeOffer, upgradePrice, type CardId } from '../sim/upgrades';
-import type { WeaponId } from '../sim/weapon';
+import type { GearId } from '../sim/weapon';
 import type { ShopSpawn } from '../sim/world';
 import './fonts';
 
@@ -43,6 +43,10 @@ const ITEM_TEXT: Record<ShopItemId, { name: string; desc: string }> = {
   rifle: {
     name: 'Carabina a leva',
     desc: 'Otto colpi, stesse cartucce del revolver. Lenta, ma da lontano e in testa non sbaglia. Tasto destro per mirare.',
+  },
+  shovel: {
+    name: 'Badile da becchino',
+    desc: 'Prende il posto dello stivale (F). Più lungo, più largo, tre volte il danno. Scava fosse, ne riempie altre.',
   },
 };
 
@@ -143,7 +147,12 @@ const CARD_TEXT: Record<CardId, { name: string; desc: string }> = {
 };
 
 /** Weapon names in the upgrade panel's title. */
-const WEAPON_NAMES: Record<WeaponId, string> = { revolver: 'Revolver', shotgun: 'Doppietta', rifle: 'Carabina' };
+const WEAPON_NAMES: Record<GearId, string> = {
+  revolver: 'Revolver',
+  shotgun: 'Doppietta',
+  rifle: 'Carabina',
+  shovel: 'Badile',
+};
 
 /** What he says after a purchase, and when you can't pay. */
 const THANKS = '“Affare fatto. Trattala bene, e lei tratterà bene te.”';
@@ -190,7 +199,7 @@ function noFocus(el: HTMLElement): void {
 interface Row {
   id: PurchaseId;
   /** The weapon this row is about (a card's weapon, for a card). */
-  weapon: WeaponId;
+  weapon: GearId;
   /** A card is never "already yours": once bought it leaves the counter. */
   card: boolean;
   price: number;
@@ -223,7 +232,7 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
   let isOpen = false;
   let kind: ShopSpawn['kind'] = 'weapons';
   /** The weapon whose upgrade panel is open (null = closed). */
-  let selected: WeaponId | null = null;
+  let selected: GearId | null = null;
   /** The weapons (main panel) and the cards (upgrade panel). Their state changes every frame. */
   let rows: Row[] = [];
   let cardRows: Row[] = [];
@@ -267,7 +276,7 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
   function makeRow(
     parent: HTMLElement,
     id: PurchaseId,
-    weapon: WeaponId,
+    weapon: GearId,
     text: { name: string; desc: string },
     price: number,
     card: boolean,

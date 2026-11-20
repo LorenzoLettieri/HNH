@@ -34,6 +34,7 @@ const STYLE_AWARD_NAMES: Record<StyleAward, AwardLook> = {
   airKill: { name: 'DAL CIELO' },
   slideKill: { name: 'IN SCIVOLATA' },
   kickKill: { name: 'DI STIVALE' },
+  shovelKill: { name: 'DI BADILE' },
   quickSwitch: { name: 'CAMBIO LAMPO' },
   quickscope: { name: 'QUICKSCOPE' },
   noscope: { name: 'NOSCOPE' },

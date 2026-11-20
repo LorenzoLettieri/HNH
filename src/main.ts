@@ -31,7 +31,7 @@ import { createShopMenu } from './render/shopMenu';
 import { createMapOverlay } from './render/mapOverlay';
 import { shopInReach } from './sim/shop';
 import './render/crosshair'; // paints the crosshair once
-import { adsAmount, WEAPONS } from './sim/weapon';
+import { adsAmount, GEAR } from './sim/weapon';
 import { updateHud } from './render/hud';
 import { updateAmmoHud } from './render/ammoHud';
 import { updateWeaponBar } from './render/weaponBar';
@@ -285,7 +285,7 @@ const prevPlayer = createPlayer();
 // ?slow=0.2: slow motion from the start (see debugTime).
 if (params.get('slow')) debugTime.timeScale = Number(params.get('slow'));
 // ?guns=all: start with every weapon (to try them without going to the shop).
-if (params.get('guns') === 'all') for (const w of WEAPONS) game.player.owned[w] = true;
+if (params.get('guns') === 'all') for (const w of GEAR) game.player.owned[w] = true; // the shovel too
 const startPos = params.get('pos')?.split(',').map(Number);
 const startLook = params.get('look')?.split(',').map(Number);
 if (startPos?.length === 3) [player.x, player.y, player.z] = startPos;

@@ -354,6 +354,20 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
   (1,6 m, ±45°), 25 danni (mezzo ghoul base: è uno strumento, non l'arma principale), e **spinge via**
   (13 m/s in avanti, 5 m/s in alto): il ghoul vola via, interrompe artigliata e balzo, e resta a terra
   0,5 s. Si può calciare mentre si ricarica. Ricarica di 0,55 s.
+- **Badile (melee potenziato)** [PASSO 1 FATTO: simulazione; da fare modello, animazione, suoni, carte]:
+  si compra all'armeria (600 vildenaro) e **prende il posto dello stivale sul tasto F**, come il
+  coltello bowie di CoD Zombies: la pistola resta in mano, non è uno slot. Stesso attacco del calcio
+  (cono davanti, niente attraverso i muri, spinta), numeri diversi: portata 2,2 m, arco ±60°,
+  **75 danni** (il triplo del calcio), spinta 15 m/s in avanti e 6 in alto, 0,12 s di carica, 0,6 s
+  di ricarica. Uccisione = premio di Stile "DI BADILE". Ha il **suo mazzo di carte** (§6c), pensato
+  attorno all'idea che **premia la velocità** (il danno × velocità è una carta, non la base):
+  - **Slancio**: il danno cresce con la velocità orizzontale (fermo = normale, a velocità da bhop
+    un ghoul muore in un colpo).
+  - **Schianto dal cielo**: colpisci in aria guardando in basso, piombi giù e all'impatto parte
+    un'**onda d'urto** con raggio e danno proporzionali al volo (tempo in aria / velocità di caduta).
+  - **Pogo**: colpire un nemico in aria ti fa rimbalzare in su (di testa in testa).
+  - **Parata**: un colpo al momento giusto rimanda indietro palle di fuoco e proiettili del tiratore.
+  - **Spazzata in scivolata**: in slide il colpo diventa un arco largo che butta a terra tutti.
 - **Niente rigenerazione della salute.** La salute torna coi **medikit** lasciati dai nemici (vedi Stile → Risorse).
 
 ## 4. La mappa [DECISO: cittadina all'aperto]

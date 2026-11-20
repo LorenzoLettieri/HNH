@@ -59,6 +59,7 @@ export function createDebugPanel(options: {
   shop.number(tuning, 'shopReach', 1, 6, 0.1);
   shop.number(tuning, 'shotgunPrice', 0, 3000, 50);
   shop.number(tuning, 'riflePrice', 0, 3000, 50);
+  shop.number(tuning, 'shovelPrice', 0, 3000, 50);
   shop.button('+500 vildenaro', () => options.onGiveMoney(500));
   shop.number(tuning, 'upgradeBasePrice', 0, 3000, 50);
   shop.number(tuning, 'upgradePriceGrowth', 1, 4, 0.1);
@@ -269,6 +270,15 @@ export function createDebugPanel(options: {
   kick.number(tuning, 'kickKnockback', 0, 30, 0.5);
   kick.number(tuning, 'kickLift', 0, 15, 0.5);
   kick.number(tuning, 'kickStun', 0, 2, 0.05);
+
+  const shovel = panel.folder('Shovel (src/sim/config.ts, src/sim/kick.ts)');
+  shovel.number(tuning, 'shovelWindup', 0, 0.4, 0.01);
+  shovel.number(tuning, 'shovelCooldown', 0.1, 2, 0.05);
+  shovel.number(tuning, 'shovelRange', 0.3, 5, 0.1);
+  shovel.number(tuning, 'shovelAngle', 10, 120, 1);
+  shovel.number(tuning, 'shovelDamage', 0, 300, 5);
+  shovel.number(tuning, 'shovelKnockback', 0, 40, 0.5);
+  shovel.number(tuning, 'shovelLift', 0, 15, 0.5);
   gun.number(viewmodelSettings, 'fov', 30, 100, 1);
   gun.number(viewmodelSettings, 'x', -0.3, 0.3, 0.005);
   gun.number(viewmodelSettings, 'y', -0.3, 0.1, 0.005);

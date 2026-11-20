@@ -97,6 +97,7 @@ export type StyleAward =
   | 'airKill'
   | 'slideKill'
   | 'kickKill'
+  | 'shovelKill'
   | 'quickSwitch'
   | 'quickscope'
   | 'noscope'
@@ -242,10 +243,10 @@ export function stepStyle(style: StyleState, player: PlayerState, events: SimEve
     }
 
     // How you got it: every bonus that applies is a line of its own.
-    const gun = e.source !== 'kick';
     if (!player.onGround) award('airKill', tuning.styleAirKill);
     if (player.sliding) award('slideKill', tuning.styleSlideKill);
-    if (!gun) award('kickKill', tuning.styleKickKill);
+    if (e.source === 'kick') award('kickKill', tuning.styleKickKill);
+    if (e.source === 'shovel') award('shovelKill', tuning.styleKickKill);
     if (style.sinceSwitchTicks <= secondsToTicks(tuning.weaponSwitchTime + tuning.styleQuickSwitchTime)) {
       award('quickSwitch', tuning.styleQuickSwitchKill);
     }

@@ -15,7 +15,7 @@
 import { tuning } from './config';
 import type { PlayerState } from './player';
 import { randomInt, seedFrom } from './random';
-import { WEAPONS, type WeaponId } from './weapon';
+import { GEAR, type GearId } from './weapon';
 
 /**
  * Every card of every deck. A card belongs to ONE weapon (see CARDS), so its
@@ -51,8 +51,8 @@ export type CardId =
   | 'twoAtATime';
 
 export interface CardInfo {
-  /** The weapon whose deck it's in. */
-  weapon: WeaponId;
+  /** The weapon (or gear: the shovel) whose deck it's in. */
+  weapon: GearId;
   /**
    * A card that can't live with this one (they contradict each other): once
    * you take one, the other leaves the deck. Written on ONE of the two is
@@ -119,13 +119,13 @@ function excluded(p: PlayerState, id: CardId): boolean {
 }
 
 /** The deck of a weapon: every card that belongs to it, in a fixed order (the draw shuffles a copy). */
-export function deckOf(weapon: WeaponId): CardId[] {
+export function deckOf(weapon: GearId): CardId[] {
   return (Object.keys(CARDS) as CardId[]).filter((id) => CARDS[id].weapon === weapon);
 }
 
 /** Every weapon with no cards: the starting state (and after death). */
-export function noCards(): Record<WeaponId, CardId[]> {
-  return { revolver: [], shotgun: [], rifle: [] };
+export function noCards(): Record<GearId, CardId[]> {
+  return { revolver: [], shotgun: [], rifle: [], shovel: [] };
 }
 
 /** Do you have this card? (The weapons ask this to change how they work.) */
@@ -134,7 +134,7 @@ export function hasCard(p: PlayerState, id: CardId): boolean {
 }
 
 /** Level of a weapon = how many cards it has. */
-export function upgradeLevel(p: PlayerState, weapon: WeaponId): number {
+export function upgradeLevel(p: PlayerState, weapon: GearId): number {
   return p.cards[weapon].length;
 }
 
@@ -142,7 +142,7 @@ export function upgradeLevel(p: PlayerState, weapon: WeaponId): number {
  * Price of the NEXT card of a weapon, or null if it can't take more.
  * Grows at every level (Pack-a-Punch style): base × growth^level.
  */
-export function upgradePrice(p: PlayerState, weapon: WeaponId): number | null {
+export function upgradePrice(p: PlayerState, weapon: GearId): number | null {
   const level = upgradeLevel(p, weapon);
   if (level >= tuning.upgradeMaxLevel) return null;
   return Math.round(tuning.upgradeBasePrice * Math.pow(tuning.upgradePriceGrowth, level));
@@ -158,10 +158,10 @@ export function upgradePrice(p: PlayerState, weapon: WeaponId): number | null {
  * rest; stop once the positions we need are filled. Every card has the same
  * chance to end up in each position (a naive "sort by random" doesn't).
  */
-export function upgradeOffer(p: PlayerState, weapon: WeaponId): CardId[] {
+export function upgradeOffer(p: PlayerState, weapon: GearId): CardId[] {
   if (upgradePrice(p, weapon) === null) return [];
   const left = deckOf(weapon).filter((id) => !p.cards[weapon].includes(id) && !excluded(p, id));
-  const rng = { rng: seedFrom(p.cardSeed, WEAPONS.indexOf(weapon), upgradeLevel(p, weapon)) };
+  const rng = { rng: seedFrom(p.cardSeed, GEAR.indexOf(weapon), upgradeLevel(p, weapon)) };
   const count = Math.min(tuning.upgradeOfferSize, left.length);
   for (let i = 0; i < count; i++) {
     const j = i + randomInt(rng, left.length - i);

@@ -10,15 +10,15 @@ import { tuning } from './config';
 import type { SimEvent } from './events';
 import type { PlayerState } from './player';
 import { CARDS, upgradeOffer, upgradePrice, type CardId } from './upgrades';
-import { switchWeapon, type WeaponId } from './weapon';
+import { switchWeapon, type GearId } from './weapon';
 import type { ShopSpawn, World } from './world';
 
 /**
- * Everything on the armory's list: the weapons, so an item id IS a weapon id.
- * The revolver is listed too (always yours: you start with it), because the
- * list is also where you choose which weapon to upgrade.
+ * Everything on the armory's list: the weapons and the shovel, so an item id
+ * IS a gear id. The revolver is listed too (always yours: you start with
+ * it), because the list is also where you choose which weapon to upgrade.
  */
-export type ShopItemId = WeaponId;
+export type ShopItemId = GearId;
 
 /**
  * Anything the command can ask to buy: a weapon from the catalog, or an
@@ -44,6 +44,7 @@ export function shopCatalog(kind: ShopSpawn['kind']): ShopItem[] {
         { id: 'revolver', price: 0 }, // never bought: you always have it
         { id: 'shotgun', price: tuning.shotgunPrice },
         { id: 'rifle', price: tuning.riflePrice },
+        { id: 'shovel', price: tuning.shovelPrice },
       ];
   }
 }
@@ -62,7 +63,7 @@ export function shopInReach(p: PlayerState, world: World): ShopSpawn | null {
   return null;
 }
 
-/** Do you already have it? (For now everything for sale is a weapon.) */
+/** Do you already have it? */
 export function ownsItem(p: PlayerState, id: ShopItemId): boolean {
   return p.owned[id];
 }
@@ -84,9 +85,14 @@ export function stepShop(p: PlayerState, cmd: InputCommand, world: World, events
   if (p.money < item.price) return void events.push({ type: 'purchaseFailed', item: id, reason: 'money' });
 
   p.money -= item.price;
+  p.owned[id] = true;
+  if (id === 'shovel') {
+    // Not a gun: nothing to load, nothing to put in your hands. From now on
+    // the melee key swings it (kick.ts).
+    return void events.push({ type: 'purchase', item: id, price: item.price });
+  }
   // A new weapon comes loaded, with the starting spare rounds, and goes
   // straight to your hands (you bought it to use it, right now).
-  p.owned[id] = true;
   if (id === 'shotgun') {
     p.loaded.shotgun = tuning.shotgunAmmo;
     p.reserve.shells = Math.max(p.reserve.shells, tuning.shotgunReserveStart);

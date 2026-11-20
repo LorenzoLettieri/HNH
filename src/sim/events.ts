@@ -5,6 +5,7 @@
 
 import type { WeaponId } from './weapon';
 import type { Entity } from './entities';
+import type { MeleeTool } from './kick';
 import type { PickupKind } from './pickups';
 import type { PurchaseId } from './shop';
 import type { StyleAward } from './style';
@@ -39,8 +40,8 @@ export type SimEvent =
       killed: boolean;
       surface: 'metal' | 'flesh';
       headshot: boolean;
-      /** What hit it: a gun or your boot (the style rewards some of them). */
-      source: WeaponId | 'kick';
+      /** What hit it: a gun, your boot or the shovel (the style rewards some of them). */
+      source: WeaponId | MeleeTool;
       /** How far it was from you, meters. */
       distance: number;
       /** What kind of entity it was (the eye-bat's pupil is a headshot, but it gets its own name). */
@@ -98,10 +99,10 @@ export type SimEvent =
   | { type: 'sharpshooterShot'; entityId: number; projectileId: number }
   /** A projectile hit the level or the player (where, and the surface normal). */
   | { type: 'projectileHit'; kind: 'fireball' | 'bullet'; x: number; y: number; z: number; nx: number; ny: number; nz: number; player: boolean }
-  /** The kick starts (the leg swings: whoosh). */
-  | { type: 'kickStart' }
-  /** The foot lands: how many things it hit (0 = kicked the air). */
-  | { type: 'kickLand'; hits: number }
+  /** The melee attack starts (the leg or the shovel swings: whoosh). */
+  | { type: 'kickStart'; tool: MeleeTool }
+  /** The foot (or the blade) lands: how many things it hit (0 = hit the air). */
+  | { type: 'kickLand'; tool: MeleeTool; hits: number }
   | { type: 'dryFire' } // pulled the trigger with an empty cylinder
   /** A reload starts; `seconds` = how long it lasts (cards can change it: the animation and the sounds follow). */
   | { type: 'reloadStart'; weapon: WeaponId; seconds: number }

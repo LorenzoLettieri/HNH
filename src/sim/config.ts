@@ -287,6 +287,8 @@ export const tuning = {
   shotgunPrice: 800,
   /** Price of the lever-action carbine at the armory. */
   riflePrice: 1200,
+  /** Price of the shovel (it replaces the kick on F). */
+  shovelPrice: 600,
   // --- Weapon upgrades: decks of cards at the armory (see upgrades.ts) ---
   /** Price of a weapon's first card, in vildenaro. */
   upgradeBasePrice: 500,
@@ -354,6 +356,26 @@ export const tuning = {
   kickLift: 5,
   /** A kicked ghoul stays down this long after landing, seconds (can't claw you). */
   kickStun: 0.5,
+
+  // --- Shovel (melee upgrade: bought at the armory, it takes the boot's place on F; see kick.ts) ---
+  /**
+   * Seconds from the press to the blade landing. A bit longer than the kick:
+   * a shovel has to be swung, and the wind-up is what you'll SEE coming
+   * (the animation will be timed on it).
+   */
+  shovelWindup: 0.12,
+  /** Seconds before the next swing (counted from the press). */
+  shovelCooldown: 0.6,
+  /** Reach, meters, edge to edge: the handle makes it longer than a leg. */
+  shovelRange: 2.2,
+  /** Half-width of the swing, degrees: a wide horizontal arc. */
+  shovelAngle: 60,
+  /** Damage: 1.5 basic ghouls (the carbine's body shot). Triple the kick: it's what you paid for. */
+  shovelDamage: 75,
+  /** Horizontal speed given to a hit enemy, m/s. */
+  shovelKnockback: 15,
+  /** Upward speed given to a hit enemy, m/s. */
+  shovelLift: 6,
 
   // --- Player health ---
   playerMaxHealth: 100,
@@ -817,7 +839,7 @@ export const tuning = {
   styleAirKill: 30,
   /** A kill while sliding ("IN SCIVOLATA"). */
   styleSlideKill: 25,
-  /** A kill with your boot ("DI STIVALE"). */
+  /** A kill with your boot ("DI STIVALE") or the shovel ("DI BADILE"). */
   styleKickKill: 30,
   /** A kill right after switching weapon ("CAMBIO LAMPO")... */
   styleQuickSwitchKill: 30,

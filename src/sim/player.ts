@@ -3,7 +3,7 @@ import { findWall, moveAndCollide, overlapsAny } from './collision';
 import type { World } from './world';
 import { ventUnder } from './props';
 import { secondsToTicks, tuning } from './config';
-import type { AmmoType, WeaponId } from './weapon';
+import type { AmmoType, GearId, WeaponId } from './weapon';
 import type { SimEvent } from './events';
 import { noCards, type CardId } from './upgrades';
 
@@ -64,10 +64,11 @@ export interface PlayerState {
    */
   adsTicks: number;
   /**
-   * Which weapons you own. You start with the revolver; the others are
-   * bought at the armory (shop.ts). Slots you don't own are skipped.
+   * Which weapons (and gear: the shovel) you own. You start with the
+   * revolver; the rest is bought at the armory (shop.ts). Slots you don't
+   * own are skipped; owning the shovel turns the kick into a shovel swing.
    */
-  owned: Record<WeaponId, boolean>;
+  owned: Record<GearId, boolean>;
   /**
    * The vildenaro in your pocket: the game's money (coins dropped by the
    * enemies, spent in the shops). On the player, not in the game's stats:
@@ -78,7 +79,7 @@ export interface PlayerState {
    * Upgrade cards bought for each weapon (upgrades.ts), in the order you
    * bought them: how many = the weapon's level. Lost when you die.
    */
-  cards: Record<WeaponId, CardId[]>;
+  cards: Record<GearId, CardId[]>;
   /**
    * Seed of the cards drawn at the armory (upgrades.ts): rolled once per
    * game, so the counter shows the same cards until you buy one.
@@ -187,7 +188,12 @@ export function copyPlayer(from: PlayerState, to: PlayerState): void {
   to.loaded = { ...from.loaded };
   to.owned = { ...from.owned }; // same story
   // Arrays inside an object: one level deeper (each array copied too).
-  to.cards = { revolver: [...from.cards.revolver], shotgun: [...from.cards.shotgun], rifle: [...from.cards.rifle] };
+  to.cards = {
+    revolver: [...from.cards.revolver],
+    shotgun: [...from.cards.shotgun],
+    rifle: [...from.cards.rifle],
+    shovel: [...from.cards.shovel],
+  };
 }
 
 /** Height of the player's collision box right now (shorter when crouched). */
@@ -472,9 +478,9 @@ function fullWeapons(): Record<WeaponId, number> {
   return { revolver: tuning.revolverAmmo, shotgun: tuning.shotgunAmmo, rifle: tuning.rifleAmmo };
 }
 
-/** You start with the revolver only. */
-function startingWeapons(): Record<WeaponId, boolean> {
-  return { revolver: true, shotgun: false, rifle: false };
+/** You start with the revolver only (and your boots: no shovel). */
+function startingWeapons(): Record<GearId, boolean> {
+  return { revolver: true, shotgun: false, rifle: false, shovel: false };
 }
 
 export function respawn(p: PlayerState, world: World): void {

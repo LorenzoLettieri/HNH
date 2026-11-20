@@ -46,6 +46,18 @@ export type WeaponId = 'revolver' | 'shotgun' | 'rifle';
 /** Weapon slots, in order: key 1 = revolver, key 2 = shotgun, key 3 = carbine. */
 export const WEAPONS: readonly WeaponId[] = ['revolver', 'shotgun', 'rifle'];
 
+/**
+ * Everything you can OWN and UPGRADE: the guns, plus the shovel. The shovel
+ * isn't a slot (you never hold it in your hands instead of a gun): once
+ * bought it takes the boot's place on the melee key (kick.ts). Same idea as
+ * the bowie knife in CoD Zombies. Kept apart from WeaponId so that
+ * everything about slots, magazines and ammo (WEAPONS, loaded, AMMO_TYPE)
+ * doesn't have to pretend the shovel has bullets.
+ */
+export type GearId = WeaponId | 'shovel';
+/** Every piece of gear, in the order the shop lists it. */
+export const GEAR: readonly GearId[] = [...WEAPONS, 'shovel'];
+
 /** What's in your pockets: kinds of cartridges. */
 export type AmmoType = 'bullets' | 'shells';
 /** Which cartridges each weapon shoots (and so which pocket its reload empties). */
