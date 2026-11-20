@@ -5,6 +5,8 @@ import type { SimEvent } from '../sim/events';
 import { tuning } from '../sim/config';
 import {
   playDryFire,
+  playFireballHit,
+  playRicochet,
   playHeadshot,
   playKickImpact,
   playKickSwing,
@@ -24,13 +26,18 @@ import type { WeaponId } from '../sim/weapon';
 import { createImpacts } from './impacts';
 import { leverTimes } from './weapons/rifleView';
 import { showHitmarker } from './hitmarker';
-import { spawnBlood, spawnSparks } from './particles';
+import { spawnBlood, spawnSnort, spawnSparks } from './particles';
+import { soundAt } from './soundPosition';
 
 /** How long the muzzle flash lights up the surroundings, seconds. */
 const FLASH_DURATION = 0.07;
 const FLASH_INTENSITY = 40;
 /** The shotgun's flash is bigger. */
 const SHOTGUN_FLASH_INTENSITY = 80;
+/** Card "Ultimo colpo": the explosion's flash, and how many fire puffs and sparks it throws. */
+const EXPLOSION_FLASH_INTENSITY = 120;
+const EXPLOSION_PUFFS = 10;
+const EXPLOSION_SPARKS = 30;
 
 export interface WeaponFx {
   handle(events: SimEvent[], camera: THREE.Camera): void;
@@ -96,6 +103,28 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
           case 'weaponSwitch':
             playWeaponSwitch();
             break;
+          case 'ricochet':
+            // Card "Ricochet": the bullet bounced off a head (ptiiing + a few sparks).
+            point.set(e.x, e.y, e.z);
+            playRicochet(soundAt(camera, e.x, e.y, e.z));
+            spawnSparks(point, up, 6);
+            break;
+          case 'explosion': {
+            // Card "Ultimo colpo": a burst of fire puffs in every direction
+            // (a ring, tilted up), sparks, and the flash lighting the walls.
+            point.set(e.x, e.y, e.z);
+            playFireballHit(soundAt(camera, e.x, e.y, e.z));
+            for (let i = 0; i < EXPLOSION_PUFFS; i++) {
+              const a = (i / EXPLOSION_PUFFS) * Math.PI * 2;
+              normal.set(Math.cos(a), 0.6, Math.sin(a)).normalize();
+              spawnSnort(point, normal, 3);
+            }
+            spawnSparks(point, up, EXPLOSION_SPARKS);
+            flash.position.copy(point);
+            flashTime = FLASH_DURATION * 2;
+            flashPeak = EXPLOSION_FLASH_INTENSITY;
+            break;
+          }
           case 'kickStart':
             playKickSwing();
             for (const f of fx.onKick) f();

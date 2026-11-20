@@ -64,6 +64,18 @@ const CARD_TEXT: Record<CardId, { name: string; desc: string }> = {
     name: 'Colpo da cavaliere',
     desc: 'Il primo colpo dopo un salto sul muro è sempre critico, ovunque colpisca. Finché non tocchi terra.',
   },
+  quickHand: {
+    name: 'Mano lesta',
+    desc: 'Il fanning è più stretto e più veloce. Ogni uccisione durante la raffica le aggiunge un colpo, gratis.',
+  },
+  ricochet: {
+    name: 'Ricochet',
+    desc: 'Dopo un colpo critico il proiettile rimbalza nel corpo del nemico più vicino.',
+  },
+  lastShot: {
+    name: 'Ultimo colpo',
+    desc: 'L’ultimo proiettile del tamburo esplode dove colpisce. Buono contro i gruppi.',
+  },
 };
 
 /** Weapon names in the upgrade panel's title. */

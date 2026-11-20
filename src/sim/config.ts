@@ -141,6 +141,15 @@ export const tuning = {
   fastCylinderReloadScale: 0.67,
   /** Card "Ricarica in scivolata": seconds of sliding for each round pushed into the cylinder. */
   slideReloadInterval: 0.3,
+  /** Card "Mano lesta": the fanning's spread and the time between its shots are multiplied by these. */
+  quickHandSpreadScale: 0.5,
+  quickHandIntervalScale: 0.7,
+  /** Card "Ricochet": how far (meters) the bullet looks for the next enemy after a critical hit, and its damage. */
+  ricochetRange: 12,
+  ricochetDamage: 50,
+  /** Card "Ultimo colpo": radius (meters) and damage of the last round's explosion (100 = two body shots). */
+  lastShotRadius: 3,
+  lastShotDamage: 100,
   /** Minimum seconds between two shots (it's semi-automatic: one click = one shot). */
   revolverFireInterval: 0.32,
   /** A click slightly before the gun is ready still fires as soon as it is, seconds. */

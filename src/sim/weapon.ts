@@ -232,9 +232,13 @@ export function stepWeapon(
   }
   const fanning = p.fanShotsLeft > 0;
   if ((p.fireBufferTicks > 0 || fanning) && ready) {
+    // The last round in the cylinder (card "Ultimo colpo"). Not during
+    // HIGH NOON: the cylinder never empties, there's no last round.
+    const lastRound = ammo === 1 && !bottomless;
+    const eventsBefore = events.length;
     if (fanning) {
       events.push({ type: 'fire', weapon: 'revolver', barrel: 0 });
-      fireFanned(p, world, entities, events, rng);
+      fireFanned(p, world, entities, events, rng, lastRound);
     } else if (p.weapon === 'shotgun') {
       // Right barrel first (2 shells left), then the left one.
       events.push({ type: 'fire', weapon: 'shotgun', barrel: tuning.shotgunAmmo - ammo === 0 ? 0 : 1 });
@@ -244,7 +248,7 @@ export function stepWeapon(
       fireRifle(p, world, entities, events, rng);
     } else {
       events.push({ type: 'fire', weapon: 'revolver', barrel: 0 });
-      fireRevolver(p, world, entities, events);
+      fireRevolver(p, world, entities, events, lastRound);
     }
     if (!bottomless) setCurrentAmmo(p, ammo - 1);
     p.wallJumpShot = false; // the wall jump's shot is fired (hit or miss)
@@ -253,9 +257,17 @@ export function stepWeapon(
     p.fanQueued = false;
     if (fanning) {
       p.fanShotsLeft--;
+      // Card "Mano lesta": every kill of this shot adds a shot to the burst,
+      // with a free round to fire it (the burst never stops on a kill streak).
+      if (hasCard(p, 'quickHand')) {
+        const kills = events.slice(eventsBefore).filter((e) => e.type === 'hit' && e.killed).length;
+        p.fanShotsLeft += kills;
+        setCurrentAmmo(p, currentAmmo(p) + kills);
+      }
       // The next shot of the burst comes quickly; after the last one the
       // hand needs a moment before the revolver is back to normal.
-      p.fireCooldownTicks = secondsToTicks(p.fanShotsLeft > 0 ? tuning.revolverFanInterval : tuning.revolverFanRecovery);
+      const interval = tuning.revolverFanInterval * (hasCard(p, 'quickHand') ? tuning.quickHandIntervalScale : 1);
+      p.fireCooldownTicks = secondsToTicks(p.fanShotsLeft > 0 ? interval : tuning.revolverFanRecovery);
     }
   }
 }
@@ -346,6 +358,8 @@ function trace(
   living: Entity[],
   pellet: boolean,
   events: SimEvent[],
+  /** If given, filled with where the bullet stopped and whether it hit anything (level or entity). */
+  end?: { x: number; y: number; z: number; hit: boolean },
 ): { target: Entity; distance: number; headshot: boolean } | null {
   // Two raycasts: against the level and against the (living) entities.
   // The bullet stops at whichever is closer: a target behind a wall is safe.
@@ -375,6 +389,12 @@ function trace(
   const to = hit
     ? { x: hit.x, y: hit.y, z: hit.z }
     : { x: ox + dx * range, y: oy + dy * range, z: oz + dz * range };
+  if (end) {
+    end.x = to.x;
+    end.y = to.y;
+    end.z = to.z;
+    end.hit = hit !== null;
+  }
   events.push({
     type: 'shot',
     pellet,
@@ -414,23 +434,128 @@ function applyGunDamage(
 }
 
 /** Revolver: one hitscan bullet, straight where you look. */
-function fireRevolver(p: PlayerState, world: World, entities: Entity[], events: SimEvent[]): void {
+function fireRevolver(p: PlayerState, world: World, entities: Entity[], events: SimEvent[], lastRound: boolean): void {
   const { ox, oy, oz, dx, dy, dz } = aim(p);
-  const hit = trace(ox, oy, oz, dx, dy, dz, tuning.weaponRange, world, entities.filter(isAlive), false, events);
-  revolverHit(p, hit, events);
+  revolverBullet(p, ox, oy, oz, dx, dy, dz, world, entities, events, lastRound);
 }
 
 /**
- * Damage of a revolver bullet that hit something (a normal shot or a fanned
- * one). Card "Colpo da cavaliere": the first shot after a wall jump is a
- * critical hit wherever it lands. (wallJumpShot is cleared by every shot, in
- * stepWeapon: a miss wastes it.)
+ * One revolver bullet along a ray (a normal shot or a fanned one): the
+ * trace, the damage, and what the cards add.
+ * - "Colpo da cavaliere": the first shot after a wall jump is a critical hit
+ *   wherever it lands (wallJumpShot is cleared by every shot, in stepWeapon:
+ *   a miss wastes it).
+ * - "Ricochet": a critical hit bounces into another enemy.
+ * - "Ultimo colpo": the cylinder's last round explodes where it lands.
  */
-function revolverHit(p: PlayerState, hit: ReturnType<typeof trace>, events: SimEvent[]): void {
-  if (!hit) return;
-  const critical = hit.headshot || (p.wallJumpShot && hasCard(p, 'riderShot'));
-  const amount = tuning.revolverDamage * (critical ? tuning.headshotMultiplier : 1);
-  applyGunDamage(hit.target, amount, critical, 'revolver', hit.distance, events);
+function revolverBullet(
+  p: PlayerState,
+  ox: number, oy: number, oz: number,
+  dx: number, dy: number, dz: number,
+  world: World,
+  entities: Entity[],
+  events: SimEvent[],
+  lastRound: boolean,
+): void {
+  const end = { x: 0, y: 0, z: 0, hit: false };
+  const hit = trace(ox, oy, oz, dx, dy, dz, tuning.weaponRange, world, entities.filter(isAlive), false, events, end);
+  if (hit) {
+    const critical = hit.headshot || (p.wallJumpShot && hasCard(p, 'riderShot'));
+    const amount = tuning.revolverDamage * (critical ? tuning.headshotMultiplier : 1);
+    applyGunDamage(hit.target, amount, critical, 'revolver', hit.distance, events);
+    if (critical && hasCard(p, 'ricochet')) ricochet(p, end, hit.target, world, entities, events);
+  }
+  // Into the sky: nothing to explode against.
+  if (lastRound && end.hit && hasCard(p, 'lastShot')) explode(p, end, world, entities, events);
+}
+
+/** Is the straight line from a to b free of level boxes? (Explosions and ricochets don't go through walls.) */
+function lineFree(world: World, ax: number, ay: number, az: number, bx: number, by: number, bz: number): boolean {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const dz = bz - az;
+  const len = Math.hypot(dx, dy, dz);
+  if (len < 1e-6) return true;
+  return raycastBoxes(ax, ay, az, dx / len, dy / len, dz / len, len, world.boxes) === null;
+}
+
+/** Center of an entity's hitbox: where a ricochet aims, and what an explosion measures to. */
+function hitCenter(e: Entity): { x: number; y: number; z: number } {
+  const b = hitBox(e);
+  return { x: (b.minX + b.maxX) / 2, y: (b.minY + b.maxY) / 2, z: (b.minZ + b.maxZ) / 2 };
+}
+
+/**
+ * Card "Ricochet": from the point where the critical hit landed, the bullet
+ * flies on toward the BODY of the nearest living enemy (not the one it just
+ * hit) within ricochetRange and in sight. It's a new bullet: a 'shot' event
+ * (blood where it lands) and plain body damage. It doesn't bounce again: no
+ * chain reactions across the whole horde.
+ */
+function ricochet(
+  p: PlayerState,
+  from: { x: number; y: number; z: number },
+  first: Entity,
+  world: World,
+  entities: Entity[],
+  events: SimEvent[],
+): void {
+  let best: Entity | null = null;
+  let bestDistance = tuning.ricochetRange;
+  for (const e of entities) {
+    if (e === first || !isEnemy(e) || !isAlive(e)) continue;
+    const c = hitCenter(e);
+    const d = Math.hypot(c.x - from.x, c.y - from.y, c.z - from.z);
+    if (d < bestDistance && lineFree(world, from.x, from.y, from.z, c.x, c.y, c.z)) {
+      best = e;
+      bestDistance = d;
+    }
+  }
+  if (!best) return;
+  events.push({ type: 'ricochet', x: from.x, y: from.y, z: from.z });
+  const c = hitCenter(best);
+  const dx = (c.x - from.x) / bestDistance;
+  const dy = (c.y - from.y) / bestDistance;
+  const dz = (c.z - from.z) / bestDistance;
+  // Only the target is in the list: on the way the bullet can't hit the
+  // first enemy again (it starts inside its hitbox).
+  const hit = trace(from.x, from.y, from.z, dx, dy, dz, bestDistance + 1, world, [best], false, events);
+  if (hit) {
+    const distance = Math.hypot(c.x - p.x, c.z - p.z);
+    applyGunDamage(hit.target, tuning.ricochetDamage, false, 'revolver', distance, events);
+  }
+}
+
+/**
+ * Card "Ultimo colpo": an explosion where the last round landed. Every living
+ * enemy whose hitbox center is within lastShotRadius takes lastShotDamage,
+ * unless a wall is in between (measured from a point pulled back a little
+ * toward you: the impact point is ON the wall, a line from there could
+ * start inside it).
+ */
+function explode(
+  p: PlayerState,
+  at: { x: number; y: number; z: number },
+  world: World,
+  entities: Entity[],
+  events: SimEvent[],
+): void {
+  events.push({ type: 'explosion', x: at.x, y: at.y, z: at.z, radius: tuning.lastShotRadius });
+  const eye = currentEyeHeight(p);
+  const bx = at.x - p.x;
+  const by = at.y - (p.y + eye);
+  const bz = at.z - p.z;
+  const back = Math.hypot(bx, by, bz) || 1;
+  const ox = at.x - (bx / back) * 0.15;
+  const oy = at.y - (by / back) * 0.15;
+  const oz = at.z - (bz / back) * 0.15;
+  for (const e of entities) {
+    if (!isEnemy(e) || !isAlive(e)) continue;
+    const c = hitCenter(e);
+    if (Math.hypot(c.x - at.x, c.y - at.y, c.z - at.z) > tuning.lastShotRadius) continue;
+    if (!lineFree(world, ox, oy, oz, c.x, c.y, c.z)) continue;
+    applyGunDamage(e, tuning.lastShotDamage, false, 'revolver', Math.hypot(c.x - p.x, c.z - p.z), events);
+  }
 }
 
 /**
@@ -439,14 +564,21 @@ function revolverHit(p: PlayerState, hit: ReturnType<typeof trace>, events: SimE
  * random direction: the hand slapping the hammer shakes the gun. The same
  * "random point in a disc" as the carbine's hip fire (see fireRifle).
  */
-function fireFanned(p: PlayerState, world: World, entities: Entity[], events: SimEvent[], rng: RandomState): void {
+function fireFanned(
+  p: PlayerState,
+  world: World,
+  entities: Entity[],
+  events: SimEvent[],
+  rng: RandomState,
+  lastRound: boolean,
+): void {
   const a = aim(p);
-  const spread = Math.tan((tuning.revolverFanSpread * Math.PI) / 180);
+  const steady = hasCard(p, 'quickHand') ? tuning.quickHandSpreadScale : 1; // "Mano lesta"
+  const spread = Math.tan((tuning.revolverFanSpread * steady * Math.PI) / 180);
   const angle = random(rng) * Math.PI * 2;
   const r = Math.sqrt(random(rng));
   const [dx, dy, dz] = tilt(p, a, Math.cos(angle) * r, Math.sin(angle) * r, spread);
-  const hit = trace(a.ox, a.oy, a.oz, dx, dy, dz, tuning.weaponRange, world, entities.filter(isAlive), false, events);
-  revolverHit(p, hit, events);
+  revolverBullet(p, a.ox, a.oy, a.oz, dx, dy, dz, world, entities, events, lastRound);
 }
 
 /**

@@ -628,10 +628,10 @@ futuro **poligono di tiro / tutorial**.
 
 **Mazzo del revolver** (7 carte)
 - **Tamburo del becchino**: 8 colpi invece di 6; il fanning svuota tutto il tamburo. [FATTA]
-- **Mano lesta**: fanning più stretto e veloce; ogni uccisione durante la raffica aggiunge un colpo alla raffica.
-- **Ricochet**: dopo un headshot il colpo rimbalza sul corpo del nemico più vicino.
+- **Mano lesta**: fanning più stretto e veloce; ogni uccisione durante la raffica aggiunge un colpo alla raffica (gratis). [FATTA]
+- **Ricochet**: dopo un headshot (o un critico) il colpo rimbalza sul corpo del nemico più vicino (entro 12 m, in vista, danno 50, un rimbalzo solo). [FATTA]
 - **Ricarica in scivolata**: scivolare rimette un colpo nel tamburo ogni 0,3 s. [FATTA]
-- **Ultimo colpo**: l'ultimo proiettile del tamburo esplode (piccola area, buono contro i gruppi).
+- **Ultimo colpo**: l'ultimo proiettile del tamburo esplode (raggio 3 m, 100 danni = due colpi al corpo, non attraverso i muri). [FATTA]
 - **Tamburo veloce**: ricarica più rapida di un terzo. [FATTA]
 - **Colpo da cavaliere**: il primo colpo dopo un wall jump è un critico garantito (finché non tocchi terra). [FATTA]
 
@@ -677,7 +677,7 @@ tempo (animazione e suoni si accorciano con lei). **Ricarica in scivolata**: un 
 scivolata col revolver in mano (non durante ricarica o fanning; il timer riparte a ogni scivolata, così non si
 sfrutta a colpetti). **Colpo da cavaliere**: dopo un wall jump il primo colpo è critico ovunque colpisca, finché
 non tocchi terra (un colpo a vuoto lo spreca; vale anche per il primo colpo del fanning).
-Prossimo: **rimescolare** a pagamento.
+**Passo 5** [FATTO]: il mazzo del revolver è completo (7 carte). Il rimescolamento è rimandato.
 
 Scartate: Proiettili d'argento, Rimbalzo (carabina), Colpo di grazia, Polso fermo, Mozzata corta,
 Leva in corsa, Sangue freddo, Ottone caldo.

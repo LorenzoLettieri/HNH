@@ -46,6 +46,10 @@ export type SimEvent =
       target: Entity['type'];
     }
   | { type: 'playerHurt'; damage: number; fromX: number; fromZ: number }
+  /** Card "Ricochet": a bullet bounced off a head toward another enemy (the ptiiing). From where. */
+  | { type: 'ricochet'; x: number; y: number; z: number }
+  /** Card "Ultimo colpo": the last round exploded. Where, and how big. */
+  | { type: 'explosion'; x: number; y: number; z: number; radius: number }
   /** You jumped off the ground. `hop` = right after landing (bunny hop), `slide` = out of a slide. */
   | { type: 'jump'; hop: boolean; slide: boolean }
   /** You kicked off a wall. `left` = wall jumps still available before touching the ground. */

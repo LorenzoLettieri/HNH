@@ -22,7 +22,15 @@ import { WEAPONS, type WeaponId } from './weapon';
  * id alone is enough to buy it. To add a card: an id here, a row in CARDS,
  * its effect where the weapon reads it (hasCard), its name in shopMenu.ts.
  */
-export type CardId = 'undertakerCylinder' | 'fastCylinder' | 'slideReload' | 'riderShot';
+export type CardId =
+  // Revolver
+  | 'undertakerCylinder'
+  | 'fastCylinder'
+  | 'slideReload'
+  | 'riderShot'
+  | 'quickHand'
+  | 'ricochet'
+  | 'lastShot';
 
 export interface CardInfo {
   /** The weapon whose deck it's in. */
@@ -38,6 +46,12 @@ export const CARDS: Record<CardId, CardInfo> = {
   slideReload: { weapon: 'revolver' },
   /** Colpo da cavaliere: the first shot after a wall jump is a critical hit (wallJumpShot in player.ts). */
   riderShot: { weapon: 'revolver' },
+  /** Mano lesta: tighter, faster fanning; every kill during the burst adds a free shot to it (stepWeapon). */
+  quickHand: { weapon: 'revolver' },
+  /** Ricochet: after a critical hit the bullet bounces into the body of the nearest enemy (ricochet in weapon.ts). */
+  ricochet: { weapon: 'revolver' },
+  /** Ultimo colpo: the cylinder's last round explodes where it lands (explode in weapon.ts). */
+  lastShot: { weapon: 'revolver' },
 };
 
 /** The deck of a weapon: every card that belongs to it, in a fixed order (the draw shuffles a copy). */

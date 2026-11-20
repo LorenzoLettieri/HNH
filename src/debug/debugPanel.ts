@@ -67,6 +67,12 @@ export function createDebugPanel(options: {
   shop.number(tuning, 'undertakerExtraRounds', 0, 6, 1);
   shop.number(tuning, 'fastCylinderReloadScale', 0.2, 1, 0.01);
   shop.number(tuning, 'slideReloadInterval', 0.05, 1, 0.01);
+  shop.number(tuning, 'quickHandSpreadScale', 0, 1, 0.05);
+  shop.number(tuning, 'quickHandIntervalScale', 0.2, 1, 0.05);
+  shop.number(tuning, 'ricochetRange', 1, 40, 1);
+  shop.number(tuning, 'ricochetDamage', 0, 300, 5);
+  shop.number(tuning, 'lastShotRadius', 0.5, 8, 0.1);
+  shop.number(tuning, 'lastShotDamage', 0, 400, 5);
 
   // --- Style meter ---
   const style = panel.folder('Style (src/sim/config.ts, src/sim/style.ts)');
