@@ -232,9 +232,15 @@ export const tuning = {
   rifleReloadPerRound: 0.38,
   /** A click stops the reload: seconds before it can fire (the gun comes back up). */
   rifleReloadInterrupt: 0.12,
-  /** Damage per bullet (50% more than the revolver: 2 body shots on most things). */
-  rifleDamage: 75,
-  /** Critical multiplier: 75 × 4 = 300, a headshot kills almost anything. */
+  /**
+   * Damage per bullet: twice the revolver. Designed on the health steps of
+   * healthForWave (ghoul, hound, eye-bat: 50 → 100 at wave 10 → 150 at 20 → 200
+   * at 30): ONE body shot kills them up to wave 19, where the revolver already
+   * needs two. Per second it's about the revolver's (100 / 0.62 s ≈ 160 vs
+   * 50 / 0.32 s ≈ 156): its edge is fewer bullets and one-shot breakpoints.
+   */
+  rifleDamage: 100,
+  /** Critical multiplier: 100 × 4 = 400, a headshot kills any ghoul at any wave (max 200). */
   rifleHeadshotMultiplier: 4,
   /** From the hip the bullet goes off the aim, up to this many degrees; aimed down the sights: 0. */
   rifleHipSpread: 2.5,

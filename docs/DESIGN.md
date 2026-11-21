@@ -681,7 +681,9 @@ futuro **poligono di tiro / tutorial**.
   sparare in alto non ti schiaccia a terra.
   **Si compra all'armeria** per 800 vildenaro (si parte col solo revolver).
 - **Carabina a leva** [FATTO, da tarare] — tasto 3. L'arma **per i nemici lontani e i colpi critici**:
-  75 danni al corpo (1,5× il revolver), **critico ×4** (300: una testa uccide quasi tutto), 8 colpi nel
+  **100 danni al corpo** (il doppio del revolver; prima 75, alzato dopo il playtest di novembre 2026: al corpo
+  uccide ghoul, cani e Malocchi **con un colpo fino all'ondata 19**, quando al revolver ne servono già due),
+  **critico ×4** (400: una testa uccide un ghoul a qualsiasi ondata), 8 colpi nel
   serbatoio, un colpo ogni **0,62 s** (il tempo di **azionare la leva**, che è il pezzo forte
   dell'animazione). **Usa gli stessi proiettili del revolver** (.44-40, come Colt e Winchester del 1873:
   la tasca è una sola), così non serve un nuovo tipo di munizione a terra. **Dall'anca non è precisa**
@@ -734,7 +736,7 @@ futuro **poligono di tiro / tutorial**.
 - **Spinta di gruppo**: la spinta a bruciapelo lancia anche chi sta entro 2,5 m dietro al primo nemico (al 70%).
 
 **Mazzo della carabina** (7 carte) [FATTO]
-- **Duellante**: dopo 1,5 s senza sparare il colpo successivo fa danno doppio (150 al corpo, 600 critico),
+- **Duellante**: dopo 1,5 s senza sparare il colpo successivo fa danno doppio (200 al corpo, 800 critico: al corpo uccide un ghoul a qualsiasi ondata),
   con un "tic" quando è pronto.
 - **Leva da pistolero**: niente imprecisione dall'anca (in aria e a terra) e leva più veloce (0,62 → 0,43 s;
   animazione e suoni seguono). Mirare serve ancora per lo zoom e per Cannocchiale.
