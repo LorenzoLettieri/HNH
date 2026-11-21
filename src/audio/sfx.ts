@@ -649,6 +649,80 @@ export function playKickImpact(hits: number): void {
 }
 
 /**
+ * The shovel goes up and comes down. A heavier, lower whoosh than the boot
+ * (a wide flat blade pushes more air): a band of noise sweeping UP in pitch
+ * as it speeds up, timed to peak right at the impact (`impact` = seconds
+ * from now, the simulation's wind-up). Plus the creak of the wooden shaft
+ * at the top of the swing.
+ */
+export function playShovelSwing(impact: number): void {
+  if (!ctx) return;
+  const v = 0.9 + Math.random() * 0.2;
+  // The creak: a short, narrow, mid-low band of noise at the top of the swing.
+  noiseBurst({ duration: 0.06, volume: 0.25, filter: 'bandpass', frequency: 600 * v, q: 6 });
+  // The whoosh: it starts quiet and swells into the impact. noiseBurst only
+  // decays, so we build it by hand: a gain ramping UP (exponentially: loudness
+  // is heard on a log scale), the filter sweeping up with it.
+  const t0 = ctx.currentTime + impact * 0.35;
+  const t1 = ctx.currentTime + impact;
+  const src = ctx.createBufferSource();
+  src.buffer = noiseBuffer;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.Q.value = 0.9;
+  filter.frequency.setValueAtTime(220 * v, t0);
+  filter.frequency.exponentialRampToValueAtTime(900 * v, t1);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.001, t0);
+  gain.gain.exponentialRampToValueAtTime(0.9, t1);
+  gain.gain.exponentialRampToValueAtTime(0.001, t1 + 0.08);
+  src.connect(filter).connect(gain).connect(world);
+  src.start(t0, Math.random() * 0.5, t1 + 0.1 - t0);
+}
+
+/**
+ * The shovel hits: a cartoon frying-pan BONK. Three layers:
+ * - a dull thud (the blow on the body);
+ * - the clang of the blade: the metallic partials of ring(), short;
+ * - the "DOIIING": a low tone whose pitch WOBBLES (vibrato) and settles,
+ *   like a sheet of metal still shaking. Vibrato = a second, slow oscillator
+ *   (an LFO, "low frequency oscillator") connected to the first one's
+ *   frequency: it pushes it up and down 16 times a second, and its depth
+ *   fades out with the vibration.
+ * More things hit = louder.
+ */
+export function playShovelBonk(hits: number): void {
+  if (!ctx) return;
+  const v = 0.92 + Math.random() * 0.16;
+  const loud = Math.min(1, 0.75 + hits * 0.1);
+  thump({ duration: 0.2, volume: 0.9 * loud, from: 140 * v, to: 45 });
+  noiseBurst({ duration: 0.05, volume: 0.5 * loud, filter: 'highpass', frequency: 2500 }); // the slap
+  ring(520 * v, 0.5, 0.18 * loud);
+
+  const t0 = ctx.currentTime;
+  const base = 190 * v;
+  const osc = ctx.createOscillator();
+  osc.type = 'triangle'; // a bit brighter than a sine: it reads as metal, not as a hum
+  osc.frequency.setValueAtTime(base * 1.25, t0); // starts sharp, falls onto its pitch: "dOIng"
+  osc.frequency.exponentialRampToValueAtTime(base, t0 + 0.08);
+  const lfo = ctx.createOscillator();
+  lfo.frequency.value = 16;
+  const depth = ctx.createGain(); // how far the LFO pushes the pitch, in Hz
+  depth.gain.setValueAtTime(base * 0.12, t0);
+  depth.gain.exponentialRampToValueAtTime(1, t0 + 0.6);
+  lfo.connect(depth).connect(osc.frequency);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.exponentialRampToValueAtTime(0.45 * loud, t0 + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.65);
+  osc.connect(gain).connect(world);
+  osc.start(t0);
+  lfo.start(t0);
+  osc.stop(t0 + 0.7);
+  lfo.stop(t0 + 0.7);
+}
+
+/**
  * The player gets hit. `strength` 0..1 (from the damage). Layers:
  * a heavy body blow (sine dropping very low), a wet smack of flesh (band of
  * noise), a dry crack on top, a short grunt; for hard hits a ringing in the

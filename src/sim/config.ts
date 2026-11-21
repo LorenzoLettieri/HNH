@@ -359,11 +359,11 @@ export const tuning = {
 
   // --- Shovel (melee upgrade: bought at the armory, it takes the boot's place on F; see kick.ts) ---
   /**
-   * Seconds from the press to the blade landing. A bit longer than the kick:
-   * a shovel has to be swung, and the wind-up is what you'll SEE coming
-   * (the animation will be timed on it).
+   * Seconds from the press to the blade landing. Longer than the kick: the
+   * shovel goes up over your head and comes down (the animation in
+   * shovelView.ts is timed on this number: half raising, half striking).
    */
-  shovelWindup: 0.12,
+  shovelWindup: 0.16,
   /** Seconds before the next swing (counted from the press). */
   shovelCooldown: 0.6,
   /** Reach, meters, edge to edge: the handle makes it longer than a leg. */

@@ -2,6 +2,7 @@
 // impact holes, sparks, the muzzle flash lighting up the world, sounds.
 import * as THREE from 'three';
 import type { SimEvent } from '../sim/events';
+import { tuning } from '../sim/config';
 import {
   playDryFire,
   playDuelReady,
@@ -10,6 +11,8 @@ import {
   playHeadshot,
   playKickImpact,
   playKickSwing,
+  playShovelBonk,
+  playShovelSwing,
   playReload,
   playCarbineShot,
   playCarbineLever,
@@ -25,6 +28,7 @@ import {
 import type { WeaponId } from '../sim/weapon';
 import type { MeleeTool } from '../sim/kick';
 import { createImpacts } from './impacts';
+import { hitStopSettings, requestHitStop } from './hitStop';
 import { leverTimes } from './weapons/rifleView';
 import { showHitmarker } from './hitmarker';
 import { spawnBlood, spawnSnort, spawnSparks } from './particles';
@@ -37,6 +41,9 @@ const FLASH_INTENSITY = 40;
 const SHOTGUN_FLASH_INTENSITY = 80;
 /** Card "Ultimo colpo": the explosion's flash, and how many fire puffs and sparks it throws. */
 const EXPLOSION_FLASH_INTENSITY = 120;
+/** Particles where the shovel lands, for each enemy hit. */
+const SHOVEL_SPARKS = 12;
+const SHOVEL_BLOOD = 18;
 const EXPLOSION_PUFFS = 10;
 const EXPLOSION_SPARKS = 30;
 
@@ -130,11 +137,27 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
             break;
           }
           case 'kickStart':
-            playKickSwing();
+            if (e.tool === 'shovel') playShovelSwing(tuning.shovelWindup);
+            else playKickSwing();
             for (const f of fx.onKick) f(e.tool);
             break;
           case 'kickLand':
-            if (e.hits > 0) playKickImpact(e.hits);
+            if (e.hits === 0) break;
+            if (e.tool === 'kick') {
+              playKickImpact(e.hits);
+              break;
+            }
+            // The shovel: BONK, sparks off the blade and blood where it lands, and the whole game stops for an instant.
+            playShovelBonk(e.hits);
+            for (const c of e.at) {
+              point.set(c.x, c.y, c.z);
+              // Toward you: the blood and the sparks fly back off the face of the blade.
+              normal.set(camera.position.x - c.x, 0, camera.position.z - c.z).normalize();
+              normal.y = 0.6;
+              spawnSparks(point, normal, SHOVEL_SPARKS);
+              if (c.flesh) spawnBlood(point, normal, SHOVEL_BLOOD);
+            }
+            requestHitStop(hitStopSettings.shovel + hitStopSettings.perExtraHit * (e.hits - 1));
             break;
           case 'dryFire':
             playDryFire();

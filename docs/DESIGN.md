@@ -363,14 +363,17 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
   (1,6 m, ±45°), 25 danni (mezzo ghoul base: è uno strumento, non l'arma principale), e **spinge via**
   (13 m/s in avanti, 5 m/s in alto): il ghoul vola via, interrompe artigliata e balzo, e resta a terra
   0,5 s. Si può calciare mentre si ricarica. Ricarica di 0,55 s.
-- **Badile (melee potenziato)** [FATTI: simulazione, modello e colpo a schermo; da fare suoni ed effetti, carte]:
+- **Badile (melee potenziato)** [FATTI: simulazione, modello, colpo a schermo, suoni ed effetti; da fare: carte]:
   si compra all'armeria (600 vildenaro) e **prende il posto dello stivale sul tasto F**, come il
   coltello bowie di CoD Zombies: la pistola resta in mano, non è uno slot. Stesso attacco del calcio
   (cono davanti, niente attraverso i muri, spinta), numeri diversi: portata 2,2 m, arco ±60°,
-  **75 danni** (il triplo del calcio), spinta 15 m/s in avanti e 6 in alto, 0,12 s di carica, 0,6 s
-  di ricarica. Uccisione = premio di Stile "DI BADILE". A schermo: **spazzata da sinistra a destra**
-  con la sola mano sinistra, che non si vede (l'impugnatura resta sotto il bordo dello schermo); la pistola
-  si scosta. Se un giorno servirà, braccio vero in posa come quelli della carabina. Ha il **suo mazzo di carte** (§6c), pensato
+  **75 danni** (il triplo del calcio), spinta 15 m/s in avanti e 6 in alto, 0,16 s di carica, 0,6 s
+  di ricarica. Uccisione = premio di Stile "DI BADILE". A schermo: un **BONK dall'alto, quasi comico**:
+  il badile cala sul mirino di piatto, si ferma di colpo e rimbalza come una molla; la mano non si vede
+  (l'impugnatura resta sotto il bordo dello schermo), la pistola si scosta. Carica 0,16 s (il calcio 0,08):
+  il colpo dall'alto deve vedersi arrivare. **Impatto**: BONK da padella col "doiiing" che vibra, scintille
+  (e sangue sui nemici) nel punto colpito, botta della camera e **hit-stop** di 0,07 s (tutto si ferma un
+  istante, il suono no: il peso del colpo). Se un giorno servirà, braccio vero in posa come quelli della carabina. Ha il **suo mazzo di carte** (§6c), pensato
   attorno all'idea che **premia la velocità** (il danno × velocità è una carta, non la base):
   - **Slancio**: il danno cresce con la velocità orizzontale (fermo = normale, a velocità da bhop
     un ghoul muore in un colpo).
