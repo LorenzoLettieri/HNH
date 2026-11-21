@@ -90,14 +90,19 @@ export function healthForWave(baseHealth: number, n: number): number {
  * Adding an enemy to the waves = adding a line here.
  */
 interface EnemyType {
+  /** Which entity it spawns (to count how many of this type are alive). */
+  type: Enemy['type'];
   /** Weight: how many budget points it takes. */
   cost: () => number;
   /** First wave it can appear in. */
   fromWave: () => number;
+  /** Optional: max alive at the same time (when reached, the budget goes to the other types). */
+  maxAlive?: () => number;
   spawn: (game: GameState, id: number, x: number, y: number, z: number) => Enemy;
 }
 const ROSTER: EnemyType[] = [
   {
+    type: 'ghoul',
     cost: () => tuning.ghoulCost,
     fromWave: () => 1,
     spawn: (game, id, x, y, z) => {
@@ -107,6 +112,7 @@ const ROSTER: EnemyType[] = [
     },
   },
   {
+    type: 'eyebat',
     cost: () => tuning.eyebatCost,
     fromWave: () => tuning.eyebatFromWave,
     // Flyers appear in the air above the spawn point, then fly to you.
@@ -114,16 +120,20 @@ const ROSTER: EnemyType[] = [
       createEyebat(id, x, y + tuning.eyebatSpawnHeight, z, healthForWave(tuning.eyebatHealth, game.wave.number)),
   },
   {
+    type: 'hound',
     cost: () => tuning.houndCost,
     fromWave: () => tuning.houndFromWave,
+    maxAlive: () => tuning.houndMaxAlive,
     spawn: (game, id, x, y, z) => createHound(id, x, y, z, healthForWave(tuning.houndHealth, game.wave.number)),
   },
   {
+    type: 'bull',
     cost: () => tuning.bullCost,
     fromWave: () => tuning.bullFromWave,
     spawn: (game, id, x, y, z) => createBull(id, x, y, z, healthForWave(tuning.bullHealth, game.wave.number)),
   },
   {
+    type: 'sharpshooter',
     cost: () => tuning.sharpshooterCost,
     fromWave: () => tuning.sharpshooterFromWave,
     // Born without a perch: the first thing it does is pick one and walk there (sharpshooter.ts).
@@ -160,7 +170,12 @@ export function stepWaves(game: GameState, world: World, events: SimEvent[]): vo
   const w = game.wave;
   // Weight alive right now (with every enemy weighing 1: how many are alive).
   let alive = 0;
-  for (const e of game.entities) if (isEnemy(e) && e.state !== 'dead') alive += enemyCost(e);
+  const aliveByType: Record<Enemy['type'], number> = { ghoul: 0, eyebat: 0, hound: 0, bull: 0, sharpshooter: 0 };
+  for (const e of game.entities) {
+    if (!isEnemy(e) || e.state === 'dead') continue;
+    alive += enemyCost(e);
+    aliveByType[e.type]++;
+  }
 
   if (w.phase === 'break') {
     w.breakTicks--;
@@ -197,7 +212,12 @@ export function stepWaves(game: GameState, world: World, events: SimEvent[]): vo
     w.budgetLeft = 0; // leftover too small for anything: the wave is fully spawned
     return;
   }
-  const type = affordable[randomInt(game, affordable.length)];
+  // ...minus the types already at their max alive (e.g. hounds): this spawn
+  // goes to the others. If ALL the affordable ones are full (only hounds left
+  // in the budget), wait for one to die.
+  const allowed = affordable.filter((t) => !t.maxAlive || aliveByType[t.type] < t.maxAlive());
+  if (allowed.length === 0) return;
+  const type = allowed[randomInt(game, allowed.length)];
   game.entities.push(type.spawn(game, game.nextEntityId++, s.x, s.y, s.z));
   w.budgetLeft -= type.cost();
   w.spawnCooldownTicks = secondsToTicks(spawnInterval(w.number));

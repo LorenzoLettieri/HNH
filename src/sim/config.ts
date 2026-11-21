@@ -563,6 +563,14 @@ export const tuning = {
   houndCost: 3,
   /** First wave where hounds can appear. */
   houndFromWave: 5,
+  /**
+   * ATTACK TOKENS: how many hounds can be attacking (charge, bite, skid) at
+   * the same time. The others keep stalking and wait for a token to free up.
+   * 1 = you always face one charge at a time: deadly but readable.
+   */
+  houndMaxAttackers: 1,
+  /** Max hounds alive at the same time: when there are this many, the waves spawn something else. */
+  houndMaxAlive: 3,
 
   // --- Bull (big charging brute; AI in src/sim/bull.ts) ---
   /**

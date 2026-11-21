@@ -500,6 +500,12 @@ un **peso** (quanto è pericoloso), ogni ondata un **budget** di peso; a ogni sp
 a caso tra quelli che il budget residuo si può permettere. Stesso budget, mix diverso in ogni
 partita. Il ghoul pesa **1**, il Malocchio **2** e compare **dall'ondata 3** (`eyebatFromWave`):
 le prime due ondate sono di soli ghoul, per scaldarsi. Il cane infernale pesa **3** e compare dall'ondata 5. Il toro pesa **5** e compare dall'ondata 7.
+
+**Cani più leggibili** [FATTO, da tarare] (playtest di novembre 2026: record all'ondata 12, quasi tutti
+muoiono alla 9–10, e i cani sono la causa principale). Ogni cane decideva da solo, così tre cani alle
+spalle caricavano quasi insieme. Ora: **gettoni d'attacco**, solo **1 cane alla volta** può caricare
+(la sbandata conta: il momento per punirlo non lo ruba il cane dopo), gli altri pedinano e aspettano;
+e al massimo **3 cani vivi insieme** (arrivati al tetto, il budget dell'ondata va agli altri nemici).
 Il caso usa un generatore con **seed** (deterministico: stesso seed = stessa partita).
 
 | Ondata | Budget (peso) | Corridori (tra i ghoul) | Salute (ghoul = Malocchio) |

@@ -79,7 +79,7 @@ export function stepHound(
     const ambush = inRange && h.unseenTicks >= secondsToTicks(tuning.houndUnseenTime);
     const cornered = dist < tuning.houndCloseCharge && sameLevel;
     const impatient = inRange && h.stateTicks > secondsToTicks(tuning.houndStalkMaxTime);
-    if (ambush || cornered || impatient) {
+    if ((ambush || cornered || impatient) && hasAttackToken(h, others)) {
       setState(h, 'charge');
       // Commit to a direction: at where you'll be.
       const [ax, az] = leadPoint(h, player);
@@ -213,6 +213,29 @@ function leadPoint(h: HoundEntity, player: PlayerState): [number, number] {
   const t = interceptTime(player.x - h.x, 0, player.z - h.z, player.vx, 0, player.vz, tuning.houndChargeSpeed);
   const lead = t * tuning.houndLeadFactor;
   return [player.x + player.vx * lead, player.z + player.vz * lead];
+}
+
+/**
+ * ATTACK TOKENS (a classic of action-game AI: Doom 2016, the Batman Arkham
+ * fights). Every hound decides on its own, so three hounds behind you would
+ * charge together: unreadable, and impossible to dodge. Instead there are
+ * only houndMaxAttackers "tokens": a hound may start a charge only if one is
+ * free. The others keep stalking, and the moment a token frees up the
+ * longest-waiting one is already "impatient" and goes: a natural queue.
+ *
+ * The tokens aren't stored anywhere: we COUNT the hounds that are attacking
+ * right now. No extra state to keep in sync (and nothing new to serialize).
+ * The skid counts as attacking: the token frees up only when it ends, so the
+ * moment to punish a hound that missed isn't stolen by the next charge.
+ * Within a tick the hounds are stepped one after the other: a hound that
+ * takes a token switches to 'charge' at once, so the next one counts it.
+ */
+function hasAttackToken(h: HoundEntity, others: Entity[]): boolean {
+  let attacking = 0;
+  for (const o of others) {
+    if (o !== h && o.type === 'hound' && (o.state === 'charge' || o.state === 'bite' || o.state === 'skid')) attacking++;
+  }
+  return attacking < tuning.houndMaxAttackers;
 }
 
 function setState(h: HoundEntity, state: HoundEntity['state']): void {

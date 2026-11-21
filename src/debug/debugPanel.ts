@@ -401,6 +401,8 @@ export function createDebugPanel(options: {
   hound.number(tuning, 'houndHealth', 10, 500, 5);
   hound.number(tuning, 'houndCost', 1, 10, 1);
   hound.number(tuning, 'houndFromWave', 1, 30, 1);
+  hound.number(tuning, 'houndMaxAttackers', 1, 6, 1);
+  hound.number(tuning, 'houndMaxAlive', 1, 12, 1);
   hound.number(tuning, 'houndSpeed', 1, 20, 0.1);
   hound.number(tuning, 'houndAccel', 1, 30, 0.5);
   hound.number(tuning, 'houndChargeSpeed', 1, 25, 0.5);
