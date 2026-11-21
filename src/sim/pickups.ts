@@ -222,9 +222,12 @@ export function stepPickups(game: GameState, world: World, dt: number, events: S
     // It can be collected while still flying: you run THROUGH the burst.
     // Touching: close enough horizontally (a cylinder around the player, a bit
     // generous: you're running, you shouldn't have to stop on top of it),
-    // and between the feet (minus a little) and the head.
+    // and vertically from well below the feet (so jumping over it still counts)
+    // to a bit above the head.
     const near = Math.hypot(d.x - p.x, d.z - p.z) < tuning.pickupRadius;
-    const level = d.y > p.y - 0.5 && d.y < p.y + tuning.playerHeight;
+    const level =
+      d.y > p.y - tuning.pickupReachBelow &&
+      d.y < p.y + tuning.playerHeight + tuning.pickupReachAbove;
     if (!near || !level) return true;
     // Doom rule: if you don't need it, it stays on the ground (for later).
     if (!collect(game, d)) return true;

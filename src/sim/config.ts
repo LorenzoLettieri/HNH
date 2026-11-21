@@ -271,7 +271,15 @@ export const tuning = {
   /** Below this falling speed it doesn't bounce anymore: it settles, m/s. */
   dropBounceMinSpeed: 2.5,
   /** How close (horizontally) you must pass to collect it, meters. */
-  pickupRadius: 1.0,
+  pickupRadius: 1.5,
+  /**
+   * How far BELOW your feet a pickup is still collected, meters. A plain jump
+   * peaks at jumpSpeed² / (2·gravity) ≈ 1.2 m: above that, jumping over a drop
+   * still grabs it.
+   */
+  pickupReachBelow: 1.5,
+  /** How far ABOVE your head a pickup is still collected (one flying over you), meters. */
+  pickupReachAbove: 0.5,
   /** Health a medkit gives back. */
   medkitHeal: 25,
   /** Revolver bullets in a 'bullets' drop. */

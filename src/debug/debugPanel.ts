@@ -203,6 +203,8 @@ export function createDebugPanel(options: {
   drops.number(tuning, 'dropWeightMedkit', 0, 10, 1);
   drops.number(tuning, 'dropLifetime', 1, 60, 1);
   drops.number(tuning, 'pickupRadius', 0.3, 3, 0.1);
+  drops.number(tuning, 'pickupReachBelow', 0, 4, 0.1);
+  drops.number(tuning, 'pickupReachAbove', 0, 3, 0.1);
   drops.number(tuning, 'medkitHeal', 5, 100, 5);
   drops.number(tuning, 'ammoPickupBullets', 0, 36, 1);
   drops.number(tuning, 'ammoPickupShells', 0, 12, 1);
