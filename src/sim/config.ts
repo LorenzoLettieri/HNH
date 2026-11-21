@@ -292,11 +292,11 @@ export const tuning = {
   /** ...and how far above/below him you can be: same floor only. */
   shopReachHeight: 1.5,
   /** Price of the shotgun at the armory, in vildenaro (a ghoul drops 10, × the style multiplier). */
-  shotgunPrice: 800,
+  shotgunPrice: 600,
   /** Price of the lever-action carbine at the armory. */
-  riflePrice: 1200,
+  riflePrice: 1000,
   /** Price of the shovel (it replaces the kick on F). */
-  shovelPrice: 600,
+  shovelPrice: 400,
   // --- Weapon upgrades: decks of cards at the armory (see upgrades.ts) ---
   /** Price of a weapon's first card, in vildenaro. */
   upgradeBasePrice: 500,
