@@ -821,6 +821,19 @@ export const tuning = {
   waveBaseCount: 8,
   /** Max weight alive at the same time, in any wave (reached around wave 17). */
   waveMaxAliveCap: 40,
+  /**
+   * SPAWN WEIGHTS: how likely each type is at every spawn (among those the
+   * budget can afford and that already appear in this wave). Relative
+   * numbers: 15 vs 1 = fifteen times more likely. Lots of weak ghouls around
+   * you (the horde), a few elites that punish you. With all equal (the old
+   * way) wave 9 was ~3 ghouls out of ~12 enemies. Now (simulated): wave 5
+   * ≈ 10 ghouls + 3 others, wave 9 ≈ 15 + 6, wave 20 ≈ 43 + 19.
+   */
+  ghoulSpawnWeight: 15,
+  eyebatSpawnWeight: 3,
+  houndSpawnWeight: 2,
+  bullSpawnWeight: 1,
+  sharpshooterSpawnWeight: 1,
   /** Enemy health goes up one step (+ base health) every this many waves. */
   waveHealthStep: 10,
   /**

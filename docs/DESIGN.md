@@ -501,6 +501,13 @@ a caso tra quelli che il budget residuo si può permettere. Stesso budget, mix d
 partita. Il ghoul pesa **1**, il Malocchio **2** e compare **dall'ondata 3** (`eyebatFromWave`):
 le prime due ondate sono di soli ghoul, per scaldarsi. Il cane infernale pesa **3** e compare dall'ondata 5. Il toro pesa **5** e compare dall'ondata 7.
 
+**Probabilità di spawn** [FATTO, da tarare] (stesso playtest: i ghoul erano pochi e innocui, niente
+sensazione d'orda). Prima il tipo era pescato **con la stessa probabilità** tra quelli che il budget si
+poteva permettere: all'ondata 9, con 5 tipi, il ghoul usciva 1 volta su 5 e l'ondata era ~3 ghoul su ~12
+nemici, quasi tutte élite. Ora ogni tipo ha un **peso di spawn** (ghoul 15, Malocchio 3, cane 2, toro 1,
+tiratore 1; scelta "a roulette"). Stesso budget, simulato: ondata 5 ≈ 10 ghoul + 3 altri, ondata 9 ≈
+15 + 6, ondata 12 ≈ 21 + 9, ondata 20 ≈ 43 + 19. Tanti deboli che circondano, pochi forti che puniscono.
+
 **Cani più leggibili** [FATTO, da tarare] (playtest di novembre 2026: record all'ondata 12, quasi tutti
 muoiono alla 9–10, e i cani sono la causa principale). Ogni cane decideva da solo, così tre cani alle
 spalle caricavano quasi insieme. Ora: **gettoni d'attacco**, solo **1 cane alla volta** può caricare

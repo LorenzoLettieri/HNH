@@ -94,6 +94,8 @@ interface EnemyType {
   type: Enemy['type'];
   /** Weight: how many budget points it takes. */
   cost: () => number;
+  /** Spawn weight: how likely it is to be picked (relative to the others, see pickWeighted). */
+  chance: () => number;
   /** First wave it can appear in. */
   fromWave: () => number;
   /** Optional: max alive at the same time (when reached, the budget goes to the other types). */
@@ -104,6 +106,7 @@ const ROSTER: EnemyType[] = [
   {
     type: 'ghoul',
     cost: () => tuning.ghoulCost,
+    chance: () => tuning.ghoulSpawnWeight,
     fromWave: () => 1,
     spawn: (game, id, x, y, z) => {
       const n = game.wave.number;
@@ -114,6 +117,7 @@ const ROSTER: EnemyType[] = [
   {
     type: 'eyebat',
     cost: () => tuning.eyebatCost,
+    chance: () => tuning.eyebatSpawnWeight,
     fromWave: () => tuning.eyebatFromWave,
     // Flyers appear in the air above the spawn point, then fly to you.
     spawn: (game, id, x, y, z) =>
@@ -122,6 +126,7 @@ const ROSTER: EnemyType[] = [
   {
     type: 'hound',
     cost: () => tuning.houndCost,
+    chance: () => tuning.houndSpawnWeight,
     fromWave: () => tuning.houndFromWave,
     maxAlive: () => tuning.houndMaxAlive,
     spawn: (game, id, x, y, z) => createHound(id, x, y, z, healthForWave(tuning.houndHealth, game.wave.number)),
@@ -129,12 +134,14 @@ const ROSTER: EnemyType[] = [
   {
     type: 'bull',
     cost: () => tuning.bullCost,
+    chance: () => tuning.bullSpawnWeight,
     fromWave: () => tuning.bullFromWave,
     spawn: (game, id, x, y, z) => createBull(id, x, y, z, healthForWave(tuning.bullHealth, game.wave.number)),
   },
   {
     type: 'sharpshooter',
     cost: () => tuning.sharpshooterCost,
+    chance: () => tuning.sharpshooterSpawnWeight,
     fromWave: () => tuning.sharpshooterFromWave,
     // Born without a perch: the first thing it does is pick one and walk there (sharpshooter.ts).
     spawn: (game, id, x, y, z) =>
@@ -217,10 +224,30 @@ export function stepWaves(game: GameState, world: World, events: SimEvent[]): vo
   // in the budget), wait for one to die.
   const allowed = affordable.filter((t) => !t.maxAlive || aliveByType[t.type] < t.maxAlive());
   if (allowed.length === 0) return;
-  const type = allowed[randomInt(game, allowed.length)];
+  const type = pickWeighted(game, allowed);
   game.entities.push(type.spawn(game, game.nextEntityId++, s.x, s.y, s.z));
   w.budgetLeft -= type.cost();
   w.spawnCooldownTicks = secondsToTicks(spawnInterval(w.number));
+}
+
+/**
+ * A WEIGHTED random pick ("roulette wheel"): line the weights up one after
+ * the other on a segment (ghoul 15, eye-bat 3, hound 2 = a segment 20 long,
+ * the ghoul taking the first 15), throw a random point on it, and see whose
+ * slice it falls into. Each type comes out with probability weight / total
+ * (like Laravel's Arr::random, but with unequal odds). With every weight at 0 it falls back to an equal
+ * chance, so a wave always finishes spawning.
+ */
+function pickWeighted(game: GameState, types: EnemyType[]): EnemyType {
+  let total = 0;
+  for (const t of types) total += Math.max(0, t.chance());
+  if (total <= 0) return types[randomInt(game, types.length)];
+  let roll = random(game) * total;
+  for (const t of types) {
+    roll -= Math.max(0, t.chance());
+    if (roll < 0) return t;
+  }
+  return types[types.length - 1]; // only by rounding: roll landed exactly on the end
 }
 
 /**
