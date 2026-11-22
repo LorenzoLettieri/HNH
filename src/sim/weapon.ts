@@ -711,7 +711,9 @@ function tilt(p: PlayerState, a: ReturnType<typeof aim>, ax: number, ay: number,
 function fireShotgun(p: PlayerState, world: World, entities: Entity[], events: SimEvent[], barrels: number[]): number {
   const a = aim(p);
   const { ox, oy, oz, dx, dy, dz } = a;
-  const living = entities.filter(isAlive);
+  // What the pellets can still hit. A target leaves this list as soon as the
+  // pellets so far are enough to kill it (see count below).
+  let targets = entities.filter(isAlive);
   // Damage is summed per entity and applied once at the end: one hitmarker,
   // one 'hit' event, one kill, even if 10 pellets hit the same ghoul.
   const totals = new Map<Entity, { amount: number; headshot: boolean; pellets: number; distance: number }>();
@@ -733,6 +735,13 @@ function fireShotgun(p: PlayerState, world: World, entities: Entity[], events: S
     t.pellets++;
     t.distance = Math.min(t.distance, travelled + hit.distance);
     totals.set(hit.target, t);
+    // OVERKILL GOES THROUGH: once this shot has dealt enough to kill it, the
+    // target is already "dead" for the pellets that follow, and they fly on
+    // to whoever is behind it. Without this, 12 pellets on a 50-health ghoul
+    // waste more than two thirds of the shot; with it, a ghoul in front of
+    // another is a shield that breaks, and a packed horde gets mowed down.
+    // (The damage itself is still applied at the end, all at once.)
+    if (Math.round(t.amount) >= hit.target.health) targets = targets.filter((e) => e !== hit.target);
   };
   // One pattern per barrel fired (two with "Doppio botto"); the second
   // barrel's pattern is rotated, so it fills the gaps of the first.
@@ -740,7 +749,7 @@ function fireShotgun(p: PlayerState, world: World, entities: Entity[], events: S
     for (const [ax, ay] of pelletPattern(tuning.shotgunPellets, twist)) {
       const [px, py, pz] = tilt(p, a, ax * spreadH, ay * spreadV, 1);
       const end = newEnd();
-      const hit = trace(ox, oy, oz, px, py, pz, tuning.shotgunRange, world, living, true, events, end);
+      const hit = trace(ox, oy, oz, px, py, pz, tuning.shotgunRange, world, targets, true, events, end);
       count(hit, 0);
       // "Pallini rimbalzanti": a pellet that hit the FLOOR bounces once.
       // A mirror on a horizontal surface only flips the vertical part of
@@ -748,7 +757,7 @@ function fireShotgun(p: PlayerState, world: World, entities: Entity[], events: S
       // has left, and its falloff counts the whole path.
       if (!hit && end.hit && end.ny > 0.7 && hasCard(p, 'bouncingPellets')) {
         const rest = tuning.shotgunRange - end.distance;
-        count(trace(end.x, end.y + 0.02, end.z, px, -py, pz, rest, world, living, true, events), end.distance);
+        count(trace(end.x, end.y + 0.02, end.z, px, -py, pz, rest, world, targets, true, events), end.distance);
       }
     }
   }

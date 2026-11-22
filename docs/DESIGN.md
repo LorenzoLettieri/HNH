@@ -675,7 +675,9 @@ futuro **poligono di tiro / tutorial**.
 - **Doppietta (canne mozze)** [FATTO] — tasto 2. Due colpi, 12 pallini in una **rosata fissa** (non casuale:
   impari cosa fa) **a ellisse larga e bassa** (10° × 4°; prima un cerchio di 7°, cambiata dopo il playtest di
   novembre 2026 per renderla un'arma ad area: i nemici stanno affiancati a terra, e i pallini che andavano
-  sopra e sotto la testa ora prendono i vicini), danno pieno fino a 6 m e poi in calo fino al 25% a 22 m: devastante da vicino, quasi
+  sopra e sotto la testa ora prendono i vicini). **Il danno in eccesso attraversa**: appena i pallini di
+  un colpo bastano a uccidere un nemico, i successivi gli passano attraverso e colpiscono chi sta dietro
+  (a 4 m un ghoul ne prende 9: 4 lo uccidono, gli altri 5 uccidono quello dietro), danno pieno fino a 6 m e poi in calo fino al 25% a 22 m: devastante da vicino, quasi
   inutile lontano. Ricarica da sola quando le canne sono vuote. **A bruciapelo (entro 5 m) i nemici volano
   via** come col calcio, più forte quanto più sei vicino e quanti più pallini vanno a segno.
   **Contraccolpo che non frena mai**: sparare indietro ti dà un piccolo boost in avanti, sparare dove stai
