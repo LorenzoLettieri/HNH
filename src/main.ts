@@ -4,9 +4,9 @@ import { loadSettings, settings } from './settings';
 import { submitScore } from './leaderboard';
 import { markPractice, practiceGame, startGame } from './fairPlay';
 import { createMenu } from './menu';
-import { createDebugPanel, debugTime } from './debug/debugPanel';
+import { createDebugPanel, debugTime, type DebugTool } from './debug/debugPanel';
 import { hitStopScale } from './render/hitStop';
-import { buildCommand, controlSettings, updateLook, view } from './controls';
+import { buildCommand, controlSettings, queueRespawn, updateLook, view } from './controls';
 import { TICK_DT } from './sim/config';
 import { copyPlayer, createPlayer } from './sim/player';
 import { createGame, spawnBullInFront, spawnSharpshooterInFront, spawnEyebatInFront, spawnHoundInFront, spawnSmithInFront, dropPickupsInFront, stepGame } from './sim/game';
@@ -148,7 +148,7 @@ const vendors = createVendorRenderer(scene, world);
 const mapOverlay = createMapOverlay(world);
 const navDebug = createNavDebug(scene, getNavGraph(world));
 const navDebugBig = createNavDebug(scene, getNavGraph(world, BIG_BODY));
-/** N cycles: 0 = off, 1 = ghouls' graph, 2 = bulls' graph. */
+/** The "AI nav graph" button cycles: 0 = off, 1 = ghouls' graph, 2 = bulls' graph. */
 let navView = 0;
 const hitboxDebug = createHitboxDebug(scene);
 // The gun in your hand: its own scene and camera, drawn over the world.
@@ -162,7 +162,51 @@ let atmosphereIndex = 0;
 applyAtmosphere(ATMOSPHERES[atmosphereIndex]);
 
 // --- Debug panel (key below Esc) -------------------------------------------
+/** Debug tools that change the game: this game won't count for the leaderboard (fairPlay.ts). */
+function spawnTool(label: string, spawn: (g: typeof game) => void): DebugTool {
+  return {
+    label,
+    run: () => {
+      markPractice('nemici o raccoglibili fatti apparire');
+      spawn(game);
+    },
+  };
+}
 const debugPanel = createDebugPanel({
+  // The "Debug tools" buttons. The visual ones (atmosphere, pixel art, nav
+  // graph, hitboxes) are settings of this client, not things the player does
+  // in the game, so they act directly. The spawns put things in front of you:
+  // opening the panel frees the mouse but the view keeps its yaw, so "in
+  // front" is where you were looking.
+  tools: [
+    {
+      label: 'Atmosfera: High Noon / High Midnight',
+      run: () => {
+        atmosphereIndex = (atmosphereIndex + 1) % ATMOSPHERES.length;
+        applyAtmosphere(ATMOSPHERES[atmosphereIndex]);
+        debugPanel.showAtmosphere(ATMOSPHERES[atmosphereIndex]);
+      },
+    },
+    { label: 'Pixel art on/off', run: () => post.togglePixelArt() },
+    {
+      label: 'Grafo IA: off → ghoul → tori',
+      run: () => {
+        navView = (navView + 1) % 3;
+        if (navView !== 2) navDebug.toggle(); // on at 1, off at 2
+        if (navView !== 1) navDebugBig.toggle(); // on at 2, off at 0
+      },
+    },
+    { label: 'Hitbox on/off (verde = corpo, giallo = critico)', run: () => hitboxDebug.toggle() },
+    spawnTool('Fai apparire: Malocchio', spawnEyebatInFront),
+    spawnTool('Fai apparire: cane infernale', spawnHoundInFront),
+    spawnTool('Fai apparire: toro', spawnBullInFront),
+    spawnTool('Fai apparire: Fabbro Dannato', spawnSmithInFront),
+    spawnTool('Fai apparire: tiratore scelto (a 20 m)', spawnSharpshooterInFront),
+    spawnTool('Fai cadere un raccoglibile di ogni tipo', dropPickupsInFront),
+    // Respawn goes through the InputCommand like a key would (controls.ts):
+    // the simulation only changes from commands.
+    { label: 'Respawn', run: () => queueRespawn() },
+  ],
   onAtmosphereChange: () => applyAtmosphere(ATMOSPHERES[atmosphereIndex]),
   onPostSizeChange: () => post.refresh(),
   onJumpToWave: (n) => {
@@ -180,9 +224,7 @@ const debugPanel = createDebugPanel({
 });
 debugPanel.showAtmosphere(ATMOSPHERES[atmosphereIndex]);
 
-// T cycles through the presets. It's a visual setting of this client, not
-// something the player does in the game, so it doesn't go through InputCommand.
-// P toggles the pixel-art look, to compare before/after.
+// The debug actions are buttons in the panel ("Debug tools" above), not hotkeys.
 // Backquote (the key below Esc: ` or \ depending on the keyboard) opens the debug panel and frees the mouse to use it.
 window.addEventListener('keydown', (e) => {
   // Tab = the map (held down: read in the loop below). In a browser Tab moves
@@ -209,32 +251,6 @@ window.addEventListener('keydown', (e) => {
     }
     return;
   }
-  // Debug keys that change the game: this game won't count (fairPlay.ts).
-  if (['KeyB', 'KeyG', 'KeyV', 'KeyL', 'KeyU', 'KeyJ'].includes(e.code)) markPractice('nemici o raccoglibili fatti apparire');
-  if (e.code === 'KeyT') {
-    atmosphereIndex = (atmosphereIndex + 1) % ATMOSPHERES.length;
-    applyAtmosphere(ATMOSPHERES[atmosphereIndex]);
-    debugPanel.showAtmosphere(ATMOSPHERES[atmosphereIndex]);
-  }
-  if (e.code === 'KeyP') post.togglePixelArt();
-  if (e.code === 'KeyN') {
-    navView = (navView + 1) % 3;
-    if (navView !== 2) navDebug.toggle(); // on at 1, off at 2
-    if (navView !== 1) navDebugBig.toggle(); // on at 2, off at 0
-  }
-  if (e.code === 'KeyH') hitboxDebug.toggle();
-  // Debug: B spawns an eye-bat in front of you (until they're in the waves).
-  if (e.code === 'KeyB') spawnEyebatInFront(game);
-  // G: a hellhound.
-  if (e.code === 'KeyG') spawnHoundInFront(game);
-  // V: a bull.
-  if (e.code === 'KeyV') spawnBullInFront(game);
-  // U: a Damned Smith (the special enemy of waves 9, 19, 29...).
-  if (e.code === 'KeyU') spawnSmithInFront(game);
-  // L: a sharpshooter (20 m away: it shoots from afar).
-  if (e.code === 'KeyL') spawnSharpshooterInFront(game);
-  // J: one pickup of each kind (bullets, shells, medkit).
-  if (e.code === 'KeyJ') dropPickupsInFront(game);
   // E: open/close the shop, if a vendor is within reach (src/sim/shop.ts).
   // Opening frees the mouse (to click in the panel); closing grabs it back.
   if (e.code === 'KeyE') {
@@ -400,7 +416,7 @@ renderer.setAnimationLoop((now: number) => {
   while (accumulator >= TICK_DT) {
     copyPlayer(player, prevPlayer);
     const cmd = buildCommand(game.tick);
-    if (cmd.respawn) markPractice('respawn col tasto K');
+    if (cmd.respawn) markPractice('respawn dal pannello di debug');
     stepGame(game, cmd, world, TICK_DT, events);
     // The renderer only *reads* the state: "were we in the air, and now we're not?"
     if (!prevPlayer.onGround && player.onGround) triggerLandingDip(-prevPlayer.vy);

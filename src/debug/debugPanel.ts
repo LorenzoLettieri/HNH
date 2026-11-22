@@ -37,7 +37,15 @@ export interface DebugPanel {
  */
 export const debugTime = { timeScale: 1 };
 
+/** A debug action shown as a button in the "Debug tools" folder (they used to be hotkeys). */
+export interface DebugTool {
+  label: string;
+  run: () => void;
+}
+
 export function createDebugPanel(options: {
+  /** The buttons of the "Debug tools" folder, in order (defined in main.ts, next to what they touch). */
+  tools: DebugTool[];
   onAtmosphereChange: () => void;
   onPostSizeChange: () => void;
   /** Debug: clear the enemies and start wave n. */
@@ -53,6 +61,10 @@ export function createDebugPanel(options: {
   // 'input' events of every slider and box inside it: event delegation,
   // the same trick as $(document).on('input', ...) in jQuery.
   document.getElementById('debug-panel')!.addEventListener('input', checkTuning);
+
+  // --- Debug tools: spawn enemies, toggle debug views, respawn (src/main.ts) ---
+  const tools = panel.folder('Debug tools (src/main.ts)');
+  for (const tool of options.tools) tools.button(tool.label, tool.run);
 
   // --- Waves (first: it's the one you use most while testing) ---
   const waves = panel.folder('Waves (src/sim/waves.ts)');
@@ -387,7 +399,7 @@ export function createDebugPanel(options: {
   ghoul.button('Copy values', () => copyToClipboard(toSource(tuning)));
 
   // --- Eye-bat ---
-  const eyebat = panel.folder('Malocchio / eye-bat (src/sim/config.ts) — B to spawn');
+  const eyebat = panel.folder('Malocchio / eye-bat (src/sim/config.ts)');
   eyebat.number(tuning, 'eyebatHealth', 10, 500, 5);
   eyebat.number(tuning, 'eyebatCost', 1, 10, 1);
   eyebat.number(tuning, 'eyebatFromWave', 1, 30, 1);
@@ -407,7 +419,7 @@ export function createDebugPanel(options: {
   eyebat.button('Copy values', () => copyToClipboard(toSource(tuning)));
 
   // --- Hellhound ---
-  const hound = panel.folder('Hellhound (src/sim/config.ts) — G to spawn');
+  const hound = panel.folder('Hellhound (src/sim/config.ts)');
   hound.number(tuning, 'houndHealth', 10, 500, 5);
   hound.number(tuning, 'houndCost', 1, 10, 1);
   hound.number(tuning, 'houndFromWave', 1, 30, 1);
@@ -437,7 +449,7 @@ export function createDebugPanel(options: {
   hound.button('Copy values', () => copyToClipboard(toSource(tuning)));
 
   // --- Bull ---
-  const bull = panel.folder('Bull (src/sim/config.ts) — V to spawn');
+  const bull = panel.folder('Bull (src/sim/config.ts)');
   bull.number(tuning, 'bullHealth', 50, 2000, 10);
   bull.number(tuning, 'bullCost', 1, 15, 1);
   bull.number(tuning, 'bullFromWave', 1, 40, 1);
@@ -465,7 +477,7 @@ export function createDebugPanel(options: {
   bull.button('Copy values', () => copyToClipboard(toSource(tuning)));
 
   // --- Damned Smith (the special enemy of waves 9, 19, 29...) ---
-  const smith = panel.folder('Damned Smith (src/sim/config.ts) — U to spawn');
+  const smith = panel.folder('Damned Smith (src/sim/config.ts)');
   smith.number(tuning, 'smithHealth', 100, 5000, 50);
   smith.number(tuning, 'smithHeadHeight', 1, 3, 0.05);
   smith.number(tuning, 'smithSpeed', 0.5, 8, 0.1);
@@ -492,7 +504,7 @@ export function createDebugPanel(options: {
   smith.button('Copy values', () => copyToClipboard(toSource(tuning)));
 
   // --- Sharpshooter ---
-  const sharp = panel.folder('Sharpshooter (src/sim/config.ts) — L to spawn');
+  const sharp = panel.folder('Sharpshooter (src/sim/config.ts)');
   sharp.number(tuning, 'sharpshooterHealth', 10, 500, 5);
   sharp.number(tuning, 'sharpshooterCost', 1, 15, 1);
   sharp.number(tuning, 'sharpshooterFromWave', 1, 40, 1);
@@ -545,7 +557,7 @@ export function createDebugPanel(options: {
   post.number(postSettings, 'bloomPasses', 0, 6, 1);
   post.button('Copy values', () => copyToClipboard(toSource(postSettings)));
 
-  // --- Atmosphere (rebuilt when switching preset with T) ---
+  // --- Atmosphere (rebuilt when switching preset from Debug tools) ---
   const atmo = panel.folder('Atmosphere');
 
   function fillAtmosphere(folder: Folder, a: Atmosphere): void {

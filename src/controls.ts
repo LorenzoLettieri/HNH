@@ -44,6 +44,12 @@ export function queueForge(weapon: WeaponId): void {
   pendingForge = weapon;
 }
 
+/** Same for the debug panel's "Respawn" button: the next command's `respawn`. */
+let pendingRespawn = false;
+export function queueRespawn(): void {
+  pendingRespawn = true;
+}
+
 export function buildCommand(tick: number): InputCommand {
   let forward = 0;
   let strafe = 0;
@@ -61,7 +67,6 @@ export function buildCommand(tick: number): InputCommand {
   const reload = isKeyDown('KeyR') || wasPressed('KeyR');
   // F: the boot.
   const kick = isKeyDown('KeyF') || wasPressed('KeyF');
-  const respawn = isKeyDown('KeyK'); // K = "kill yourself" (debug)
   // Weapons: 1/2/3 pick a slot; Q or the wheel cycle. (wasPressed for all of
   // them: holding Q must not switch back and forth every tick.)
   let weaponSelect = 0;
@@ -74,6 +79,8 @@ export function buildCommand(tick: number): InputCommand {
   pendingBuy = null; // delivered: one click = one purchase attempt
   const forge = pendingForge;
   pendingForge = null;
+  const respawn = pendingRespawn;
+  pendingRespawn = false;
   return {
     tick, forward, strafe, jump, crouch, fire, altFire, kick, reload, weaponSelect, respawn, buy, forge, yaw: view.yaw, pitch: view.pitch,
   };

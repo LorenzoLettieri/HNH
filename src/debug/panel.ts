@@ -110,6 +110,11 @@ function createFolder(summary: HTMLElement, body: HTMLElement): Folder {
       const button = document.createElement('button');
       button.textContent = label;
       button.addEventListener('click', onClick);
+      // Don't take the keyboard focus: the game keeps running with the panel
+      // open, and Space (jump) would "click" the focused button again.
+      // Preventing the mousedown's default action skips the focus change; the
+      // click still happens.
+      button.addEventListener('mousedown', (e) => e.preventDefault());
       body.appendChild(button);
     },
 
