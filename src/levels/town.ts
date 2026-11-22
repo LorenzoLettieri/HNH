@@ -500,6 +500,7 @@ const props: Prop[] = [
   { type: 'lantern', mount: 'ground', x: 0, y: 14, z: 24, rotation: 45 }, // middle of the bridge
   { type: 'lantern', mount: 'ground', x: -25.5, y: 1, z: 17.3, rotation: 0 }, // on the general store's counter
   { type: 'lantern', mount: 'ground', x: 19.6, y: 5.3, z: 23.3, rotation: 0 }, // on the armory's counter, next to the vendor
+  { type: 'lantern', mount: 'ground', x: -37.5, y: 1.1, z: -15, rotation: 0 }, // on the forge's brick hearth (placeholder for a real fire)
 
   // Signs on the sidewalks (board hangs toward +X, or -X with rotation 180).
   { type: 'sign', x: -5.6, y: 0, z: -21, rotation: 0, text: 'SALOON' },
@@ -507,6 +508,7 @@ const props: Prop[] = [
   { type: 'sign', x: 5.6, y: 0, z: 11, rotation: 180, text: 'BANK' },
   { type: 'sign', x: 5.6, y: 0, z: -8, rotation: 180, text: 'CHURCH' },
   { type: 'sign', x: 13.2, y: 0, z: 30.2, rotation: 180, text: 'GUNSMITH' }, // under the balcony, board toward Main Street
+  { type: 'sign', x: -32.4, y: 0, z: -18.6, rotation: 0, text: 'FORGE' }, // corner of the blacksmith's shed, board toward the water tower
 
   // Barrels.
   { type: 'barrel', x: -7.2, y: 0, z: -21.5, rotation: 15 },
@@ -535,6 +537,9 @@ export const town: World = {
   // The vendors (see ShopSpawn in src/sim/world.ts).
   shops: [
     { x: 18, y: 4.3, z: 22.4, kind: 'weapons' }, // armory: behind the counter
+    // The FORGE (docs/DESIGN.md §6d): the blacksmith's shed in the west, on
+    // the anvil. No vendor: you work the iron yourself.
+    { x: -34.5, y: 0, z: -14, kind: 'forge' },
   ],
   // Steel practice targets. `rotation` = where the plate faces (same as ?look=):
   // 0 = north, 90 = west, 180 = south, -90 = east. Some are on the rooftops,

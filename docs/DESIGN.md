@@ -773,6 +773,13 @@ salire di livello proprio quando salgono i nemici. Chi non lo uccide resta indie
 cioè **resistente e con attacchi diversi** dagli altri nemici, ma nostro e a tema. Alla morte lascia il
 **Ferro Dannato**, che finisce nell'**inventario** (non si perde a terra).
 
+**Stato** [FATTO: passi 1 e 2]: il Ferro Dannato nell'inventario (contatore nell'HUD sotto il vildenaro,
+nascosto quando non ne hai; per ora si ottiene solo dal pannello di debug) e il **livello di forgia** di ogni
+arma (danno ×2 al livello 1). La Forgia è la **tettoia del fabbro** a ovest (vicino al serbatoio): E vicino
+all'incudine apre lo stesso pannello dello shop con le tre armi; 1 Ferro, doppio click, tre martellate e
+vapore. Segnaposto: una lanterna sul focolare al posto del fuoco vero, niente cambio di modello delle armi.
+Prossimo: il nemico speciale (passo 3).
+
 **La Forgia** [DECISO]: un **posto fisso nuovo** sulla mappa. Porti il Ferro Dannato (più vildenaro?),
 scegli un'arma, e l'arma si **trasforma**:
 - **Revolver → akimbo** (due revolver).

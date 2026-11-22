@@ -517,7 +517,7 @@
     </style>
   </head>
   <body>
-    <div id="shop-prompt" hidden><kbd>E</kbd>COMMERCIA</div>
+    <div id="shop-prompt" hidden><kbd>E</kbd><span id="shop-prompt-word">COMMERCIA</span></div>
     <div id="grab-hint" hidden>Clicca per riprendere la mira</div>
     <div id="map" hidden>
       <canvas id="map-canvas"></canvas>
@@ -528,9 +528,9 @@
       </div>
     </div>
     <div id="shop" hidden>
-      <h2>ARMERIA</h2>
+      <h2 id="shop-title">ARMERIA</h2>
       <div id="shop-greeting"></div>
-      <div id="shop-wallet"><span>Il tuo vildenaro</span><span id="shop-money">0</span></div>
+      <div id="shop-wallet"><span id="shop-wallet-label">Il tuo vildenaro</span><span id="shop-money">0</span></div>
       <div id="shop-items"></div>
       <button id="shop-close"><kbd>E</kbd>Chiudi</button>
     </div>

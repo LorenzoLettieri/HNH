@@ -38,7 +38,8 @@ export function createVendorRenderer(scene: THREE.Scene, world: World): VendorRe
   });
   addHeightFog(material);
 
-  const meshes = (world.shops ?? []).map((shop) => {
+  // Only the armory has a merchant: at the Forge you work the iron yourself.
+  const meshes = (world.shops ?? []).filter((shop) => shop.kind === 'weapons').map((shop) => {
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.set(shop.x, shop.y, shop.z);
     mesh.castShadow = true;

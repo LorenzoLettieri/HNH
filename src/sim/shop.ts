@@ -46,6 +46,8 @@ export function shopCatalog(kind: ShopSpawn['kind']): ShopItem[] {
         { id: 'rifle', price: tuning.riflePrice },
         { id: 'shovel', price: tuning.shovelPrice },
       ];
+    case 'forge':
+      return []; // nothing for vildenaro: the Forge takes Damned Iron (forge.ts)
   }
 }
 

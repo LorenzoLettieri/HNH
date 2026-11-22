@@ -394,6 +394,21 @@ export function playPurchase(): void {
   noiseBurst({ start: 0.5, duration: 0.06, volume: 0.3, filter: 'lowpass', frequency: 900 });
 }
 
+/**
+ * A gun reinforced at the Forge: three hammer blows on the anvil (a heavy
+ * clang each, a bit higher every time, like the metal hardening), then the
+ * hot iron plunged in water: a long hiss of steam.
+ */
+export function playForge(): void {
+  for (let i = 0; i < 3; i++) {
+    const at = i * 0.32;
+    thump({ start: at, duration: 0.08, volume: 0.5, from: 200, to: 90 });
+    noiseBurst({ start: at, duration: 0.03, volume: 0.35, filter: 'highpass', frequency: 3500 });
+    setTimeout(() => ring(620 + i * 90, 0.9, 0.22), at * 1000);
+  }
+  noiseBurst({ start: 1.05, duration: 1.1, volume: 0.3, filter: 'highpass', frequency: 2500 });
+}
+
 /** Not enough money: a dull, short "no" (two low thuds, the second lower). */
 export function playPurchaseDenied(): void {
   thump({ duration: 0.09, volume: 0.4, from: 220, to: 160 });

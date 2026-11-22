@@ -28,6 +28,7 @@ import { ownsItem, shopCatalog, type PurchaseId, type ShopItemId } from '../sim/
 import { upgradeLevel, upgradeOffer, upgradePrice, type CardId } from '../sim/upgrades';
 import type { GearId } from '../sim/weapon';
 import type { ShopSpawn } from '../sim/world';
+import { createForgeRows, FORGE_GREETING } from './forgeMenu';
 import './fonts';
 
 /** Name and one line of description for each item: the UI's words, not the simulation's. */
@@ -226,8 +227,14 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
   const prompt = document.getElementById('shop-prompt')!;
   const grabHint = document.getElementById('grab-hint')!;
   const closeButton = document.getElementById('shop-close')!;
+  const title = document.getElementById('shop-title')!;
+  const walletLabel = document.getElementById('shop-wallet-label')!;
+  const promptWord = document.getElementById('shop-prompt-word')!;
   closeButton.addEventListener('click', options.onCloseClick);
   noFocus(closeButton);
+  // At a Forge the same panel shows the Forge's rows instead of the weapons (forgeMenu.ts).
+  const forge = createForgeRows(noFocus);
+  let forgeBuilt = false;
 
   let isOpen = false;
   let kind: ShopSpawn['kind'] = 'weapons';
@@ -396,8 +403,12 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
       kind = k;
       isOpen = true;
       selected = null;
-      greeting.textContent = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
+      const atForge = k === 'forge';
+      title.textContent = atForge ? 'FORGIA' : 'ARMERIA';
+      walletLabel.textContent = atForge ? 'Il tuo Ferro Dannato' : 'Il tuo vildenaro';
+      greeting.textContent = atForge ? FORGE_GREETING : GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
       weaponsBuiltFor = cardsBuiltFor = ''; // built by the next update(), which has the player
+      forgeBuilt = false;
       panel.hidden = false;
     },
     close() {
@@ -406,11 +417,21 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
       panel.hidden = true;
       upPanel.hidden = true;
       cancelAllConfirms(); // reopening never shows a stale "CONFERMA"
+      forge.reset();
     },
     update(player, inReach, paused) {
       // The prompt: next to a vendor, shop closed, game running.
       prompt.hidden = isOpen || paused || inReach === null;
+      promptWord.textContent = inReach?.kind === 'forge' ? 'FORGIA' : 'COMMERCIA';
       if (!isOpen) return;
+      if (kind === 'forge') {
+        if (!forgeBuilt) forge.build(list);
+        forgeBuilt = true;
+        upPanel.hidden = true;
+        moneyEl.textContent = String(player.damnedIron);
+        forge.refresh(player);
+        return;
+      }
       if (weaponsSignature() !== weaponsBuiltFor) buildWeapons();
       if (selected !== null && !player.owned[selected]) selected = null; // (died with the panel open)
       if (cardsSignature(player) !== cardsBuiltFor) buildCards(player);
@@ -420,6 +441,8 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
       for (const r of cardRows) refreshRow(r, player);
     },
     onEvents(events) {
+      const forgeLine = forge.onEvents(events);
+      if (forgeLine) greeting.textContent = forgeLine;
       for (const e of events) {
         if (e.type === 'purchase') {
           playPurchase();

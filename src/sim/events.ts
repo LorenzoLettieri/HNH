@@ -8,6 +8,7 @@ import type { Entity } from './entities';
 import type { MeleeTool } from './kick';
 import type { PickupKind } from './pickups';
 import type { PurchaseId } from './shop';
+import type { ForgeRefusal } from './forge';
 import type { StyleAward } from './style';
 import type { Stats } from './stats';
 
@@ -122,5 +123,9 @@ export type SimEvent =
    * or (a card) not on the counter / weapon not yours / weapon maxed out.
    */
   | { type: 'purchaseFailed'; item: PurchaseId; reason: 'money' | 'owned' | 'far' | 'unavailable' }
+  /** A gun reinforced at the Forge (forge.ts): sound, the panel's line. */
+  | { type: 'forged'; weapon: WeaponId; level: number }
+  /** The Forge said no (forge.ts, ForgeRefusal). */
+  | { type: 'forgeFailed'; weapon: WeaponId; reason: ForgeRefusal }
   /** You collected a pickup (sound, flash on the HUD). */
   | { type: 'pickup'; kind: PickupKind; x: number; y: number; z: number };

@@ -319,6 +319,10 @@ export const tuning = {
    * (revolver 100 = one body shot up to wave 19, carbine 200 up to 29).
    */
   forgeDamageMultiplier: 2,
+  /** Damned Iron it takes to reinforce a gun. */
+  forgeIronCost: 1,
+  /** Highest forge level (for now only 1: the next levels are still to design). */
+  forgeMaxLevel: 1,
   // --- Vildenaro: the coins every enemy drops (see dropCoins in pickups.ts) ---
   /** Coins dropped per point of enemy weight: ghoul 1 coin, eye-bat 2, hound 3, bull 5. ALWAYS, not a chance. */
   coinsPerWeight: 1,

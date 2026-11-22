@@ -1,4 +1,5 @@
 import type { PurchaseId } from './shop';
+import type { WeaponId } from './weapon';
 // What the player wants to do during ONE tick. The simulation only ever sees
 // this, never the keyboard or mouse directly. Later, the same object will be
 // sent over the network to the server.
@@ -39,6 +40,8 @@ export interface InputCommand {
    * A weapon or an upgrade card (shop.ts, PurchaseId).
    */
   buy: PurchaseId | null;
+  /** Reinforce this gun at the Forge within reach (null = nothing). Same idea as `buy` (forge.ts). */
+  forge: WeaponId | null;
   /** View angles (radians) at the time the command was built. */
   yaw: number;
   pitch: number;

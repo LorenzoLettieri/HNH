@@ -2,6 +2,7 @@
 // - view angles, updated every rendered frame for the most responsive aim;
 // - an InputCommand, built once per simulation tick.
 import type { PurchaseId } from './sim/shop';
+import type { WeaponId } from './sim/weapon';
 import { consumeMouseDelta, isKeyDown, isPointerLocked, wasPressed } from './input';
 import type { InputCommand } from './sim/command';
 
@@ -37,6 +38,11 @@ let pendingBuy: PurchaseId | null = null;
 export function queueBuy(id: PurchaseId): void {
   pendingBuy = id;
 }
+/** Same for the Forge: the click in its panel becomes the next command's `forge`. */
+let pendingForge: WeaponId | null = null;
+export function queueForge(weapon: WeaponId): void {
+  pendingForge = weapon;
+}
 
 export function buildCommand(tick: number): InputCommand {
   let forward = 0;
@@ -66,7 +72,9 @@ export function buildCommand(tick: number): InputCommand {
   if (wasPressed('WheelUp')) weaponSelect = -2;
   const buy = pendingBuy;
   pendingBuy = null; // delivered: one click = one purchase attempt
+  const forge = pendingForge;
+  pendingForge = null;
   return {
-    tick, forward, strafe, jump, crouch, fire, altFire, kick, reload, weaponSelect, respawn, buy, yaw: view.yaw, pitch: view.pitch,
+    tick, forward, strafe, jump, crouch, fire, altFire, kick, reload, weaponSelect, respawn, buy, forge, yaw: view.yaw, pitch: view.pitch,
   };
 }

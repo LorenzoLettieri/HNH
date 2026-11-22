@@ -96,7 +96,8 @@ export interface ShopSpawn {
   x: number;
   y: number;
   z: number;
-  kind: 'weapons';
+  /** 'weapons' = the armory (a vendor sells guns and cards); 'forge' = the Forge (Damned Iron → a reinforced gun, forge.ts). */
+  kind: 'weapons' | 'forge';
 }
 
 /** Which way a wall faces: north = -Z, south = +Z, east = +X, west = -X. */
