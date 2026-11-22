@@ -780,8 +780,12 @@ all'incudine apre lo stesso pannello dello shop con le tre armi; 1 Ferro, doppio
 vapore. Segnaposto: una lanterna sul focolare al posto del fuoco vero, niente cambio di modello delle armi.
 Prossimo: il nemico speciale (passo 3).
 
-**Il Fabbro Dannato** [FATTO: passo 3, versione minima; sprite SEGNAPOSTO]: il fabbro dell'inferno,
-corazzato, lento (2,8 m/s), un martello enorme. **Punto debole: la testa** (l'elmo), il resto è corazza
+**Il Fabbro Dannato** [FATTO: passo 3, due attacchi e sprite]: il fabbro dell'inferno. **Aspetto** [DECISO]:
+non un cyborg di latta ma un **energumeno grottesco** col ferro conficcato nella carne: ingobbito, testa
+piccola affondata tra spalle enormi, braccia da gorilla, pancione sul grembiule di cuoio, pelle grigio-rosa
+piena di cicatrici e punti, una placca rivettata sulla spalla (pelle infiammata intorno ai rivetti), una
+museruola di ferro sulla bocca, un occhio inchiodato sotto una piastra e l'altro che arde, la catena avvolta
+al braccio. Tre viste come toro e cane. Lento (2,8 m/s), un martello enorme. **Punto debole: la testa**, il resto è "corazza"
 (1200 di salute all'ondata 9: 24 colpi di revolver al corpo, 8 in testa; 3 teste con la carabina).
 Non si fa spingere da calcio, doppietta e cariche dei tori. Compare **a metà** delle ondate 9, 19, 29
 (quando metà del budget è uscita), **fuori dal budget**, annunciato da una scritta e da tre colpi d'incudine.
@@ -799,8 +803,7 @@ Lascia **sempre** il Ferro Dannato (un lingotto incandescente a terra, dura 90 s
   vieni preso, scartando di lato no). Se ti prende: 10 danni e **ti tira verso di sé** (13 m/s, anche giù dai
   tetti) finché sei a 3 m, per al massimo 1,5 s, o finché un muro non spezza la catena. Appena ti ha tirato
   vicino **può martellare subito**: la combo uncino → salto.
-- [DA FARE] Lo sprite vero con più viste, il fiato della fornace (forse), l'anello che si ferma contro i
-  muri (ora li attraversa).
+- [DA FARE] Il fiato della fornace (forse), l'anello che si ferma contro i muri (ora li attraversa).
 
 **La Forgia** [DECISO]: un **posto fisso nuovo** sulla mappa. Porti il Ferro Dannato (più vildenaro?),
 scegli un'arma, e l'arma si **trasforma**:

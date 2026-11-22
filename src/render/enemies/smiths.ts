@@ -1,5 +1,6 @@
-// Draws the Damned Smith (PLACEHOLDER sprite, front view only: smithSprite.ts)
-// and its SHOCKWAVE: a ring of fire spreading on the ground from the hammer.
+// Draws the Damned Smith (sprite in smithSprite.ts: three views, the side one
+// mirrored, picked from the angle like the bull's), its SHOCKWAVE (a ring of
+// fire spreading on the ground from the hammer) and its red-hot CHAIN.
 //
 // The warning must be readable: during the wind-up the sprite trembles more
 // and more and its glow (eye slit, cracks, hammer) heats up; at the slam,
@@ -13,7 +14,7 @@ import type { SimEvent } from '../../sim/events';
 import { addHeightFog } from '../heightFog';
 import { soundAt } from '../soundPosition';
 import { spawnDirt } from '../particles';
-import { FRAMES, FRAME_H, FRAME_W, SMITH_FRAME_COUNT, smithSheet } from './smithSprite';
+import { FRAMES, FRAME_H, FRAME_W, smithSheet } from './smithSprite';
 import {
   playSmithDeath,
   playSmithHookEnd,
@@ -36,6 +37,12 @@ const SHAKE_MAX = 0.06;
 const SHAKE_SPEED = 60;
 /** The red tint when hit, seconds. */
 const HURT_TIME = 0.1;
+/** How fast its facing follows its direction while walking (1/s): a brute turns slowly. */
+const TURN_RATE = 5;
+/** Within this angle of "straight at / away from the camera", show the front / back view. */
+const FRONT_ANGLE = (35 * Math.PI) / 180;
+/** Swinging the chain: seconds per frame (the hook passes from one side to the other). */
+const SWING_FRAME_TIME = 0.12;
 /** The ring: color (HDR: above 1 blooms) and how much it fades toward its maximum radius. */
 const RING_COLOR = new THREE.Color(3, 0.9, 0.25);
 /** Height above the ground (2 cm, like the other things lying on the floor: no z-fighting). */
@@ -61,6 +68,8 @@ interface SmithView {
   chain: THREE.Points;
   hook: THREE.Points;
   walkPhase: number;
+  /** Where it faces (radians, the player's yaw convention), smoothed while walking. */
+  yaw: number;
   hurtTime: number;
   fallAngle: number;
 }
@@ -150,11 +159,16 @@ export function createSmithRenderer(scene: THREE.Scene): SmithRenderer {
     hook.frustumCulled = false;
     chain.visible = hook.visible = false;
     scene.add(chain, hook);
-    return { mesh, material, map, glowMap, ring, ringMaterial, chain, hook, walkPhase: 0, hurtTime: 0, fallAngle: 0 };
+    return { mesh, material, map, glowMap, ring, ringMaterial, chain, hook, walkPhase: 0, yaw: 0, hurtTime: 0, fallAngle: 0 };
   }
 
-  function showFrame(v: SmithView, frame: number): void {
-    v.map.offset.x = v.glowMap.offset.x = frame / SMITH_FRAME_COUNT;
+  /** Shows one frame of the sheet; a NEGATIVE repeat mirrors it for free (see hounds.ts). */
+  function showFrame(v: SmithView, frame: number, mirror: boolean): void {
+    const n = sheet.frameCount;
+    for (const t of [v.map, v.glowMap]) {
+      t.repeat.x = (mirror ? -1 : 1) / n;
+      t.offset.x = (mirror ? frame + 1 : frame) / n;
+    }
   }
 
   return {
@@ -210,30 +224,56 @@ export function createSmithRenderer(scene: THREE.Scene): SmithRenderer {
 
   function animate(v: SmithView, e: SmithEntity, camera: THREE.Camera, alpha: number, dt: number): void {
     v.mesh.position.set(e.px + (e.x - e.px) * alpha, e.py + (e.y - e.py) * alpha, e.pz + (e.z - e.pz) * alpha);
-    v.mesh.rotation.y = Math.atan2(camera.position.x - v.mesh.position.x, camera.position.z - v.mesh.position.z);
+    const toCamera = Math.atan2(camera.position.x - v.mesh.position.x, camera.position.z - v.mesh.position.z);
+    v.mesh.rotation.y = toCamera; // cylindrical billboard
     v.hurtTime -= dt;
     v.material.color.setRGB(1, v.hurtTime > 0 ? 0.4 : 1, v.hurtTime > 0 ? 0.4 : 1);
     v.material.emissiveIntensity = GLOW_CALM;
+
+    // Which VIEW, like the bull (see bulls.ts): the angle between where it
+    // faces and where the camera is. Its facing is smoothed while walking
+    // (a brute doesn't spin on the spot), exact while attacking (it faces you).
+    const target = Math.atan2(e.dirX, e.dirZ);
+    if (e.state !== 'approach') v.yaw = target;
+    else {
+      const diff = Math.atan2(Math.sin(target - v.yaw), Math.cos(target - v.yaw));
+      v.yaw += diff * Math.min(1, TURN_RATE * dt);
+    }
+    const rel = v.yaw - toCamera;
+    const cos = Math.cos(rel);
+    const facing = cos > Math.cos(FRONT_ANGLE) ? 'front' : cos < -Math.cos(FRONT_ANGLE) ? 'back' : 'side';
+    const mirror = facing === 'side' && Math.sin(rel) < 0;
+    // The back view only walks: an attack always faces you, so seen from
+    // behind (it can't really happen) it shows the front pose.
+    const pose = facing === 'side' ? FRAMES.side : FRAMES.front;
+
     if (e.state === 'dead') {
-      showFrame(v, FRAMES.dead);
+      showFrame(v, FRAMES.dead, mirror);
       return;
     }
     if (e.state === 'windup') {
       // 0 → 1 over the wind-up: shake and glow grow, so you feel when it lands.
       const t = Math.min(1, e.stateTicks / (tuning.smithSlamWindup * TICK_RATE));
-      showFrame(v, FRAMES.windup);
+      showFrame(v, pose.windup, mirror);
       v.material.emissiveIntensity = GLOW_CALM + (GLOW_WINDUP - GLOW_CALM) * t;
       const shake = Math.sin(performance.now() / 1000 * SHAKE_SPEED) * SHAKE_MAX * t;
       // Sideways relative to the camera: along the sprite's own "right".
-      v.mesh.position.x += Math.cos(v.mesh.rotation.y) * shake;
-      v.mesh.position.z -= Math.sin(v.mesh.rotation.y) * shake;
+      v.mesh.position.x += Math.cos(toCamera) * shake;
+      v.mesh.position.z -= Math.sin(toCamera) * shake;
     } else if (e.state === 'recover') {
-      showFrame(v, FRAMES.slam);
-    } else if (e.state === 'hookAim' || e.state === 'hookThrow' || e.state === 'hookPull') {
-      showFrame(v, FRAMES.windup); // placeholder: the real sprite has its own poses
+      showFrame(v, pose.slam, mirror);
+    } else if (e.state === 'hookAim') {
+      // The chain circling over its head: two frames, the hook on one side then the other.
+      const turn = Math.floor(e.stateTicks / (SWING_FRAME_TIME * TICK_RATE)) % 2;
+      showFrame(v, pose.swing[turn], mirror);
+    } else if (e.state === 'hookThrow') {
+      showFrame(v, pose.throw, mirror);
+    } else if (e.state === 'hookPull') {
+      showFrame(v, pose.pull, mirror);
     } else {
       v.walkPhase += Math.hypot(e.vx, e.vz) * dt * FRAMES_PER_METER;
-      showFrame(v, FRAMES.walk[Math.floor(v.walkPhase) % FRAMES.walk.length]);
+      const walk = facing === 'side' ? FRAMES.side.walk : facing === 'back' ? FRAMES.back.walk : FRAMES.front.walk;
+      showFrame(v, walk[Math.floor(v.walkPhase) % walk.length], mirror);
     }
   }
 
