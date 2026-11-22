@@ -56,6 +56,15 @@ export function isAkimbo(p: PlayerState): boolean {
 }
 
 /**
+ * The reinforced shotgun is a PUMP-ACTION (the Forge): one barrel, a tube of
+ * pumpAmmo shells, the pump racked between shots (pumpFireInterval), loaded
+ * one shell at a time like the carbine.
+ */
+export function isPump(p: PlayerState): boolean {
+  return p.forged.shotgun > 0;
+}
+
+/**
  * Which gun fires the next revolver shot: 0 = right, 1 = left (the 'fire'
  * event's `barrel`, like the shotgun's two barrels). Akimbo, they alternate:
  * it follows from how many rounds have been fired since the last reload,
@@ -104,7 +113,7 @@ export function magazineSize(p: PlayerState, w: WeaponId): number {
       return cylinder * (isAkimbo(p) ? 2 : 1);
     }
     case 'shotgun':
-      return tuning.shotgunAmmo;
+      return isPump(p) ? tuning.pumpAmmo : tuning.shotgunAmmo;
     case 'rifle':
       return tuning.rifleAmmo;
   }
@@ -115,7 +124,7 @@ export function fireInterval(p: PlayerState, w: WeaponId): number {
     case 'revolver':
       return tuning.revolverFireInterval * (isAkimbo(p) ? tuning.akimboFireIntervalScale : 1);
     case 'shotgun':
-      return tuning.shotgunFireInterval;
+      return isPump(p) ? tuning.pumpFireInterval : tuning.shotgunFireInterval;
     case 'rifle':
       return tuning.rifleFireInterval * (hasCard(p, 'gunslingerLever') ? tuning.gunslingerLeverScale : 1);
   }
@@ -132,17 +141,22 @@ function reloadTime(p: PlayerState, w: WeaponId): number {
       return base * (hasCard(p, 'fastCylinder') ? tuning.fastCylinderReloadScale : 1);
     }
     case 'shotgun':
-      return tuning.shotgunReloadTime;
+      return isPump(p) ? tuning.pumpReloadStart + tuning.pumpReloadPerShell : tuning.shotgunReloadTime;
     case 'rifle':
       return tuning.rifleReloadStart + tuning.rifleReloadPerRound;
   }
 }
 /**
- * Does it reload one round at a time? (The carbine: each round is pushed
- * through the loading gate on its own, so a reload can be stopped halfway.)
+ * Does it reload one round at a time? The carbine (each round pushed through
+ * the loading gate) and the pump-action (each shell into the tube): a reload
+ * can be stopped halfway. The player, because the pump is the Forge's shotgun.
  */
-export function reloadsOneByOne(w: WeaponId): boolean {
-  return w === 'rifle';
+export function reloadsOneByOne(p: PlayerState, w: WeaponId): boolean {
+  return w === 'rifle' || (w === 'shotgun' && isPump(p));
+}
+/** Seconds for each further round of a one-by-one reload. */
+export function reloadPerRound(w: WeaponId): number {
+  return w === 'shotgun' ? tuning.pumpReloadPerShell : tuning.rifleReloadPerRound;
 }
 /** Rounds left in the weapon you're holding. */
 export function currentAmmo(p: PlayerState): number {
@@ -194,7 +208,7 @@ export function stepWeapon(
   if (target !== p.weapon) switchWeapon(p, target, events);
 
   const pocket = AMMO_TYPE[p.weapon];
-  const oneByOne = reloadsOneByOne(p.weapon);
+  const oneByOne = reloadsOneByOne(p, p.weapon);
   const full = magazineSize(p, p.weapon);
   stepSlideReload(p, full, events);
 
@@ -207,13 +221,14 @@ export function stepWeapon(
     p.reloadTicks--;
     if (p.reloadTicks === 0) {
       const loaded = currentAmmo(p);
-      const wanted = oneByOne ? (hasCard(p, 'twoAtATime') ? 2 : 1) : full - loaded; // "Due alla volta"
+      const twoAtATime = p.weapon === 'rifle' && hasCard(p, 'twoAtATime'); // "Due alla volta" (a carbine card)
+      const wanted = oneByOne ? (twoAtATime ? 2 : 1) : full - loaded;
       const moved = Math.min(wanted, full - loaded, tuning.infiniteAmmo ? Infinity : p.reserve[pocket]);
       setCurrentAmmo(p, loaded + moved);
       if (!tuning.infiniteAmmo) p.reserve[pocket] -= moved;
-      if (oneByOne && moved > 0) events.push({ type: 'reloadRound' });
+      if (oneByOne && moved > 0) events.push({ type: 'reloadRound', weapon: p.weapon });
       const more = oneByOne && currentAmmo(p) < full && (tuning.infiniteAmmo || p.reserve[pocket] > 0);
-      if (more) p.reloadTicks = secondsToTicks(tuning.rifleReloadPerRound);
+      if (more) p.reloadTicks = secondsToTicks(reloadPerRound(p.weapon));
       else events.push({ type: 'reloadEnd' });
     }
   }
@@ -274,7 +289,7 @@ export function stepWeapon(
     const seconds = reloadTime(p, p.weapon);
     p.reloadTicks = secondsToTicks(seconds);
     p.fireBufferTicks = 0;
-    events.push({ type: 'reloadStart', weapon: p.weapon, seconds, spin: p.weapon === 'revolver' && isAkimbo(p) });
+    events.push({ type: 'reloadStart', weapon: p.weapon, seconds, forged: p.forged[p.weapon] > 0 });
     return;
   }
 
@@ -294,20 +309,31 @@ export function stepWeapon(
     /** Rounds this shot takes out of the gun (the shotgun's cards can make it 2, or 0). */
     let shells = 1;
     if (fanning) {
-      events.push({ type: 'fire', weapon: 'revolver', barrel: revolverHand(p, full, ammo), seconds: fireInterval(p, 'revolver') });
+      events.push({ type: 'fire', weapon: 'revolver', barrel: revolverHand(p, full, ammo), seconds: fireInterval(p, 'revolver'), forged: p.forged.revolver > 0 });
       fireFanned(p, world, entities, events, rng, lastRound);
     } else if (p.weapon === 'shotgun') {
       // Right barrel first (2 shells left), then the left one. Card "Doppio
       // botto": with both loaded, both go off together.
-      const both = hasCard(p, 'doubleBang') && ammo >= 2;
-      if (both || ammo === tuning.shotgunAmmo) events.push({ type: 'fire', weapon: 'shotgun', barrel: 0, seconds: fireInterval(p, 'shotgun') });
-      if (both || ammo !== tuning.shotgunAmmo) events.push({ type: 'fire', weapon: 'shotgun', barrel: 1, seconds: fireInterval(p, 'shotgun') });
-      shells = fireShotgun(p, world, entities, events, both ? [0, Math.PI / 7] : [ammo === tuning.shotgunAmmo ? 0 : Math.PI / 7]);
+      // The pump-action has one barrel: "Doppio botto" fires two shells at once only on the
+      // FIRST shot of a full tube (the double barrel's "both barrels loaded").
+      const pump = isPump(p);
+      const both = hasCard(p, 'doubleBang') && ammo >= 2 && (!pump || ammo === full);
+      const fire = (barrel: number) =>
+        events.push({ type: 'fire', weapon: 'shotgun', barrel, seconds: fireInterval(p, 'shotgun'), forged: pump });
+      if (pump) {
+        fire(0);
+        if (both) fire(1); // two shells through the same barrel: a second blast
+        shells = fireShotgun(p, world, entities, events, both ? [0, Math.PI / 7] : [0]);
+      } else {
+        if (both || ammo === tuning.shotgunAmmo) fire(0);
+        if (both || ammo !== tuning.shotgunAmmo) fire(1);
+        shells = fireShotgun(p, world, entities, events, both ? [0, Math.PI / 7] : [ammo === tuning.shotgunAmmo ? 0 : Math.PI / 7]);
+      }
     } else if (p.weapon === 'rifle') {
-      events.push({ type: 'fire', weapon: 'rifle', barrel: 0, seconds: fireInterval(p, 'rifle') });
+      events.push({ type: 'fire', weapon: 'rifle', barrel: 0, seconds: fireInterval(p, 'rifle'), forged: p.forged.rifle > 0 });
       fireRifle(p, world, entities, events, rng);
     } else {
-      events.push({ type: 'fire', weapon: 'revolver', barrel: revolverHand(p, full, ammo), seconds: fireInterval(p, 'revolver') });
+      events.push({ type: 'fire', weapon: 'revolver', barrel: revolverHand(p, full, ammo), seconds: fireInterval(p, 'revolver'), forged: p.forged.revolver > 0 });
       fireRevolver(p, world, entities, events, lastRound);
     }
     if (!bottomless) setCurrentAmmo(p, Math.min(full, ammo - shells));
@@ -353,7 +379,7 @@ function stepSlideReload(p: PlayerState, full: number, events: SimEvent[]): void
   if (currentAmmo(p) < full && (tuning.infiniteAmmo || p.reserve[pocket] > 0)) {
     setCurrentAmmo(p, currentAmmo(p) + 1);
     if (!tuning.infiniteAmmo) p.reserve[pocket]--;
-    events.push({ type: 'reloadRound' });
+    events.push({ type: 'reloadRound', weapon: 'revolver' });
   }
   p.slideReloadTicks = secondsToTicks(tuning.slideReloadInterval); // next round, if you keep sliding
 }
@@ -826,7 +852,7 @@ function fireShotgun(p: PlayerState, world: World, entities: Entity[], events: S
 export function refundLeadFlight(p: PlayerState, hits: SimEvent[]): void {
   if (p.leadFlightShells === 0 || p.onGround) return;
   if (!hits.some((e) => e.type === 'hit' && e.killed)) return;
-  const toGun = Math.min(p.leadFlightShells, tuning.shotgunAmmo - p.loaded.shotgun);
+  const toGun = Math.min(p.leadFlightShells, magazineSize(p, 'shotgun') - p.loaded.shotgun);
   p.loaded.shotgun += toGun;
   p.reserve.shells = Math.min(tuning.shotgunReserveMax, p.reserve.shells + p.leadFlightShells - toGun);
   p.leadFlightShells = 0;

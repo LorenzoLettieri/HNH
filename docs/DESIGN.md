@@ -813,7 +813,11 @@ scegli un'arma, e l'arma si **trasforma**:
   0,32 (ogni pistola ogni 0,48). Il fanning le svuota tutte e due. La seconda pistola è la prima **specchiata**
   (niente modelli nuovi). **Ricarica da pistolero**: le due pistole fanno tre giri attorno al dito (la sinistra
   un attimo dopo) e tornano in mano cariche, 1,3 s: non è una vera ricarica, ma è più bella.
-- **Doppietta → fucile a pompa**.
+- **Doppietta → fucile a pompa**. [IN CORSO: meccanica fatta] Una canna, **6 cartucce** nel serbatoio
+  tubolare, **una pompata tra un colpo e l'altro** (0,55 s: la doppietta spara due colpi quasi insieme e poi
+  ricarica tutto, la pompa ha un ritmo costante), **ricarica una cartuccia alla volta** come la carabina
+  (interrompibile con un click). **Doppio botto**: sul primo colpo a serbatoio pieno partono due cartucce
+  insieme. Modello: "Shotgun" di Quaternius (CC0).
 - **Carabina → ottica** (cannocchiale montato). [FATTO, da provare] Un cannocchiale d'acciaio brunito con
   gli anelli d'ottone sopra il castello; mirando l'occhio va sull'asse del tubo e, **a mira completa, l'arma
   sparisce e vedi dentro il cannocchiale** (nero intorno, finestra rotonda, reticolo a pali, un punto
@@ -829,9 +833,7 @@ Oltre al cambio di modello, un **aumento di danno netto** che segue i gradini (r
 speciali** (fuoco, rimbalzo, esplosivi…).
 
 [DA DECIDERE]
-- Cosa cambia **nella meccanica** con la trasformazione (non solo nel modello): akimbo = più colpi e
-  cadenza? E il fanning, che usa la mano sinistra? Pompa = più cartucce e una pompata tra un colpo e
-  l'altro? E la carta **Doppio botto** (due canne insieme)? (Ottica: deciso, vedi sopra.)
+- (La meccanica delle tre trasformazioni è decisa, vedi sopra.)
 - Le carte restano valide sull'arma trasformata?
 - Prezzo in vildenaro oltre al Ferro, e cosa succede col Ferro se hai già rinforzato tutto.
 

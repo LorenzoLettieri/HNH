@@ -152,7 +152,7 @@ export interface Viewmodel {
   camera: THREE.PerspectiveCamera;
   onShot(weapon: WeaponId, barrel: number): void;
   /** A reload starts and lasts `seconds` (the revolver's timeline is stretched to fit). */
-  onReload(weapon: WeaponId, seconds: number, spin: boolean): void;
+  onReload(weapon: WeaponId, seconds: number, forged: boolean): void;
   /** The melee attack started: play the leg (kickLeg.ts) or the shovel swing (shovelView.ts). */
   onKick(tool: MeleeTool): void;
   applyAtmosphere(a: Atmosphere): void;
@@ -320,10 +320,10 @@ export function createViewmodel(): Viewmodel {
       flash.material.rotation = Math.random() * Math.PI;
       flash.scale.setScalar(0.09 + Math.random() * 0.05);
     },
-    onReload(weapon, seconds, spin) {
+    onReload(weapon, seconds, forged) {
       // (The carbine's reload follows the simulation's timer directly: rifleView.ts.)
-      if (weapon === 'shotgun') shotgun.onReload();
-      else if (weapon === 'revolver' && spin) akimboSpin.start(seconds); // the gunslinger's twirl
+      if (weapon === 'shotgun' && !forged) shotgun.onReload(); // (the pump-action reloads one shell at a time)
+      else if (weapon === 'revolver' && forged) akimboSpin.start(seconds); // akimbo: the gunslinger's twirl
       else if (weapon === 'revolver') {
         revolverReloadTime = seconds; // "Tamburo veloce" makes it shorter
         revolverReload.start();

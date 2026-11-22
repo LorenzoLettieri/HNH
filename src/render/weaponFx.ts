@@ -55,7 +55,7 @@ export interface WeaponFx {
   /** Listeners for other modules (e.g. the viewmodel recoil). */
   onShot: ((weapon: WeaponId, barrel: number) => void)[];
   /** A reload starts: which weapon, and how many seconds it lasts (the simulation says: cards can change it). */
-  onReload: ((weapon: WeaponId, seconds: number, spin: boolean) => void)[];
+  onReload: ((weapon: WeaponId, seconds: number, forged: boolean) => void)[];
   onKick: ((tool: MeleeTool) => void)[];
 }
 
@@ -165,11 +165,12 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
             playDryFire();
             break;
           case 'reloadStart':
-            if (e.weapon === 'shotgun') playShotgunReload(e.seconds);
+            if (e.weapon === 'shotgun' && e.forged) playCarbineReloadStart(); // the pump-action: to the loading port, like the carbine's gate
+            else if (e.weapon === 'shotgun') playShotgunReload(e.seconds);
             else if (e.weapon === 'rifle') playCarbineReloadStart();
-            else if (e.spin) playAkimboSpin(spinTurnTimes(e.seconds), e.seconds);
+            else if (e.forged) playAkimboSpin(spinTurnTimes(e.seconds), e.seconds);
             else playReload(e.seconds);
-            for (const f of fx.onReload) f(e.weapon, e.seconds, e.spin);
+            for (const f of fx.onReload) f(e.weapon, e.seconds, e.forged);
             break;
           case 'reloadRound':
             playCarbineRoundIn();

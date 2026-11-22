@@ -218,6 +218,16 @@ export const tuning = {
   shotgunReserveStart: 12,
   /** Most spare shells you can carry. */
   shotgunReserveMax: 20,
+  /**
+   * The PUMP-ACTION (the shotgun reinforced at the Forge, docs/DESIGN.md
+   * §6d): shells in the tube magazine, and seconds between two shots (the
+   * pump racked back and forth: a new shell in the chamber).
+   */
+  pumpAmmo: 6,
+  pumpFireInterval: 0.55,
+  /** It reloads one shell at a time, like the carbine: seconds to bring it to the loading port, then per shell. */
+  pumpReloadStart: 0.25,
+  pumpReloadPerShell: 0.4,
   /** Debug: reloading doesn't use up the reserve. */
   infiniteAmmo: false,
 

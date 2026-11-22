@@ -15,7 +15,11 @@ import type { Stats } from './stats';
 export type SimEvent =
   /** A weapon fired (sound, flash, recoil). For the shotgun, `barrel` is 0 = right, 1 = left. */
   /** `seconds` = time before it can fire again (the carbine's lever cycle follows it: cards can change it). */
-  | { type: 'fire'; weapon: WeaponId; barrel: number; seconds: number }
+  /**
+   * `forged` = the gun reinforced at the Forge (akimbo revolvers: `barrel` 0 = right
+   * gun, 1 = left; the pump-action: the pump is racked after the shot).
+   */
+  | { type: 'fire'; weapon: WeaponId; barrel: number; seconds: number; forged: boolean }
   /** You switched weapon: the new one is coming up. */
   | { type: 'weaponSwitch'; weapon: WeaponId }
   /** One bullet or pellet: where it went and what it hit (impacts, blood). A shotgun blast is many of these. */
@@ -127,12 +131,16 @@ export type SimEvent =
   | { type: 'dryFire' } // pulled the trigger with an empty cylinder
   /**
    * A reload starts; `seconds` = how long it lasts (cards can change it: the
-   * animation and the sounds follow). `spin` = the akimbo revolvers' reload:
-   * both guns twirled round the finger instead of the cylinder flicked open.
+   * animation and the sounds follow). `forged` = the gun reinforced at the
+   * Forge: the akimbo revolvers' reload is the spin (both guns twirled round
+   * the finger), the pump-action's is one shell at a time.
    */
-  | { type: 'reloadStart'; weapon: WeaponId; seconds: number; spin: boolean }
-  /** One round pushed into a gun: the carbine's one-by-one reload, or the revolver's "Ricarica in scivolata" card. */
-  | { type: 'reloadRound' }
+  | { type: 'reloadStart'; weapon: WeaponId; seconds: number; forged: boolean }
+  /**
+   * One round pushed into a gun: the carbine's or the pump-action's one-by-one
+   * reload, or the revolver's "Ricarica in scivolata" card.
+   */
+  | { type: 'reloadRound'; weapon: WeaponId }
   | { type: 'reloadEnd' }
   /** You bought something at a shop (sound, the panel's thanks). */
   | { type: 'purchase'; item: PurchaseId; price: number }
