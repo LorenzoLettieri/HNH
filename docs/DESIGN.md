@@ -759,6 +759,40 @@ Leva in corsa, Sangue freddo, Ottone caldo.
 
 ---
 
+## 6d. La Forgia: il rinforzo delle armi [DECISO l'impianto, novembre 2026]
+
+Il playtest ha mostrato che nessuno compra le carte (cambiano *come* giochi, non *quanto* sopravvivi)
+e che all'ondata 10 i nemici raddoppiano la salute senza che il giocatore possa fare altrettanto.
+Il rinforzo è lo strato di **potere puro**, alla Pack-a-Punch, ma **guadagnato** e non solo comprato.
+
+**Il ritmo** [DECISO]: un **nemico speciale** compare **dentro** le ondate **9, 19, 29…**, quella subito
+prima di ogni gradino di salute (`healthForWave`: ×2 alla 10, ×3 alla 20…). Ucciderlo ti dà il modo di
+salire di livello proprio quando salgono i nemici. Chi non lo uccide resta indietro.
+
+**Il nemico speciale** [DECISO lo stile, PROPOSTO il dettaglio]: ispirato al Panzer Soldat di CoD Zombies,
+cioè **resistente e con attacchi diversi** dagli altri nemici, ma nostro e a tema. Alla morte lascia il
+**Ferro Dannato**, che finisce nell'**inventario** (non si perde a terra).
+
+**La Forgia** [DECISO]: un **posto fisso nuovo** sulla mappa. Porti il Ferro Dannato (più vildenaro?),
+scegli un'arma, e l'arma si **trasforma**:
+- **Revolver → akimbo** (due revolver).
+- **Doppietta → fucile a pompa**.
+- **Carabina → ottica** (cannocchiale montato).
+Oltre al cambio di modello, un **aumento di danno netto** che segue i gradini (regola dei breakpoint, §3).
+
+**Livelli successivi** [DA DECIDERE]: come il doppio Pack-a-Punch di CoD, forse **proiettili con abilità
+speciali** (fuoco, rimbalzo, esplosivi…).
+
+[DA DECIDERE]
+- Cosa cambia **nella meccanica** con la trasformazione (non solo nel modello): akimbo = più colpi e
+  cadenza? E il fanning, che usa la mano sinistra? Pompa = più cartucce e una pompata tra un colpo e
+  l'altro? E la carta **Doppio botto** (due canne insieme)? Ottica = zoom più forte: si sovrappone alla
+  carta **Cannocchiale**, che andrà cambiata.
+- Le carte restano valide sull'arma trasformata?
+- Prezzo in vildenaro oltre al Ferro, e cosa succede col Ferro se hai già rinforzato tutto.
+
+---
+
 ## 6b. HUD [FATTO]
 - **Stile "sangue e cenere"**: niente cornici né targhe (risultavano comiche), elementi appoggiati
   sullo schermo come in Prodeus, colori presi dalla scena (rosso sangue secco, ottone opaco, cenere),
