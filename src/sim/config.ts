@@ -312,6 +312,13 @@ export const tuning = {
   upgradeMaxLevel: 3,
   /** Cards drawn on the counter to choose from. */
   upgradeOfferSize: 2,
+  // --- The Forge (docs/DESIGN.md §6d): Damned Iron → a reinforced gun ---
+  /**
+   * Damage of a reinforced gun (forge level 1), times the plain one. ×2 like
+   * the enemies' health at wave 10: the same breakpoints one step later
+   * (revolver 100 = one body shot up to wave 19, carbine 200 up to 29).
+   */
+  forgeDamageMultiplier: 2,
   // --- Vildenaro: the coins every enemy drops (see dropCoins in pickups.ts) ---
   /** Coins dropped per point of enemy weight: ghoul 1 coin, eye-bat 2, hound 3, bull 5. ALWAYS, not a chance. */
   coinsPerWeight: 1,

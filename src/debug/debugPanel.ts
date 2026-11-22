@@ -44,6 +44,8 @@ export function createDebugPanel(options: {
   onJumpToWave: (wave: number) => void;
   /** Debug: vildenaro for free, to try the shop. */
   onGiveMoney: (amount: number) => void;
+  /** Debug: one Damned Iron for free, to try the Forge. */
+  onGiveIron: () => void;
 }): DebugPanel {
   const panel = createPanel();
   // Any control moved in the panel: check whether the tuning still matches
@@ -74,6 +76,8 @@ export function createDebugPanel(options: {
   shop.number(tuning, 'riflePrice', 0, 3000, 50);
   shop.number(tuning, 'shovelPrice', 0, 3000, 50);
   shop.button('+500 vildenaro', () => options.onGiveMoney(500));
+  shop.button('+1 Ferro Dannato', () => options.onGiveIron());
+  shop.number(tuning, 'forgeDamageMultiplier', 1, 5, 0.5);
   shop.number(tuning, 'upgradeBasePrice', 0, 3000, 50);
   shop.number(tuning, 'upgradePriceGrowth', 1, 4, 0.1);
   shop.number(tuning, 'upgradeMaxLevel', 0, 6, 1);

@@ -41,6 +41,7 @@ import { createEndScreen } from './render/endScreen';
 import { updateAmmoHud } from './render/ammoHud';
 import { updateWeaponBar } from './render/weaponBar';
 import { updateMoneyHud } from './render/moneyHud';
+import { updateIronHud } from './render/ironHud';
 import { updateThreats } from './render/threatIndicator';
 import { createNavDebug } from './render/navDebug';
 import { createHitboxDebug } from './render/hitboxDebug';
@@ -169,6 +170,10 @@ const debugPanel = createDebugPanel({
   onGiveMoney: (amount) => {
     markPractice('vildenaro regalato dal pannello di debug');
     game.player.money += amount;
+  },
+  onGiveIron: () => {
+    markPractice('Ferro Dannato regalato dal pannello di debug');
+    game.player.damnedIron++;
   },
 });
 debugPanel.showAtmosphere(ATMOSPHERES[atmosphereIndex]);
@@ -473,6 +478,7 @@ renderer.setAnimationLoop((now: number) => {
   updateAmmoHud(player);
   updateWeaponBar(player);
   updateMoneyHud(game.player.money, dt);
+  updateIronHud(game.player.damnedIron, dt);
   // The map: only while Tab is held, never over the pause menu.
   mapOverlay.update(game, alpha, camera.position.x, camera.position.z, view.yaw, isKeyDown('Tab') && !paused, now / 1000);
 

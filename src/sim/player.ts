@@ -85,6 +85,16 @@ export interface PlayerState {
    * game, so the counter shows the same cards until you buy one.
    */
   cardSeed: number;
+  /**
+   * Damned Iron in your inventory: dropped by the special enemy of waves
+   * 9, 19, 29... (docs/DESIGN.md §6d), spent at the Forge. Lost when you die.
+   */
+  damnedIron: number;
+  /**
+   * Forge level of each gun: 0 = plain, 1 = reinforced (more damage, and
+   * one day a new look: akimbo revolvers, a pump-action, a scope). Lost when you die.
+   */
+  forged: Record<WeaponId, number>;
   /** Ticks left before the next shot is allowed. */
   fireCooldownTicks: number;
   /** Ticks left in which a recent click is still waiting to fire. */
@@ -160,6 +170,8 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     money: 0,
     cards: noCards(),
     cardSeed: 0,
+    damnedIron: 0,
+    forged: noForge(),
     fireCooldownTicks: 0,
     fireBufferTicks: 0,
     fireHeld: false,
@@ -187,6 +199,7 @@ export function copyPlayer(from: PlayerState, to: PlayerState): void {
   to.reserve = { ...from.reserve };
   to.loaded = { ...from.loaded };
   to.owned = { ...from.owned }; // same story
+  to.forged = { ...from.forged };
   // Arrays inside an object: one level deeper (each array copied too).
   to.cards = {
     revolver: [...from.cards.revolver],
@@ -479,6 +492,11 @@ function fullWeapons(): Record<WeaponId, number> {
 }
 
 /** You start with the revolver only (and your boots: no shovel). */
+/** Every gun at forge level 0. */
+function noForge(): Record<WeaponId, number> {
+  return { revolver: 0, shotgun: 0, rifle: 0 };
+}
+
 function startingWeapons(): Record<GearId, boolean> {
   return { revolver: true, shotgun: false, rifle: false, shovel: false };
 }
@@ -499,6 +517,8 @@ export function respawn(p: PlayerState, world: World): void {
   p.weapon = 'revolver';
   p.money = 0; // dead = the game starts over: empty pockets
   p.cards = noCards(); // ...and plain weapons
+  p.damnedIron = 0;
+  p.forged = noForge();
   p.reloadTicks = 0;
   p.fanShotsLeft = 0;
   p.fanQueued = false;

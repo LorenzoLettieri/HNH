@@ -47,6 +47,16 @@ export type WeaponId = 'revolver' | 'shotgun' | 'rifle';
 export const WEAPONS: readonly WeaponId[] = ['revolver', 'shotgun', 'rifle'];
 
 /**
+ * How much harder a gun hits because of the Forge: 1 when plain,
+ * forgeDamageMultiplier when reinforced. It multiplies only the gun's own
+ * bullet (or pellet) damage: what the cards add on top (ricochet, explosion,
+ * fire) stays the same for now.
+ */
+export function forgeMultiplier(p: PlayerState, weapon: WeaponId): number {
+  return p.forged[weapon] > 0 ? tuning.forgeDamageMultiplier : 1;
+}
+
+/**
  * Everything you can OWN and UPGRADE: the guns, plus the shovel. The shovel
  * isn't a slot (you never hold it in your hands instead of a gun): once
  * bought it takes the boot's place on the melee key (kick.ts). Same idea as
@@ -505,7 +515,7 @@ function revolverBullet(
   const hit = trace(ox, oy, oz, dx, dy, dz, tuning.weaponRange, world, entities.filter(isAlive), false, events, end);
   if (hit) {
     const critical = hit.headshot || (p.wallJumpShot && hasCard(p, 'riderShot'));
-    const amount = tuning.revolverDamage * (critical ? tuning.headshotMultiplier : 1);
+    const amount = tuning.revolverDamage * forgeMultiplier(p, 'revolver') * (critical ? tuning.headshotMultiplier : 1);
     applyGunDamage(hit.target, amount, critical, 'revolver', hit.distance, events);
     if (critical && hasCard(p, 'ricochet')) ricochet(p, end, hit.target, world, entities, events);
   }
@@ -660,7 +670,7 @@ function fireRifle(p: PlayerState, world: World, entities: Entity[], events: Sim
     const hit = trace(a.ox, a.oy, a.oz, dx, dy, dz, tuning.weaponRange, world, living, false, events);
     if (!hit) break;
     const critical = hit.headshot || quickscope;
-    let amount = tuning.rifleDamage * (critical ? critMultiplier : 1) * duel;
+    let amount = tuning.rifleDamage * forgeMultiplier(p, 'rifle') * (critical ? critMultiplier : 1) * duel;
     // "Marchio": a marked enemy takes double and loses the mark; an unmarked one gets it.
     const wasMarked = marks && hit.target.marked === true;
     if (wasMarked) {
@@ -727,6 +737,7 @@ function fireShotgun(p: PlayerState, world: World, entities: Entity[], events: S
     if (!hit) return;
     const amount =
       tuning.shotgunPelletDamage *
+      forgeMultiplier(p, 'shotgun') *
       falloff(p, travelled + hit.distance) *
       (hit.headshot ? tuning.shotgunHeadshotMultiplier : 1);
     const t = totals.get(hit.target) ?? { amount: 0, headshot: false, pellets: 0, distance: Infinity };
