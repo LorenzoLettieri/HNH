@@ -23,13 +23,10 @@ export const cameraFeelSettings = {
   /** Vertical FOV aimed down the carbine's sights, degrees (75 → 50 = a 1.6× zoom). */
   adsFov: 50,
   /**
-   * The Forge's optic: the field of view of the camera INSIDE the scope
-   * (scopeLens.ts), degrees, over the lens's square picture. The lens covers
-   * about 44% of the screen's height, the world outside spans adsFov (50°):
-   * magnification ≈ 50 × 0.44 / scopeFov = 3.1× at 7°. Smaller = more zoom.
-   * The view outside the lens keeps the normal aiming zoom (adsFov).
+   * The Forge's optic (a reinforced carbine): a much stronger zoom when aiming,
+   * looking through the scope (75 → 24 ≈ 3.4×). The mouse slows down to match (lookScale).
    */
-  scopeFov: 7,
+  opticAdsFov: 24,
   /** Extra degrees of FOV at full speed. */
   speedFovExtra: 12,
   /** Speed (m/s) where the FOV starts widening... */
@@ -65,23 +62,9 @@ let ads = 0; // 0 = from the hip, 1 = aimed (smoothed between ticks)
  * same angle looks on screen (the projection divides by the tangent).
  */
 export function lookScale(camera: THREE.PerspectiveCamera): number {
-  return (halfTan(camera.fov) / halfTan(cameraFeelSettings.baseFov)) * lensLook;
+  const half = (deg: number) => Math.tan(THREE.MathUtils.degToRad(deg) / 2);
+  return half(camera.fov) / half(cameraFeelSettings.baseFov);
 }
-const halfTan = (deg: number) => Math.tan(THREE.MathUtils.degToRad(deg) / 2);
-
-/**
- * Share of the screen's height the scope's lens covers when fully aimed
- * (it follows from the aiming pose: rifleScopeAdsZ in viewmodel.ts).
- */
-const LENS_SHARE = 0.44;
-/**
- * Looking through the scope you aim with what's INSIDE the lens, magnified:
- * the mouse must slow down for that, not for the view around it. The lens
- * shows scopeFov over LENS_SHARE of the screen: the whole screen at that
- * magnification would be a FOV with tan(fov/2) = tan(scopeFov/2) / LENS_SHARE.
- * lensLook = how much slower than the normal aiming that is (1 = not scoped).
- */
-let lensLook = 1;
 let roll = 0;
 let eyeHeight = tuning.eyeHeight;
 // Hit snap: one damped spring per axis (angle in radians and its speed).
@@ -143,11 +126,8 @@ export function updateCameraFeel(
   fov = approach(fov, s.baseFov + s.speedFovExtra * t, s.fovRate, dt);
   // The zoom goes on top, faster than the speed FOV: aiming must be snappy.
   ads = approach(ads, adsAmount(player), 30, dt);
-  const eased = ads * ads * (3 - 2 * ads); // smoothstep
-  const zoomed = fov + (s.adsFov - fov) * eased;
-  const scoped = player.weapon === 'rifle' && player.forged.rifle > 0;
-  const lensTan = halfTan(s.scopeFov) / LENS_SHARE;
-  lensLook = scoped ? 1 + (lensTan / halfTan(zoomed) - 1) * eased : 1;
+  const target = player.forged.rifle > 0 ? s.opticAdsFov : s.adsFov;
+  const zoomed = fov + (target - fov) * ads * ads * (3 - 2 * ads); // smoothstep
   if (Math.abs(camera.fov - zoomed) > 0.01) {
     camera.fov = zoomed;
     camera.updateProjectionMatrix(); // the projection matrix depends on the FOV

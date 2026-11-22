@@ -21,6 +21,7 @@ import { createRevolverReload } from './revolverReload';
 import { createRifleView } from './rifleView';
 import { adsAmount, type WeaponId } from '../../sim/weapon';
 import { smoothstep } from './elastic';
+import { lookingThroughScope } from '../scopeOverlay';
 
 /** Mutable so the debug panel can change them. */
 export const viewmodelSettings = {
@@ -84,15 +85,12 @@ export const viewmodelSettings = {
   rifleAdsZ: -0.22,
   /**
    * With the Forge's scope: the eye on the scope's axis (SCOPE_AXIS_Y in
-   * rifleView.ts) and the eyepiece close to it, so its lens (the magnified
-   * picture, scopeLens.ts) fills about 44% of the screen's height. The math:
-   * lens radius 0.018 m, this camera's half-FOV tan(27.5°) = 0.52, so the
-   * lens must be 0.018 / (0.44 × 0.52) ≈ 0.079 m from the eye; the lens is
-   * 0.069 m in front of the grip → the grip 0.01 m in front of the eye.
-   * Changing this changes LENS_SHARE in cameraFeel.ts (the mouse's slow-down).
+   * rifleView.ts), a bit farther back (eye relief). Only seen while raising
+   * the gun: fully aimed, the gun is hidden and you look through the scope
+   * (scopeOverlay.ts).
    */
   rifleScopeAdsY: -0.097,
-  rifleScopeAdsZ: -0.01,
+  rifleScopeAdsZ: -0.2,
   rifleRecoil: 0.22,
   rifleRecoilBack: 0.06,
   rifleRecoilRecovery: 9,
@@ -336,15 +334,14 @@ export function createViewmodel(): Viewmodel {
       }
       revolver.visible = shownWeapon === 'revolver';
       shotgun.root.visible = shownWeapon === 'shotgun';
-      rifle.root.visible = shownWeapon === 'rifle';
+      // Looking through the scope: the gun is "around" your eye, you see the scope view instead.
+      rifle.root.visible = shownWeapon === 'rifle' && !lookingThroughScope(player);
       const isRifle = shownWeapon === 'rifle';
       // Aiming down the sights: the simulation says how far (it takes
       // rifleAdsTime); here it's only smoothed between ticks and eased.
       ads = approach(ads, isRifle ? adsAmount(player) : 0, 30, dt);
       const aimed = smoothstep(ads);
-      // With the scope, no sway at all: the lens must stay centered, where the shot goes.
-      const steadyAimed = player.forged.rifle > 0 ? 0 : s.rifleAdsSteady;
-      const steady = 1 - (1 - steadyAimed) * aimed;
+      const steady = 1 - (1 - s.rifleAdsSteady) * aimed;
       const switchTotal = secondsToTicks(tuning.weaponSwitchTime);
       const switchTarget = switchTotal > 0 ? player.switchTicks / switchTotal : 0;
       switchDrop = approach(switchDrop, Math.min(switchDrop, switchTarget), 30, dt);

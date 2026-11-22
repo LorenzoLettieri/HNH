@@ -40,7 +40,6 @@ import type { LeverTimes } from '../../audio/sfx';
 import { ELASTIC_STEP, PoseSpring, ZERO_POSE, phase, poseAt, smoothstep, type GunPose } from './elastic';
 import { loadGunModel } from './gunModel';
 import { createRifleHands } from './hands';
-import { scopeLensMaterial } from '../scopeLens';
 
 // --- The scope (the Forge's optic) ------------------------------------------------
 // Measured on rifle.glb (each mesh's POSITION accessor has min/max, a free
@@ -51,8 +50,6 @@ import { scopeLensMaterial } from '../scopeLens';
 /** Height of the tube's axis above the grip, meters: the eye goes here when aiming (viewmodelSettings.rifleScopeAdsY). */
 export const SCOPE_AXIS_Y = 0.097;
 const SCOPE_RADIUS = 0.013;
-/** The eyepiece's radius: big, its lens is your window when aiming (see rifleScopeAdsZ). */
-const EYEPIECE_RADIUS = 0.0195;
 /** Where the tube starts (eyepiece, near you) and ends (objective, toward the muzzle), z in meters. */
 const SCOPE_BACK = -0.07;
 const SCOPE_FRONT = -0.32;
@@ -79,11 +76,10 @@ function createScope(): THREE.Group {
     g.add(mesh);
   };
   const bell = 0.05;
-  tube(SCOPE_BACK, SCOPE_BACK - 0.035, EYEPIECE_RADIUS, SCOPE_RADIUS, blued); // eyepiece
+  tube(SCOPE_BACK, SCOPE_BACK - 0.035, 0.017, SCOPE_RADIUS, blued); // eyepiece
   tube(SCOPE_BACK - 0.035, SCOPE_FRONT + bell, SCOPE_RADIUS, SCOPE_RADIUS, blued); // body
   tube(SCOPE_FRONT + bell, SCOPE_FRONT, SCOPE_RADIUS, 0.021, blued); // objective bell
-  tube(SCOPE_BACK - 0.003, SCOPE_BACK - 0.009, EYEPIECE_RADIUS + 0.0015, EYEPIECE_RADIUS + 0.0015, brass); // brass trim
-  tube(SCOPE_FRONT + 0.01, SCOPE_FRONT + 0.004, 0.0215, 0.0215, brass);
+  for (const z of [SCOPE_BACK - 0.005, SCOPE_FRONT + 0.004]) tube(z, z - 0.006, 0.0185, 0.0185, brass); // brass trim on both ends
   // Two mounts: a brass ring round the tube and a block down to the receiver.
   for (const z of [-0.11, -0.2]) {
     tube(z + 0.006, z - 0.006, SCOPE_RADIUS + 0.002, SCOPE_RADIUS + 0.002, brass);
@@ -91,19 +87,15 @@ function createScope(): THREE.Group {
     block.position.set(0, SCOPE_AXIS_Y - SCOPE_RADIUS - 0.012, z);
     g.add(block);
   }
-  // The front lens: dark glass with a faint blue glint (it catches the light).
-  const glass = material(0x101820, LENS_GLINT);
-  glass.emissiveIntensity = 0.25;
-  const front = new THREE.Mesh(new THREE.CircleGeometry(0.019, 12), glass);
-  front.position.set(0, SCOPE_AXIS_Y, SCOPE_FRONT - 0.001);
-  front.rotation.y = Math.PI; // CircleGeometry faces +Z: turn it toward the muzzle
-  g.add(front);
-  // The rear lens, facing you: the magnified world (scopeLens.ts renders it
-  // into a texture; this material shows it, reticle included). CircleGeometry's
-  // UVs map the disc onto the square texture, so the round picture comes free.
-  const rear = new THREE.Mesh(new THREE.CircleGeometry(EYEPIECE_RADIUS - 0.0015, 24), scopeLensMaterial);
-  rear.position.set(0, SCOPE_AXIS_Y, SCOPE_BACK + 0.001);
-  g.add(rear);
+  // The lenses: a disc at each end with a faint blue glint (they catch the light).
+  const lens = material(0x101820, LENS_GLINT);
+  for (const [z, faceBack] of [[SCOPE_FRONT - 0.001, false], [SCOPE_BACK + 0.001, true]] as const) {
+    const disc = new THREE.Mesh(new THREE.CircleGeometry(faceBack ? 0.015 : 0.019, 10), lens);
+    disc.position.set(0, SCOPE_AXIS_Y, z);
+    if (!faceBack) disc.rotation.y = Math.PI; // CircleGeometry faces +Z: turn the front one toward the muzzle
+    g.add(disc);
+  }
+  lens.emissiveIntensity = 0.25;
   return g;
 }
 

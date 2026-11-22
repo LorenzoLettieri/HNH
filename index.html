@@ -92,6 +92,11 @@
         position: fixed; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px;
         pointer-events: none; image-rendering: pixelated;
       }
+      /* The view through the reinforced carbine's scope (src/render/scopeOverlay.ts): a
+         low-resolution canvas stretched over the screen, its pixels kept sharp. It comes
+         before the HUD in the page, so health and ammo stay visible on top of it. */
+      #scope { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; image-rendering: pixelated; }
+      #scope[hidden] { display: none; }
       /* Hitmarker: painted by src/render/hitmarker.ts (color and size per kind of hit),
          here only centering and the fade-out (opacity, which dark modes don't repaint). */
       #hitmarker {
@@ -629,6 +634,7 @@
     <div id="hud-smudge-right" class="hud-smudge"></div>
     <div id="hud-smudge-top-left" class="hud-smudge"></div>
     <div id="hud-smudge-top-right" class="hud-smudge"></div>
+    <canvas id="scope" hidden></canvas>
     <canvas id="crosshair"></canvas>
     <canvas id="hitmarker"></canvas>
     <div id="weapon-bar"></div>
