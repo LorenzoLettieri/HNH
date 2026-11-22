@@ -743,9 +743,10 @@ futuro **poligono di tiro / tutorial**.
 - **Duellante**: dopo 1,5 s senza sparare il colpo successivo fa danno doppio (200 al corpo, 800 critico: al corpo uccide un ghoul a qualsiasi ondata),
   con un "tic" quando è pronto.
 - **Leva da pistolero**: niente imprecisione dall'anca (in aria e a terra) e leva più veloce (0,62 → 0,43 s;
-  animazione e suoni seguono). Mirare serve ancora per lo zoom e per Cannocchiale.
+  animazione e suoni seguono). Mirare serve ancora per lo zoom e per Occhio di falco.
 - **Perforante**: il colpo attraversa tutti i nemici in fila (danno pieno a ognuno).
-- **Cannocchiale**: zoom più forte (FOV 32 invece di 50); mirando fino in fondo il critico vale ×6 invece di ×4.
+- **Occhio di falco** (era "Cannocchiale"): mirando fino in fondo il critico vale ×6 invece di ×4. [CAMBIATA,
+  novembre 2026] Prima dava anche uno zoom più forte: ora lo zoom forte lo dà l'ottica della Forgia (§6d).
 - **Quickscope**: un colpo entro 0,2 s dall'inizio della mira è un critico garantito.
 - **Marchio**: il colpo marca il nemico (un sigillo rosso sopra la testa), il colpo successivo su di lui fa danno
   doppio e toglie il marchio.
@@ -809,7 +810,11 @@ Lascia **sempre** il Ferro Dannato (un lingotto incandescente a terra, dura 90 s
 scegli un'arma, e l'arma si **trasforma**:
 - **Revolver → akimbo** (due revolver).
 - **Doppietta → fucile a pompa**.
-- **Carabina → ottica** (cannocchiale montato).
+- **Carabina → ottica** (cannocchiale montato). [FATTO, da provare] Un cannocchiale d'acciaio brunito con
+  gli anelli d'ottone sopra il castello; mirando l'occhio va sull'asse del tubo e, **a mira completa, l'arma
+  sparisce e vedi dentro il cannocchiale** (nero intorno, finestra rotonda, reticolo a pali, un punto
+  rovente al centro), con uno **zoom forte** (FOV 24 invece di 50, il mouse rallenta in proporzione). La
+  carta Cannocchiale perde lo zoom e diventa **Occhio di falco** (solo il critico ×6).
 Oltre al cambio di modello, un **aumento di danno netto** che segue i gradini (regola dei breakpoint, §3).
 
 **Livelli successivi** [DA DECIDERE]: come il doppio Pack-a-Punch di CoD, forse **proiettili con abilità
@@ -818,8 +823,7 @@ speciali** (fuoco, rimbalzo, esplosivi…).
 [DA DECIDERE]
 - Cosa cambia **nella meccanica** con la trasformazione (non solo nel modello): akimbo = più colpi e
   cadenza? E il fanning, che usa la mano sinistra? Pompa = più cartucce e una pompata tra un colpo e
-  l'altro? E la carta **Doppio botto** (due canne insieme)? Ottica = zoom più forte: si sovrappone alla
-  carta **Cannocchiale**, che andrà cambiata.
+  l'altro? E la carta **Doppio botto** (due canne insieme)? (Ottica: deciso, vedi sopra.)
 - Le carte restano valide sull'arma trasformata?
 - Prezzo in vildenaro oltre al Ferro, e cosa succede col Ferro se hai già rinforzato tutto.
 

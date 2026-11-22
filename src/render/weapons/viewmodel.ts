@@ -21,6 +21,7 @@ import { createRevolverReload } from './revolverReload';
 import { createRifleView } from './rifleView';
 import { adsAmount, type WeaponId } from '../../sim/weapon';
 import { smoothstep } from './elastic';
+import { lookingThroughScope } from '../scopeOverlay';
 
 /** Mutable so the debug panel can change them. */
 export const viewmodelSettings = {
@@ -82,6 +83,14 @@ export const viewmodelSettings = {
   rifleAdsX: 0,
   rifleAdsY: -0.0753,
   rifleAdsZ: -0.22,
+  /**
+   * With the Forge's scope: the eye on the scope's axis (SCOPE_AXIS_Y in
+   * rifleView.ts), a bit farther back (eye relief). Only seen while raising
+   * the gun: fully aimed, the gun is hidden and you look through the scope
+   * (scopeOverlay.ts).
+   */
+  rifleScopeAdsY: -0.097,
+  rifleScopeAdsZ: -0.2,
   rifleRecoil: 0.22,
   rifleRecoilBack: 0.06,
   rifleRecoilRecovery: 9,
@@ -325,7 +334,8 @@ export function createViewmodel(): Viewmodel {
       }
       revolver.visible = shownWeapon === 'revolver';
       shotgun.root.visible = shownWeapon === 'shotgun';
-      rifle.root.visible = shownWeapon === 'rifle';
+      // Looking through the scope: the gun is "around" your eye, you see the scope view instead.
+      rifle.root.visible = shownWeapon === 'rifle' && !lookingThroughScope(player);
       const isRifle = shownWeapon === 'rifle';
       // Aiming down the sights: the simulation says how far (it takes
       // rifleAdsTime); here it's only smoothed between ticks and eased.
@@ -414,8 +424,8 @@ export function createViewmodel(): Viewmodel {
         : isRifle
           ? {
               x: lerp(s.rifleX, s.rifleAdsX),
-              y: lerp(s.rifleY, s.rifleAdsY),
-              z: lerp(s.rifleZ, s.rifleAdsZ),
+              y: lerp(s.rifleY, player.forged.rifle > 0 ? s.rifleScopeAdsY : s.rifleAdsY),
+              z: lerp(s.rifleZ, player.forged.rifle > 0 ? s.rifleScopeAdsZ : s.rifleAdsZ),
               pitch: lerp(s.riflePitch, 0),
               yaw: lerp(s.rifleYaw, 0),
               roll: lerp(s.rifleRoll, 0),

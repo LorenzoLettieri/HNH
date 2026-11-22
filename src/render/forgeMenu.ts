@@ -19,7 +19,7 @@ import { WEAPONS, type WeaponId } from '../sim/weapon';
 const FORGE_TEXT: Record<WeaponId, { name: string; desc: string }> = {
   revolver: { name: 'Revolver → Akimbo', desc: 'Il doppio del danno. (Presto: un secondo revolver nell’altra mano.)' },
   shotgun: { name: 'Doppietta → Fucile a pompa', desc: 'Il doppio del danno. (Presto: il fucile a pompa.)' },
-  rifle: { name: 'Carabina → Ottica', desc: 'Il doppio del danno. (Presto: il cannocchiale.)' },
+  rifle: { name: 'Carabina → Ottica', desc: 'Il doppio del danno e un cannocchiale: mirando, uno zoom tre volte più forte.' },
 };
 
 /** The lines at the top of the panel: nobody behind this counter, the Forge "speaks" in italics. */

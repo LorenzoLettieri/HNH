@@ -279,7 +279,9 @@ export function createDebugPanel(options: {
   rifle.number(tuning, 'rifleReloadInterrupt', 0, 0.5, 0.01);
   rifle.number(tuning, 'rifleBuyBullets', 0, 72, 1);
   rifle.number(cameraFeelSettings, 'adsFov', 20, 75, 1);
-  rifle.number(cameraFeelSettings, 'scopeAdsFov', 10, 75, 1);
+  rifle.number(cameraFeelSettings, 'opticAdsFov', 10, 75, 1);
+  rifle.number(viewmodelSettings, 'rifleScopeAdsY', -0.2, 0, 0.001);
+  rifle.number(viewmodelSettings, 'rifleScopeAdsZ', -0.5, 0, 0.005);
   rifle.number(viewmodelSettings, 'rifleX', -0.3, 0.3, 0.005);
   rifle.number(viewmodelSettings, 'rifleY', -0.3, 0.1, 0.005);
   rifle.number(viewmodelSettings, 'rifleZ', -0.6, 0, 0.005);

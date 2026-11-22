@@ -41,6 +41,64 @@ import { ELASTIC_STEP, PoseSpring, ZERO_POSE, phase, poseAt, smoothstep, type Gu
 import { loadGunModel } from './gunModel';
 import { createRifleHands } from './hands';
 
+// --- The scope (the Forge's optic) ------------------------------------------------
+// Measured on rifle.glb (each mesh's POSITION accessor has min/max, a free
+// bounding box): the front sight's tip is 0.073 above the grip, the receiver
+// spans about z −0.05 → −0.2, the muzzle is at −0.73. The scope sits on the
+// receiver, its tube a couple of centimeters above the iron sights (which
+// stay visible under it, like on a real rifle with "see-through" mounts).
+/** Height of the tube's axis above the grip, meters: the eye goes here when aiming (viewmodelSettings.rifleScopeAdsY). */
+export const SCOPE_AXIS_Y = 0.097;
+const SCOPE_RADIUS = 0.013;
+/** Where the tube starts (eyepiece, near you) and ends (objective, toward the muzzle), z in meters. */
+const SCOPE_BACK = -0.07;
+const SCOPE_FRONT = -0.32;
+const SCOPE_BLUED = 0x24242c; // blued steel
+const SCOPE_BRASS = 0xb08a3c; // steampunk brass rings
+const LENS_GLINT = 0x6a90b0;
+
+/**
+ * A scope out of a few cylinders. CylinderGeometry stands along +Y; turned
+ * by −90° around X its top (+Y) points to −Z, along the barrel (the rotation
+ * matrix sends y to −z). radiusTop is then the end toward the muzzle.
+ */
+function createScope(): THREE.Group {
+  const g = new THREE.Group();
+  const material = (color: number, emissive = 0) =>
+    new THREE.MeshStandardMaterial({ color, emissive, roughness: 0.55, metalness: 0, flatShading: true });
+  const blued = material(SCOPE_BLUED);
+  const brass = material(SCOPE_BRASS);
+  /** A piece of tube from z0 (back) to z1 (front), radius rBack → rFront. */
+  const tube = (z0: number, z1: number, rBack: number, rFront: number, m: THREE.Material) => {
+    const geo = new THREE.CylinderGeometry(rFront, rBack, z0 - z1, 10).rotateX(-Math.PI / 2);
+    const mesh = new THREE.Mesh(geo, m);
+    mesh.position.set(0, SCOPE_AXIS_Y, (z0 + z1) / 2);
+    g.add(mesh);
+  };
+  const bell = 0.05;
+  tube(SCOPE_BACK, SCOPE_BACK - 0.035, 0.017, SCOPE_RADIUS, blued); // eyepiece
+  tube(SCOPE_BACK - 0.035, SCOPE_FRONT + bell, SCOPE_RADIUS, SCOPE_RADIUS, blued); // body
+  tube(SCOPE_FRONT + bell, SCOPE_FRONT, SCOPE_RADIUS, 0.021, blued); // objective bell
+  for (const z of [SCOPE_BACK - 0.005, SCOPE_FRONT + 0.004]) tube(z, z - 0.006, 0.0185, 0.0185, brass); // brass trim on both ends
+  // Two mounts: a brass ring round the tube and a block down to the receiver.
+  for (const z of [-0.11, -0.2]) {
+    tube(z + 0.006, z - 0.006, SCOPE_RADIUS + 0.002, SCOPE_RADIUS + 0.002, brass);
+    const block = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.03, 0.012), brass);
+    block.position.set(0, SCOPE_AXIS_Y - SCOPE_RADIUS - 0.012, z);
+    g.add(block);
+  }
+  // The lenses: a disc at each end with a faint blue glint (they catch the light).
+  const lens = material(0x101820, LENS_GLINT);
+  for (const [z, faceBack] of [[SCOPE_FRONT - 0.001, false], [SCOPE_BACK + 0.001, true]] as const) {
+    const disc = new THREE.Mesh(new THREE.CircleGeometry(faceBack ? 0.015 : 0.019, 10), lens);
+    disc.position.set(0, SCOPE_AXIS_Y, z);
+    if (!faceBack) disc.rotation.y = Math.PI; // CircleGeometry faces +Z: turn the front one toward the muzzle
+    g.add(disc);
+  }
+  lens.emissiveIntensity = 0.25;
+  return g;
+}
+
 // --- The lever ---------------------------------------------------------------
 /** How far the lever swings open, radians: the stop it slams into. */
 const LEVER_OPEN = 0.85;
@@ -229,6 +287,11 @@ export function createRifleView(flightSpace: THREE.Object3D): RifleView {
     }),
   );
 
+  // The scope the Forge mounts on it: built in code, hidden until then.
+  const scope = createScope();
+  scope.visible = false;
+  root.add(scope);
+
   // Two hands (see hands.ts): the right one on the wrist with its fingers in
   // the lever's loop, the left one under the fore-end. The right hand has a
   // MORPH TARGET (a second shape of the same mesh, the "lever open" pose):
@@ -288,6 +351,7 @@ export function createRifleView(flightSpace: THREE.Object3D): RifleView {
       clearCases();
     },
     update(dt, player) {
+      scope.visible = player.forged.rifle > 0; // the Forge's optic (docs/DESIGN.md §6d)
       const interval = fireInterval(player, 'rifle'); // "Leva da pistolero" makes it shorter
       const perRoundTicks = secondsToTicks(tuning.rifleReloadPerRound);
       const reloading = player.reloadTicks > 0;

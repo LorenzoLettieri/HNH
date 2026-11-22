@@ -171,7 +171,7 @@ export const tuning = {
   duelistMultiplier: 2,
   /** Card "Leva da pistolero": the lever's time (rifleFireInterval) × this. */
   gunslingerLeverScale: 0.7,
-  /** Card "Cannocchiale": the carbine's critical multiplier when fully aimed (normally rifleHeadshotMultiplier). */
+  /** Card "Occhio di falco": the carbine's critical multiplier when fully aimed (normally rifleHeadshotMultiplier). */
   scopeCritMultiplier: 6,
   /** Card "Quickscope": seconds from starting to aim in which a shot is a critical hit. */
   quickscopeWindow: 0.2,

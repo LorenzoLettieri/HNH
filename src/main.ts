@@ -36,6 +36,7 @@ import { createShopMenu } from './render/shopMenu';
 import { createMapOverlay } from './render/mapOverlay';
 import { shopInReach } from './sim/shop';
 import './render/crosshair'; // paints the crosshair once
+import { updateScopeOverlay } from './render/scopeOverlay';
 import { adsAmount, GEAR } from './sim/weapon';
 import { updateHud } from './render/hud';
 import { createEndScreen } from './render/endScreen';
@@ -444,6 +445,7 @@ renderer.setAnimationLoop((now: number) => {
   controlSettings.lookScale = lookScale(camera); // zoomed in: slower mouse
   // Aimed down the sights the crosshair goes away: the sights ARE the crosshair.
   crosshair.style.opacity = adsAmount(player) > 0.6 ? '0' : '';
+  updateScopeOverlay(player); // a reinforced carbine fully aimed: the view through the scope
   camera.position.set(
     prevPlayer.x + (player.x - prevPlayer.x) * alpha,
     prevPlayer.y + (player.y - prevPlayer.y) * alpha + eyeHeight - updateLandingDip(dt),

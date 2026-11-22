@@ -129,9 +129,9 @@ const CARD_TEXT: Record<CardId, { name: string; desc: string }> = {
     name: 'Perforante',
     desc: 'Il proiettile attraversa tutti i nemici in fila.',
   },
-  scope: {
-    name: 'Cannocchiale',
-    desc: 'Zoom più forte. Mirando fino in fondo, il colpo critico vale sei volte invece di quattro.',
+  hawkEye: {
+    name: 'Occhio di falco',
+    desc: 'Mirando fino in fondo, il colpo critico vale sei volte invece di quattro.',
   },
   quickscope: {
     name: 'Quickscope',

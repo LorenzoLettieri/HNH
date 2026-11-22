@@ -658,7 +658,7 @@ function fireRifle(p: PlayerState, world: World, entities: Entity[], events: Sim
   // The cards that change the damage of THIS shot (read before the loop: a
   // piercing bullet carries them through every enemy it crosses).
   const aimed = adsAmount(p) >= 1;
-  const critMultiplier = hasCard(p, 'scope') && aimed ? tuning.scopeCritMultiplier : tuning.rifleHeadshotMultiplier;
+  const critMultiplier = hasCard(p, 'hawkEye') && aimed ? tuning.scopeCritMultiplier : tuning.rifleHeadshotMultiplier;
   const quickscope = hasCard(p, 'quickscope') && p.aimHeldTicks > 0 && p.aimHeldTicks <= secondsToTicks(tuning.quickscopeWindow);
   const duel = hasCard(p, 'duelist') && p.quietTicks >= secondsToTicks(tuning.duelistTime) ? tuning.duelistMultiplier : 1;
   const marks = hasCard(p, 'mark');
