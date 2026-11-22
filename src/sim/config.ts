@@ -321,8 +321,17 @@ export const tuning = {
   coinLifetime: 15,
   /** Pellets per shot (a fixed pattern: center + inner ring + outer ring). */
   shotgunPellets: 12,
-  /** Half-angle of the outer ring of the pattern, degrees (7° = ~1.2 m wide at 10 m). */
-  shotgunSpread: 7,
+  /**
+   * The pattern is an ELLIPSE, wide and short: enemies stand on the ground,
+   * side by side, so the pellets that went above and below the head of a
+   * round pattern now hit the ghouls next to it. Half-angles of the outer
+   * ring, degrees. Simulated on a row of ghouls 1.4 m apart, aiming at the
+   * middle one: it still dies up to ~8 m (126 damage at 4 m, enough for the
+   * 100 health of waves 10-19), the two beside it take 14-34 instead of 0.
+   * Wider (12°) and the middle one gets 98 at 4 m: no more one-shot at wave 10.
+   */
+  shotgunSpreadHorizontal: 10,
+  shotgunSpreadVertical: 4,
   /** Damage of one pellet at close range (all 12 = 168: anything basic dies point blank). */
   shotgunPelletDamage: 14,
   /** Pellets do full damage up to this distance, meters... */

@@ -224,7 +224,8 @@ export function createDebugPanel(options: {
 
   const sg = panel.folder('Shotgun (src/sim/config.ts + render/weapons/viewmodel.ts, shotgunView.ts)');
   sg.number(tuning, 'shotgunPellets', 1, 30, 1);
-  sg.number(tuning, 'shotgunSpread', 0, 20, 0.5);
+  sg.number(tuning, 'shotgunSpreadHorizontal', 0, 25, 0.5);
+  sg.number(tuning, 'shotgunSpreadVertical', 0, 25, 0.5);
   sg.number(tuning, 'shotgunPelletDamage', 1, 50, 1);
   sg.number(tuning, 'shotgunFalloffStart', 0, 30, 0.5);
   sg.number(tuning, 'shotgunFalloffEnd', 1, 60, 0.5);

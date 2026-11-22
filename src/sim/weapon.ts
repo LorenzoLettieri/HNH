@@ -702,7 +702,8 @@ function tilt(p: PlayerState, a: ReturnType<typeof aim>, ax: number, ay: number,
  * outer ring), not random: the same shot always does the same thing, so
  * you learn what it can do (Quake Champions and many modern shooters do
  * this). The two barrels' patterns are rotated relative to each other, so
- * the second shot fills the gaps of the first.
+ * the second shot fills the gaps of the first. The pattern is a wide, short
+ * ELLIPSE: it covers the ghouls standing next to the one you aim at.
  *
  * The damage of each pellet drops with distance (falloff): that's what makes
  * it a close-range weapon, together with the spread.
@@ -715,7 +716,11 @@ function fireShotgun(p: PlayerState, world: World, entities: Entity[], events: S
   // one 'hit' event, one kill, even if 10 pellets hit the same ghoul.
   const totals = new Map<Entity, { amount: number; headshot: boolean; pellets: number; distance: number }>();
   const tight = hasCard(p, 'longBarrels') ? tuning.longBarrelsSpreadScale : 1; // "Canne lunghe"
-  const spread = Math.tan((tuning.shotgunSpread * tight * Math.PI) / 180);
+  // The pattern is drawn in a unit disc; stretching x and y by different
+  // amounts turns the disc into an ellipse (a scale matrix, diagonal).
+  // tan(angle) = how far off the aim per meter traveled.
+  const spreadH = Math.tan((tuning.shotgunSpreadHorizontal * tight * Math.PI) / 180);
+  const spreadV = Math.tan((tuning.shotgunSpreadVertical * tight * Math.PI) / 180);
   const count = (hit: ReturnType<typeof trace>, travelled: number) => {
     if (!hit) return;
     const amount =
@@ -733,7 +738,7 @@ function fireShotgun(p: PlayerState, world: World, entities: Entity[], events: S
   // barrel's pattern is rotated, so it fills the gaps of the first.
   for (const twist of barrels) {
     for (const [ax, ay] of pelletPattern(tuning.shotgunPellets, twist)) {
-      const [px, py, pz] = tilt(p, a, ax, ay, spread);
+      const [px, py, pz] = tilt(p, a, ax * spreadH, ay * spreadV, 1);
       const end = newEnd();
       const hit = trace(ox, oy, oz, px, py, pz, tuning.shotgunRange, world, living, true, events, end);
       count(hit, 0);

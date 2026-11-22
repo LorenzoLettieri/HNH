@@ -673,7 +673,9 @@ futuro **poligono di tiro / tutorial**.
   fino a 5° dalla mira. Tanto danno in un attimo, solo da vicino (ghoul addosso, toro stordito). Dopo
   la raffica 0,3 s di recupero; R durante la raffica aspetta che finisca; cambiare arma la interrompe.
 - **Doppietta (canne mozze)** [FATTO] — tasto 2. Due colpi, 12 pallini in una **rosata fissa** (non casuale:
-  impari cosa fa), danno pieno fino a 6 m e poi in calo fino al 25% a 22 m: devastante da vicino, quasi
+  impari cosa fa) **a ellisse larga e bassa** (10° × 4°; prima un cerchio di 7°, cambiata dopo il playtest di
+  novembre 2026 per renderla un'arma ad area: i nemici stanno affiancati a terra, e i pallini che andavano
+  sopra e sotto la testa ora prendono i vicini), danno pieno fino a 6 m e poi in calo fino al 25% a 22 m: devastante da vicino, quasi
   inutile lontano. Ricarica da sola quando le canne sono vuote. **A bruciapelo (entro 5 m) i nemici volano
   via** come col calcio, più forte quanto più sei vicino e quanti più pallini vanno a segno.
   **Contraccolpo che non frena mai**: sparare indietro ti dà un piccolo boost in avanti, sparare dove stai
