@@ -811,10 +811,13 @@ scegli un'arma, e l'arma si **trasforma**:
 - **Revolver → akimbo** (due revolver).
 - **Doppietta → fucile a pompa**.
 - **Carabina → ottica** (cannocchiale montato). [FATTO, da provare] Un cannocchiale d'acciaio brunito con
-  gli anelli d'ottone sopra il castello; mirando l'occhio va sull'asse del tubo e, **a mira completa, l'arma
-  sparisce e vedi dentro il cannocchiale** (nero intorno, finestra rotonda, reticolo a pali, un punto
-  rovente al centro), con uno **zoom forte** (FOV 24 invece di 50, il mouse rallenta in proporzione). La
-  carta Cannocchiale perde lo zoom e diventa **Occhio di falco** (solo il critico ×6).
+  gli anelli d'ottone sopra il castello. **Mira "picture-in-picture" come nei CoD moderni** [DECISO]: niente
+  schermo nero, l'arma resta in mano; mirando, l'oculare arriva vicino all'occhio (la lente copre circa metà
+  dello schermo) e **solo dentro la lente** il mondo è ingrandito (circa 3×), col reticolo a pali e un punto
+  rovente; fuori dalla lente lo zoom normale della mira. Guardando nella lente il mouse rallenta in
+  proporzione all'ingrandimento della lente. (Prima versione, scartata: a mira completa l'arma spariva e lo
+  schermo diventava il cannocchiale, nero intorno.) La carta Cannocchiale perde lo zoom e diventa
+  **Occhio di falco** (solo il critico ×6).
 Oltre al cambio di modello, un **aumento di danno netto** che segue i gradini (regola dei breakpoint, §3).
 
 **Livelli successivi** [DA DECIDERE]: come il doppio Pack-a-Punch di CoD, forse **proiettili con abilità
