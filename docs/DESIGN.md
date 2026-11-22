@@ -808,7 +808,11 @@ Lascia **sempre** il Ferro Dannato (un lingotto incandescente a terra, dura 90 s
 
 **La Forgia** [DECISO]: un **posto fisso nuovo** sulla mappa. Porti il Ferro Dannato (più vildenaro?),
 scegli un'arma, e l'arma si **trasforma**:
-- **Revolver → akimbo** (due revolver).
+- **Revolver → akimbo** (due revolver). [FATTO, da provare] Due tamburi (12 colpi, carte comprese: 16 con
+  Tamburo del becchino), le pistole **sparano alternate** destra/sinistra, un colpo ogni 0,24 s invece di
+  0,32 (ogni pistola ogni 0,48). Il fanning le svuota tutte e due. La seconda pistola è la prima **specchiata**
+  (niente modelli nuovi). **Ricarica da pistolero**: le due pistole fanno tre giri attorno al dito (la sinistra
+  un attimo dopo) e tornano in mano cariche, 1,3 s: non è una vera ricarica, ma è più bella.
 - **Doppietta → fucile a pompa**.
 - **Carabina → ottica** (cannocchiale montato). [FATTO, da provare] Un cannocchiale d'acciaio brunito con
   gli anelli d'ottone sopra il castello; mirando l'occhio va sull'asse del tubo e, **a mira completa, l'arma

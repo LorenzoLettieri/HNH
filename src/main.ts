@@ -156,7 +156,7 @@ const hitboxDebug = createHitboxDebug(scene);
 const viewmodel = createViewmodel();
 viewmodel.setAspect(window.innerWidth / window.innerHeight);
 weaponFx.onShot.push((weapon, barrel) => viewmodel.onShot(weapon, barrel));
-weaponFx.onReload.push((weapon, seconds) => viewmodel.onReload(weapon, seconds));
+weaponFx.onReload.push((weapon, seconds, spin) => viewmodel.onReload(weapon, seconds, spin));
 weaponFx.onKick.push((tool) => viewmodel.onKick(tool));
 
 let atmosphereIndex = 0;

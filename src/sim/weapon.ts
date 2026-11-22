@@ -274,7 +274,7 @@ export function stepWeapon(
     const seconds = reloadTime(p, p.weapon);
     p.reloadTicks = secondsToTicks(seconds);
     p.fireBufferTicks = 0;
-    events.push({ type: 'reloadStart', weapon: p.weapon, seconds });
+    events.push({ type: 'reloadStart', weapon: p.weapon, seconds, spin: p.weapon === 'revolver' && isAkimbo(p) });
     return;
   }
 

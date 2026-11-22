@@ -289,6 +289,37 @@ export function playDryFire(): void {
 }
 
 /**
+ * The akimbo spin reload (render/weapons/akimboSpin.ts), timed on its turns:
+ * `turns` = when each turn of the right gun completes (spinTurnTimes), so
+ * the sound follows the animation's easing. A quick rattle of the cylinders
+ * at the start, a "whoom" of air for every turn of both guns (the left one a
+ * moment later, quieter as the spin slows down), then the grips slapping into
+ * the palms and the two hammers clicking: loaded.
+ */
+export function playAkimboSpin(turns: number[], duration: number): void {
+  for (let i = 0; i < 6; i++) {
+    noiseBurst({ start: 0.01 + i * 0.022, duration: 0.012, volume: 0.18, filter: 'highpass', frequency: 5000 });
+  }
+  turns.forEach((t, i) => {
+    for (const late of [0, 0.07]) {
+      noiseBurst({
+        start: Math.max(0, t - 0.14) + late,
+        duration: 0.16,
+        volume: 0.4 - i * 0.08,
+        filter: 'bandpass',
+        frequency: 600,
+        frequencyEnd: 1500,
+        q: 2,
+      });
+    }
+  });
+  thump({ start: duration - 0.06, duration: 0.06, volume: 0.35, from: 320, to: 150 });
+  thump({ start: duration - 0.02, duration: 0.06, volume: 0.3, from: 300, to: 140 });
+  noiseBurst({ start: duration + 0.03, duration: 0.02, volume: 0.35, filter: 'bandpass', frequency: 3800, q: 6 });
+  noiseBurst({ start: duration + 0.08, duration: 0.02, volume: 0.3, filter: 'bandpass', frequency: 3400, q: 6 });
+}
+
+/**
  * The gunslinger's reload of the revolver, timed on the animation
  * (render/weapons/revolverReload.ts: same fractions of the reload time; the
  * cylinder there is physics, so these are measured: it hits its open stop

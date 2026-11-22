@@ -18,8 +18,9 @@ import { createShovelView } from './shovelView';
 import type { MeleeTool } from '../../sim/kick';
 import { createShotgunView } from './shotgunView';
 import { createRevolverReload } from './revolverReload';
+import { createAkimboSpin } from './akimboSpin';
 import { createRifleView } from './rifleView';
-import { adsAmount, type WeaponId } from '../../sim/weapon';
+import { adsAmount, isAkimbo, type WeaponId } from '../../sim/weapon';
 import { smoothstep } from './elastic';
 import { lookingThroughScope } from '../scopeOverlay';
 
@@ -151,7 +152,7 @@ export interface Viewmodel {
   camera: THREE.PerspectiveCamera;
   onShot(weapon: WeaponId, barrel: number): void;
   /** A reload starts and lasts `seconds` (the revolver's timeline is stretched to fit). */
-  onReload(weapon: WeaponId, seconds: number): void;
+  onReload(weapon: WeaponId, seconds: number, spin: boolean): void;
   /** The melee attack started: play the leg (kickLeg.ts) or the shovel swing (shovelView.ts). */
   onKick(tool: MeleeTool): void;
   applyAtmosphere(a: Atmosphere): void;
@@ -194,6 +195,20 @@ export function createViewmodel(): Viewmodel {
   const revolver = new THREE.Group();
   revolver.add(gun.root, hands.left);
   holder.add(revolver);
+
+  // AKIMBO (the Forge's revolver): a second revolver with its own right arm,
+  // MIRRORED (scale.x = −1) into a left arm holding a left gun. No new model
+  // and no new pose in Blender: a mirror image of what we have. Three.js
+  // notices the negative scale (the matrix's determinant is negative) and
+  // flips the triangles' winding, so the faces still face the right way.
+  // It lives in its own holder, the mirror of the main one (see update()).
+  const gunL = createRevolverModel();
+  const handsL = createHands();
+  gunL.root.add(handsL.right);
+  const holderL = new THREE.Group();
+  holderL.scale.x = -1;
+  holderL.add(gunL.root);
+  holderL.visible = false;
   const fanning = createFanning(); // the left hand's fanning (see hands.ts)
   scene.add(holder);
 
@@ -219,6 +234,10 @@ export function createViewmodel(): Viewmodel {
   const flash = createFlash(flashMap);
   flash.position.copy(gun.muzzle);
   gun.root.add(flash);
+  const flashL = createFlash(flashMap);
+  flashL.position.copy(gunL.muzzle);
+  gunL.root.add(flashL);
+  scene.add(holderL);
   const shotgunFlash = createFlash(flashMap);
   shotgun.root.add(shotgunFlash);
 
@@ -240,6 +259,13 @@ export function createViewmodel(): Viewmodel {
   let cylinderAngle = 0;
   let cylinderTarget = 0;
   let hammerTime = 1; // seconds since the last shot
+  // The left gun (akimbo): its own recoil, cylinder and hammer; which gun flashed last.
+  let kickL = 0;
+  let cylinderAngleL = 0;
+  let cylinderTargetL = 0;
+  let hammerTimeL = 1;
+  let flashLeft = false;
+  const akimboSpin = createAkimboSpin(); // the akimbo reload (see akimboSpin.ts)
   const revolverReload = createRevolverReload(); // the gunslinger's reload (see revolverReload.ts)
   /** How long the reload in progress lasts: the simulation says, in the 'reloadStart' event. */
   let revolverReloadTime = tuning.revolverReloadTime;
@@ -257,9 +283,22 @@ export function createViewmodel(): Viewmodel {
     scene,
     camera,
     onShot(weapon, barrel) {
-      kick = 1;
       kickWeapon = weapon;
       flashTime = 0.05;
+      // Akimbo: barrel 1 = the LEFT revolver fired. Only that gun kicks,
+      // turns its cylinder and flashes; the right one stays still.
+      if (weapon === 'revolver' && barrel === 1) {
+        kickL = 1;
+        viewKick = s.viewKick;
+        cylinderTargetL += Math.PI / 3;
+        hammerTimeL = 0;
+        flashLeft = true;
+        flashL.material.rotation = Math.random() * Math.PI;
+        flashL.scale.setScalar(0.09 + Math.random() * 0.05);
+        return;
+      }
+      kick = 1;
+      flashLeft = false;
       if (weapon === 'rifle') {
         viewKick = s.rifleViewKick * (1 - 0.5 * ads);
         rifle.onShot();
@@ -281,9 +320,10 @@ export function createViewmodel(): Viewmodel {
       flash.material.rotation = Math.random() * Math.PI;
       flash.scale.setScalar(0.09 + Math.random() * 0.05);
     },
-    onReload(weapon, seconds) {
+    onReload(weapon, seconds, spin) {
       // (The carbine's reload follows the simulation's timer directly: rifleView.ts.)
       if (weapon === 'shotgun') shotgun.onReload();
+      else if (weapon === 'revolver' && spin) akimboSpin.start(seconds); // the gunslinger's twirl
       else if (weapon === 'revolver') {
         revolverReloadTime = seconds; // "Tamburo veloce" makes it shorter
         revolverReload.start();
@@ -328,11 +368,15 @@ export function createViewmodel(): Viewmodel {
         shownWeapon = player.weapon;
         switchDrop = 1;
         revolverReload.cancel(); // a reload in progress was cancelled by the switch
+        akimboSpin.cancel();
         shotgun.cancel();
         rifle.cancel();
         flashTime = 0;
       }
       revolver.visible = shownWeapon === 'revolver';
+      // Akimbo: the left gun appears, the fanning hand goes away (it's holding a gun now).
+      const akimbo = shownWeapon === 'revolver' && isAkimbo(player);
+      holderL.visible = akimbo;
       shotgun.root.visible = shownWeapon === 'shotgun';
       // Looking through the scope: the gun is "around" your eye, you see the scope view instead.
       rifle.root.visible = shownWeapon === 'rifle' && !lookingThroughScope(player);
@@ -350,13 +394,15 @@ export function createViewmodel(): Viewmodel {
       // --- Recoil, flash, view kick: instant hit, exponential recovery ---
       const recovery = { revolver: s.recoilRecovery, shotgun: s.shotgunRecoilRecovery, rifle: s.rifleRecoilRecovery };
       kick = approach(kick, 0, recovery[kickWeapon], dt);
+      kickL = approach(kickL, 0, s.recoilRecovery, dt);
       viewKick = approach(viewKick, 0, 12, dt);
       flashTime -= dt;
-      flash.visible = flashTime > 0 && shownWeapon === 'revolver';
+      flash.visible = flashTime > 0 && shownWeapon === 'revolver' && !flashLeft;
+      flashL.visible = flashTime > 0 && akimbo && flashLeft;
       shotgunFlash.visible = flashTime > 0 && isShotgun;
       rifleFlash.visible = flashTime > 0 && isRifle && ads < 0.5; // aimed: the flash would fill the sights
       flashLight.intensity = flashTime > 0 ? (isShotgun ? 5 : isRifle ? 4 : 3) : 0;
-      const activeFlash = isShotgun ? shotgunFlash : isRifle ? rifleFlash : flash;
+      const activeFlash = isShotgun ? shotgunFlash : isRifle ? rifleFlash : akimbo && flashLeft ? flashL : flash;
       flashLight.position.copy(activeFlash.position).applyMatrix4(activeFlash.parent!.matrixWorld);
 
       // --- Cylinder turns to the next chamber; hammer re-cocks after a shot ---
@@ -364,6 +410,12 @@ export function createViewmodel(): Viewmodel {
       hammerTime += dt;
       const cocked = Math.min(1, Math.max(0, (hammerTime - 0.06) / (tuning.revolverFireInterval * 0.6)));
       gun.hammer.rotation.x = HAMMER_FIRED * (1 - cocked); // 0 = cocked, as modeled
+      // The same for the left gun, on its own shots.
+      cylinderAngleL = approach(cylinderAngleL, cylinderTargetL, 25, dt);
+      hammerTimeL += dt;
+      const cockedL = Math.min(1, Math.max(0, (hammerTimeL - 0.06) / (tuning.revolverFireInterval * 0.6)));
+      gunL.hammer.rotation.x = HAMMER_FIRED * (1 - cockedL);
+      gunL.cylinder.rotation.z = cylinderAngleL;
 
       // --- Shotgun: elastic reload (see shotgunView.ts) ---
       const shotgunPose = shotgun.update(dt, player);
@@ -377,12 +429,16 @@ export function createViewmodel(): Viewmodel {
         cylinderTarget = Math.ceil(cylinderAngle / (Math.PI / 3)) * (Math.PI / 3);
       }
       gun.cylinder.rotation.z = cylinderAngle;
-      const rp = isShotgun ? shotgunPose : isRifle ? riflePose : rr.pose;
+      // --- Akimbo reload: both guns twirled round the finger (see akimboSpin.ts) ---
+      const twirl = akimboSpin.update(dt);
+      gun.spin.rotation.x = twirl.right;
+      gunL.spin.rotation.x = twirl.left;
+      const rp = isShotgun ? shotgunPose : isRifle ? riflePose : akimboSpin.active ? twirl.pose : rr.pose;
       const reload = revolverReload.active && !isShotgun ? 1 : 0; // hides the left hand
-
 
       // --- Left hand: fanning, ready pose between shots (lowered while reloading) ---
       fanning.update(dt, hands.left, reload);
+      hands.left.visible = !akimbo; // akimbo: that hand holds the second gun
 
       // --- Kick: the boot swings out; the gun is pulled aside to make room ---
       // (the body twists when you kick). At the moment of contact, a small
@@ -445,6 +501,25 @@ export function createViewmodel(): Viewmodel {
         rest.yaw + swayX * 2 + rp.yaw,
         rest.roll + rp.roll + slideTilt * 0.35 - legOut * 0.25,
       );
+      if (akimbo) {
+        // The left gun's holder: the MIRROR image of the right one. A mirror
+        // M = diag(−1, 1, 1) sends a position (x, y, z) to (−x, y, z) and a
+        // rotation (pitch, yaw, roll) to (pitch, −yaw, −roll): M·R·M negates
+        // the turns around Y and Z, and keeps the one around X. Two fixes on
+        // top: the sway must NOT be mirrored (turning right, both guns lag the
+        // same way: +2·swayX in x, +4·swayX in yaw undo the flip), and the
+        // recoil is its own (kickL instead of kick).
+        holderL.position.set(
+          -holder.position.x + 2 * swayX,
+          holder.position.y,
+          holder.position.z + (kickL - kick) * recoilBack,
+        );
+        holderL.rotation.set(
+          holder.rotation.x + (kickL - kick) * recoilUp,
+          -holder.rotation.y + 4 * swayX,
+          -holder.rotation.z,
+        );
+      }
       return viewKick;
     },
   };

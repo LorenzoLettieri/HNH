@@ -13,6 +13,7 @@ import {
   playKickSwing,
   playShovelBonk,
   playShovelSwing,
+  playAkimboSpin,
   playReload,
   playCarbineShot,
   playCarbineLever,
@@ -33,6 +34,7 @@ import { leverTimes } from './weapons/rifleView';
 import { showHitmarker } from './hitmarker';
 import { spawnBlood, spawnSnort, spawnSparks } from './particles';
 import { soundAt } from './soundPosition';
+import { spinTurnTimes } from './weapons/akimboSpin';
 
 /** How long the muzzle flash lights up the surroundings, seconds. */
 const FLASH_DURATION = 0.07;
@@ -53,7 +55,7 @@ export interface WeaponFx {
   /** Listeners for other modules (e.g. the viewmodel recoil). */
   onShot: ((weapon: WeaponId, barrel: number) => void)[];
   /** A reload starts: which weapon, and how many seconds it lasts (the simulation says: cards can change it). */
-  onReload: ((weapon: WeaponId, seconds: number) => void)[];
+  onReload: ((weapon: WeaponId, seconds: number, spin: boolean) => void)[];
   onKick: ((tool: MeleeTool) => void)[];
 }
 
@@ -165,8 +167,9 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
           case 'reloadStart':
             if (e.weapon === 'shotgun') playShotgunReload(e.seconds);
             else if (e.weapon === 'rifle') playCarbineReloadStart();
+            else if (e.spin) playAkimboSpin(spinTurnTimes(e.seconds), e.seconds);
             else playReload(e.seconds);
-            for (const f of fx.onReload) f(e.weapon, e.seconds);
+            for (const f of fx.onReload) f(e.weapon, e.seconds, e.spin);
             break;
           case 'reloadRound':
             playCarbineRoundIn();
