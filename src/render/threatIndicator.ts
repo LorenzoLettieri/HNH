@@ -43,7 +43,7 @@ function isThreat(e: Entity): boolean {
     case 'sharpshooter':
       return e.state === 'aim' || e.state === 'lock';
     case 'smith':
-      return e.state === 'windup';
+      return e.state === 'windup' || e.state === 'hookAim' || e.state === 'hookThrow';
     default:
       return false;
   }

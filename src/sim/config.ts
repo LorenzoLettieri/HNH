@@ -868,6 +868,29 @@ export const tuning = {
   /** Push given by the wave, outward and up, m/s. */
   smithWaveKnockback: 6,
   smithWaveLift: 5,
+  /**
+   * The CHAIN HOOK: beyond the slam's reach (smithSlamRange) and within this
+   * range (meters), if it sees you, it swings the chain for smithHookWindup
+   * seconds (the warning), then throws the hook at where you'll be.
+   */
+  smithHookRange: 22,
+  smithHookWindup: 0.7,
+  /** Speed of the flying hook, m/s (18 m in 0.6 s: a sidestep when it leaves its hand dodges it). */
+  smithHookSpeed: 30,
+  /** How much it leads you (0 = at where you are, 1 = exactly where you'll be): partial, so a sidestep works. */
+  smithHookLead: 0.5,
+  /** The hook's size for hitting you, meters (added to your body, like the projectiles). */
+  smithHookRadius: 0.35,
+  /** Damage when the hook bites. */
+  smithHookDamage: 10,
+  /** Hooked: you're pulled toward it at this speed (m/s), lifted off your feet at the start (m/s up). */
+  smithHookPullSpeed: 13,
+  smithHookLift: 4,
+  /** The pull ends this close to it (meters)... or after this many seconds (or if a wall gets in between). */
+  smithHookStopDistance: 3,
+  smithHookPullTime: 1.5,
+  /** Seconds between two throws (and before the first one). */
+  smithHookCooldown: 5,
   /** Collider: the bull's size or less, so it can use the bulls' navigation graph (BIG_BODY in nav.ts). */
   smithRadius: 0.6,
   smithHeight: 2.1,

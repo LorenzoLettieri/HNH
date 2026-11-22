@@ -667,6 +667,46 @@ export function playSmithSlam(where: Where): void {
   noiseBurst({ out, start: 0.05, duration: 1.1, volume: 0.7, filter: 'lowpass', frequency: 400, frequencyEnd: 80 }); // rumble
 }
 
+/**
+ * The chain swinging over its head (the hook's warning): a rhythmic "whoom...
+ * whoom" (a band of noise sweeping up and down, three turns) with the rattle
+ * of the links on top.
+ */
+export function playSmithHookSwing(where: Where): void {
+  const out = placeSound(where);
+  if (!out) return;
+  for (let i = 0; i < 3; i++) {
+    noiseBurst({ out, start: i * 0.22, duration: 0.2, volume: 0.5, filter: 'bandpass', frequency: 300, frequencyEnd: 900, q: 2 });
+    noiseBurst({ out, start: i * 0.22 + 0.05, duration: 0.08, volume: 0.25, filter: 'bandpass', frequency: 4000, q: 6 });
+  }
+}
+
+/** The hook flies: a sharp whistle and the chain unrolling (fast metallic ticks). */
+export function playSmithHookThrow(where: Where): void {
+  const out = placeSound(where);
+  if (!out) return;
+  noiseBurst({ out, duration: 0.35, volume: 0.5, filter: 'bandpass', frequency: 1500, frequencyEnd: 3500, q: 5 });
+  for (let i = 0; i < 8; i++) {
+    noiseBurst({ out, start: i * 0.04, duration: 0.015, volume: 0.25, filter: 'highpass', frequency: 5000 });
+  }
+}
+
+/** The hook bites you: a heavy CLANK close to your ears and a yank. Not positional: it's in you. */
+export function playSmithHookHit(): void {
+  thump({ duration: 0.12, volume: 0.6, from: 260, to: 90 });
+  ring(740, 0.4, 0.15);
+  noiseBurst({ duration: 0.25, volume: 0.4, filter: 'bandpass', frequency: 2500, q: 3 });
+}
+
+/** The chain comes back: a rattle of links getting quieter. */
+export function playSmithHookEnd(where: Where): void {
+  const out = placeSound(where);
+  if (!out) return;
+  for (let i = 0; i < 6; i++) {
+    noiseBurst({ out, start: i * 0.05, duration: 0.02, volume: 0.3 - i * 0.04, filter: 'highpass', frequency: 4000 });
+  }
+}
+
 /** The Damned Smith joins the wave: an anvil struck three times, slow and low, far away. Not positional: an announcement. */
 export function playSmithArrived(): void {
   for (let i = 0; i < 3; i++) {

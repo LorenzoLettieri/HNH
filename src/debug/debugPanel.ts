@@ -464,6 +464,33 @@ export function createDebugPanel(options: {
   bull.number(tuning, 'bullHitHeight', 0.5, 4, 0.05);
   bull.button('Copy values', () => copyToClipboard(toSource(tuning)));
 
+  // --- Damned Smith (the special enemy of waves 9, 19, 29...) ---
+  const smith = panel.folder('Damned Smith (src/sim/config.ts) — U to spawn');
+  smith.number(tuning, 'smithHealth', 100, 5000, 50);
+  smith.number(tuning, 'smithHeadHeight', 1, 3, 0.05);
+  smith.number(tuning, 'smithSpeed', 0.5, 8, 0.1);
+  smith.number(tuning, 'smithFromWave', 1, 40, 1);
+  smith.number(tuning, 'smithEveryWaves', 1, 20, 1);
+  smith.number(tuning, 'smithSpawnAt', 0, 1, 0.05);
+  smith.number(tuning, 'smithSlamRange', 2, 20, 0.5);
+  smith.number(tuning, 'smithSlamWindup', 0.2, 3, 0.05);
+  smith.number(tuning, 'smithSlamRecover', 0, 4, 0.1);
+  smith.number(tuning, 'smithSlamCooldown', 0, 8, 0.1);
+  smith.number(tuning, 'smithWaveSpeed', 2, 40, 0.5);
+  smith.number(tuning, 'smithWaveRange', 2, 30, 0.5);
+  smith.number(tuning, 'smithWaveThickness', 0.2, 3, 0.05);
+  smith.number(tuning, 'smithWaveHeight', 0.1, 2, 0.05);
+  smith.number(tuning, 'smithWaveDamage', 0, 100, 1);
+  smith.number(tuning, 'smithHookRange', 5, 40, 0.5);
+  smith.number(tuning, 'smithHookWindup', 0.1, 3, 0.05);
+  smith.number(tuning, 'smithHookSpeed', 5, 80, 1);
+  smith.number(tuning, 'smithHookLead', 0, 1.5, 0.05);
+  smith.number(tuning, 'smithHookDamage', 0, 100, 1);
+  smith.number(tuning, 'smithHookPullSpeed', 2, 30, 0.5);
+  smith.number(tuning, 'smithHookPullTime', 0.2, 4, 0.1);
+  smith.number(tuning, 'smithHookCooldown', 0, 15, 0.5);
+  smith.button('Copy values', () => copyToClipboard(toSource(tuning)));
+
   // --- Sharpshooter ---
   const sharp = panel.folder('Sharpshooter (src/sim/config.ts) — L to spawn');
   sharp.number(tuning, 'sharpshooterHealth', 10, 500, 5);

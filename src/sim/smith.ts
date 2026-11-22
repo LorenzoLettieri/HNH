@@ -17,6 +17,14 @@
 //   at the right moment, not hiding behind a wall.
 // - RECOVER: the hammer stays stuck for a moment: the time to shoot its head.
 //
+//   approach ──(too far for the hammer, but it sees you)──▶ hookAim (swinging the chain: the WARNING)
+//      ▲                                                       │
+//      └── (missed / snapped / you're close) ── hookPull ◀── hookThrow (the hook flies)
+//
+// - THE CHAIN HOOK: the answer to keeping your distance (and to hiding on
+//   roofs). It throws a red-hot hook at where you'll be; a sidestep dodges
+//   it, a wall stops it. If it bites, it PULLS you in, right into hammer range.
+//
 // It ignores kicks and shotgun blasts (kick.ts) and the bulls' charges: too heavy.
 // It doesn't climb: if you're on a roof it waits below (and the ring runs on
 // ITS ground, so up there it can't reach you either).
@@ -26,12 +34,15 @@ import type { Entity, SmithEntity } from './entities';
 import type { SimEvent } from './events';
 import { jumpTo } from './ghoul';
 import { nearestNode, type FlowField, type NavGraph, type NavLink } from './nav';
-import { hurtPlayer, type PlayerState } from './player';
+import { currentHeight, hurtPlayer, type PlayerState } from './player';
 import { raycastBoxes } from './raycast';
-import type { World } from './world';
+import { box, type World } from './world';
+import { interceptTime } from './eyebat';
 
 /** How far in front of it the hammer hits the ground (where the ring starts), meters. */
 const HAMMER_REACH = 1.6;
+/** Height of its hand above the feet (where the chain starts), meters. Exported for the renderer. */
+export const HAND_HEIGHT = 1.7;
 
 export function stepSmith(
   s: SmithEntity,
@@ -45,6 +56,7 @@ export function stepSmith(
 ): void {
   s.stateTicks++;
   if (s.slamCooldownTicks > 0) s.slamCooldownTicks--;
+  if (s.hookCooldownTicks > 0) s.hookCooldownTicks--;
   // The wave keeps running even if the Smith dies right after the slam.
   stepWave(s, player, dt, events);
 
@@ -65,12 +77,38 @@ export function stepSmith(
       dist < tuning.smithSlamRange &&
       Math.abs(player.y - s.y) < 1.5 &&
       player.health > 0;
+    // Too far for the hammer, but within the chain's reach and in sight:
+    // the hook. (Your height doesn't matter: it pulls you off the roofs too.)
+    const canHook =
+      !canSlam &&
+      s.onGround &&
+      s.hookCooldownTicks === 0 &&
+      dist >= tuning.smithSlamRange &&
+      dist < tuning.smithHookRange &&
+      player.health > 0 &&
+      inSight(s, player, world);
     if (canSlam) {
       setState(s, 'windup');
       events.push({ type: 'smithWindup', entityId: s.id });
+    } else if (canHook) {
+      setState(s, 'hookAim');
+      events.push({ type: 'smithHookAim', entityId: s.id });
     } else {
       walk(s, player, dist, others, world, graph, flow, dt);
     }
+  } else if (s.state === 'hookAim') {
+    stand(s, world, dt);
+    face(s, player.x, player.z);
+    if (s.stateTicks >= secondsToTicks(tuning.smithHookWindup)) {
+      if (inSight(s, player, world)) throwHook(s, player, events);
+      else endHook(s, events); // you hid in time: it gives up
+    }
+  } else if (s.state === 'hookThrow') {
+    stand(s, world, dt);
+    flyHook(s, player, world, dt, events);
+  } else if (s.state === 'hookPull') {
+    stand(s, world, dt);
+    pull(s, player, world, events);
   } else if (s.state === 'windup') {
     stand(s, world, dt);
     face(s, player.x, player.z);
@@ -125,6 +163,121 @@ function stepWave(s: SmithEntity, player: PlayerState, dt: number, events: SimEv
     player.vy = Math.max(player.vy, tuning.smithWaveLift);
     events.push({ type: 'playerHurt', damage: tuning.smithWaveDamage, fromX: s.waveX, fromZ: s.waveZ });
   }
+}
+
+/** Where the hook starts and the chain is held: its right hand, about shoulder height. */
+function handPosition(s: SmithEntity): [number, number, number] {
+  return [s.x + s.dirX * 0.5, s.y + HAND_HEIGHT, s.z + s.dirZ * 0.5];
+}
+
+/** Your chest: where the hook aims and where it sticks. */
+function chest(player: PlayerState): [number, number, number] {
+  return [player.x, player.y + currentHeight(player) * 0.6, player.z];
+}
+
+/** Can it see you? A ray from its hand to your chest, against the level. */
+function inSight(s: SmithEntity, player: PlayerState, world: World): boolean {
+  const [hx, hy, hz] = handPosition(s);
+  const [cx, cy, cz] = chest(player);
+  const dx = cx - hx;
+  const dy = cy - hy;
+  const dz = cz - hz;
+  const d = Math.hypot(dx, dy, dz);
+  if (d < 0.01) return true;
+  return raycastBoxes(hx, hy, hz, dx / d, dy / d, dz / d, d, world.boxes) === null;
+}
+
+/**
+ * The throw: at where you'll be, partially. interceptTime (eyebat.ts) gives
+ * the time for a hook at smithHookSpeed to meet you if you keep your
+ * velocity; we aim at you + velocity × that time × smithHookLead. With a lead
+ * below 1, running in a straight line sideways still dodges it a bit, and a
+ * change of direction when it leaves the hand dodges it for sure.
+ */
+function throwHook(s: SmithEntity, player: PlayerState, events: SimEvent[]): void {
+  const [hx, hy, hz] = handPosition(s);
+  const [cx, cy, cz] = chest(player);
+  const t = interceptTime(cx - hx, cy - hy, cz - hz, player.vx, 0, player.vz, tuning.smithHookSpeed) * tuning.smithHookLead;
+  const tx = cx + player.vx * t - hx;
+  const ty = cy - hy;
+  const tz = cz + player.vz * t - hz;
+  const d = Math.hypot(tx, ty, tz) || 1;
+  s.hookX = hx;
+  s.hookY = hy;
+  s.hookZ = hz;
+  s.hookVX = (tx / d) * tuning.smithHookSpeed;
+  s.hookVY = (ty / d) * tuning.smithHookSpeed;
+  s.hookVZ = (tz / d) * tuning.smithHookSpeed;
+  s.hookTravel = 0;
+  setState(s, 'hookThrow');
+  events.push({ type: 'smithHookThrow', entityId: s.id });
+}
+
+/**
+ * One tick of the flying hook: a SWEPT test, like the enemy projectiles.
+ * The segment it travels this tick (0.5 m at 30 m/s) is a ray: against the
+ * level, and against YOUR box made bigger by the hook's radius (a Minkowski
+ * sum: "a small ball hits a box" = "a point hits a bigger box"). Whatever is
+ * closer along the ray wins: a wall in front of you saves you.
+ */
+function flyHook(s: SmithEntity, player: PlayerState, world: World, dt: number, events: SimEvent[]): void {
+  const step = tuning.smithHookSpeed * dt;
+  const dx = s.hookVX / tuning.smithHookSpeed;
+  const dy = s.hookVY / tuning.smithHookSpeed;
+  const dz = s.hookVZ / tuning.smithHookSpeed;
+  const r = tuning.smithHookRadius;
+  const you = box(player.x, player.y - r, player.z, (tuning.playerRadius + r) * 2, currentHeight(player) + r * 2, (tuning.playerRadius + r) * 2);
+  const wall = raycastBoxes(s.hookX, s.hookY, s.hookZ, dx, dy, dz, step, world.boxes);
+  const hit = player.health > 0 ? raycastBoxes(s.hookX, s.hookY, s.hookZ, dx, dy, dz, step, [you]) : null;
+  if (hit && (!wall || hit.distance < wall.distance)) {
+    // It bites: a bit of damage, you're yanked off your feet, the pull starts.
+    hurtPlayer(player, tuning.smithHookDamage, s.x, s.z, 0);
+    player.vy = Math.max(player.vy, tuning.smithHookLift);
+    events.push({ type: 'playerHurt', damage: tuning.smithHookDamage, fromX: s.x, fromZ: s.z });
+    events.push({ type: 'smithHookHit', entityId: s.id });
+    setState(s, 'hookPull');
+    [s.hookX, s.hookY, s.hookZ] = chest(player);
+    return;
+  }
+  s.hookX += dx * step;
+  s.hookY += dy * step;
+  s.hookZ += dz * step;
+  s.hookTravel += step;
+  if (wall || s.hookTravel > tuning.smithHookRange) endHook(s, events);
+}
+
+/**
+ * Hooked: every tick your horizontal velocity is set toward it (after your
+ * own movement step: the chain wins over your legs). Gravity still works,
+ * so pulled off a roof you fall. It ends when you're close (then it can slam
+ * right away: the combo), after smithHookPullTime, or if a wall gets between
+ * you (the chain snaps).
+ */
+function pull(s: SmithEntity, player: PlayerState, world: World, events: SimEvent[]): void {
+  const dx = s.x - player.x;
+  const dz = s.z - player.z;
+  const d = Math.hypot(dx, dz);
+  const done =
+    d < tuning.smithHookStopDistance ||
+    s.stateTicks > secondsToTicks(tuning.smithHookPullTime) ||
+    player.health <= 0 ||
+    !inSight(s, player, world);
+  if (done) {
+    endHook(s, events);
+    s.slamCooldownTicks = 0; // you're close now: the hammer is ready
+    return;
+  }
+  player.vx = (dx / d) * tuning.smithHookPullSpeed;
+  player.vz = (dz / d) * tuning.smithHookPullSpeed;
+  face(s, player.x, player.z);
+  [s.hookX, s.hookY, s.hookZ] = chest(player);
+}
+
+/** The hook comes back (missed, snapped, or the pull is over): back to walking, with a pause. */
+function endHook(s: SmithEntity, events: SimEvent[]): void {
+  setState(s, 'approach');
+  s.hookCooldownTicks = secondsToTicks(tuning.smithHookCooldown);
+  events.push({ type: 'smithHookEnd', entityId: s.id });
 }
 
 /** Walks toward you: straight if the way is clear, otherwise along the flow field (like the bull). */

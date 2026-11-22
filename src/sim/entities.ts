@@ -207,8 +207,12 @@ export interface SmithEntity extends EntityBase {
   vy: number;
   vz: number;
   onGround: boolean;
-  /** See smith.ts: walking to you, hammer raised (the warning), hammer stuck in the ground after the slam, dead. */
-  state: 'approach' | 'windup' | 'recover' | 'dead';
+  /**
+   * See smith.ts: walking to you; the SLAM (hammer raised = the warning,
+   * then stuck in the ground); the CHAIN HOOK (swinging the chain = the
+   * warning, hook flying, pulling you in); dead.
+   */
+  state: 'approach' | 'windup' | 'recover' | 'hookAim' | 'hookThrow' | 'hookPull' | 'dead';
   stateTicks: number;
   /** Where it faces (unit vector on the ground): toward you, so the slam lands in front of it. */
   dirX: number;
@@ -225,6 +229,16 @@ export interface SmithEntity extends EntityBase {
   waveY: number;
   waveZ: number;
   waveHit: boolean;
+  /** Ticks before it can throw the hook again. */
+  hookCooldownTicks: number;
+  /** The hook (while flying, or stuck in you while pulling): position and velocity, and how far it has flown. */
+  hookX: number;
+  hookY: number;
+  hookZ: number;
+  hookVX: number;
+  hookVY: number;
+  hookVZ: number;
+  hookTravel: number;
   navNode: number;
 }
 
@@ -446,6 +460,14 @@ export function createSmith(id: number, x: number, y: number, z: number, health 
     waveY: y,
     waveZ: z,
     waveHit: false,
+    hookCooldownTicks: secondsToTicks(3),
+    hookX: x,
+    hookY: y,
+    hookZ: z,
+    hookVX: 0,
+    hookVY: 0,
+    hookVZ: 0,
+    hookTravel: 0,
     navNode: -1,
   };
 }

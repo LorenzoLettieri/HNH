@@ -94,6 +94,14 @@ export type SimEvent =
   | { type: 'smithWindup'; entityId: number }
   /** The hammer hits the ground at (x, y, z): a shockwave ring starts spreading from there. */
   | { type: 'smithSlam'; entityId: number; x: number; y: number; z: number }
+  /** The Smith starts swinging its chain (the warning: the hook flies in smithHookWindup). */
+  | { type: 'smithHookAim'; entityId: number }
+  /** The hook leaves its hand. */
+  | { type: 'smithHookThrow'; entityId: number }
+  /** The hook bit you: the pull starts. */
+  | { type: 'smithHookHit'; entityId: number }
+  /** The hook missed (a wall, out of range) or the chain snapped: it comes back. */
+  | { type: 'smithHookEnd'; entityId: number }
   /** A Damned Smith joined the wave (the announcement). */
   | { type: 'smithArrived'; entityId: number }
   /** An eye-bat starts charging a shot (the warning: glow + whine). */

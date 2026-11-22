@@ -792,8 +792,15 @@ Lascia **sempre** il Ferro Dannato (un lingotto incandescente a terra, dura 90 s
   35 e viene sbalzato. **Si schiva saltando**: da lontano vedi l'anello arrivare, da vicino devi essere in
   aria quando il martello scende (provato con un giocatore simulato). Sul suo terreno soltanto: dal tetto
   non ti prende. Dopo la martellata resta **1,1 s col martello piantato**: è il momento per la testa.
-- [DA FARE] Altri attacchi (catena con uncino, fiato della fornace), lo sprite vero con più viste, l'anello
-  che si ferma contro i muri (ora li attraversa).
+- **Catena con l'uncino** [FATTO, da tarare]: la risposta a chi tiene le distanze (e a chi si rifugia sui
+  tetti). Oltre la portata del martello (9–22 m), se ti vede, **fa roteare la catena** (0,7 s, il preavviso)
+  e lancia un uncino rovente a 30 m/s **verso dove sarai, ma solo in parte** (anticipo 0,5): uno **scatto
+  laterale** al lancio lo fa mancare, un **muro** lo ferma (provato col giocatore simulato: fermo a 15 m
+  vieni preso, scartando di lato no). Se ti prende: 10 danni e **ti tira verso di sé** (13 m/s, anche giù dai
+  tetti) finché sei a 3 m, per al massimo 1,5 s, o finché un muro non spezza la catena. Appena ti ha tirato
+  vicino **può martellare subito**: la combo uncino → salto.
+- [DA FARE] Lo sprite vero con più viste, il fiato della fornace (forse), l'anello che si ferma contro i
+  muri (ora li attraversa).
 
 **La Forgia** [DECISO]: un **posto fisso nuovo** sulla mappa. Porti il Ferro Dannato (più vildenaro?),
 scegli un'arma, e l'arma si **trasforma**:
