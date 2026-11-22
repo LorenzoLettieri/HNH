@@ -90,6 +90,12 @@ export type SimEvent =
   | { type: 'bullCharge'; entityId: number }
   /** A charging bull slams into a wall: dazed. */
   | { type: 'bullCrash'; entityId: number }
+  /** The Damned Smith raises its hammer (the warning: the slam comes in smithSlamWindup). */
+  | { type: 'smithWindup'; entityId: number }
+  /** The hammer hits the ground at (x, y, z): a shockwave ring starts spreading from there. */
+  | { type: 'smithSlam'; entityId: number; x: number; y: number; z: number }
+  /** A Damned Smith joined the wave (the announcement). */
+  | { type: 'smithArrived'; entityId: number }
   /** An eye-bat starts charging a shot (the warning: glow + whine). */
   | { type: 'eyebatCharge'; entityId: number }
   /** An eye-bat fires: a projectile leaves its eye. */

@@ -774,11 +774,26 @@ cioè **resistente e con attacchi diversi** dagli altri nemici, ma nostro e a te
 **Ferro Dannato**, che finisce nell'**inventario** (non si perde a terra).
 
 **Stato** [FATTO: passi 1 e 2]: il Ferro Dannato nell'inventario (contatore nell'HUD sotto il vildenaro,
-nascosto quando non ne hai; per ora si ottiene solo dal pannello di debug) e il **livello di forgia** di ogni
+nascosto quando non ne hai; lo lascia il Fabbro Dannato, o il pannello di debug) e il **livello di forgia** di ogni
 arma (danno ×2 al livello 1). La Forgia è la **tettoia del fabbro** a ovest (vicino al serbatoio): E vicino
 all'incudine apre lo stesso pannello dello shop con le tre armi; 1 Ferro, doppio click, tre martellate e
 vapore. Segnaposto: una lanterna sul focolare al posto del fuoco vero, niente cambio di modello delle armi.
 Prossimo: il nemico speciale (passo 3).
+
+**Il Fabbro Dannato** [FATTO: passo 3, versione minima; sprite SEGNAPOSTO]: il fabbro dell'inferno,
+corazzato, lento (2,8 m/s), un martello enorme. **Punto debole: la testa** (l'elmo), il resto è corazza
+(1200 di salute all'ondata 9: 24 colpi di revolver al corpo, 8 in testa; 3 teste con la carabina).
+Non si fa spingere da calcio, doppietta e cariche dei tori. Compare **a metà** delle ondate 9, 19, 29
+(quando metà del budget è uscita), **fuori dal budget**, annunciato da una scritta e da tre colpi d'incudine.
+Lascia **sempre** il Ferro Dannato (un lingotto incandescente a terra, dura 90 s) più 10 monete.
+- **Martellata** (l'unico attacco per ora): entro 9 m si ferma e **alza il martello** (0,9 s: trema e si
+  scalda, freccia arancio se è fuori schermo), poi lo schianta a terra davanti a sé e parte un'**onda
+  d'urto ad anello** che si allarga sul terreno (12 m/s, fino a 13 m): chi è a terra quando passa prende
+  35 e viene sbalzato. **Si schiva saltando**: da lontano vedi l'anello arrivare, da vicino devi essere in
+  aria quando il martello scende (provato con un giocatore simulato). Sul suo terreno soltanto: dal tetto
+  non ti prende. Dopo la martellata resta **1,1 s col martello piantato**: è il momento per la testa.
+- [DA FARE] Altri attacchi (catena con uncino, fiato della fornace), lo sprite vero con più viste, l'anello
+  che si ferma contro i muri (ora li attraversa).
 
 **La Forgia** [DECISO]: un **posto fisso nuovo** sulla mappa. Porti il Ferro Dannato (più vildenaro?),
 scegli un'arma, e l'arma si **trasforma**:

@@ -6,7 +6,7 @@
 import { tuning } from '../sim/config';
 import type { SimEvent } from '../sim/events';
 import type { PlayerState } from '../sim/player';
-import { playBell, playPickup, playPlayerHurt } from '../audio/sfx';
+import { playBell, playPickup, playPlayerHurt, playSmithArrived } from '../audio/sfx';
 import type { GameState } from '../sim/game';
 import { horizontalSpeed } from '../sim/player';
 import { isEnemy } from '../sim/entities';
@@ -70,7 +70,7 @@ const FLASH_SHIFT = 30;
 /** How fast the red flash fades (per second). */
 const FLASH_FADE = 2;
 /** Screen tint for each pickup: same colors as their glow (render/pickups.ts). */
-const PICKUP_TINTS = { bullets: 'rgb(255, 200, 70)', shells: 'rgb(255, 90, 40)', medkit: 'rgb(70, 255, 100)', coin: 'rgb(255, 190, 40)' };
+const PICKUP_TINTS = { bullets: 'rgb(255, 200, 70)', shells: 'rgb(255, 90, 40)', medkit: 'rgb(70, 255, 100)', coin: 'rgb(255, 190, 40)', iron: 'rgb(255, 70, 30)' };
 /** Coins tint the screen less: you pick up dozens, it shouldn't feel like a camera flash every time. */
 const COIN_FLASH = 0.4;
 let pickupTime = 0; // 0..1, the short flash when you collect something
@@ -108,6 +108,11 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
       const tougher = e.wave % tuning.waveHealthStep === 0;
       showBanner(`ONDATA ${e.wave}`, tougher ? 'sono più resistenti: mira alla testa' : '', tougher ? 4 : 3);
       playBell(2); // the church bell tolls: here they come
+    }
+    if (e.type === 'smithArrived') {
+      // The special enemy: announced like a wave (docs/DESIGN.md §6d).
+      showBanner('IL FABBRO DANNATO', 'porta il Ferro Dannato: mira alla testa, salta l’onda', 4);
+      playSmithArrived();
     }
     if (e.type === 'waveEnd') {
       showBanner('ONDATA SUPERATA', '', 2.5);

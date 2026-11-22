@@ -9,7 +9,7 @@ import { hitStopScale } from './render/hitStop';
 import { buildCommand, controlSettings, updateLook, view } from './controls';
 import { TICK_DT } from './sim/config';
 import { copyPlayer, createPlayer } from './sim/player';
-import { createGame, spawnBullInFront, spawnSharpshooterInFront, spawnEyebatInFront, spawnHoundInFront, dropPickupsInFront, stepGame } from './sim/game';
+import { createGame, spawnBullInFront, spawnSharpshooterInFront, spawnEyebatInFront, spawnHoundInFront, spawnSmithInFront, dropPickupsInFront, stepGame } from './sim/game';
 import { jumpToWave } from './sim/waves';
 import { DEFAULT_LEVEL, LEVELS } from './levels';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
@@ -27,6 +27,7 @@ import { createGhoulRenderer } from './render/enemies/ghouls';
 import { createEyebatRenderer } from './render/enemies/eyebats';
 import { createHoundRenderer } from './render/enemies/hounds';
 import { createBullRenderer } from './render/enemies/bulls';
+import { createSmithRenderer } from './render/enemies/smiths';
 import { createSharpshooterRenderer } from './render/enemies/sharpshooters';
 import { createProjectileRenderer } from './render/projectiles';
 import { createPickupRenderer } from './render/pickups';
@@ -139,6 +140,7 @@ const ghouls = createGhoulRenderer(scene);
 const eyebats = createEyebatRenderer(scene);
 const hounds = createHoundRenderer(scene);
 const bulls = createBullRenderer(scene);
+const smiths = createSmithRenderer(scene);
 const sharpshooters = createSharpshooterRenderer(scene, world);
 const projectiles = createProjectileRenderer(scene);
 const pickups = createPickupRenderer(scene);
@@ -208,7 +210,7 @@ window.addEventListener('keydown', (e) => {
     return;
   }
   // Debug keys that change the game: this game won't count (fairPlay.ts).
-  if (['KeyB', 'KeyG', 'KeyV', 'KeyL', 'KeyJ'].includes(e.code)) markPractice('nemici o raccoglibili fatti apparire');
+  if (['KeyB', 'KeyG', 'KeyV', 'KeyL', 'KeyU', 'KeyJ'].includes(e.code)) markPractice('nemici o raccoglibili fatti apparire');
   if (e.code === 'KeyT') {
     atmosphereIndex = (atmosphereIndex + 1) % ATMOSPHERES.length;
     applyAtmosphere(ATMOSPHERES[atmosphereIndex]);
@@ -227,6 +229,8 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyG') spawnHoundInFront(game);
   // V: a bull.
   if (e.code === 'KeyV') spawnBullInFront(game);
+  // U: a Damned Smith (the special enemy of waves 9, 19, 29...).
+  if (e.code === 'KeyU') spawnSmithInFront(game);
   // L: a sharpshooter (20 m away: it shoots from afar).
   if (e.code === 'KeyL') spawnSharpshooterInFront(game);
   // J: one pickup of each kind (bullets, shells, medkit).
@@ -441,6 +445,7 @@ renderer.setAnimationLoop((now: number) => {
   eyebats.update(game.entities, events, camera, alpha, dt);
   hounds.update(game.entities, events, camera, alpha, dt);
   bulls.update(game.entities, events, camera, alpha, dt);
+  smiths.update(game.entities, events, camera, alpha, dt);
   sharpshooters.update(game.entities, events, camera, alpha, dt);
   updateBurning(game.entities, dt); // "Fiato di drago": burning enemies
   marks.update(game.entities, alpha, dt);

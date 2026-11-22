@@ -834,6 +834,57 @@ export const tuning = {
   /** First wave where sharpshooters can appear: between the hound (5) and the bull (7). */
   sharpshooterFromWave: 6,
 
+  // --- The Damned Smith (special enemy of waves 9, 19, 29...; AI in src/sim/smith.ts) ---
+  /**
+   * Health at wave 9 (×2 at 19, like everyone: healthForWave). Tough on
+   * purpose: 24 revolver body shots, 8 in the head; 3 carbine headshots.
+   */
+  smithHealth: 1200,
+  /** Above this height (from the feet) a hit is in the head: critical. The rest is armor. */
+  smithHeadHeight: 2.25,
+  /** Walking speed, m/s: slow (you on foot: 6.5). It doesn't need to catch you: the shockwave reaches far. */
+  smithSpeed: 2.8,
+  smithAccel: 4,
+  /** It starts winding up a slam when you're closer than this (and on its level), meters. */
+  smithSlamRange: 9,
+  /** The wind-up: hammer raised over its head, seconds. The warning: get ready to jump. */
+  smithSlamWindup: 0.9,
+  /** After the slam the hammer stays stuck in the ground this long: shoot its head. Seconds. */
+  smithSlamRecover: 1.1,
+  /** Seconds between the end of a slam and the next wind-up. */
+  smithSlamCooldown: 1.8,
+  /**
+   * The SHOCKWAVE: a ring that spreads along the ground from the hammer,
+   * at this speed (m/s) up to this radius (m). Whoever stands on the ground
+   * when it passes gets hit; jump over it.
+   */
+  smithWaveSpeed: 12,
+  smithWaveRange: 13,
+  /** Thickness of the ring, meters (how precise the jump must be: 0.9 / 12 m/s ≈ 0.08 s). */
+  smithWaveThickness: 0.9,
+  /** Feet higher than this above the ground the ring runs on = you jumped it. Meters. */
+  smithWaveHeight: 0.45,
+  smithWaveDamage: 35,
+  /** Push given by the wave, outward and up, m/s. */
+  smithWaveKnockback: 6,
+  smithWaveLift: 5,
+  /** Collider: the bull's size or less, so it can use the bulls' navigation graph (BIG_BODY in nav.ts). */
+  smithRadius: 0.6,
+  smithHeight: 2.1,
+  /** Hitbox: taller than the collider (the head and the hammer stick out above). */
+  smithHitWidth: 1.6,
+  smithHitHeight: 2.9,
+  smithCorpseTime: 6,
+  /** Weight (alive-at-once limit, coins: 10 coins). It's not in the budget: it comes on top of the wave. */
+  smithCost: 10,
+  /** First wave with a Smith, and every how many waves after it (9, 19, 29...: just before each health step). */
+  smithFromWave: 9,
+  smithEveryWaves: 10,
+  /** It shows up when this share of the wave's budget has spawned (0.5 = halfway through). */
+  smithSpawnAt: 0.5,
+  /** Seconds the Damned Iron it drops stays on the ground (much longer than the other drops: it's rare). */
+  ironLifetime: 90,
+
   // --- Enemy projectiles (src/sim/projectiles.ts) ---
   /** Radius of an enemy projectile, meters (for hitting the player). */
   projectileRadius: 0.25,

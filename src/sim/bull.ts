@@ -274,7 +274,8 @@ function charge(b: BullEntity, player: PlayerState, others: Entity[], world: Wor
 function trample(b: BullEntity, others: Entity[]): void {
   const reach = tuning.bullRadius + 0.8;
   for (const o of others) {
-    if (o.type === 'target' || o.type === 'bull' || o.state === 'dead' || b.trampled.includes(o.id)) continue;
+    // Not other bulls, and not the Smith: as heavy as a bull.
+    if (o.type === 'target' || o.type === 'bull' || o.type === 'smith' || o.state === 'dead' || b.trampled.includes(o.id)) continue;
     const dx = o.x - b.x;
     const dz = o.z - b.z;
     if (Math.hypot(dx, dz) > reach || o.y > b.y + tuning.bullHeight || o.y + 1.5 < b.y) continue;

@@ -23,7 +23,7 @@ const POOL_STRENGTH = 0.55;
 /** Seconds before vanishing in which it blinks (the warning: hurry up). */
 const BLINK_TIME = 3;
 /** Color of the pool of light under each kind: brass, red-orange, green, gold. */
-const GLOW_COLORS: Record<PickupKind, number> = { bullets: 0xffc040, shells: 0xff5020, medkit: 0x40ff60, coin: 0xffb020 };
+const GLOW_COLORS: Record<PickupKind, number> = { bullets: 0xffc040, shells: 0xff5020, medkit: 0x40ff60, coin: 0xffb020, iron: 0xff3810 };
 /** Coins: their pool of light is smaller (a bull drops 5 piles side by side). */
 const COIN_POOL = 0.5;
 

@@ -355,7 +355,16 @@ function ring(base: number, duration: number, volume: number): void {
  * - shells: two heavier clacks, lower;
  * - medkit: a cork pop and a warm, rising chime (two rings, the second higher).
  */
-export function playPickup(kind: 'bullets' | 'shells' | 'medkit' | 'coin'): void {
+export function playPickup(kind: 'bullets' | 'shells' | 'medkit' | 'coin' | 'iron'): void {
+  if (kind === 'iron') {
+    // The Damned Iron: a heavy "clunk" of metal, then a low anvil ring that
+    // lingers, and a breath of heat. Rare: it should sound like a prize.
+    thump({ duration: 0.12, volume: 0.55, from: 160, to: 60 });
+    ring(330, 1.4, 0.2);
+    setTimeout(() => ring(495, 1.2, 0.12), 120);
+    noiseBurst({ start: 0.1, duration: 0.6, volume: 0.15, filter: 'highpass', frequency: 2000 });
+    return;
+  }
   if (kind === 'coin') {
     // "Ka-ching": a tiny metallic tick, then two bright bells a fifth apart
     // (the second higher, so it sounds like a reward, not an alarm).
@@ -633,6 +642,48 @@ export function playBullCrash(where: Where): void {
   thump({ out, duration: 0.45, volume: 1.2, from: 110, to: 30 });
   noiseBurst({ out, duration: 0.4, volume: 0.9, filter: 'lowpass', frequency: 2500, frequencyEnd: 200 });
   noiseBurst({ out, start: 0.05, duration: 0.25, volume: 0.4, filter: 'bandpass', frequency: 1800, q: 3 }); // splinters
+}
+
+/**
+ * The Damned Smith raises its hammer (the warning): a scrape of iron rising
+ * in pitch (the hammer dragged up) and a deep wheeze, like a bellows filling.
+ */
+export function playSmithWindup(where: Where): void {
+  const out = placeSound(where);
+  if (!out) return;
+  noiseBurst({ out, duration: 0.7, volume: 0.6, filter: 'bandpass', frequency: 500, frequencyEnd: 2400, q: 4 });
+  noiseBurst({ out, duration: 0.8, volume: 0.5, filter: 'lowpass', frequency: 300, frequencyEnd: 600 });
+}
+
+/**
+ * The hammer hits the ground: the biggest thud in the game (a very low sine
+ * falling), a crack of stone, and a long rumble while the shockwave spreads.
+ */
+export function playSmithSlam(where: Where): void {
+  const out = placeSound(where);
+  if (!out) return;
+  thump({ out, duration: 0.6, volume: 1.4, from: 90, to: 25 });
+  noiseBurst({ out, duration: 0.15, volume: 0.9, filter: 'highpass', frequency: 1500 }); // the crack
+  noiseBurst({ out, start: 0.05, duration: 1.1, volume: 0.7, filter: 'lowpass', frequency: 400, frequencyEnd: 80 }); // rumble
+}
+
+/** The Damned Smith joins the wave: an anvil struck three times, slow and low, far away. Not positional: an announcement. */
+export function playSmithArrived(): void {
+  for (let i = 0; i < 3; i++) {
+    setTimeout(() => ring(220, 2, 0.25), i * 550);
+    thump({ start: i * 0.55, duration: 0.15, volume: 0.5, from: 120, to: 50 });
+  }
+}
+
+/** The Damned Smith falls: a huge clatter of armor and a last low groan. */
+export function playSmithDeath(where: Where): void {
+  const out = placeSound(where);
+  if (!out) return;
+  playGroan(where, 0.5);
+  thump({ out, start: 0.15, duration: 0.5, volume: 1.2, from: 100, to: 30 });
+  for (let i = 0; i < 5; i++) {
+    noiseBurst({ out, start: 0.1 + i * 0.07, duration: 0.08, volume: 0.5, filter: 'bandpass', frequency: 2500 + i * 300, q: 6 });
+  }
 }
 
 /** Ghoul dies: a lower, sinking groan and a wet splat. */

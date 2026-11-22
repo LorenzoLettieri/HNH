@@ -33,7 +33,8 @@ import { styleMultiplier } from './style';
 import { AMMO_TYPE, WEAPONS, type AmmoType, type WeaponId } from './weapon';
 import type { World } from './world';
 
-export type PickupKind = 'bullets' | 'shells' | 'medkit' | 'coin';
+/** 'iron' = the Damned Iron, dropped only by the Damned Smith (smith.ts), spent at the Forge. */
+export type PickupKind = 'bullets' | 'shells' | 'medkit' | 'coin' | 'iron';
 
 /**
  * Is this kind of ammo any use to you? Yes if you own at least one weapon
@@ -107,6 +108,8 @@ function whatDrops(game: GameState, enemy: Enemy): Loot[] {
   const coins = Math.round(enemyCost(enemy) * tuning.coinsPerWeight);
   const coinValue = Math.round(tuning.coinValue * styleMultiplier(game.style));
   for (let i = 0; i < coins; i++) loot.push({ kind: 'coin', value: coinValue });
+  // The Damned Smith ALWAYS leaves its Damned Iron (the reason to kill it).
+  if (enemy.type === 'smith') loot.push({ kind: 'iron', value: 0 });
   const chance = Math.min(tuning.dropChanceMax, enemyCost(enemy) * tuning.dropChancePerWeight);
   if (random(game) < chance) loot.push({ kind: pickKind(random(game), game.player.owned), value: 0 });
   return loot;
@@ -152,7 +155,9 @@ export function createPickup(game: GameState, kind: PickupKind, x: number, y: nu
     px: x, py: y, pz: z,
     vx: 0, vy: 0, vz: 0,
     landed: false,
-    ticksLeft: secondsToTicks(kind === 'coin' ? tuning.coinLifetime : tuning.dropLifetime),
+    ticksLeft: secondsToTicks(
+      kind === 'coin' ? tuning.coinLifetime : kind === 'iron' ? tuning.ironLifetime : tuning.dropLifetime,
+    ),
     value,
   };
 }
@@ -244,6 +249,11 @@ function collect(game: GameState, d: Pickup): boolean {
   if (kind === 'coin') {
     p.money += d.value;
     game.stats.moneyEarned += d.value;
+    return true;
+  }
+  // The Damned Iron goes into the inventory (player.ts), for the Forge.
+  if (kind === 'iron') {
+    p.damnedIron++;
     return true;
   }
   if (kind === 'medkit') {

@@ -24,6 +24,10 @@ function bodyOf(e: Entity): { radius: number; height: number } | null {
     if (e.state === 'dead') return null;
     return { radius: tuning.bullRadius, height: tuning.bullHeight };
   }
+  if (e.type === 'smith') {
+    if (e.state === 'dead') return null;
+    return { radius: tuning.smithRadius, height: tuning.smithHeight };
+  }
   // Targets have their own (non-)physics, eye-bats fly: not solid.
   return null;
 }

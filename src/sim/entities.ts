@@ -195,9 +195,42 @@ export interface SharpshooterEntity extends EntityBase {
   headless: boolean;
 }
 
-export type Entity = TargetEntity | GhoulEntity | EyebatEntity | HoundEntity | BullEntity | SharpshooterEntity;
+/**
+ * The Damned Smith: the special enemy of waves 9, 19, 29... (docs/DESIGN.md
+ * §6d). Big, armored (only the head takes critical hits), slow; its hammer
+ * slams the ground and a shockwave spreads in a ring. Drops the Damned Iron.
+ * Position = feet.
+ */
+export interface SmithEntity extends EntityBase {
+  type: 'smith';
+  vx: number;
+  vy: number;
+  vz: number;
+  onGround: boolean;
+  /** See smith.ts: walking to you, hammer raised (the warning), hammer stuck in the ground after the slam, dead. */
+  state: 'approach' | 'windup' | 'recover' | 'dead';
+  stateTicks: number;
+  /** Where it faces (unit vector on the ground): toward you, so the slam lands in front of it. */
+  dirX: number;
+  dirZ: number;
+  /** Ticks before it can wind up another slam. */
+  slamCooldownTicks: number;
+  /**
+   * The shockwave of the last slam: ticks since the hammer hit the ground
+   * (-1 = no wave running), where it hit, and whether it already hit you
+   * (once per wave). Its radius = waveTicks × dt × smithWaveSpeed.
+   */
+  waveTicks: number;
+  waveX: number;
+  waveY: number;
+  waveZ: number;
+  waveHit: boolean;
+  navNode: number;
+}
+
+export type Entity = TargetEntity | GhoulEntity | EyebatEntity | HoundEntity | BullEntity | SharpshooterEntity | SmithEntity;
 /** Everything that fights you (not the practice targets). */
-export type Enemy = GhoulEntity | EyebatEntity | HoundEntity | BullEntity | SharpshooterEntity;
+export type Enemy = GhoulEntity | EyebatEntity | HoundEntity | BullEntity | SharpshooterEntity | SmithEntity;
 
 export function isEnemy(e: Entity): e is Enemy {
   return e.type !== 'target';
@@ -388,6 +421,35 @@ export function createSharpshooter(
   };
 }
 
+export function createSmith(id: number, x: number, y: number, z: number, health = tuning.smithHealth): SmithEntity {
+  return {
+    id,
+    type: 'smith',
+    x,
+    y,
+    z,
+    px: x,
+    py: y,
+    pz: z,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    health,
+    onGround: false,
+    state: 'approach',
+    stateTicks: 0,
+    dirX: 0,
+    dirZ: 1,
+    slamCooldownTicks: secondsToTicks(1.5), // a moment to see it coming before the first slam
+    waveTicks: -1,
+    waveX: x,
+    waveY: y,
+    waveZ: z,
+    waveHit: false,
+    navNode: -1,
+  };
+}
+
 export function isAlive(e: Entity): boolean {
   return e.health > 0;
 }
@@ -417,6 +479,9 @@ export function hitBox(e: Entity): Box {
     // boxes, and the bull is long): as wide as it is long, a bit generous
     // from the front, about right from the side.
     return box(e.x, e.y, e.z, tuning.bullHitWidth, tuning.bullHitHeight, tuning.bullHitWidth);
+  }
+  if (e.type === 'smith') {
+    return box(e.x, e.y, e.z, tuning.smithHitWidth, tuning.smithHitHeight, tuning.smithHitWidth);
   }
   if (e.type === 'eyebat') {
     // A cube around the eye, a bit bigger than the eye itself (it includes

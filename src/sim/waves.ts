@@ -7,7 +7,7 @@
 // among those the remaining budget can afford. Same budget, different mix in
 // every game. A future tough enemy (a brute worth 5) just gets a higher cost.
 import { secondsToTicks, tuning } from './config';
-import { createBull, createEyebat, createGhoul, createHound, createSharpshooter, isEnemy, type Enemy, type GhoulEntity } from './entities';
+import { createBull, createEyebat, createGhoul, createHound, createSharpshooter, createSmith, isEnemy, type Enemy, type GhoulEntity } from './entities';
 import { random, randomInt } from './random';
 import type { SimEvent } from './events';
 import type { GameState } from './game';
@@ -26,11 +26,30 @@ export interface WaveState {
   /** Active: weight points of this wave not spawned yet (see waveBudget). */
   budgetLeft: number;
   spawnCooldownTicks: number;
+  /** A Damned Smith still has to show up in this wave (waves 9, 19, 29...: see isSmithWave). */
+  smithPending: boolean;
 }
 
 
 export function createWaveState(): WaveState {
-  return { number: 0, phase: 'break', breakTicks: secondsToTicks(tuning.waveFirstBreak), budgetLeft: 0, spawnCooldownTicks: 0 };
+  return {
+    number: 0,
+    phase: 'break',
+    breakTicks: secondsToTicks(tuning.waveFirstBreak),
+    budgetLeft: 0,
+    spawnCooldownTicks: 0,
+    smithPending: false,
+  };
+}
+
+/**
+ * Is wave n one with a Damned Smith? 9, 19, 29...: the wave right BEFORE each
+ * health step (healthForWave: ×2 at 10, ×3 at 20). Killing it gives you the
+ * Damned Iron, and the Forge reinforces a gun just as the enemies get tougher.
+ * (n − first) % every === 0 → "every `every` waves, starting from `first`".
+ */
+export function isSmithWave(n: number): boolean {
+  return n >= tuning.smithFromWave && (n - tuning.smithFromWave) % tuning.smithEveryWaves === 0;
 }
 
 // --- The difficulty curve: everything that changes from wave to wave --------
@@ -155,6 +174,7 @@ export function enemyCost(e: Enemy): number {
   if (e.type === 'eyebat') return tuning.eyebatCost;
   if (e.type === 'hound') return tuning.houndCost;
   if (e.type === 'sharpshooter') return tuning.sharpshooterCost;
+  if (e.type === 'smith') return tuning.smithCost;
   return tuning.bullCost;
 }
 
@@ -167,6 +187,7 @@ export function stepWaves(game: GameState, world: World, events: SimEvent[]): vo
     hound: secondsToTicks(tuning.houndCorpseTime),
     bull: secondsToTicks(tuning.bullCorpseTime),
     sharpshooter: secondsToTicks(tuning.sharpshooterCorpseTime),
+    smith: secondsToTicks(tuning.smithCorpseTime),
   };
   game.entities = game.entities.filter(
     (e) => !(isEnemy(e) && e.state === 'dead' && e.stateTicks > corpseTicks[e.type]),
@@ -177,7 +198,7 @@ export function stepWaves(game: GameState, world: World, events: SimEvent[]): vo
   const w = game.wave;
   // Weight alive right now (with every enemy weighing 1: how many are alive).
   let alive = 0;
-  const aliveByType: Record<Enemy['type'], number> = { ghoul: 0, eyebat: 0, hound: 0, bull: 0, sharpshooter: 0 };
+  const aliveByType: Record<Enemy['type'], number> = { ghoul: 0, eyebat: 0, hound: 0, bull: 0, sharpshooter: 0, smith: 0 };
   for (const e of game.entities) {
     if (!isEnemy(e) || e.state === 'dead') continue;
     alive += enemyCost(e);
@@ -191,13 +212,14 @@ export function stepWaves(game: GameState, world: World, events: SimEvent[]): vo
       w.phase = 'active';
       w.budgetLeft = waveBudget(w.number);
       w.spawnCooldownTicks = 0;
+      w.smithPending = isSmithWave(w.number);
       events.push({ type: 'waveStart', wave: w.number });
     }
     return;
   }
 
-  // Active: wave cleared when everything has spawned AND died.
-  if (w.budgetLeft === 0 && alive === 0) {
+  // Active: wave cleared when everything has spawned AND died (the Smith too).
+  if (w.budgetLeft === 0 && alive === 0 && !w.smithPending) {
     events.push({ type: 'waveEnd', wave: w.number });
     w.phase = 'break';
     w.breakTicks = secondsToTicks(tuning.waveBreak);
@@ -207,6 +229,20 @@ export function stepWaves(game: GameState, world: World, events: SimEvent[]): vo
   if (w.spawnCooldownTicks > 0) {
     w.spawnCooldownTicks--;
     return;
+  }
+  // The Damned Smith: once smithSpawnAt of the budget has spawned (halfway
+  // through the wave), on top of the budget and of the alive limit: it's an
+  // event, it doesn't wait for a free spot.
+  if (w.smithPending && w.budgetLeft <= waveBudget(w.number) * (1 - tuning.smithSpawnAt)) {
+    const at = pickSpawn(game, world);
+    if (at) {
+      const smith = createSmith(game.nextEntityId++, at.x, at.y, at.z, healthForWave(tuning.smithHealth, w.number));
+      game.entities.push(smith);
+      w.smithPending = false;
+      events.push({ type: 'smithArrived', entityId: smith.id });
+      w.spawnCooldownTicks = secondsToTicks(spawnInterval(w.number));
+      return;
+    }
   }
   if (w.budgetLeft === 0 || alive >= maxAlive(w.number)) return;
   const s = pickSpawn(game, world);
@@ -310,7 +346,7 @@ export function jumpToWave(game: GameState, n: number): void {
   game.entities = game.entities.filter((e) => !isEnemy(e));
   game.projectiles = [];
   game.player.health = tuning.playerMaxHealth;
-  game.wave = { number: n - 1, phase: 'break', breakTicks: secondsToTicks(2), budgetLeft: 0, spawnCooldownTicks: 0 };
+  game.wave = { number: n - 1, phase: 'break', breakTicks: secondsToTicks(2), budgetLeft: 0, spawnCooldownTicks: 0, smithPending: false };
 }
 
 /**

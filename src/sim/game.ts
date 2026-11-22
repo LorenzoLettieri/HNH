@@ -1,12 +1,13 @@
 // The whole game state in one object, and the one function that advances it
 // by one tick. Main loop (and one day the server) only talk to this.
 import type { InputCommand } from './command';
-import { createBull, createEntities, createEyebat, createHound, createSharpshooter, isEnemy, stepTarget, type Entity } from './entities';
+import { createBull, createEntities, createEyebat, createHound, createSharpshooter, createSmith, isEnemy, stepTarget, type Entity } from './entities';
 import { stepEyebat } from './eyebat';
 import { stepProjectiles, type Projectile } from './projectiles';
 import { stepGhoul } from './ghoul';
 import { stepHound } from './hound';
 import { stepBull } from './bull';
+import { stepSmith } from './smith';
 import { stepSharpshooter } from './sharpshooter';
 import { createWaveState, scoreHits, stepWaves, wavePressure, type WaveState } from './waves';
 import { countStats, createStats, type Stats } from './stats';
@@ -152,6 +153,9 @@ export function stepGame(
     else if (e.type === 'bull') {
       // Asked here, not every tick: with no bulls around it's never computed (cached per goal).
       stepBull(e, game.player, game.entities, world, bigGraph, getFlowField(bigGraph, game.navGoalBig), dt, events);
+    } else if (e.type === 'smith') {
+      // The Smith has the bull's body: it walks on the bulls' graph.
+      stepSmith(e, game.player, game.entities, world, bigGraph, getFlowField(bigGraph, game.navGoalBig), dt, events);
     }
     else if (e.state !== 'dead') stepGhoul(e, game.player, game.entities, world, graph, flow, dt, events, pressure);
   }
@@ -205,6 +209,14 @@ export function spawnBullInFront(game: GameState): void {
   const x = p.x - Math.sin(p.yaw) * 14;
   const z = p.z - Math.cos(p.yaw) * 14;
   game.entities.push(createBull(game.nextEntityId++, x, p.y + 0.5, z));
+}
+
+/** Debug: spawns a Damned Smith 14 m in front of the player (U key). */
+export function spawnSmithInFront(game: GameState): void {
+  const p = game.player;
+  const x = p.x - Math.sin(p.yaw) * 14;
+  const z = p.z - Math.cos(p.yaw) * 14;
+  game.entities.push(createSmith(game.nextEntityId++, x, p.y + 0.5, z));
 }
 
 /** Debug: spawns a sharpshooter 20 m in front of the player (L key): it shoots from afar. */

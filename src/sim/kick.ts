@@ -204,7 +204,7 @@ export function knockBack(e: Entity, dirX: number, dirZ: number, speed: number, 
     e.vy = lift;
     e.onGround = false;
     e.climbTo = -1;
-  } else if (e.type === 'bull') {
+  } else if (e.type === 'bull' || e.type === 'smith') {
     // Too heavy: it takes the damage, but doesn't budge.
   } else if (e.type === 'eyebat') {
     // It flies: no lift needed. Its steering brings it back in a moment

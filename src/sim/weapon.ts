@@ -430,9 +430,11 @@ function trace(
   // - sharpshooter: same, above sharpshooterHeadHeight (skull and hat).
   // - bull: no weak spot while it's up. Stunned against a wall, EVERY hit is
   //   critical: the reward for making it crash.
+  // - Damned Smith: armored everywhere except the head (above smithHeadHeight).
   const headshot =
     target !== null &&
     ((target.type === 'ghoul' && hit!.y - target.y > tuning.ghoulHeadHeight) ||
+      (target.type === 'smith' && hit!.y - target.y > tuning.smithHeadHeight) ||
       (target.type === 'hound' && hit!.y - target.y > tuning.houndHeadHeight) ||
       (target.type === 'sharpshooter' && hit!.y - target.y > tuning.sharpshooterHeadHeight) ||
       (target.type === 'bull' && target.state === 'stunned') ||

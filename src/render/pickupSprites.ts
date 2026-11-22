@@ -14,7 +14,7 @@ import { buildSheet, PixelFrame, type SpriteSheet } from './enemies/spriteSheet'
 
 export const PICKUP_FRAME = 16;
 /** Which frame each kind uses. */
-export const PICKUP_FRAMES: Record<PickupKind, number> = { bullets: 0, shells: 1, medkit: 2, coin: 3 };
+export const PICKUP_FRAMES: Record<PickupKind, number> = { bullets: 0, shells: 1, medkit: 2, coin: 3, iron: 4 };
 
 const C = {
   outline: 0x120a08,
@@ -158,6 +158,31 @@ function paintCoin(): PixelFrame {
 }
 
 /**
+ * The Damned Iron: a black iron ingot (a trapezoid seen from the front and a
+ * bit from above) with cracks that glow red-hot: the same shape as the HUD
+ * counter's icon (ironHud.ts), so you recognize it. The cracks go in the
+ * glow mask: it must be visible from far away, it's the reason to kill the Smith.
+ */
+function paintIron(): PixelFrame {
+  const f = new PixelFrame(PICKUP_FRAME, PICKUP_FRAME);
+  const top = 0x5c5a64;
+  const front = 0x34323c;
+  const edge = 0x7c7a86;
+  const ember = 0xe8481c;
+  const hot = 0xffb040;
+  f.rect(4, 6, 8, 1, top); // top face, widening toward you
+  f.rect(3, 7, 10, 2, top);
+  f.rect(2, 9, 12, 5, front); // front face
+  f.rect(2, 9, 12, 1, edge);
+  for (const [x, y] of [[5, 10], [6, 11], [7, 11], [8, 12], [10, 10], [10, 11], [11, 12], [7, 7], [8, 7]]) {
+    f.set(x, y, ember, true);
+  }
+  f.set(7, 11, hot, true);
+  f.outline(C.outline);
+  return f;
+}
+
+/**
  * The coin pile as a small 2D canvas, for the HUD's vildenaro counter: the
  * same pixels as the pickup on the ground, so the HUD and the world speak the
  * same language ("that thing there = this number here"). CSS scales it up
@@ -189,7 +214,7 @@ const SELF_LIGHT = 0.4;
  * to the lit color: the dark parts never go fully black.
  */
 export function pickupSheet(): SpriteSheet & { emissive: THREE.CanvasTexture } {
-  const frames = [paintBullets(), paintShells(), paintMedkit(), paintCoin()];
+  const frames = [paintBullets(), paintShells(), paintMedkit(), paintCoin(), paintIron()];
   const sheet = buildSheet(frames);
   const n = PICKUP_FRAME;
   const w = n * frames.length;
