@@ -11,7 +11,7 @@ import { tuning } from './config';
 import type { SimEvent } from './events';
 import type { PlayerState } from './player';
 import { shopInReach } from './shop';
-import type { WeaponId } from './weapon';
+import { magazineSize, type WeaponId } from './weapon';
 import type { World } from './world';
 
 /** Why a gun can't be reinforced right now (null = it can). */
@@ -40,5 +40,7 @@ export function stepForge(p: PlayerState, cmd: InputCommand, world: World, event
   if (refusal) return void events.push({ type: 'forgeFailed', weapon, reason: refusal });
   p.damnedIron -= tuning.forgeIronCost;
   p.forged[weapon]++;
+  // It comes out of the fire loaded (akimbo: both cylinders full).
+  p.loaded[weapon] = magazineSize(p, weapon);
   events.push({ type: 'forged', weapon, level: p.forged[weapon] });
 }

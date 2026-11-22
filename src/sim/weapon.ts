@@ -47,6 +47,25 @@ export type WeaponId = 'revolver' | 'shotgun' | 'rifle';
 export const WEAPONS: readonly WeaponId[] = ['revolver', 'shotgun', 'rifle'];
 
 /**
+ * The reinforced revolver is AKIMBO (the Forge, docs/DESIGN.md §6d): a
+ * second revolver in the left hand. Same bullets (forgeMultiplier), two
+ * cylinders, the guns fire in turn.
+ */
+export function isAkimbo(p: PlayerState): boolean {
+  return p.forged.revolver > 0;
+}
+
+/**
+ * Which gun fires the next revolver shot: 0 = right, 1 = left (the 'fire'
+ * event's `barrel`, like the shotgun's two barrels). Akimbo, they alternate:
+ * it follows from how many rounds have been fired since the last reload,
+ * so there's no extra state to keep. Not akimbo: always the right one.
+ */
+function revolverHand(p: PlayerState, full: number, ammo: number): number {
+  return isAkimbo(p) ? (full - ammo) % 2 : 0;
+}
+
+/**
  * How much harder a gun hits because of the Forge: 1 when plain,
  * forgeDamageMultiplier when reinforced. It multiplies only the gun's own
  * bullet (or pellet) damage: what the cards add on top (ricochet, explosion,
@@ -79,8 +98,11 @@ export const AMMO_TYPE: Record<WeaponId, AmmoType> = { revolver: 'bullets', shot
  */
 export function magazineSize(p: PlayerState, w: WeaponId): number {
   switch (w) {
-    case 'revolver':
-      return tuning.revolverAmmo + (hasCard(p, 'undertakerCylinder') ? tuning.undertakerExtraRounds : 0);
+    case 'revolver': {
+      // Akimbo: two cylinders, so twice the rounds (cards included: 8 + 8 with "Tamburo del becchino").
+      const cylinder = tuning.revolverAmmo + (hasCard(p, 'undertakerCylinder') ? tuning.undertakerExtraRounds : 0);
+      return cylinder * (isAkimbo(p) ? 2 : 1);
+    }
     case 'shotgun':
       return tuning.shotgunAmmo;
     case 'rifle':
@@ -91,7 +113,7 @@ export function magazineSize(p: PlayerState, w: WeaponId): number {
 export function fireInterval(p: PlayerState, w: WeaponId): number {
   switch (w) {
     case 'revolver':
-      return tuning.revolverFireInterval;
+      return tuning.revolverFireInterval * (isAkimbo(p) ? tuning.akimboFireIntervalScale : 1);
     case 'shotgun':
       return tuning.shotgunFireInterval;
     case 'rifle':
@@ -104,8 +126,11 @@ export function fireInterval(p: PlayerState, w: WeaponId): number {
  */
 function reloadTime(p: PlayerState, w: WeaponId): number {
   switch (w) {
-    case 'revolver':
-      return tuning.revolverReloadTime * (hasCard(p, 'fastCylinder') ? tuning.fastCylinderReloadScale : 1);
+    case 'revolver': {
+      // Akimbo: the gunslinger's spin (both guns twirled round the finger), its own length.
+      const base = isAkimbo(p) ? tuning.akimboReloadTime : tuning.revolverReloadTime;
+      return base * (hasCard(p, 'fastCylinder') ? tuning.fastCylinderReloadScale : 1);
+    }
     case 'shotgun':
       return tuning.shotgunReloadTime;
     case 'rifle':
@@ -269,7 +294,7 @@ export function stepWeapon(
     /** Rounds this shot takes out of the gun (the shotgun's cards can make it 2, or 0). */
     let shells = 1;
     if (fanning) {
-      events.push({ type: 'fire', weapon: 'revolver', barrel: 0, seconds: fireInterval(p, 'revolver') });
+      events.push({ type: 'fire', weapon: 'revolver', barrel: revolverHand(p, full, ammo), seconds: fireInterval(p, 'revolver') });
       fireFanned(p, world, entities, events, rng, lastRound);
     } else if (p.weapon === 'shotgun') {
       // Right barrel first (2 shells left), then the left one. Card "Doppio
@@ -282,7 +307,7 @@ export function stepWeapon(
       events.push({ type: 'fire', weapon: 'rifle', barrel: 0, seconds: fireInterval(p, 'rifle') });
       fireRifle(p, world, entities, events, rng);
     } else {
-      events.push({ type: 'fire', weapon: 'revolver', barrel: 0, seconds: fireInterval(p, 'revolver') });
+      events.push({ type: 'fire', weapon: 'revolver', barrel: revolverHand(p, full, ammo), seconds: fireInterval(p, 'revolver') });
       fireRevolver(p, world, entities, events, lastRound);
     }
     if (!bottomless) setCurrentAmmo(p, Math.min(full, ammo - shells));

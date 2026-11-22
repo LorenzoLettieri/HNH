@@ -323,6 +323,14 @@ export const tuning = {
   forgeIronCost: 1,
   /** Highest forge level (for now only 1: the next levels are still to design). */
   forgeMaxLevel: 1,
+  /**
+   * Akimbo revolvers (the reinforced revolver): seconds between shots, as a
+   * fraction of revolverFireInterval. The guns alternate, so each one fires
+   * every 2 × 0.24 = 0.48 s, but you shoot every 0.24 s.
+   */
+  akimboFireIntervalScale: 0.75,
+  /** Akimbo reload: both guns twirled round the finger, the cylinders full again (pure show), seconds. */
+  akimboReloadTime: 1.3,
   // --- Vildenaro: the coins every enemy drops (see dropCoins in pickups.ts) ---
   /** Coins dropped per point of enemy weight: ghoul 1 coin, eye-bat 2, hound 3, bull 5. ALWAYS, not a chance. */
   coinsPerWeight: 1,

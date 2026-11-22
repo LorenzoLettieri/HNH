@@ -345,6 +345,8 @@
       /* Carbine: the same .44-40 as the revolver, but 8 of them in a row: a bit slimmer, gap smaller. */
       .round.rifle { width: 6px; height: 24px; background: linear-gradient(#8c8478 0 25%, #b08c4c 25% 90%, #6a5228 90%); }
       #ammo-rounds:has(.rifle) { gap: 4px; }
+      /* Akimbo revolvers: a gap between the two cylinders (ammoHud.ts adds the class to the first round of the second). */
+      .round.cylinder-gap { margin-left: 9px; }
       /* Spent: only a dim outline is left. */
       .round.spent { background: transparent; box-shadow: inset 0 0 0 1px #4a3c2a, 2px 2px 0 rgba(0, 0, 0, 0.5); }
       #ammo-reserve {

@@ -7,7 +7,7 @@
 // and remove elements and toggle CSS classes.
 import { tuning } from '../sim/config';
 import type { PlayerState } from '../sim/player';
-import { AMMO_TYPE, currentAmmo, magazineSize, type WeaponId } from '../sim/weapon';
+import { AMMO_TYPE, currentAmmo, isAkimbo, magazineSize, type WeaponId } from '../sim/weapon';
 import './fonts'; // the number is written in Rye
 
 const box = document.getElementById('ammo-box')!;
@@ -21,22 +21,25 @@ const reserveEl = document.getElementById('ammo-reserve')!;
 let builtFor = ''; // "weapon:size" of the elements in roundsEl
 let rounds: HTMLElement[] = [];
 
-function build(weapon: WeaponId, size: number): void {
+function build(weapon: WeaponId, size: number, akimbo: boolean): void {
   roundsEl.replaceChildren(); // remove the old ones
   rounds = [];
   for (let i = 0; i < size; i++) {
     const r = document.createElement('i');
     // The CSS draws the shape from these two classes: .round.revolver / .round.shotgun
     r.className = `round ${weapon}`;
+    // Akimbo: two cylinders, so a gap in the middle ("6 + 6").
+    if (akimbo && i === size / 2) r.classList.add('cylinder-gap');
     roundsEl.append(r);
     rounds.push(r);
   }
-  builtFor = `${weapon}:${size}`;
+  builtFor = `${weapon}:${size}:${akimbo}`;
 }
 
 export function updateAmmoHud(player: PlayerState): void {
   const size = magazineSize(player, player.weapon);
-  if (builtFor !== `${player.weapon}:${size}`) build(player.weapon, size);
+  const akimbo = player.weapon === 'revolver' && isAkimbo(player);
+  if (builtFor !== `${player.weapon}:${size}:${akimbo}`) build(player.weapon, size, akimbo);
 
   // Full rounds on the left, spent ones on the right (they're fired from the right).
   const ammo = currentAmmo(player);
