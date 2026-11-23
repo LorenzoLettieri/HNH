@@ -733,9 +733,10 @@ futuro **poligono di tiro / tutorial**.
   1500 vildenaro** (l'arma più cara: carabina 1000, doppietta 600) con 10 candelotti, e il **fascio di dinamite** che
   cade dai nemici (solo se hai il lancia-dinamite, **raro**: peso 1 contro 5/4/3 di proiettili, cartucce e medikit,
   3 candelotti) [FATTO] → 5a. **il modello in mano**, fatto in Blender come le altre armi (`tools/blender/dynamite_launcher.py`):
-  impugnatura a pistola come il revolver (lo tiene il suo braccio destro), **gabbia girevole d'ottone con cinque
-  candelotti** a vista, canna grossa a bocca svasata, serbatoio d'aria compressa di rame e manometro: è l'aria che
-  spara il candelotto (steampunk) [FATTO] → 6. animazioni (sparo, cambio arma, ricarica) →
+  **un'arma pesante a due mani** alla lanciagranate (la prima versione con l'impugnatura del revolver sembrava un
+  revolver "gonfiato": scartata), tenuta con le braccia della carabina: calcio di noce, grande ponticello ad anello,
+  **gabbia girevole d'ottone con cinque candelotti** a vista, canna grossa a bocca svasata, serbatoio d'aria compressa
+  di rame dentro l'astina dove sta la mano sinistra, manometro: è l'aria che spara il candelotto (steampunk) [FATTO] → 6. animazioni (sparo, cambio arma, ricarica) →
   7. premi dello Stile e taratura. Dopo: carte e Forgia.
 - **Fuoco alternativo (tasto destro)** [DECISO]: ogni arma può averne uno. Revolver: fanning;
   carabina: mira dal mirino; doppietta: da decidere.

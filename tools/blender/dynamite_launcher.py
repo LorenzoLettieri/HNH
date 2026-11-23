@@ -1,9 +1,12 @@
 """
-The dynamite launcher ("il lancia-dinamite"): a steampunk drum launcher.
-A pistol grip like the revolver's, a brass REVOLVING CAGE holding five red
-dynamite sticks (their fuses poke out of the back plate, toward you), a fat
-blued barrel with a flared muzzle, a copper tank of compressed air under it
-with a pressure gauge on the side: the air is what throws the stick out.
+The dynamite launcher ("il lancia-dinamite"): a heavy steampunk drum
+launcher, held with TWO hands like a grenade launcher. A walnut stock with
+a brass butt plate, a big loop guard under the wrist (the fingers go
+through it, like the carbine's lever), a massive blued receiver, a brass
+REVOLVING CAGE holding five red dynamite sticks (their fuses poke out of
+the back plate, toward you), a fat barrel with a flared muzzle, a copper
+tank of compressed air under it wrapped in a walnut fore-end for the left
+hand, a pressure gauge on the receiver: the air is what throws the stick out.
 Builds the model, renders preview images and exports
 public/models/dynamiteLauncher.glb.
 
@@ -13,7 +16,7 @@ Run it with:  npm run models   (or tools/blender/.venv/bin/python tools/blender/
 Like the shotgun there's NO skeleton: rigid parts, each with its ORIGIN on
 its pivot, found by NAME by the game (render/weapons/dynamiteView.ts):
 
-    frame            grip, receiver, barrel, tank, gauge (doesn't move)
+    frame            stock, receiver, barrel, tank, fore-end, gauge (doesn't move)
     ├── drum         origin ON THE DRUM'S AXIS: rotate it (around its own
     │   │            axis, Blender Y = three.js -Z) to bring the next stick up
     │   ├── stick_0  the five sticks, origin at their BACK end (the fuse side):
@@ -22,9 +25,14 @@ its pivot, found by NAME by the game (render/weapons/dynamiteView.ts):
     └── muzzle       an empty at the mouth of the barrel: where the flash goes
 
 Coordinates (Blender): X = right, Y = forward (the barrel), Z = up.
-The ORIGIN IS THE RIGHT HAND on the grip, and the grip has the same slant and
-thickness as the revolver's: the revolver's right arm (Arm_R in arms.glb)
-holds this one too, without a new pose.
+THE HANDS ARE THE CARBINE'S (public/models/rifleArms.glb, the same ones the
+pump-action borrows): so the gun is built around the two points where those
+hands are, in the carbine's coordinates:
+  - the ORIGIN is the right hand on the wrist of the stock (as in rifle.py);
+  - the left palm is under the fore-end at LEFT_PALM: the fore-end is built
+    right above it.
+In the game the launcher is held in the carbine's hip pose (the arms are
+posed for it), so the shoulders line up off screen.
 """
 import math
 import os
@@ -38,30 +46,41 @@ import lib  # noqa: E402
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 OUT_GLB = os.path.join(ROOT, 'public', 'models', 'dynamiteLauncher.glb')
-ARMS_GLB = os.path.join(ROOT, 'public', 'models', 'arms.glb')
+ARMS_GLB = os.path.join(ROOT, 'public', 'models', 'rifleArms.glb')
 PREVIEW_DIR = os.path.join(ROOT, 'tools', 'blender', 'previews')
 RENDER = '--no-render' not in sys.argv
 
+# --- Where the carbine's hands are (see rifle_arms.py, RIGHT and LEFT) ------
+LEFT_PALM = Vector((-0.012, 0.29, -0.004))
+
 # --- Main measures (meters). Change these to reshape the gun ----------------
-BARREL_Z = 0.058          # height of the barrel's axis (= the top chamber of the drum)
 STICKS = 5                # chambers in the drum
-ORBIT = 0.036             # distance of the sticks from the drum's axis
-DRUM_Z = BARREL_Z - ORBIT  # the drum's axis: under the barrel, so the TOP stick lines up with it
-DRUM_R = 0.056            # radius of the drum's end plates
-DRUM_BACK = 0.050         # back plate (toward you)...
-DRUM_FRONT = 0.158        # ...and front plate, along Y
-PLATE = 0.008             # thickness of the end plates
-STICK_R = 0.0135          # a dynamite stick (exaggerated, like every viewmodel)
-FUSE_OUT = 0.022          # how far the fuses stick out of the back plate
+DRUM_Z = 0.034            # the drum's axis
+ORBIT = 0.047             # distance of the sticks from the drum's axis
+BARREL_Z = DRUM_Z + ORBIT  # the barrel lines up with the TOP chamber
+DRUM_R = 0.074            # radius of the drum's end plates
+DRUM_BACK = 0.105         # back plate (toward you)...
+DRUM_FRONT = 0.245        # ...and front plate, along Y
+PLATE = 0.010             # thickness of the end plates
+STICK_R = 0.0175          # a dynamite stick (exaggerated, like every viewmodel)
+FUSE_OUT = 0.026          # how far the fuses stick out of the back plate
 BARREL_START = DRUM_FRONT + PLATE
-BARREL_END = 0.36
-BARREL_R = 0.022          # outer radius: fat, a stick goes through it
-BORE_R = 0.0165
-BELL_R = 0.031            # the flared muzzle
-TANK_Z = BARREL_Z - 0.043  # the air tank under the barrel
-TANK_R = 0.0145
-GRIP_PATH = [(0, -0.040, -0.072), (0, -0.030, -0.045), (0, -0.016, -0.014), (0, -0.002, 0.012), (0, 0.010, 0.030)]
-GRIP_SIZE = [(0.0150, 0.024), (0.0145, 0.023), (0.0140, 0.022), (0.0140, 0.022), (0.0135, 0.021)]
+BARREL_END = 0.64
+BARREL_R = 0.030          # outer radius: fat, a stick goes through it
+BORE_R = 0.022
+BELL_R = 0.044            # the flared muzzle
+TANK_Z = BARREL_Z - 0.056  # the air tank under the barrel
+TANK_R = 0.019
+FORE_START, FORE_END = 0.262, 0.44  # the walnut fore-end around the tank (the left hand holds it)
+FORE_BOTTOM = LEFT_PALM.z + 0.016   # its belly sits on the left palm
+# The stock: rings along the line from the wrist (at the right hand) back to the butt, dropping.
+STOCK = [  # (y, z of the center, half width, half height)
+    (0.035, 0.012, 0.015, 0.022),
+    (-0.020, 0.006, 0.0135, 0.019),   # the wrist: the right hand closes around it
+    (-0.075, -0.010, 0.016, 0.028),
+    (-0.160, -0.040, 0.021, 0.048),
+    (-0.260, -0.062, 0.023, 0.060),
+]
 
 # Palette (0-255).
 BLUED = (58, 64, 84)
@@ -248,7 +267,6 @@ def parent(child, par):
     child.parent = par
     child.matrix_world = world
 
-
 def chamber(k):
     """Where stick `k` sits around the drum's axis: 0 on top (in front of the barrel), then clockwise seen from behind."""
     a = math.pi / 2 - 2 * math.pi * k / STICKS
@@ -261,77 +279,93 @@ def chamber(k):
 
 def build(m):
     parts = []
-    # --- Pistol grip: walnut, the revolver's slant ---
-    grip = sweep('grip', GRIP_PATH, lambda c, side, across, i: lib.ellipse_ring(
-        c, side, across, GRIP_SIZE[i][0], GRIP_SIZE[i][1], n=10))
-    parts.append(lib.assign(grip, m['walnut_checkered']))
-    butt = lib.loft('butt', [
-        lib.ellipse_ring(Vector(GRIP_PATH[0]) + Vector((0, -0.002, -0.004)), (1, 0, 0), (0, 0.9, -0.42), 0.0160, 0.0255, n=10),
-        lib.ellipse_ring(Vector(GRIP_PATH[0]) + Vector((0, 0.002, 0.004)), (1, 0, 0), (0, 0.9, -0.42), 0.0160, 0.0255, n=10),
-    ], cap_start=True, cap_end=True)
+    # --- Stock: walnut, from the wrist (the right hand) back and down to the butt ---
+    stock = lib.loft('stock', [lib.ellipse_ring((0, y, z), (1, 0, 0), (0, 0, 1), hw, hh, n=10) for y, z, hw, hh in STOCK],
+                     v_scale=4, cap_start=True, cap_end=True)
+    parts.append(lib.assign(stock, m['walnut']))
+    y, z, hw, hh = STOCK[-1]
+    butt = lib.loft('butt', [lib.ellipse_ring((0, y + dy, z), (1, 0, 0), (0, 0, 1), hw + 0.002, hh + 0.002, n=10)
+                             for dy in (0.0, -0.012)], cap_start=True, cap_end=True)
     parts.append(lib.assign(butt, m['brass']))
+    # A brass strap around the wrist, where the stock meets the receiver.
+    parts.append(lib.assign(lib.loft('wristband', [
+        lib.ellipse_ring((0, yy, 0.011), (1, 0, 0), (0, 0, 1), 0.0165, 0.0245, n=10) for yy in (0.028, 0.040)
+    ], cap_start=True, cap_end=True), m['brass']))
 
-    # --- Receiver: iron block from the grip to the drum, with a hump on top ---
+    # --- Receiver: a massive blued block from the wrist to the drum, a hump on top ---
     receiver = lib.loft('receiver', [
-        rounded_rect(-0.022, 0.016, 0.018, 0.050, 0.005),
-        rounded_rect(0.000, 0.019, 0.004, 0.058, 0.007),
-        rounded_rect(DRUM_BACK - 0.004, 0.022, -0.010, 0.064, 0.008),
+        rounded_rect(0.034, 0.020, -0.014, 0.046, 0.006),
+        rounded_rect(0.050, 0.030, -0.030, 0.070, 0.009),
+        rounded_rect(DRUM_BACK - 0.004, 0.032, -0.038, 0.078, 0.010),
     ], v_scale=8, cap_start=True, cap_end=True)
     parts.append(lib.assign(receiver, m['blued']))
-    # The hammer-like striker on top, at the back: a brass knob (it lights the fuse).
-    striker = lib.box_mesh('striker', (0, -0.006, 0.058), (0.010, 0.020, 0.012), 'x', rotation=(0.35, 0, 0))
+    # The striker on top at the back (it lights the fuse), and rivets on the flanks.
+    striker = lib.box_mesh('striker', (0, 0.050, 0.078), (0.014, 0.026, 0.016), 'x', rotation=(0.3, 0, 0))
     parts.append(lib.assign(striker, m['brass']))
+    for side in (-1, 1):
+        for yy, zz in ((0.062, -0.020), (0.062, 0.058), (0.092, -0.026), (0.092, 0.066)):
+            rv = lib.cylinder_mesh('rivet', (side * 0.032, yy, zz), 0.0032, 0.004, 'x', rotation=(0, math.pi / 2, 0), vertices=6)
+            parts.append(lib.assign(rv, m['brass']))
 
-    # --- Trigger guard and trigger, between the grip and the drum ---
-    guard_path = [(0, 0.004, 0.006), (0, 0.008, -0.016), (0, 0.026, -0.026), (0, 0.044, -0.020), (0, 0.050, -0.004)]
+    # --- The big loop guard under the wrist (the right hand's fingers go through it) ---
+    guard_path = [(0, 0.040, -0.016), (0, 0.030, -0.040), (0, 0.000, -0.056), (0, -0.026, -0.050),
+                  (0, -0.030, -0.032), (0, -0.016, -0.012)]
     guard = sweep('guard', guard_path, lambda c, side, across, i: [
-        c + side * sx * 0.0045 + across * sy * 0.0018 for sx, sy in ((1, 1), (-1, 1), (-1, -1), (1, -1))])
+        c + side * sx * 0.0055 + across * sy * 0.0025 for sx, sy in ((1, 1), (-1, 1), (-1, -1), (1, -1))])
     parts.append(lib.assign(guard, m['iron']))
-    trigger = lib.box_mesh('trigger', (0, 0.026, -0.006), (0.004, 0.004, 0.022), 'x', rotation=(-0.4, 0, 0))
+    trigger = lib.box_mesh('trigger', (0, 0.026, -0.024), (0.005, 0.005, 0.026), 'x', rotation=(-0.35, 0, 0))
     parts.append(lib.assign(trigger, m['iron']))
 
     # --- The drum's axle (the frame holds it; the drum turns on it) ---
-    axle = tube('axle', 0, DRUM_Z, [(DRUM_BACK - 0.006, 0.008), (DRUM_FRONT + PLATE + 0.006, 0.008)], m['iron'], n=8)
-    parts.append(axle)
+    parts.append(tube('axle', 0, DRUM_Z, [(DRUM_BACK - 0.008, 0.011), (DRUM_FRONT + PLATE + 0.008, 0.011)], m['iron'], n=8))
 
     # --- Barrel: fat blued tube with a real hole and a flared muzzle (a bell) ---
     barrel = lib.loft('barrel', [
         circle(0, BARREL_START, BARREL_Z, BORE_R, 12),
         circle(0, BARREL_START, BARREL_Z, BARREL_R, 12),
-        circle(0, BARREL_END - 0.050, BARREL_Z, BARREL_R, 12),
-        circle(0, BARREL_END - 0.018, BARREL_Z, BARREL_R + 0.003, 12),
+        circle(0, BARREL_END - 0.070, BARREL_Z, BARREL_R, 12),
+        circle(0, BARREL_END - 0.025, BARREL_Z, BARREL_R + 0.004, 12),
         circle(0, BARREL_END, BARREL_Z, BELL_R, 12),
-        circle(0, BARREL_END, BARREL_Z, BORE_R + 0.006, 12),
+        circle(0, BARREL_END, BARREL_Z, BORE_R + 0.008, 12),
     ], v_scale=3, outward_hint=(0, BARREL_START + 0.1, BARREL_Z))
     parts.append(lib.assign(barrel, m['blued']))
-    bore = lib.loft('bore', [circle(0, BARREL_END, BARREL_Z, BORE_R + 0.006, 12),
-                             circle(0, BARREL_END - 0.03, BARREL_Z, BORE_R, 12),
-                             circle(0, BARREL_END - 0.09, BARREL_Z, BORE_R, 12)],
+    bore = lib.loft('bore', [circle(0, BARREL_END, BARREL_Z, BORE_R + 0.008, 12),
+                             circle(0, BARREL_END - 0.04, BARREL_Z, BORE_R, 12),
+                             circle(0, BARREL_END - 0.12, BARREL_Z, BORE_R, 12)],
                     cap_end=True, outward_hint=(1, BARREL_END, BARREL_Z))
     parts.append(lib.assign(bore, m['bore']))
-    # Brass bands around the barrel, and a front sight on top.
-    for y0, y1 in ((BARREL_START + 0.004, BARREL_START + 0.016), (0.255, 0.265)):
-        parts.append(tube('band', 0, BARREL_Z, [(y0, BARREL_R + 0.003), (y1, BARREL_R + 0.003)], m['brass'], n=12))
-    sight = lib.box_mesh('sight', (0, BARREL_END - 0.03, BARREL_Z + BARREL_R + 0.006), (0.004, 0.012, 0.010), 'x')
+    for y0, y1 in ((BARREL_START + 0.004, BARREL_START + 0.020), (FORE_END + 0.02, FORE_END + 0.034), (0.555, 0.567)):
+        parts.append(tube('band', 0, BARREL_Z, [(y0, BARREL_R + 0.004), (y1, BARREL_R + 0.004)], m['brass'], n=12))
+    sight = lib.box_mesh('sight', (0, BARREL_END - 0.04, BARREL_Z + BARREL_R + 0.008), (0.005, 0.016, 0.014), 'x')
     parts.append(lib.assign(sight, m['brass']))
+    # A heat shield on top of the barrel: a perforated iron strip (steampunk, and it reads "big gun").
+    shield = lib.box_mesh('shield', (0, (BARREL_START + 0.53) / 2, BARREL_Z + BARREL_R + 0.003), (0.030, 0.53 - BARREL_START, 0.004), 'x')
+    parts.append(lib.assign(shield, m['iron']))
 
     # --- The air tank under the barrel, its straps and the pipe to the receiver ---
-    tank = tube('tank', 0, TANK_Z, [(BARREL_START + 0.012, TANK_R * 0.6), (BARREL_START + 0.020, TANK_R),
-                                     (0.300, TANK_R), (0.312, TANK_R * 0.55)], m['copper'], n=10)
-    parts.append(tank)
-    for y in (0.200, 0.285):  # straps tying the tank to the barrel
-        strap = lib.box_mesh('strap', (0, y, (BARREL_Z + TANK_Z) / 2), (0.032, 0.008, BARREL_Z - TANK_Z + 0.03), 'x')
+    parts.append(tube('tank', 0, TANK_Z, [(BARREL_START + 0.004, TANK_R * 0.6), (BARREL_START + 0.014, TANK_R),
+                                          (0.520, TANK_R), (0.536, TANK_R * 0.55)], m['copper'], n=10))
+    for yy in (0.475, 0.510):
+        strap = lib.box_mesh('strap', (0, yy, (BARREL_Z + TANK_Z) / 2), (0.044, 0.010, BARREL_Z - TANK_Z + 0.04), 'x')
         parts.append(lib.assign(strap, m['brass']))
-    pipe = lib.loft('pipe', [circle(0, y, z, 0.0045, 6) for y, z in
-                             ((BARREL_START + 0.014, TANK_Z), (0.130, -0.022), (0.060, -0.020), (0.046, -0.006))],
+    pipe = lib.loft('pipe', [circle(0, yy, zz, 0.006, 6) for yy, zz in
+                             ((BARREL_START + 0.006, TANK_Z), (0.200, -0.040), (0.120, -0.040), (DRUM_BACK - 0.004, -0.030))],
                     cap_start=True, cap_end=True)
     parts.append(lib.assign(pipe, m['copper']))
-    # The pressure gauge on the right side of the receiver, facing you a bit.
-    gauge_center = Vector((0.026, 0.020, 0.052))
-    ring = lib.cylinder_mesh('gauge_ring', gauge_center, 0.016, 0.008, 'x', rotation=(0, math.pi / 2, -0.5), vertices=12)
+    # The walnut fore-end around the tank: the left hand holds it from below.
+    fore = lib.loft('foreend', [
+        rounded_rect(FORE_START, 0.024, FORE_BOTTOM + 0.006, TANK_Z + 0.022, 0.010),
+        rounded_rect(FORE_START + 0.014, 0.028, FORE_BOTTOM, TANK_Z + 0.024, 0.012),
+        rounded_rect(FORE_END - 0.014, 0.028, FORE_BOTTOM, TANK_Z + 0.024, 0.012),
+        rounded_rect(FORE_END, 0.024, FORE_BOTTOM + 0.006, TANK_Z + 0.022, 0.010),
+    ], v_scale=4, cap_start=True, cap_end=True)
+    parts.append(lib.assign(fore, m['walnut_checkered']))
+    # The pressure gauge on the LEFT flank of the receiver: the side you see.
+    gauge_center = Vector((-0.036, 0.075, 0.030))
+    ring = lib.cylinder_mesh('gauge_ring', gauge_center, 0.021, 0.010, 'x', rotation=(0, math.pi / 2, 0.35), vertices=12)
     parts.append(lib.assign(ring, m['brass']))
-    face = lib.cylinder_mesh('gauge_face', gauge_center + Vector((0.0045, -0.0024, 0)), 0.0125, 0.002, 'x',
-                             rotation=(0, math.pi / 2, -0.5), vertices=12)
+    face = lib.cylinder_mesh('gauge_face', gauge_center + Vector((-0.0055, -0.002, 0)), 0.017, 0.002, 'x',
+                             rotation=(0, math.pi / 2, 0.35), vertices=12)
     parts.append(lib.assign(face, m['gauge']))
 
     frame = join('frame', parts)
@@ -339,28 +373,28 @@ def build(m):
     # --- The drum: two engraved brass plates, iron rods between them, the sticks ---
     drum_parts = []
     for y0 in (DRUM_BACK, DRUM_FRONT):
-        plate = tube('plate', 0, DRUM_Z, [(y0, DRUM_R * 0.94), (y0 + 0.002, DRUM_R), (y0 + PLATE - 0.002, DRUM_R),
-                                           (y0 + PLATE, DRUM_R * 0.94)], m['brass'], n=STICKS * 3, v_scale=12)
-        drum_parts.append(plate)
+        drum_parts.append(tube('plate', 0, DRUM_Z, [(y0, DRUM_R * 0.94), (y0 + 0.002, DRUM_R), (y0 + PLATE - 0.002, DRUM_R),
+                                                     (y0 + PLATE, DRUM_R * 0.94)], m['brass'], n=STICKS * 3, v_scale=12))
     for k in range(STICKS):  # rods between the chambers: the cage's bars
         a = math.pi / 2 - 2 * math.pi * (k + 0.5) / STICKS
-        rod = tube('rod', math.cos(a) * (DRUM_R - 0.006), DRUM_Z + math.sin(a) * (DRUM_R - 0.006),
-                   [(DRUM_BACK + PLATE, 0.004), (DRUM_FRONT, 0.004)], m['iron'], n=6)
-        drum_parts.append(rod)
-    hub = tube('hub', 0, DRUM_Z, [(DRUM_BACK + PLATE, 0.012), (DRUM_FRONT, 0.012)], m['iron'], n=8)
-    drum_parts.append(hub)
+        drum_parts.append(tube('rod', math.cos(a) * (DRUM_R - 0.008), DRUM_Z + math.sin(a) * (DRUM_R - 0.008),
+                               [(DRUM_BACK + PLATE, 0.005), (DRUM_FRONT, 0.005)], m['iron'], n=6))
+    # A brass ring around the middle of the cage, holding the bars.
+    drum_parts.append(tube('hoop', 0, DRUM_Z, [((DRUM_BACK + DRUM_FRONT) / 2 - 0.006, DRUM_R - 0.003),
+                                               ((DRUM_BACK + DRUM_FRONT) / 2 + 0.006, DRUM_R - 0.003)], m['brass'], n=STICKS * 3))
+    drum_parts.append(tube('hub', 0, DRUM_Z, [(DRUM_BACK + PLATE, 0.016), (DRUM_FRONT, 0.016)], m['iron'], n=8))
     drum = join('drum', drum_parts)
 
     sticks = []
     for k in range(STICKS):
         x, z = chamber(k)
-        back = DRUM_BACK - FUSE_OUT * 0.2
-        body = tube('stick', x, z, [(back, STICK_R), (DRUM_FRONT + PLATE * 0.6, STICK_R)], m['paper'],
-                    n=8, v_scale=1 / ((DRUM_FRONT + PLATE * 0.6) - back))
+        back = DRUM_BACK - 0.004
+        front = DRUM_FRONT + PLATE * 0.6
+        body = tube('stick', x, z, [(back, STICK_R), (front, STICK_R)], m['paper'], n=8, v_scale=1 / (front - back))
         # The fuse: out of the back end, bent a little outward (away from the axis), toward you.
-        out = Vector((x, 0, z - DRUM_Z)).normalized() * 0.006
-        fuse = lib.loft('fuse', [circle(x, back, z, 0.0022, 5),
-                                 circle(x + out.x, back - FUSE_OUT, z + out.z, 0.0022, 5)], cap_end=True)
+        out = Vector((x, 0, z - DRUM_Z)).normalized() * 0.008
+        fuse = lib.loft('fuse', [circle(x, back, z, 0.0026, 5),
+                                 circle(x + out.x, back - FUSE_OUT, z + out.z, 0.0026, 5)], cap_end=True)
         lib.assign(fuse, m['fuse'])
         s = join(f'stick_{k}', [body, fuse])
         set_origin(s, (x, back, z))
@@ -384,13 +418,12 @@ def build(m):
 # Previews and export
 # ============================================================================
 
-# The launcher's rest pose in the game's viewmodel (viewmodelSettings.dynamite*
-# in render/weapons/viewmodel.ts), converted to Blender axes: three.js
-# (x, y, z) → Blender (x, -z, y); the turns: pitch around X, yaw around
-# Blender Z (= three.js Y), roll around Blender -Y (= three.js Z).
-# The preview puts the revolver's right arm there too: does the hand fit the grip?
-VIEW_POS = (0.17, 0.42, -0.17)
-VIEW_ROT = (0.08, -0.10, 0.07)  # (pitch, roll, yaw): turned a little toward the center, the left flank in view
+# The carbine's hip pose in the game's viewmodel (viewmodelSettings.rifle* in
+# render/weapons/viewmodel.ts: the arms are posed for it), converted to
+# Blender axes: three.js (x, y, z) → Blender (x, -z, y). The preview puts the
+# carbine's arms there too: do the hands fit the wrist and the fore-end?
+VIEW_POS = (0.15, 0.36, -0.15)
+VIEW_ROT = (0.05, -0.05, 0.01)  # (pitch, roll, yaw)
 
 
 def main():
@@ -420,25 +453,29 @@ def main():
     if RENDER:
         os.makedirs(PREVIEW_DIR, exist_ok=True)
         cam = lib.setup_preview()
-        # From the player's eye, held by the revolver's right arm.
+        # From the player's eye, held by the carbine's arms (they're in the
+        # gun's coordinates: children of the gun, like in the game).
         bpy.ops.import_scene.gltf(filepath=ARMS_GLB)
-        for name in ('Arm_L', 'Arm_R_Shotgun'):
-            bpy.data.objects[name].hide_render = True
-        arm = bpy.data.objects['Arm_R']
+        arms = [bpy.data.objects[n] for n in ('Arm_R_Rifle', 'Arm_L_Rifle')]
         frame.location = VIEW_POS
         frame.rotation_euler = VIEW_ROT
-        # The arm is in the gun's coordinates (it's a child of the gun in the game): same transform.
-        arm.parent = frame
-        arm.matrix_parent_inverse.identity()
+        for a in arms:
+            a.parent = frame
+            a.matrix_parent_inverse.identity()
         lib.render_frame(os.path.join(PREVIEW_DIR, 'dynamite_eye.png'), 0)
-        # Beauty shots: side, from behind (the fuses), three quarters.
+        # The hands from the side, close: do they really hold it?
         frame.location = (0, 0, 0)
         frame.rotation_euler = (0, 0, 0)
-        arm.hide_render = True
+        cam.location = (-0.75, 0.18, 0.02)
+        cam.rotation_euler = (Vector((0, 0.18, 0.0)) - Vector(cam.location)).to_track_quat('-Z', 'Y').to_euler()
+        lib.render_frame(os.path.join(PREVIEW_DIR, 'dynamite_hands.png'), 0)
+        # Beauty shots without the arms: side, from behind (the fuses), three quarters.
+        for a in arms:
+            a.hide_render = True
         for name, loc, target in (
-            ('dynamite_side', (0.42, 0.15, 0.03), (0, 0.15, 0.02)),
-            ('dynamite_back', (0.16, -0.26, 0.20), (0, 0.12, 0.04)),
-            ('dynamite_front', (0.30, 0.55, 0.16), (0, 0.18, 0.03)),
+            ('dynamite_side', (-0.85, 0.20, 0.06), (0, 0.20, 0.0)),
+            ('dynamite_back', (0.22, -0.40, 0.26), (0, 0.15, 0.03)),
+            ('dynamite_front', (0.45, 0.95, 0.22), (0, 0.25, 0.02)),
         ):
             cam.location = loc
             cam.rotation_euler = (Vector(target) - Vector(cam.location)).to_track_quat('-Z', 'Y').to_euler()

@@ -73,14 +73,14 @@ export const viewmodelSettings = {
   pumpYaw: 0.01,
   pumpRoll: 0.05,
 
-  // --- Dynamite launcher (dynamiteView.ts; the origin is the right hand on the grip, held by the revolver's arm) ---
-  /** Low on the right and turned a little outward (like the shotgun): straight from behind you'd see only the receiver. */
-  dynamiteX: 0.17,
-  dynamiteY: -0.17,
-  dynamiteZ: -0.42,
-  dynamitePitch: 0.08,
-  dynamiteYaw: 0.07,
-  dynamiteRoll: 0.1,
+  // --- Dynamite launcher (dynamiteView.ts; the origin is the right hand on the wrist, the carbine's arms hold it) ---
+  /** The carbine's hip pose (its arms are posed for it: change it a lot and the shoulders don't line up off screen). */
+  dynamiteX: 0.15,
+  dynamiteY: -0.15,
+  dynamiteZ: -0.36,
+  dynamitePitch: 0.05,
+  dynamiteYaw: 0.01,
+  dynamiteRoll: 0.05,
 
   // --- Lever-action carbine (origin of its model: the right hand on the wrist) ---
   /** From the hip: low on the right, the barrel going into depth. (The arms in arms.glb are posed for this pose.) */
