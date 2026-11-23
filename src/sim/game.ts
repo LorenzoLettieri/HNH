@@ -90,7 +90,7 @@ function rollCardSeed(game: GameState): void {
 
 /**
  * One tick of the whole game, always in the same order:
- * 1. the player moves; 2. the player's weapon fires (and hits), the boot kicks;
+ * 1. the player moves; 2. the player's weapon fires (and hits), the boot kicks, the dynamite flies;
  * 3. targets and enemies update, their bodies block the player; 4. enemy projectiles fly (and hit);
  * 5. the wave system spawns enemies; 6. pickups age and get collected;
  * 7. the style meter reads everything that happened in the tick.
@@ -121,6 +121,8 @@ export function stepGame(
   stepKick(game.player, cmd, world, game.entities, events);
   // Fire and wall slams from the shotgun's cards: their kills are yours too.
   stepStatus(game.player, game.entities, events);
+  // Your dynamite: its explosions are your hits too (score, drops, style).
+  game.dynamite = stepDynamite(game.dynamite, game.player, world, game.entities, dt, events);
   const playerHits = events.slice(firstNewEvent);
   refundLeadFlight(game.player, playerHits);
   // The style multiplies what you earn. Read BEFORE stepStyle (end of the
@@ -168,7 +170,6 @@ export function stepGame(
   // Enemies are solid: push the player out of their bodies (after they moved, see bodyBlock.ts).
   blockPlayerWithBodies(game.player, game.entities, world, dt);
   game.projectiles = stepProjectiles(game.projectiles, game.player, world, dt, events);
-  game.dynamite = stepDynamite(game.dynamite, world, dt, events);
   stepWaves(game, world, events);
   stepPickups(game, world, dt, events);
   // Last: it needs the whole tick (your hits come first, the enemies' hits on you later).
@@ -207,8 +208,8 @@ export function spawnEyebatInFront(game: GameState): void {
  * Debug: throws a dynamite stick where you look (until the launcher is a
  * real weapon, this is how you try the stick's physics).
  */
-export function throwDynamiteDebug(game: GameState): void {
-  game.dynamite.push(throwDynamite(game.player, game.nextEntityId++));
+export function throwDynamiteDebug(game: GameState, world: World): void {
+  game.dynamite.push(throwDynamite(game.player, world, game.nextEntityId++));
 }
 
 /** Debug: spawns a hellhound 8 m in front of the player (G key). */

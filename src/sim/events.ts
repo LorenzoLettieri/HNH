@@ -12,6 +12,9 @@ import type { ForgeRefusal } from './forge';
 import type { StyleAward } from './style';
 import type { Stats } from './stats';
 
+/** What hit an enemy ('hit' events). */
+export type HitSource = WeaponId | MeleeTool | 'dynamite';
+
 export type SimEvent =
   /** A weapon fired (sound, flash, recoil). For the shotgun, `barrel` is 0 = right, 1 = left. */
   /** `seconds` = time before it can fire again (the carbine's lever cycle follows it: cards can change it). */
@@ -46,8 +49,8 @@ export type SimEvent =
       killed: boolean;
       surface: 'metal' | 'flesh';
       headshot: boolean;
-      /** What hit it: a gun, your boot or the shovel (the style rewards some of them). */
-      source: WeaponId | MeleeTool;
+      /** What hit it: a gun, your boot, the shovel or a dynamite stick (the style rewards some of them). */
+      source: HitSource;
       /** How far it was from you, meters. */
       distance: number;
       /** What kind of entity it was (the eye-bat's pupil is a headshot, but it gets its own name). */

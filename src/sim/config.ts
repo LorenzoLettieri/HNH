@@ -282,8 +282,27 @@ export const tuning = {
   dynamiteBounceMinSpeed: 2,
   /** Rolling on the floor: how fast it slows down, m/s per second. */
   dynamiteRollFriction: 6,
-  /** Radius of the explosion, meters (only the effect for now: the damage is the next step). */
+  /** Radius of the explosion, meters (to the nearest point of an enemy's hitbox). */
   dynamiteRadius: 4,
+  /**
+   * Damage at the center of the explosion (and on a direct hit, which blows
+   * up against the enemy: its distance is 0). Breakpoints (§3): 150 kills a
+   * ghoul / hound / eye-bat until wave 29 (×3 = 150), half a bull.
+   */
+  dynamiteDamage: 150,
+  /** Fraction of the damage left at the edge of the radius: 0.4 = 60, still a kill on a basic enemy until wave 9. */
+  dynamiteEdgeDamage: 0.4,
+  /** Enemies thrown away: horizontal speed and lift at the center, m/s (half at the edge). Bulls and the Smith don't budge. */
+  dynamiteKnockback: 12,
+  dynamiteKnockbackLift: 6,
+  /**
+   * DYNAMITE JUMP: speed added to YOU at the center, m/s (0 at the edge).
+   * No damage to you (docs/DESIGN.md). Right under your feet: 11 m/s up =
+   * ~3 m high on its own; with a jump (7 m/s) on top, ~8 m: a roof.
+   */
+  dynamiteSelfPush: 11,
+  /** The Damned Smith's armor: explosions do this × the damage to it. */
+  dynamiteSmithScale: 0.5,
 
   // --- Drops and pickups (see pickups.ts) ---
   /** Drop chance per point of enemy weight (ghoulCost 1 → 30%, eyebatCost 2 → 60%, houndCost 3 → 80% (the cap), bull too). */

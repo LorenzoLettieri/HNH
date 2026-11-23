@@ -207,7 +207,7 @@ const debugPanel = createDebugPanel({
     spawnTool('Fai apparire: tiratore scelto (a 20 m)', spawnSharpshooterInFront),
     spawnTool('Fai cadere un raccoglibile di ogni tipo', dropPickupsInFront),
     // Until the launcher is a real weapon: a stick thrown where you look (dynamite.ts).
-    spawnTool('Lancia un candelotto di dinamite', throwDynamiteDebug),
+    spawnTool('Lancia un candelotto di dinamite', (g) => throwDynamiteDebug(g, world)),
     // Respawn goes through the InputCommand like a key would (controls.ts):
     // the simulation only changes from commands.
     { label: 'Respawn', run: () => queueRespawn() },

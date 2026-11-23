@@ -36,11 +36,13 @@ import type { SimEvent } from './events';
 import { currentEyeHeight, type PlayerState } from './player';
 import { raycastBoxes } from './raycast';
 import type { World } from './world';
-import { damage, hitBox, isAlive, isEnemy, type Entity, type EyebatEntity } from './entities';
+import { hitBox, isAlive, isEnemy, type Entity, type EyebatEntity } from './entities';
 import { knockBack } from './kick';
 import { random, type RandomState } from './random';
 import { ignite, markSlam } from './status';
 import { hasCard } from './upgrades';
+import { applyGunDamage, hitCenter, lineFree } from './gunDamage';
+import { explode, lastShotBlast } from './explosion';
 
 export type WeaponId = 'revolver' | 'shotgun' | 'rifle';
 /** Weapon slots, in order: key 1 = revolver, key 2 = shotgun, key 3 = carbine. */
@@ -527,31 +529,6 @@ function trace(
   return target ? { target, distance: hit!.distance, headshot } : null;
 }
 
-/** Deals damage to an entity hit by a gun and reports it (hitmarker, score, sounds). */
-function applyGunDamage(
-  target: Entity,
-  amount: number,
-  headshot: boolean,
-  source: WeaponId,
-  distance: number,
-  events: SimEvent[],
-): void {
-  const killed = damage(target, amount);
-  if (killed && headshot && (target.type === 'ghoul' || target.type === 'sharpshooter')) target.headless = true;
-  if (killed && headshot && target.type === 'eyebat') target.popped = true;
-  events.push({
-    type: 'hit',
-    entityId: target.id,
-    damage: amount,
-    killed,
-    surface: isEnemy(target) ? 'flesh' : 'metal',
-    headshot,
-    source,
-    distance,
-    target: target.type,
-  });
-}
-
 /** Revolver: one hitscan bullet, straight where you look. */
 function fireRevolver(p: PlayerState, world: World, entities: Entity[], events: SimEvent[], lastRound: boolean): void {
   const { ox, oy, oz, dx, dy, dz } = aim(p);
@@ -585,23 +562,17 @@ function revolverBullet(
     if (critical && hasCard(p, 'ricochet')) ricochet(p, end, hit.target, world, entities, events);
   }
   // Into the sky: nothing to explode against.
-  if (lastRound && end.hit && hasCard(p, 'lastShot')) explode(p, end, world, entities, events);
-}
-
-/** Is the straight line from a to b free of level boxes? (Explosions and ricochets don't go through walls.) */
-function lineFree(world: World, ax: number, ay: number, az: number, bx: number, by: number, bz: number): boolean {
-  const dx = bx - ax;
-  const dy = by - ay;
-  const dz = bz - az;
-  const len = Math.hypot(dx, dy, dz);
-  if (len < 1e-6) return true;
-  return raycastBoxes(ax, ay, az, dx / len, dy / len, dz / len, len, world.boxes) === null;
-}
-
-/** Center of an entity's hitbox: where a ricochet aims, and what an explosion measures to. */
-function hitCenter(e: Entity): { x: number; y: number; z: number } {
-  const b = hitBox(e);
-  return { x: (b.minX + b.maxX) / 2, y: (b.minY + b.maxY) / 2, z: (b.minZ + b.maxZ) / 2 };
+  if (lastRound && end.hit && hasCard(p, 'lastShot')) {
+    // The impact point is ON the wall: a line from there could start inside
+    // it. The blast starts from a point pulled back a little toward you.
+    const eye = currentEyeHeight(p);
+    const bx = end.x - p.x;
+    const by = end.y - (p.y + eye);
+    const bz = end.z - p.z;
+    const back = Math.hypot(bx, by, bz) || 1;
+    const at = { x: end.x - (bx / back) * 0.15, y: end.y - (by / back) * 0.15, z: end.z - (bz / back) * 0.15 };
+    explode(p, at, lastShotBlast(), world, entities, events);
+  }
 }
 
 /**
@@ -642,38 +613,6 @@ function ricochet(
   if (hit) {
     const distance = Math.hypot(c.x - p.x, c.z - p.z);
     applyGunDamage(hit.target, tuning.ricochetDamage, false, 'revolver', distance, events);
-  }
-}
-
-/**
- * Card "Ultimo colpo": an explosion where the last round landed. Every living
- * enemy whose hitbox center is within lastShotRadius takes lastShotDamage,
- * unless a wall is in between (measured from a point pulled back a little
- * toward you: the impact point is ON the wall, a line from there could
- * start inside it).
- */
-function explode(
-  p: PlayerState,
-  at: { x: number; y: number; z: number },
-  world: World,
-  entities: Entity[],
-  events: SimEvent[],
-): void {
-  events.push({ type: 'explosion', x: at.x, y: at.y, z: at.z, radius: tuning.lastShotRadius });
-  const eye = currentEyeHeight(p);
-  const bx = at.x - p.x;
-  const by = at.y - (p.y + eye);
-  const bz = at.z - p.z;
-  const back = Math.hypot(bx, by, bz) || 1;
-  const ox = at.x - (bx / back) * 0.15;
-  const oy = at.y - (by / back) * 0.15;
-  const oz = at.z - (bz / back) * 0.15;
-  for (const e of entities) {
-    if (!isEnemy(e) || !isAlive(e)) continue;
-    const c = hitCenter(e);
-    if (Math.hypot(c.x - at.x, c.y - at.y, c.z - at.z) > tuning.lastShotRadius) continue;
-    if (!lineFree(world, ox, oy, oz, c.x, c.y, c.z)) continue;
-    applyGunDamage(e, tuning.lastShotDamage, false, 'revolver', Math.hypot(c.x - p.x, c.z - p.z), events);
   }
 }
 
