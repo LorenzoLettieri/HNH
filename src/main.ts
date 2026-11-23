@@ -32,6 +32,7 @@ import { createSharpshooterRenderer } from './render/enemies/sharpshooters';
 import { createProjectileRenderer } from './render/projectiles';
 import { createPickupRenderer } from './render/pickups';
 import { createDynamiteRenderer } from './render/dynamite';
+import { createExplosionRenderer } from './render/explosions';
 import { createVendorRenderer } from './render/vendors';
 import { createShopMenu } from './render/shopMenu';
 import { createMapOverlay } from './render/mapOverlay';
@@ -147,6 +148,7 @@ const sharpshooters = createSharpshooterRenderer(scene, world);
 const projectiles = createProjectileRenderer(scene);
 const pickups = createPickupRenderer(scene);
 const dynamite = createDynamiteRenderer(scene);
+const explosions = createExplosionRenderer(scene);
 const vendors = createVendorRenderer(scene, world);
 const mapOverlay = createMapOverlay(world);
 const navDebug = createNavDebug(scene, getNavGraph(world));
@@ -480,7 +482,8 @@ renderer.setAnimationLoop((now: number) => {
   marks.update(game.entities, alpha, dt);
   projectiles.update(game.projectiles, events, camera, alpha, dt);
   pickups.update(game.pickups, camera, alpha, now / 1000);
-  dynamite.update(game.dynamite, alpha, dt);
+  dynamite.update(game.dynamite, events, camera, alpha, dt);
+  explosions.update(events, camera, dt);
   vendors.update(camera, now / 1000);
   // Walked away from the vendor (or died, and woke up at the spawn): the shop closes.
   const shopNearby = shopInReach(player, world);

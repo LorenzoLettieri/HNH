@@ -292,6 +292,7 @@ export function createDebugPanel(options: {
   dyn.number(tuning, 'dynamiteKnockbackLift', 0, 20, 0.5);
   dyn.number(tuning, 'dynamiteSelfPush', 0, 30, 0.5);
   dyn.number(tuning, 'dynamiteSmithScale', 0, 1, 0.05);
+  dyn.number(cameraFeelSettings, 'blastShake', 0, 8, 0.1);
 
   const rifle = panel.folder('Carbine (src/sim/config.ts + render/weapons/viewmodel.ts, rifleView.ts)');
   rifle.number(tuning, 'rifleDamage', 5, 300, 5);

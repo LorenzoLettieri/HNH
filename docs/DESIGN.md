@@ -709,7 +709,7 @@ futuro **poligono di tiro / tutorial**.
   richiede 0,18 s e non si può durante la ricarica. **Ricarica un colpo alla volta** dallo sportello
   laterale (0,3 s per portarla allo sportello + 0,38 s a colpo): un click la interrompe e spari (dopo
   0,12 s). **Si compra all'armeria** per 1200 vildenaro, con 24 proiettili in tasca.
-- **Lancia-dinamite** [IN CORSO: passi 1 e 2, il candelotto e l'esplosione nella simulazione] — tasto 4, l'ultima arma per ora.
+- **Lancia-dinamite** [IN CORSO: passi 1–3, candelotto ed esplosione nella simulazione e a schermo] — tasto 4, l'ultima arma per ora.
   Ispirato al lanciagranate di Junkrat ma western: un lanciatore steampunk a tamburo che spara i classici
   **candelotti rossi**. L'arma **ad area e a traiettoria** (le altre tre sono hitscan): vola ad arco con la
   gravità, si tira dietro i muretti, sui tetti, in mezzo all'orda. Decisioni [DECISO, novembre 2026]:
@@ -725,7 +725,9 @@ futuro **poligono di tiro / tutorial**.
   29; mezzo toro; il Fabbro ne prende la metà. **Dynamite jump**: un candelotto ai piedi ti alza di ~2,8 m da
   fermo, **~7,5 m col salto** (un tetto), nessun danno.
   Piano: 1. candelotto nella simulazione (volo, rimbalzi, rotolamento, miccia) [FATTO] → 2. esplosione
-  (danno, spinta, colpo diretto, dynamite jump) [FATTO] → 3. candelotto a schermo e suoni → 4. tasca, raccoglibile,
+  (danno, spinta, colpo diretto, dynamite jump) [FATTO] → 3. candelotto a schermo e suoni (carta rossa in pixel
+  art, **la miccia si accorcia**: leggi quanto manca; sfrigolio, "tonk" sui rimbalzi; esplosione grande con palla di
+  fuoco, luce, fumo, scossone e boato) [FATTO] → 4. tasca, raccoglibile,
   HUD, barra delle armi, shop → 5. lanciatore in mano → 6. animazioni (sparo, cambio arma, ricarica) →
   7. premi dello Stile e taratura. Dopo: carte e Forgia.
 - **Fuoco alternativo (tasto destro)** [DECISO]: ogni arma può averne uno. Revolver: fanning;

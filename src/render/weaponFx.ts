@@ -143,6 +143,7 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
             spawnSparks(point, up, 6);
             break;
           case 'explosion': {
+            if (e.kind !== 'lastShot') break; // the dynamite's big blast: explosions.ts
             // Card "Ultimo colpo": a burst of fire puffs in every direction
             // (a ring, tilted up), sparks, and the flash lighting the walls.
             point.set(e.x, e.y, e.z);

@@ -1,6 +1,8 @@
-// Draws the dynamite sticks (sim/dynamite.ts). PLACEHOLDER for now: a red
-// cylinder with a little fuse that spits sparks. The real model, the hiss of
-// the fuse and the "tonk" of the bounces come in a later step.
+// Draws the dynamite sticks (sim/dynamite.ts): a red paper stick in pixel
+// art with a fuse that GETS SHORTER as it burns, so you can read how much
+// time is left (the simulation tells us fuseTicks / fuseTotal). The tip of
+// the fuse glows and spits sparks; you HEAR it hiss (a looping sound that
+// follows the stick) and "tonk" on every bounce.
 //
 // The simulation only knows a small box that flies and bounces: the spin is
 // invented here, from how far the stick moved (like a wheel: angle = distance
@@ -8,35 +10,109 @@
 import * as THREE from 'three';
 import type { Dynamite } from '../sim/dynamite';
 import { DYNAMITE_RADIUS } from '../sim/dynamite';
+import type { SimEvent } from '../sim/events';
+import { playDynamiteBounce, playFuseHiss, type LoopingSound } from '../audio/sfx';
 import { spawnSparks } from './particles';
+import { soundAt } from './soundPosition';
 
 /** Size of the stick, meters (a bit bigger than a real one: it must be readable in flight). */
-const STICK_LENGTH = 0.26;
-const STICK_RADIUS = 0.04;
+const STICK_LENGTH = 0.28;
+const STICK_RADIUS = 0.045;
+/** The fuse when it's just lit, meters. */
+const FUSE_LENGTH = 0.12;
 /** Tumbling speed: radians per meter traveled (in flight it spins faster than it would roll). */
 const SPIN_PER_METER = 9;
 /** Sparks from the fuse: on average one every this many seconds. */
-const SPARK_EVERY = 0.05;
+const SPARK_EVERY = 0.03;
+/** Glow of the burning tip (HDR: above 1 it blooms). */
+const EMBER_GLOW = 6;
+/** How much the paper lights itself (0 = only the scene's lights): it must stand out on the ground. */
+const PAPER_SELF_LIGHT = 0.35;
+/** Bounce sound: this speed into the surface (m/s) is a full-strength "tonk". */
+const BOUNCE_LOUD = 10;
+
+/** Texture: pixels around the stick (U) and along it (V). */
+const TEX_AROUND = 8;
+const TEX_ALONG = 24;
+/** Palette: red paper (light, base, shadow), the darker paper folds, the label, the caps. */
+const C = {
+  light: '#e0483a',
+  red: '#b3261e',
+  shadow: '#741612',
+  fold: '#5a100c',
+  label: '#d8c48e',
+  ink: '#2a1a10',
+  cap: '#3a2a20',
+};
 
 export interface DynamiteRenderer {
-  update(sticks: Dynamite[], alpha: number, dt: number): void;
+  update(sticks: Dynamite[], events: SimEvent[], camera: THREE.Camera, alpha: number, dt: number): void;
 }
 
 interface StickView {
   mesh: THREE.Group;
-  /** Where the tip of the fuse is, in the stick's own coordinates. */
-  fuse: THREE.Object3D;
+  /** The fuse (a thin cylinder) and its burning tip: they shrink toward the stick. */
+  fuse: THREE.Mesh;
+  ember: THREE.Mesh;
+  hiss: LoopingSound;
+}
+
+/**
+ * The stick's wrapper, painted pixel by pixel on a tiny canvas: a cylinder's
+ * texture goes AROUND it horizontally (U) and ALONG it vertically (V). So a
+ * horizontal stripe in the image is a ring around the stick, a vertical one
+ * a line along it: the highlight and the shadow are columns (always on the
+ * same side of the paper: it's painted, it doesn't follow the real light,
+ * like every pixel-art sprite).
+ */
+function paperTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = TEX_AROUND;
+  canvas.height = TEX_ALONG;
+  const g = canvas.getContext('2d')!;
+  const px = (x: number, y: number, color: string) => {
+    g.fillStyle = color;
+    g.fillRect(x, y, 1, 1);
+  };
+  for (let y = 0; y < TEX_ALONG; y++) {
+    for (let x = 0; x < TEX_AROUND; x++) {
+      let color = C.red;
+      if (x === 1 || x === 2) color = C.light; // the highlight down the paper
+      if (x === 6 || x === 7) color = C.shadow;
+      // The paper folded over at both ends: darker rings.
+      if (y < 2 || y >= TEX_ALONG - 2) color = x < 4 ? C.fold : C.shadow;
+      px(x, y, color);
+    }
+  }
+  // A paper label in the middle, with a few marks of ink (the "DYNAMITE" print, too small to read).
+  for (let y = 9; y < 15; y++) for (let x = 0; x < 5; x++) px(x, y, C.label);
+  for (const [x, y] of [[1, 10], [2, 10], [3, 10], [1, 12], [3, 12], [2, 13]]) px(x, y, C.ink);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.NearestFilter;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
 }
 
 export function createDynamiteRenderer(scene: THREE.Scene): DynamiteRenderer {
   // Shared by every stick: one geometry and one material each, not one per stick.
   const body = new THREE.CylinderGeometry(STICK_RADIUS, STICK_RADIUS, STICK_LENGTH, 8);
   body.rotateZ(Math.PI / 2); // lying along X
-  const red = new THREE.MeshLambertMaterial({ color: 0xb3261e, emissive: 0x3a0804 });
-  const fuseGeometry = new THREE.CylinderGeometry(0.006, 0.006, 0.07, 4);
-  const fuseMaterial = new THREE.MeshBasicMaterial({ color: 0xd8c08a });
-  const ember = new THREE.MeshBasicMaterial({ color: 0xffd060 });
-  const emberGeometry = new THREE.SphereGeometry(0.018, 6, 4);
+  // A cylinder has 3 material groups: the side, the top cap, the bottom cap.
+  // A bit of self-light (the texture as emissive map): in the shade of a
+  // wall a plain red stick would turn brown and vanish against the dirt.
+  const wrapper = paperTexture();
+  const paper = new THREE.MeshLambertMaterial({ map: wrapper, emissive: 0xffffff, emissiveMap: wrapper, emissiveIntensity: PAPER_SELF_LIGHT });
+  const cap = new THREE.MeshLambertMaterial({ color: C.cap });
+  const materials = [paper, cap, cap];
+  // The fuse: a cylinder 1 m long with its base at the origin, scaled to the
+  // length left (scale.x): shrinking it, the burnt end comes toward the stick.
+  const fuseGeometry = new THREE.CylinderGeometry(0.007, 0.007, 1, 4);
+  fuseGeometry.translate(0, 0.5, 0);
+  fuseGeometry.rotateZ(-Math.PI / 2); // along +X
+  const fuseMaterial = new THREE.MeshLambertMaterial({ color: 0xcdb27a });
+  const emberMaterial = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffc050).multiplyScalar(EMBER_GLOW), fog: false });
+  const emberGeometry = new THREE.IcosahedronGeometry(0.022, 0);
 
   const views = new Map<number, StickView>();
   const point = new THREE.Vector3();
@@ -44,31 +120,33 @@ export function createDynamiteRenderer(scene: THREE.Scene): DynamiteRenderer {
   const axis = new THREE.Vector3();
   const spin = new THREE.Quaternion();
 
-  function createView(): StickView {
+  function createView(d: Dynamite, camera: THREE.Camera): StickView {
     const mesh = new THREE.Group();
-    mesh.add(new THREE.Mesh(body, red));
-    // The fuse sticks out of one end, along the stick.
-    const fuseMesh = new THREE.Mesh(fuseGeometry, fuseMaterial);
-    fuseMesh.rotation.z = Math.PI / 2;
-    fuseMesh.position.x = STICK_LENGTH / 2 + 0.035;
-    mesh.add(fuseMesh);
-    const fuse = new THREE.Mesh(emberGeometry, ember);
-    fuse.position.x = STICK_LENGTH / 2 + 0.07;
+    mesh.add(new THREE.Mesh(body, materials));
+    const fuse = new THREE.Mesh(fuseGeometry, fuseMaterial);
+    fuse.position.x = STICK_LENGTH / 2;
     mesh.add(fuse);
+    const ember = new THREE.Mesh(emberGeometry, emberMaterial);
+    mesh.add(ember);
     // Start at a random angle, so two sticks don't look identical.
     mesh.rotation.set(Math.random() * 6, Math.random() * 6, 0);
+    mesh.position.set(d.x, d.y + DYNAMITE_RADIUS, d.z);
     scene.add(mesh);
-    return { mesh, fuse };
+    return { mesh, fuse, ember, hiss: playFuseHiss(soundAt(camera, d.x, d.y, d.z)) };
   }
 
   return {
-    update(sticks, alpha, dt) {
+    update(sticks, events, camera, alpha, dt) {
+      for (const e of events) {
+        if (e.type === 'dynamiteBounce') playDynamiteBounce(soundAt(camera, e.x, e.y, e.z), e.speed / BOUNCE_LOUD);
+      }
+
       const alive = new Set<number>();
       for (const d of sticks) {
         alive.add(d.id);
         let v = views.get(d.id);
         if (!v) {
-          v = createView();
+          v = createView(d, camera);
           views.set(d.id, v);
         }
         // Between the previous tick and this one (alpha), like everything else.
@@ -80,22 +158,29 @@ export function createDynamiteRenderer(scene: THREE.Scene): DynamiteRenderer {
         // Spin around the axis perpendicular to the motion and to "up" (the
         // cross product of the two): that's how a rolling thing turns.
         axis.set(d.vz, 0, -d.vx);
-        if (axis.lengthSq() > 1e-6 && moved < 2) {
+        if (axis.lengthSq() > 1e-6) {
           axis.normalize();
           spin.setFromAxisAngle(axis, moved * SPIN_PER_METER);
           v.mesh.quaternion.premultiply(spin);
         }
         v.mesh.position.set(x, y, z);
-        // The fuse's ember flickers and spits sparks.
-        v.fuse.scale.setScalar(0.7 + Math.random() * 0.6);
+
+        // The fuse: as long as the time left. The ember sits on its end and flickers.
+        const left = Math.max(0, d.fuseTicks / d.fuseTotal);
+        const length = Math.max(0.005, FUSE_LENGTH * left);
+        v.fuse.scale.x = length;
+        v.ember.position.x = STICK_LENGTH / 2 + length;
+        v.ember.scale.setScalar(0.7 + Math.random() * 0.7);
         if (Math.random() < dt / SPARK_EVERY) {
-          v.fuse.getWorldPosition(point);
+          v.ember.getWorldPosition(point);
           spawnSparks(point, up, 1);
         }
+        v.hiss.move(soundAt(camera, x, y, z));
       }
       for (const [id, v] of views) {
         if (alive.has(id)) continue;
         scene.remove(v.mesh);
+        v.hiss.stop();
         views.delete(id);
       }
     },

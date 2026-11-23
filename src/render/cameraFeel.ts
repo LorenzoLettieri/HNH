@@ -54,6 +54,8 @@ export const cameraFeelSettings = {
   hurtShake: 1.5,
   /** ...and how fast it dies out (higher = shorter). */
   hurtShakeDecay: 10,
+  /** A dynamite blast right next to you: the view rattles this much, degrees (less farther away; same decay). */
+  blastShake: 2.5,
   /**
    * The SHOT's punch (shotKick): the spring that brings the view back after a
    * shot, stiffness and damping ratio (<1 = it dips past the rest and back),
@@ -123,6 +125,16 @@ export function hurtKick(angle: number, damage: number): void {
   snap.rollVel += Math.sin(angle) * v;
   // Shake: the snap is one smooth movement, the shake adds the "rattle".
   shake = Math.max(shake, THREE.MathUtils.degToRad(s.hurtShake) * Math.min(2, damage / s.hurtKickDamage));
+}
+
+/**
+ * A big explosion nearby: the view RATTLES (the same jitter as a hit, no
+ * direction). `amount` 0..1 (1 = right on top of you); it doesn't weaken a
+ * stronger shake already going on.
+ */
+export function blastShake(amount: number): void {
+  const s = cameraFeelSettings;
+  shake = Math.max(shake, THREE.MathUtils.degToRad(s.blastShake) * Math.min(1, amount));
 }
 
 /**

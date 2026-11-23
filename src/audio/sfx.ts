@@ -1278,3 +1278,108 @@ export function setAudioPaused(paused: boolean): void {
   if (paused) void ctx.suspend();
   else void ctx.resume();
 }
+
+/**
+ * A dynamite stick blows up: the biggest sound in the game, in layers (like
+ * every explosion in film sound design):
+ * - the CRACK: a very short burst of high noise, the shock front;
+ * - the BOOM: a sine falling from 90 to 28 Hz over more than a second, the
+ *   "chest" of the blast (you feel it more than you hear it);
+ * - the ROAR: noise through a low-pass filter that closes from 2.5 kHz to
+ *   80 Hz, the fire and the air rushing out;
+ * - the RUMBLE: a long, very low tail, the echo off the buildings;
+ * - the DEBRIS: little clatters falling back down, at random moments.
+ * `where` is the usual position (volume and panning); a blast is loud, so
+ * it gets a boost and stays audible from far away.
+ */
+export function playDynamiteBlast(where: Where): void {
+  const out = placeSound({ volume: Math.min(1, where.volume * 1.6), pan: where.pan * 0.7 });
+  if (!out) return;
+  noiseBurst({ out, duration: 0.09, volume: 0.9, filter: 'highpass', frequency: 2200 }); // crack
+  thump({ out, duration: 1.4, volume: 1.3, from: 90, to: 28 }); // boom
+  thump({ out, duration: 0.25, volume: 0.6, from: 220, to: 60 }); // punch
+  noiseBurst({ out, duration: 1.6, volume: 1.0, filter: 'lowpass', frequency: 2500, frequencyEnd: 80 }); // roar
+  noiseBurst({ out, start: 0.12, duration: 2.6, volume: 0.45, filter: 'lowpass', frequency: 260, frequencyEnd: 40 }); // rumble
+  for (let i = 0; i < 7; i++) {
+    // Debris: small, bright "tk" sounds, scattered in time.
+    const start = 0.35 + Math.random() * 1.1;
+    noiseBurst({ out, start, duration: 0.05, volume: 0.12 + Math.random() * 0.1, filter: 'bandpass', frequency: 1500 + Math.random() * 2000, q: 4 });
+  }
+}
+
+/**
+ * A stick hits the floor or a wall: a hollow wooden "tonk" (a cardboard
+ * tube full of sawdust and nitroglycerin...). `strength` 0..1 = how hard.
+ */
+export function playDynamiteBounce(where: Where, strength: number): void {
+  const s = Math.max(0.15, Math.min(1, strength));
+  const out = placeSound({ volume: where.volume * s, pan: where.pan });
+  if (!out) return;
+  const pitch = 0.9 + Math.random() * 0.25; // every bounce a bit different
+  thump({ out, duration: 0.09, volume: 0.7, from: 320 * pitch, to: 140 * pitch });
+  noiseBurst({ out, duration: 0.05, volume: 0.4, filter: 'bandpass', frequency: 900 * pitch, q: 3 });
+}
+
+/** A sound that keeps playing until stopped, and follows something that moves. */
+export interface LoopingSound {
+  /** Where it is now (call every frame). */
+  move(where: Where): void;
+  stop(): void;
+}
+
+/**
+ * The burning fuse: a continuous HISS (looped noise, band-passed high) that
+ * crackles (its volume shaken by a fast, irregular wobble: two oscillators
+ * at unrelated rates, 13 and 31 Hz, added to the gain). Unlike the one-shot
+ * sounds it lives as long as the stick: `move` updates volume and panning
+ * every frame (setTargetAtTime: a smooth glide, a jump would click), `stop`
+ * fades it out when the stick blows up.
+ */
+export function playFuseHiss(where: Where): LoopingSound {
+  if (!ctx) return { move: () => {}, stop: () => {} };
+  const audio = ctx;
+  const t0 = audio.currentTime;
+  const src = audio.createBufferSource();
+  src.buffer = noiseBuffer;
+  src.loop = true;
+  const filter = audio.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.value = 4200;
+  filter.Q.value = 0.9;
+  const crackle = audio.createGain();
+  crackle.gain.value = 0.06;
+  const wobbles: OscillatorNode[] = [];
+  for (const [rate, depth] of [[13, 0.03], [31, 0.025]]) {
+    const lfo = audio.createOscillator();
+    lfo.type = 'square'; // on/off: it sputters instead of swelling
+    lfo.frequency.value = rate;
+    const amount = audio.createGain();
+    amount.gain.value = depth;
+    lfo.connect(amount).connect(crackle.gain);
+    lfo.start(t0);
+    wobbles.push(lfo);
+  }
+  const volume = audio.createGain();
+  volume.gain.value = where.volume;
+  const panner = audio.createStereoPanner();
+  panner.pan.value = Math.max(-1, Math.min(1, where.pan));
+  src.connect(filter).connect(crackle).connect(volume).connect(panner).connect(world);
+  src.start(t0, Math.random() * 0.5);
+  let stopped = false;
+  return {
+    move(w) {
+      if (stopped) return;
+      const now = audio.currentTime;
+      volume.gain.setTargetAtTime(w.volume, now, 0.03);
+      panner.pan.setTargetAtTime(Math.max(-1, Math.min(1, w.pan)), now, 0.03);
+    },
+    stop() {
+      if (stopped) return;
+      stopped = true;
+      const now = audio.currentTime;
+      volume.gain.setTargetAtTime(0, now, 0.02);
+      src.stop(now + 0.15);
+      for (const o of wobbles) o.stop(now + 0.15);
+    },
+  };
+}

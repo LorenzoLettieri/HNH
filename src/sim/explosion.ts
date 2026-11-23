@@ -10,7 +10,7 @@
 // - nothing through walls: a line from the blast to the enemy's center must
 //   be free of level boxes (hiding behind a wall works, for them and for you).
 import { tuning } from './config';
-import type { HitSource, SimEvent } from './events';
+import type { ExplosionKind, HitSource, SimEvent } from './events';
 import { hitBox, isAlive, isEnemy, type Entity } from './entities';
 import { applyGunDamage, hitCenter, lineFree } from './gunDamage';
 import { knockBack } from './kick';
@@ -18,6 +18,8 @@ import { currentHeight, type PlayerState } from './player';
 import type { Box, World } from './world';
 
 export interface Blast {
+  /** Which one: only the renderer cares (how big the effect, which sound). */
+  kind: ExplosionKind;
   /** Meters. */
   radius: number;
   /** Damage at the center. */
@@ -38,6 +40,7 @@ export interface Blast {
 /** "Ultimo colpo": the same damage in the whole radius, no push. */
 export function lastShotBlast(): Blast {
   return {
+    kind: 'lastShot',
     radius: tuning.lastShotRadius,
     damage: tuning.lastShotDamage,
     edge: 1,
@@ -52,6 +55,7 @@ export function lastShotBlast(): Blast {
 /** A dynamite stick. */
 export function dynamiteBlast(): Blast {
   return {
+    kind: 'dynamite',
     radius: tuning.dynamiteRadius,
     damage: tuning.dynamiteDamage,
     edge: tuning.dynamiteEdgeDamage,
@@ -76,7 +80,7 @@ export function explode(
   entities: Entity[],
   events: SimEvent[],
 ): void {
-  events.push({ type: 'explosion', x: at.x, y: at.y, z: at.z, radius: blast.radius });
+  events.push({ type: 'explosion', kind: blast.kind, x: at.x, y: at.y, z: at.z, radius: blast.radius });
   for (const e of entities) {
     if (!isEnemy(e) || !isAlive(e)) continue;
     const d = distanceToBox(at, hitBox(e));

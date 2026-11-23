@@ -303,13 +303,51 @@ export function spawnSnort(point: THREE.Vector3, direction: THREE.Vector3, count
   snort.spawn(point, direction, count);
 }
 
+/**
+ * A dynamite blast: big balls of fire flung in every direction (additive,
+ * very bright: they bloom) and slow, dark SMOKE that rises and lingers after
+ * the fire is gone. Smoke is opaque (normal blending): it hides what's
+ * behind it, the fire adds light.
+ */
+const blastFire = new Burst({
+  max: 300,
+  life: 0.55,
+  size: 0.45,
+  speed: 7,
+  gravity: -4, // hot: it rises
+  color: 0xff8a30,
+  brightness: 5,
+  additive: true,
+  spread: 2.4,
+});
+
+const smoke = new Burst({
+  max: 300,
+  life: 2.2,
+  size: 0.9,
+  speed: 2.2,
+  gravity: -1.5,
+  color: 0x2a2220,
+  brightness: 1,
+  additive: false,
+  spread: 2.2,
+});
+
+export function spawnBlastFire(point: THREE.Vector3, direction: THREE.Vector3, count: number): void {
+  blastFire.spawn(point, direction, count);
+}
+
+export function spawnSmoke(point: THREE.Vector3, direction: THREE.Vector3, count: number): void {
+  smoke.spawn(point, direction, count);
+}
+
 export function createParticles(
   scene: THREE.Scene,
   levelFires: FireSource[],
   levelVents: THREE.Vector3[] = [],
 ): void {
   vents = levelVents;
-  scene.add(steam.points, sparks.layer.points, blood.layer.points, dirt.layer.points, snort.layer.points);
+  scene.add(steam.points, sparks.layer.points, blood.layer.points, dirt.layer.points, snort.layer.points, blastFire.layer.points, smoke.layer.points);
   steam.material.uniforms.color.value.set(0xe8dccc);
   fires = levelFires;
   totalEmberRate = fires.reduce((sum, f) => sum + f.emberRate, 0);
@@ -357,6 +395,7 @@ export function updateParticles(
   steam.material.uniforms.pixelsPerMeterAt1m.value = ppm;
   sparks.layer.material.uniforms.pixelsPerMeterAt1m.value = ppm;
   blood.layer.material.uniforms.pixelsPerMeterAt1m.value = ppm;
+  for (const b of [dirt, snort, blastFire, smoke]) b.layer.material.uniforms.pixelsPerMeterAt1m.value = ppm;
 
   updateDust(dt, time, camera.position);
   updateEmbers(dt, time);
@@ -365,6 +404,8 @@ export function updateParticles(
   blood.update(dt);
   dirt.update(dt);
   snort.update(dt);
+  blastFire.update(dt);
+  smoke.update(dt);
 }
 
 function updateDust(dt: number, time: number, cam: THREE.Vector3): void {

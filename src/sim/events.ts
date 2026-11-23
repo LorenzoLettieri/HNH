@@ -15,6 +15,9 @@ import type { Stats } from './stats';
 /** What hit an enemy ('hit' events). */
 export type HitSource = WeaponId | MeleeTool | 'dynamite';
 
+/** Which explosion (explosion.ts): the card Ultimo colpo or a dynamite stick. */
+export type ExplosionKind = 'lastShot' | 'dynamite';
+
 export type SimEvent =
   /** A weapon fired (sound, flash, recoil). For the shotgun, `barrel` is 0 = right, 1 = left. */
   /** `seconds` = time before it can fire again (the carbine's lever cycle follows it: cards can change it). */
@@ -62,7 +65,10 @@ export type SimEvent =
   /** Card "Ricochet": a bullet bounced off a head toward another enemy (the ptiiing). From where. */
   | { type: 'ricochet'; x: number; y: number; z: number }
   /** Card "Ultimo colpo": the last round exploded. Where, and how big. */
-  | { type: 'explosion'; x: number; y: number; z: number; radius: number }
+  /** Something blew up (kind: what, the renderer draws them differently: a small pop or a big blast). */
+  | { type: 'explosion'; kind: ExplosionKind; x: number; y: number; z: number; radius: number }
+  /** A dynamite stick hit the floor or a wall hard enough to be heard (speed into the surface, m/s). */
+  | { type: 'dynamiteBounce'; x: number; y: number; z: number; speed: number }
   /** You jumped off the ground. `hop` = right after landing (bunny hop), `slide` = out of a slide. */
   | { type: 'jump'; hop: boolean; slide: boolean }
   /** You kicked off a wall. `left` = wall jumps still available before touching the ground. */

@@ -37,6 +37,9 @@ const MAX_STEP = DYNAMITE_RADIUS * 2;
 /** How far in front of your eyes a stick is born, meters (not inside your head). */
 const SPAWN_AHEAD = 0.4;
 
+/** Below this speed into a surface (m/s) a hit makes no sound (rolling, resting). */
+const BOUNCE_SOUND_MIN = 1.5;
+
 export interface Dynamite {
   /** Unique (shares the counter with the entities): the renderer keeps one mesh per id. */
   id: number;
@@ -54,6 +57,8 @@ export interface Dynamite {
   vz: number;
   /** Ticks before it blows up. */
   fuseTicks: number;
+  /** The fuse's whole length in ticks (the renderer shows how much is left: fuseTicks / fuseTotal). */
+  fuseTotal: number;
   /** Resting on the floor (it rolls instead of bouncing). */
   rolling: boolean;
 }
@@ -90,6 +95,7 @@ export function throwDynamite(p: PlayerState, world: World, nextId: number): Dyn
     vy: dy * s + tuning.dynamiteLift + p.vy * k,
     vz: dz * s + p.vz * k,
     fuseTicks: Math.round(tuning.dynamiteFuse * TICK_RATE),
+    fuseTotal: Math.round(tuning.dynamiteFuse * TICK_RATE),
     rolling: false,
   };
 }
@@ -128,12 +134,18 @@ export function stepDynamite(
     // Sub-steps: as many as needed so that none moves farther than MAX_STEP.
     const speed = Math.hypot(d.vx, d.vy, d.vz) + tuning.gravity * dt;
     const steps = Math.max(1, Math.ceil((speed * dt) / MAX_STEP));
+    let impact = 0; // the hardest hit against the level in this tick (for the sound)
     for (let i = 0; i < steps && !boom; i++) {
       const ax = d.x;
       const ay = d.y + r;
       const az = d.z;
-      move(d, world, dt / steps);
+      impact = Math.max(impact, move(d, world, dt / steps));
       boom = touches(ax, ay, az, d, targets);
+    }
+    // One "tonk" per tick at most, and only for real hits: rolling makes
+    // tiny impacts on every tick, and a sound for each would be a buzz.
+    if (!boom && impact > BOUNCE_SOUND_MIN) {
+      events.push({ type: 'dynamiteBounce', x: d.x, y: d.y + r, z: d.z, speed: impact });
     }
     if (boom) {
       // The center of the box, not its bottom: that's where the powder is.
@@ -179,8 +191,9 @@ function touches(ax: number, ay: number, az: number, d: Dynamite, targets: Box[]
  * of restitution", the same idea as the shovel's bounce in shovelView.ts),
  * while the other two axes lose a bit to the friction of the impact.
  * Boxes only have faces along the axes, so "which axis" = "which face".
+ * Returns the speed it hit a surface with (0 = it touched nothing): the sound of the bounce.
  */
-function move(d: Dynamite, world: World, dt: number): void {
+function move(d: Dynamite, world: World, dt: number): number {
   d.vy -= tuning.gravity * dt;
   const vx = d.vx;
   const vy = d.vy;
@@ -188,22 +201,29 @@ function move(d: Dynamite, world: World, dt: number): void {
   const { landed } = moveAndCollide(d, DYNAMITE_RADIUS, DYNAMITE_RADIUS * 2, world.boxes, dt);
   const bounce = tuning.dynamiteBounce;
   const grip = tuning.dynamiteBounceGrip;
+  let impact = 0;
 
   // Walls (X and Z faces): back out, the same way on every hit.
   if (vx !== 0 && d.vx === 0) {
+    impact = Math.max(impact, Math.abs(vx));
     d.vx = -vx * bounce;
     d.vy *= grip;
     d.vz *= grip;
   }
   if (vz !== 0 && d.vz === 0) {
+    impact = Math.max(impact, Math.abs(vz));
     d.vz = -vz * bounce;
     d.vy *= grip;
     d.vx *= grip;
   }
   // Ceiling: back down.
-  if (vy > 0 && d.vy === 0) d.vy = -vy * bounce;
+  if (vy > 0 && d.vy === 0) {
+    impact = Math.max(impact, vy);
+    d.vy = -vy * bounce;
+  }
 
   if (landed) {
+    impact = Math.max(impact, -vy);
     if (-vy > tuning.dynamiteBounceMinSpeed) {
       // Hit the floor hard: bounce up, and lose some speed along the floor.
       d.vy = -vy * bounce;
@@ -230,4 +250,5 @@ function move(d: Dynamite, world: World, dt: number): void {
       d.vz *= slower / h;
     }
   }
+  return impact;
 }
