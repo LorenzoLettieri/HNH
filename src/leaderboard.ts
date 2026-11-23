@@ -5,6 +5,8 @@
 //   submitScore() → POST /scores, answers with where the player stands
 //   fetchTop()    → GET  /scores?limit=N, ONE row per player: their best game
 //   fetchPlayer() → GET  /scores/player?name=X, a player's best with its position
+//   renameScore() → PATCH /scores/:id, the game just played under a new name
+//                   (with the token the submit answered: only you can rename it)
 // A player = a name (upper/lower case don't matter): no accounts, so whoever
 // uses your nickname plays as you. Fine among friends.
 // Both can fail (offline, server down, too slow): callers must cope, and the
@@ -40,9 +42,17 @@ export interface Placement {
   total: number;
 }
 
-/** The answer to a submit: where you stand now, and whether this game is your new best. */
-export interface SubmitResult extends Placement {
+/** Where you stand after a submit or a rename, and whether this game is your new best. */
+export interface RankResult extends Placement {
   personalBest: boolean;
+}
+
+/** The answer to a submit: the placement, plus the "receipt" to rename this game later. */
+export interface SubmitResult extends RankResult {
+  /** The game's id on the server. */
+  id: number;
+  /** Proof that you sent it (an HMAC signature, see server/src/index.ts); null = the server can't rename. */
+  token: string | null;
 }
 /** Longest name accepted (the server will enforce the same). */
 export const NAME_MAX_LENGTH = 16;
@@ -72,6 +82,26 @@ export function samePlayer(a: string, b: string): boolean {
  */
 export async function submitScore(run: ScoreSubmit): Promise<SubmitResult | null> {
   const answer = (await request('POST', '/scores', { ...run, name: cleanName(run.name) })) as Partial<SubmitResult>;
+  const rank = toRankResult(answer);
+  if (!rank) return null;
+  // An older server doesn't send id/token: the game just can't be renamed.
+  const id = typeof answer.id === 'number' ? answer.id : 0;
+  return { ...rank, id, token: id > 0 && typeof answer.token === 'string' ? answer.token : null };
+}
+
+/**
+ * Moves a game just sent to a new name (the end screen's name box). Needs the
+ * receipt of submitScore. Resolves to where the NEW name stands, or null if
+ * the server didn't say; rejects if it refuses (bad token, too late) or can't be reached.
+ */
+export async function renameScore(game: SubmitResult, name: string): Promise<RankResult | null> {
+  if (!game.token) throw new Error('leaderboard: this game has no rename token');
+  const answer = (await request('PATCH', `/scores/${game.id}`, { name: cleanName(name), token: game.token })) as Partial<RankResult>;
+  return toRankResult(answer);
+}
+
+/** The placement fields of an answer, checked (the server could be old or broken). */
+function toRankResult(answer: Partial<RankResult>): RankResult | null {
   if (typeof answer.rank !== 'number' || typeof answer.total !== 'number') return null;
   return { rank: answer.rank, total: answer.total, personalBest: answer.personalBest === true };
 }
@@ -93,7 +123,7 @@ export async function fetchPlayer(name: string): Promise<ScoreEntry & Placement>
  * or 500 is still a "successful" fetch, so `ok` (status 200–299) is checked
  * by hand. AbortSignal.timeout = the request is cancelled after TIMEOUT_MS.
  */
-async function request(method: 'GET' | 'POST', path: string, body?: unknown): Promise<unknown> {
+async function request(method: 'GET' | 'POST' | 'PATCH', path: string, body?: unknown): Promise<unknown> {
   const response = await fetch(`${LEADERBOARD_URL}${path}`, {
     method,
     headers: body ? { 'Content-Type': 'application/json' } : undefined,

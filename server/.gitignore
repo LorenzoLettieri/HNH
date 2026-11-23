@@ -1,2 +1,4 @@
 node_modules
 .wrangler
+# Local secrets for `npm run dev` (like Laravel's .env): never in the repo
+.dev.vars

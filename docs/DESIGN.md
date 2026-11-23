@@ -663,7 +663,7 @@ nel menu (pagina "Classifica") e il piazzamento sulla schermata di morte.
   però un seed per partita: ora dopo la morte la partita continua con lo stesso generatore).
 - Passi: (1) [FATTO] classifica finta nel `localStorage` dietro `submitScore`/`fetchTop`
   (`src/leaderboard.ts`), nome nel menu, piazzamento alla morte; (2) [FATTO] Worker + D1 (`server/`);
-  (3) [FATTO] `fetch` veri al posto dei finti; (4) [FATTO] partite di prova fuori classifica (`fairPlay.ts`), le tue righe evidenziate e il tuo piazzamento anche oltre il 10°, **schermata di fine partita** alla CoD Zombies con statistiche e classifica (`endScreen.ts`, `stats.ts`). **Una riga per nome** (il record; si salvano comunque tutte le partite). Prossimo, se serve: limite di invii per IP sul server.
+  (3) [FATTO] `fetch` veri al posto dei finti; (4) [FATTO] partite di prova fuori classifica (`fairPlay.ts`), le tue righe evidenziate e il tuo piazzamento anche oltre il 10°, **schermata di fine partita** alla CoD Zombies con statistiche e classifica (`endScreen.ts`, `stats.ts`). **Una riga per nome** (il record; si salvano comunque tutte le partite). **Chi non sceglie un nome ne riceve uno western a caso** ("Randy Coffin", `randomName.ts`), salvato e fisso; il nome si cambia anche **dalla schermata di fine partita**, e la partita appena giocata passa al nome nuovo (ricevuta firmata dal server, `PATCH /scores/:id`). Prossimo, se serve: limite di invii per IP sul server.
 
 ### Bersagli d'acciaio [DECISO: tenerli]
 I bersagli di prova (piatti d'acciaio su palo, 3 colpi, si rialzano) restano: serviranno per un

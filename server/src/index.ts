@@ -3,12 +3,15 @@
 // A Worker is ONE function, fetch(request) → response, that Cloudflare runs
 // on its machines for every HTTP request. No server to keep running: like a
 // Laravel app where public/index.php is all there is, and the routes are the
-// `if`s below. Three routes:
-//   GET  /scores?limit=25        → the leaderboard: ONE row per player (name),
+// `if`s below. Four routes:
+//   GET   /scores?limit=25       → the leaderboard: ONE row per player (name),
 //                                  their best game, best first (limit 1..50, default 10)
-//   GET  /scores/player?name=X   → that player's best game, with its position: { ..., rank, total }
-//   POST /scores                 → { name, score, wave, kills } → { rank, total, personalBest }
-//                                  (rank of the player's best, which is this game if personalBest)
+//   GET   /scores/player?name=X  → that player's best game, with its position: { ..., rank, total }
+//   POST  /scores                → { name, score, wave, kills } → { rank, total, personalBest, id, token }
+//                                  (rank of the player's best, which is this game if personalBest;
+//                                  id + token = the "receipt" that lets you rename this game)
+//   PATCH /scores/:id            → { name, token } → same answer as POST, for the new name
+//                                  (the end screen: "that was me, not Randy Coffin")
 // Every game is stored (the table keeps the whole history); the "one row per
 // player" is decided when reading, by the queries below.
 //
@@ -20,6 +23,12 @@
 interface Env {
   DB: D1Database;
   ALLOWED_ORIGINS: string;
+  /**
+   * The key that signs the rename receipts (see sign()). A SECRET, so not in
+   * wrangler.jsonc (that's in the repo): set with `npx wrangler secret put
+   * RENAME_SECRET`, locally in server/.dev.vars. Missing = renaming is off.
+   */
+  RENAME_SECRET?: string;
 }
 
 // Same rules as src/leaderboard.ts in the game (the server is the one that counts).
@@ -36,6 +45,8 @@ const MAX_WAVE = 1000;
 const MAX_KILLS = 1_000_000;
 /** Longest body accepted: a valid one is ~70 bytes. */
 const MAX_BODY_BYTES = 1024;
+/** A game can be renamed up to this long after it ended (the end screen is for right after a game). */
+const RENAME_WINDOW_MS = 30 * 60 * 1000;
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -54,9 +65,12 @@ export default {
         const limit = Number.isInteger(asked) && asked >= 1 ? Math.min(asked, MAX_LIMIT) : DEFAULT_LIMIT;
         return json(await top(env.DB, limit), 200, cors);
       }
-      if (request.method === 'POST') return submit(request, env.DB, cors);
+      if (request.method === 'POST') return submit(request, env, cors);
       return json({ error: 'method not allowed' }, 405, cors);
     }
+    // /scores/123: the route parameter of Route::patch('/scores/{id}'), by hand with a regex.
+    const game = /^\/scores\/(\d+)$/.exec(url.pathname);
+    if (game && request.method === 'PATCH') return rename(request, env, Number(game[1]), cors);
     if (url.pathname === '/scores/player' && request.method === 'GET') {
       const best = await playerBest(env.DB, cleanName(url.searchParams.get('name') ?? ''));
       return best ? json({ ...best, ...(await position(env.DB, best)) }, 200, cors) : json({ error: 'not found' }, 404, cors);
@@ -118,18 +132,29 @@ async function position(db: D1Database, best: Row): Promise<{ rank: number; tota
   return { rank: ahead.results[0].c + 1, total: all.results[0].c };
 }
 
-async function submit(request: Request, db: D1Database, cors: Headers): Promise<Response> {
+/** The JSON body as an object of unknown fields, or null if it's too big or not JSON. */
+async function readBody(request: Request): Promise<Record<string, unknown> | null> {
   const text = await request.text();
-  if (text.length > MAX_BODY_BYTES) return json({ error: 'too large' }, 413, cors);
-  let body: unknown;
+  if (text.length > MAX_BODY_BYTES) return null;
   try {
-    body = JSON.parse(text);
+    const body: unknown = JSON.parse(text);
+    return typeof body === 'object' && body !== null ? (body as Record<string, unknown>) : {};
   } catch {
-    return json({ error: 'invalid json' }, 400, cors);
+    return null;
   }
+}
+
+/** Where `name` stands now and whether game `id` is their best: the answer of POST and PATCH. */
+async function placement(db: D1Database, name: string, id: number) {
+  const best = (await playerBest(db, name))!;
+  return { ...(await position(db, best)), personalBest: best.id === id };
+}
+
+async function submit(request: Request, env: Env, cors: Headers): Promise<Response> {
   // Validation, like a Laravel FormRequest: every field checked, nothing
   // trusted. `as` only tells TypeScript the shape: the checks are the real thing.
-  const b = (typeof body === 'object' && body !== null ? body : {}) as Record<string, unknown>;
+  const b = await readBody(request);
+  if (!b) return json({ error: 'invalid body' }, 400, cors);
   const score = integer(b.score, 1, MAX_SCORE);
   const wave = integer(b.wave, 0, MAX_WAVE);
   const kills = integer(b.kills, 0, MAX_KILLS);
@@ -142,14 +167,70 @@ async function submit(request: Request, db: D1Database, cors: Headers): Promise<
   // SQL text, so a name like "'; DROP TABLE scores;--" stays just a name
   // (the same reason Eloquent/PDO bind parameters). RETURNING id = SQLite
   // gives back the new row's id in the same query.
-  const row = await db
+  const { id } = (await env.DB
     .prepare('INSERT INTO scores (name, score, wave, kills, created_at) VALUES (?, ?, ?, ?, ?) RETURNING id')
     .bind(name, score, wave, kills, Date.now())
-    .first<{ id: number }>();
+    .first<{ id: number }>())!;
   // Where does the player stand now? Their best game may be this one (a new
-  // personal best) or an older one.
-  const best = (await playerBest(db, name))!;
-  return json({ ...(await position(db, best)), personalBest: best.id === row!.id }, 201, cors);
+  // personal best) or an older one. Plus the receipt: only whoever has the
+  // token can rename this game later (no secret configured = no token).
+  const token = env.RENAME_SECRET ? await sign(env.RENAME_SECRET, id) : null;
+  return json({ ...(await placement(env.DB, name, id)), id, token }, 201, cors);
+}
+
+/**
+ * Renames one game: { name, token }. The token proves you're the one who sent
+ * it: the server gave it only in the answer to that POST. Without it anyone
+ * could rename anyone's games (there are no accounts).
+ */
+async function rename(request: Request, env: Env, id: number, cors: Headers): Promise<Response> {
+  if (!env.RENAME_SECRET) return json({ error: 'renaming is off' }, 503, cors);
+  const b = await readBody(request);
+  if (!b || typeof b.name !== 'string' || typeof b.token !== 'string') return json({ error: 'invalid body' }, 400, cors);
+  if (!(await verify(env.RENAME_SECRET, id, b.token))) return json({ error: 'bad token' }, 403, cors);
+  const game = await env.DB.prepare('SELECT created_at FROM scores WHERE id = ?').bind(id).first<{ created_at: number }>();
+  if (!game) return json({ error: 'not found' }, 404, cors);
+  if (Date.now() - game.created_at > RENAME_WINDOW_MS) return json({ error: 'too late' }, 403, cors);
+  const name = cleanName(b.name);
+  await env.DB.prepare('UPDATE scores SET name = ? WHERE id = ?').bind(name, id).run();
+  return json(await placement(env.DB, name, id), 200, cors);
+}
+
+// --- Rename receipts: HMAC --------------------------------------------------
+// An HMAC is a "signature" made with a secret key: HMAC(key, "score:42") gives
+// a string that only who knows the key can compute, and any change to the
+// message gives a completely different one. So the server doesn't have to
+// remember the tokens it handed out (no table, no migration): it just signs
+// the id again and compares. It's how Laravel's signed URLs work
+// (URL::signedRoute: the ?signature= is an HMAC of the URL with APP_KEY).
+// crypto.subtle = the Web Crypto API, built into Workers and browsers.
+
+/** The HMAC-SHA256 key, from the secret's text. */
+function hmacKey(secret: string): Promise<CryptoKey> {
+  return crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
+}
+
+/** What gets signed: the game's id (with a prefix, in case we ever sign other things). */
+function receipt(id: number): Uint8Array {
+  return new TextEncoder().encode(`score:${id}`);
+}
+
+/** The token of game `id`: its HMAC, as hex text (64 characters). */
+async function sign(secret: string, id: number): Promise<string> {
+  const mac = await crypto.subtle.sign('HMAC', await hmacKey(secret), receipt(id));
+  return [...new Uint8Array(mac)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Is `token` the signature of game `id`? crypto.subtle.verify instead of
+ * `token === await sign(...)`: a plain comparison stops at the first wrong
+ * character, so how long it takes tells an attacker how many characters were
+ * right ("timing attack"); verify always takes the same time.
+ */
+async function verify(secret: string, id: number, token: string): Promise<boolean> {
+  if (!/^[0-9a-f]{64}$/.test(token)) return false;
+  const bytes = new Uint8Array(token.match(/../g)!.map((h) => parseInt(h, 16)));
+  return crypto.subtle.verify('HMAC', await hmacKey(secret), bytes, receipt(id));
 }
 
 /** A whole number in [min, max], or null. */
@@ -175,7 +256,7 @@ function corsHeaders(request: Request, env: Env): Headers {
   const allowed = env.ALLOWED_ORIGINS.split(',').map((o) => o.trim());
   if (origin && allowed.includes(origin)) {
     headers.set('Access-Control-Allow-Origin', origin);
-    headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    headers.set('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
     headers.set('Access-Control-Allow-Headers', 'Content-Type');
     headers.set('Access-Control-Max-Age', '86400'); // the browser may skip the preflight for a day
   }

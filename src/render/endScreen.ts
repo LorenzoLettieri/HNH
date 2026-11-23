@@ -4,9 +4,15 @@
 // press Space/Enter or "Ricomincia" (a new game, mouse grabbed again) or
 // Esc/"Menu".
 //
+// The name box ("GIOCHI COME"): the score was already sent when the screen
+// opens, under your current name (maybe a random one, randomName.ts). Changing
+// it here saves the new name AND moves this game to it on the server, with the
+// receipt the submit answered (renameScore in leaderboard.ts).
+//
 // Plain DOM: markup and CSS in index.html (#death). Timings in constants below.
 import { playBell } from '../audio/sfx';
-import type { SubmitResult } from '../leaderboard';
+import { NAME_MAX_LENGTH, renameScore, type RankResult, type SubmitResult } from '../leaderboard';
+import { set, settings } from '../settings';
 import { STYLE_RANKS } from '../sim/style';
 import type { Stats } from '../sim/stats';
 import { TICK_DT } from '../sim/config';
@@ -56,6 +62,65 @@ export function createEndScreen(options: { onRestart: () => void; onMenu: () => 
   let openedAt = 0;
   /** Bumped at every open: an answer from the server for an older game is ignored. */
   let gameId = 0;
+  /** The game on screen: the name its score is saved under on the server... */
+  let sentName = '';
+  /** ...the server's answer with the rename receipt (null = not sent, or no answer)... */
+  let receipt: SubmitResult | null = null;
+  /** ...and whether that answer is still on its way. */
+  let waiting = false;
+
+  const refreshBoard = (): void => void fillScoreTable(board, BOARD_ROWS, settings.playerName);
+
+  /** The line above the table: what happened to this game's score. */
+  function showPlacement(p: RankResult | null): void {
+    placementLine.className = '';
+    // One row per player: a game that isn't your best doesn't move you.
+    if (!p) placementLine.textContent = '';
+    else if (p.personalBest && p.rank === 1) {
+      placementLine.textContent = 'NUOVO RECORD!';
+      placementLine.className = 'record';
+    } else if (p.personalBest) placementLine.textContent = `RECORD PERSONALE · ${p.rank}° SU ${p.total}`;
+    else placementLine.textContent = `IL TUO RECORD RESTA ${p.rank}° SU ${p.total}`;
+  }
+
+  /** The name changed: if this game was sent under another name, move it (then the table). */
+  async function moveScore(): Promise<void> {
+    const id = gameId;
+    const name = settings.playerName;
+    if (receipt && name !== sentName) {
+      placementLine.className = '';
+      placementLine.textContent = 'CAMBIO NOME…';
+      try {
+        if (!receipt.token) throw new Error('no receipt'); // the server can't rename (old version, no secret)
+        const p = await renameScore(receipt, name);
+        if (id !== gameId) return;
+        sentName = name;
+        showPlacement(p);
+      } catch {
+        // The name is saved anyway (settings): it just counts from the next game.
+        if (id === gameId) placementLine.textContent = 'IL NUOVO NOME VALE DALLA PROSSIMA PARTITA';
+      }
+    }
+    if (id === gameId) refreshBoard(); // your row, highlighted under the new name
+  }
+
+  // --- The name box -----------------------------------------------------------
+  // Same rules as the menu's (menu.ts): 'change' = when you leave the box or
+  // press Enter; empty = a new random name. Keys typed here don't reach the
+  // game (isTypingInField in input.ts): Space doesn't restart while you type.
+  const nameBox = document.getElementById('death-name-box') as HTMLInputElement;
+  nameBox.maxLength = NAME_MAX_LENGTH;
+  nameBox.placeholder = 'Vuoto = nome a caso';
+  nameBox.addEventListener('change', () => {
+    set('playerName', nameBox.value);
+    nameBox.value = settings.playerName;
+    // Still waiting for the submit: its answer will see the new name and move it.
+    if (open && !waiting) void moveScore();
+  });
+  // Enter or Esc = done: leave the box, so the next Space/Enter restarts the game.
+  nameBox.addEventListener('keydown', (e) => {
+    if (e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'Escape') nameBox.blur();
+  });
 
   return {
     get isOpen() {
@@ -78,34 +143,38 @@ export function createEndScreen(options: { onRestart: () => void; onMenu: () => 
       survived.textContent = game.wave === 0 ? 'NON HAI VISTO NEMMENO LA PRIMA ONDATA' : `SEI ARRIVATO ALL'ONDATA ${game.wave}`;
       showStats(statsList, game.stats);
 
-      // The leaderboard box: first what happened to this score, then the table
-      // (asked AFTER the submit is answered, so your new row is in it).
+      // The leaderboard box: your name, what happened to this score, then the
+      // table (asked AFTER the submit is answered, so your new row is in it).
+      nameBox.value = game.playerName;
+      sentName = game.playerName;
+      receipt = null;
+      waiting = false;
       placementLine.className = '';
       board.replaceChildren();
       if (game.practice) {
         placementLine.textContent = `PARTITA DI PROVA · NON IN CLASSIFICA (${game.practice})`;
-        void fillScoreTable(board, BOARD_ROWS, game.playerName);
+        refreshBoard();
       } else if (!game.placement) {
         placementLine.textContent = 'NESSUN PUNTO, NIENTE CLASSIFICA';
-        void fillScoreTable(board, BOARD_ROWS, game.playerName);
+        refreshBoard();
       } else {
         placementLine.textContent = 'INVIO IL PUNTEGGIO…';
+        waiting = true;
         game.placement
           .then((p) => {
             if (id !== gameId) return; // another game ended meanwhile
-            // One row per player: a game that isn't your best doesn't move you.
-            if (!p) placementLine.textContent = '';
-            else if (p.personalBest && p.rank === 1) {
-              placementLine.textContent = 'NUOVO RECORD!';
-              placementLine.className = 'record';
-            } else if (p.personalBest) placementLine.textContent = `RECORD PERSONALE · ${p.rank}° SU ${p.total}`;
-            else placementLine.textContent = `IL TUO RECORD RESTA ${p.rank}° SU ${p.total}`;
+            waiting = false;
+            receipt = p;
+            // Renamed while the submit was on its way: move the game now.
+            if (p && settings.playerName !== sentName) return moveScore();
+            showPlacement(p);
+            refreshBoard();
           })
           .catch(() => {
-            if (id === gameId) placementLine.textContent = 'CLASSIFICA NON RAGGIUNGIBILE';
-          })
-          .finally(() => {
-            if (id === gameId) void fillScoreTable(board, BOARD_ROWS, game.playerName);
+            if (id !== gameId) return;
+            waiting = false;
+            placementLine.textContent = 'CLASSIFICA NON RAGGIUNGIBILE';
+            refreshBoard();
           });
       }
     },

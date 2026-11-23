@@ -236,6 +236,13 @@
       #death-placement { min-height: 1.4em; margin-bottom: 6px; font-size: 18px; letter-spacing: 2px; color: #f0d8a8; }
       #death-placement.record { font-size: 26px; color: #ffd060; text-shadow: 0 0 12px rgba(255, 160, 40, 0.8), 2px 2px 0 #000; animation: death-record 0.9s ease-in-out infinite alternate; }
       @keyframes death-record { from { transform: scale(1); } to { transform: scale(1.06); } }
+      /* The name box: "GIOCHI COME [Randy Coffin]", so nobody misses that the name can be changed. */
+      #death-name { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 14px; letter-spacing: 2px; color: #8a7a62; }
+      #death-name input {
+        flex: 1; min-width: 0; box-sizing: border-box; background: #2a1810; color: #f0d8a8;
+        border: 1px solid #5a3a20; font: 18px monospace; padding: 3px 6px;
+      }
+      #death-name input:focus { outline: none; border-color: #d02010; }
       #death-leaderboard .board { margin-top: 0; font-family: monospace; color: #f0c080; }
       #death.show #death-leaderboard { animation: death-fade 0.6s 1s ease-out both; }
       #death-buttons { display: flex; gap: 16px; margin-top: 8px; }
@@ -659,6 +666,10 @@
         </div>
         <div id="death-leaderboard">
           <div class="death-heading">CLASSIFICA</div>
+          <label id="death-name">
+            <span>GIOCHI COME</span>
+            <input type="text" id="death-name-box" autocomplete="off" spellcheck="false" />
+          </label>
           <div id="death-placement"></div>
           <table class="board">
             <thead><tr><th>#</th><th>Nome</th><th>Ondata</th><th>Punti</th></tr></thead>
