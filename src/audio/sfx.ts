@@ -304,14 +304,13 @@ function pumpHome(start: number, hit: number): void {
   noiseBurst({ start: hit + 0.01, duration: 0.02, volume: 0.3, filter: 'bandpass', frequency: 3600, q: 6 }); // the bolt locking
 }
 
-/** The pump-action's reload starts (pumpView.ts): the gun flung onto its side, the fore-end yanked open. */
-export function playPumpReloadStart(t: { flipAt: number; yankAt: number; openAt: number }): void {
+/** The pump-action's reload starts (pumpView.ts): the gun flung up, a rush of air. */
+export function playPumpReloadStart(t: { flipAt: number }): void {
   whoosh(t.flipAt);
-  pumpBack(t.yankAt, t.openAt);
 }
 
 /**
- * A shell SLAPPED in through the port: the meaty slap of a gloved palm (low,
+ * A shell SLAPPED into the tube from below: the meaty slap of a gloved palm (low,
  * soft noise and a thud), the shell knocking into place, a tiny click.
  */
 export function playPumpShellIn(): void {
@@ -321,8 +320,9 @@ export function playPumpShellIn(): void {
   noiseBurst({ start: 0.02, duration: 0.015, volume: 0.2, filter: 'bandpass', frequency: 4200, q: 6 }); // click
 }
 
-/** The end of the reload: the hand back on the fore-end and the big "-CHK". */
-export function playPumpClose(t: { shutStart: number; shutAt: number }): void {
+/** The end of the reload: the hand back on the fore-end and a full rack, "ch-CHK" (it chambers a shell). */
+export function playPumpClose(t: { yankAt: number; openAt: number; shutStart: number; shutAt: number }): void {
+  pumpBack(t.yankAt, t.openAt);
   pumpHome(t.shutStart, t.shutAt);
 }
 

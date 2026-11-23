@@ -175,7 +175,7 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
             playDryFire();
             break;
           case 'reloadStart':
-            if (e.weapon === 'shotgun' && e.forged) playPumpReloadStart(pumpReloadTimes()); // flung on its side, fore-end yanked open
+            if (e.weapon === 'shotgun' && e.forged) playPumpReloadStart(pumpReloadTimes()); // flung up: a rush of air
             else if (e.weapon === 'shotgun') playShotgunReload(e.seconds);
             else if (e.weapon === 'rifle') playCarbineReloadStart();
             else if (e.forged) playAkimboSpin(spinTurnTimes(e.seconds), e.seconds);
@@ -188,7 +188,7 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
             else playCarbineRoundIn();
             break;
           case 'reloadEnd':
-            if (e.weapon === 'shotgun' && e.forged) playPumpClose(pumpCloseTimes()); // the hand shoves the fore-end home
+            if (e.weapon === 'shotgun' && e.forged) playPumpClose(pumpCloseTimes()); // the closing rack, ch-CHK
             break;
           case 'hit':
             if (e.surface === 'metal') {
