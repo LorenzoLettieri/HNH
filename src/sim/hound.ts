@@ -181,7 +181,7 @@ export function stepHound(
     h.vx += (targetVx - h.vx) * k;
     h.vz += (targetVz - h.vz) * k;
     // Jump links (gaps, steps): the same ballistic jump as the ghoul.
-    if (link && link.kind === 'jump' && toTarget < 3) jumpTo(h, graph.nodes[link.to]);
+    if (link && link.kind === 'jump' && toTarget < 3) jumpTo(h, graph.nodes[link.to], world.boxes, tuning.houndRadius, tuning.houndHeight);
   }
   h.vy -= tuning.gravity * dt;
 

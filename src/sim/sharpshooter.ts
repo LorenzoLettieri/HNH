@@ -307,7 +307,7 @@ function stepMove(s: SharpshooterEntity, game: GameState, world: World, graph: N
     const t = graph.nodes[link.to];
     const here = graph.nodes[s.navNode];
     if (link.kind === 'jump' && Math.hypot(t.x - s.x, t.z - s.z) < 2.8) {
-      jumpTo(s, t);
+      jumpTo(s, t, world.boxes, tuning.sharpshooterRadius, tuning.sharpshooterHeight);
     } else if (link.kind === 'climb' && Math.hypot(here.x - s.x, here.z - s.z) < 1.5) {
       s.climbFrom = s.navNode;
       s.climbTo = link.to;

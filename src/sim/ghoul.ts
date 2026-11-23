@@ -16,7 +16,7 @@
 //   aiming a bit to one side of you: the horde fans out and surrounds you
 //   instead of forming a conga line behind you.
 import { moveAndCollide, overlapsAny } from './collision';
-import { secondsToTicks, tuning } from './config';
+import { secondsToTicks, TICK_DT, tuning } from './config';
 import type { GhoulEntity, Entity } from './entities';
 import type { SimEvent } from './events';
 import { launchFromVent, nearestNode, type FlowField, type NavGraph, type NavLink, type NavNode } from './nav';
@@ -24,7 +24,11 @@ import { ventUnder } from './props';
 import { ghoulSpeed, lerp } from './waves';
 import { hurtPlayer, type PlayerState } from './player';
 import { raycastBoxes } from './raycast';
-import type { World } from './world';
+import type { Box, World } from './world';
+
+/** Air control: the horizontal speed it can reach on its own in mid-air, m/s, and how fast, m/s². */
+const GHOUL_AIR_SPEED = 1.5;
+const GHOUL_AIR_ACCEL = 10;
 
 /** Turn a direction (x, z) by `angle` radians around the vertical axis. */
 function rotate(x: number, z: number, angle: number): [number, number] {
@@ -70,13 +74,16 @@ export function stepGhoul(
   }
   const distToPlayer = Math.hypot(player.x - g.x, player.z - g.z);
   const sameLevel = Math.abs(player.y - g.y) < 0.8;
-  const direct = distToPlayer < tuning.ghoulDirectChaseRange && sameLevel;
   // Can it see you? A raycast is the most expensive thing here, so it's
   // refreshed only every 6 ticks (10 times a second: plenty for a zombie),
   // staggered by id so the ghouls don't all do it on the same tick.
   if ((g.stateTicks + g.id) % 6 === 0) {
     g.seesPlayer = sameLevel && distToPlayer < tuning.ghoulPursuitRange && clearLine(g, player, distToPlayer, world);
   }
+  // Close by, it walks straight at you... only if it SEES you. Through a wall
+  // the straight line leads nowhere: it would press against it forever,
+  // while the graph knows the way around (the door).
+  const direct = distToPlayer < tuning.ghoulDirectChaseRange && sameLevel && g.seesPlayer;
   const pursuit = !direct && g.onGround && sameLevel && g.seesPlayer;
 
   // In "direct" mode the target is the player; in "pursuit" mode a point
@@ -126,7 +133,7 @@ export function stepGhoul(
     }
   }
 
-  // --- 3. Accelerate toward the wished velocity (only with feet on the ground) ---
+  // --- 3. Accelerate toward the wished velocity ---
   // While swinging it keeps coming, a bit slower: the swipe can catch you
   // even if you're running past it.
   const speed = ghoulSpeed(g) * (g.state === 'attack' ? tuning.ghoulAttackMoveFactor : 1);
@@ -137,6 +144,23 @@ export function stepGhoul(
   if (g.onGround) {
     g.vx += (targetVx - g.vx) * k;
     g.vz += (targetVz - g.vz) * k;
+  } else if (len > 0 && link?.kind !== 'vent') {
+    // AIR CONTROL, a little, Quake style (like the player's air acceleration):
+    // it can ADD speed toward where it wants to go, up to GHOUL_AIR_SPEED,
+    // never brake. A ballistic jump (already faster than that toward its
+    // target) flies untouched; but a ghoul that jumped while pressed against
+    // the wall under a window sill (the collision zeroed its forward speed on
+    // the first tick) gets pushing forward again, and as soon as it's higher
+    // than the sill it's over it. Not on a vent: that flight was simulated
+    // in advance, and the target is still the grate behind it.
+    const wx = wishX / len;
+    const wz = wishZ / len;
+    const along = g.vx * wx + g.vz * wz; // speed it already has in that direction (dot product)
+    const add = Math.min(GHOUL_AIR_SPEED - along, GHOUL_AIR_ACCEL * dt);
+    if (add > 0) {
+      g.vx += wx * add;
+      g.vz += wz * add;
+    }
   }
 
   // --- 4. Special links: jump or start climbing when in position ---
@@ -145,7 +169,7 @@ export function stepGhoul(
     const here = graph.nodes[g.navNode];
     const toTarget = Math.hypot(t.x - g.x, t.z - g.z);
     if (link.kind === 'jump' && toTarget < 2.8) {
-      jumpTo(g, t);
+      jumpTo(g, t, world.boxes, tuning.ghoulRadius, tuning.ghoulHeight);
     } else if (link.kind === 'climb' && Math.hypot(here.x - g.x, here.z - g.z) < 1.5) {
       // Close to the foot of the wall (it may already be pressing against it,
       // a bit past the node): start climbing.
@@ -193,6 +217,12 @@ export function stepGhoul(
     const lowObstacle = !overlapsAny(aheadX, g.y + tuning.ghoulJumpHeight, aheadZ, r, tuning.ghoulHeight, world.boxes);
     if (lowObstacle) {
       g.vy = Math.sqrt(2 * tuning.gravity * (tuning.ghoulJumpHeight + 0.15));
+      // ...and FORWARD: the collision that stopped us has just zeroed the
+      // speed toward the obstacle, and in the air there's no steering. Without
+      // this it jumps straight up in front of a window sill, lands in the same
+      // spot, and jumps again, forever.
+      g.vx = targetVx;
+      g.vz = targetVz;
       g.onGround = false;
     } else if (!link) {
       // Direct mode: start (or keep extending) a detour around the obstacle.
@@ -217,7 +247,8 @@ export function stepGhoul(
     distToPlayer > tuning.ghoulLungeMinRange &&
     distToPlayer < tuning.ghoulLungeRange &&
     Math.abs(player.y - g.y) < 1 &&
-    clearLine(g, player, distToPlayer, world)
+    clearLine(g, player, distToPlayer, world) &&
+    roomToLunge(g, player, distToPlayer, world)
   ) {
     g.state = 'lunge';
     g.stateTicks = 0;
@@ -391,6 +422,25 @@ function clearLine(g: GhoulEntity, player: PlayerState, dist: number, world: Wor
   return raycastBoxes(g.x, g.y + chest, g.z, dx / d, dy / d, dz / d, d, world.boxes) === null;
 }
 
+/**
+ * Is there room for its whole BODY along the straight line to you? clearLine
+ * only looks from chest to chest: through a window you can see each other,
+ * but the leap is low and slams into the wall under the sill (then it gets
+ * up, sees you again, and leaps again, forever). So we also slide its
+ * collider along the line, every half meter, a little above its feet (low
+ * bumps like a porch step don't count).
+ */
+function roomToLunge(g: GhoulEntity, player: PlayerState, dist: number, world: World): boolean {
+  const steps = Math.ceil(dist / 0.5);
+  for (let i = 1; i < steps; i++) {
+    const t = i / steps;
+    const x = g.x + (player.x - g.x) * t;
+    const z = g.z + (player.z - g.z) * t;
+    if (overlapsAny(x, g.y + 0.3, z, tuning.ghoulRadius, tuning.ghoulHeight, world.boxes)) return false;
+  }
+  return true;
+}
+
 /** What jumpTo needs from a body: position, velocity, feet. (Ghouls and hounds both have them.) */
 interface JumpingBody {
   x: number;
@@ -403,26 +453,96 @@ interface JumpingBody {
 }
 
 /**
+ * How high above the higher of start and target a jump may go, meters, best
+ * first. 0.7 is the comfortable arc; the lower ones are for tight spots: a
+ * window is 2.2 m tall, and a 1.8 m ghoul jumping 0.7 m above the sill
+ * bangs its head on the lintel, falls back and tries again forever.
+ */
+const JUMP_PEAKS = [0.7, 0.55, 0.4, 0.3, 0.2, 0.12];
+/** Closer than this to the target, it jumps even if no arc checks out (better than freezing). */
+const JUMP_FORCE_DIST = 1.2;
+
+/**
  * A jump that lands on `t`: ballistics, the physics of a thrown ball.
  * 1. Pick how high to go: a bit above the higher of start and target.
  * 2. Vertical speed to reach that height: v = √(2·g·h).
  * 3. Flight time = time to go up + time to fall down to the target's height.
  * 4. Horizontal speed = distance / flight time: it lands right on it.
+ *
+ * ...on paper. The math knows nothing about ceilings and lintels, so before
+ * jumping we SIMULATE the jump (same physics, same collisions as the real
+ * one, like the graph does for the vents) and keep the first arc, from the
+ * highest down, that really lands on the target. None does? From far away it
+ * doesn't jump at all and keeps walking closer (from nearer, a lower arc
+ * fits); from close by it jumps anyway with the default arc.
+ * `boxes`, `radius`, `height`: the level and the body's collider.
+ * Returns whether it jumped.
  */
-export function jumpTo(g: JumpingBody, t: NavNode): void {
+export function jumpTo(g: JumpingBody, t: NavNode, boxes: Box[], radius: number, height: number): boolean {
+  const dist = Math.hypot(t.x - g.x, t.z - g.z);
+  // Each arc twice: with the usual minimum push forward (it helps to clear
+  // edges), then without it, purely ballistic: from right under a window sill
+  // that push would carry it past the sill, while a jump almost straight up
+  // lands on it.
+  for (const minSpeed of [JUMP_MIN_SPEED, 0]) {
+    for (const peak of JUMP_PEAKS) {
+      const v = jumpVelocity(g, t, peak, minSpeed);
+      if (landsOn(g, v, t, boxes, radius, height)) {
+        launch(g, v);
+        return true;
+      }
+    }
+  }
+  if (dist > JUMP_FORCE_DIST) return false;
+  launch(g, jumpVelocity(g, t, JUMP_PEAKS[0], JUMP_MIN_SPEED));
+  return true;
+}
+
+/** Minimum horizontal speed of a jump, m/s. */
+const JUMP_MIN_SPEED = 1.5;
+
+/** The launch velocity of a ballistic jump from `g` onto `t`, going `peak` meters above the higher of the two. */
+function jumpVelocity(g: JumpingBody, t: NavNode, peak: number, minSpeed: number): { vx: number; vy: number; vz: number } {
   const G = tuning.gravity;
   const dy = t.y - g.y;
-  const peak = Math.max(dy, 0) + 0.7;
-  const vy = Math.sqrt(2 * G * peak);
-  const flightTime = vy / G + Math.sqrt((2 * (peak - dy)) / G);
+  const top = Math.max(dy, 0) + peak;
+  const vy = Math.sqrt(2 * G * top);
+  const flightTime = vy / G + Math.sqrt((2 * (top - dy)) / G);
   const dx = t.x - g.x;
   const dz = t.z - g.z;
   const dist = Math.hypot(dx, dz) || 1;
-  const hSpeed = Math.max(dist / flightTime, 1.5);
-  g.vx = (dx / dist) * hSpeed;
-  g.vz = (dz / dist) * hSpeed;
-  g.vy = vy;
+  const hSpeed = Math.max(dist / flightTime, minSpeed);
+  return { vx: (dx / dist) * hSpeed, vy, vz: (dz / dist) * hSpeed };
+}
+
+function launch(g: JumpingBody, v: { vx: number; vy: number; vz: number }): void {
+  g.vx = v.vx;
+  g.vy = v.vy;
+  g.vz = v.vz;
   g.onGround = false;
+}
+
+/**
+ * Does a jump with this velocity land on `t`? A "ghost" copy of the body
+ * flies tick by tick (gravity, then the move with collisions: the same
+ * order as the real step) until it touches down, at most 2 seconds.
+ */
+function landsOn(
+  g: JumpingBody,
+  v: { vx: number; vy: number; vz: number },
+  t: NavNode,
+  boxes: Box[],
+  radius: number,
+  height: number,
+): boolean {
+  const ghost = { x: g.x, y: g.y, z: g.z, ...v };
+  for (let tick = 0; tick < 2 / TICK_DT; tick++) {
+    ghost.vy -= tuning.gravity * TICK_DT;
+    if (moveAndCollide(ghost, radius, height, boxes, TICK_DT).landed) {
+      return Math.abs(ghost.y - t.y) < 0.15 && Math.hypot(ghost.x - t.x, ghost.z - t.z) < 0.75;
+    }
+  }
+  return false;
 }
 
 /** What climbWall needs: a body that can be partway up a wall (ghouls and sharpshooters). */

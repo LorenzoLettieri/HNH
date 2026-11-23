@@ -103,6 +103,11 @@ export function buildNavGraph(boxes: Box[], props: Prop[] = [], body: NavBody = 
   const nodes: NavNode[] = [];
   const cells = new Map<string, number[]>();
   for (const b of boxes) {
+    // A pole (a sign post, a torch: narrower than the body's radius both
+    // ways) is no place to stand: a ghoul would climb up, step toward the
+    // top, miss it, fall, and try again forever. (A window sill is thin
+    // too, but long: that one is a fine step.)
+    if (b.maxX - b.minX < r && b.maxZ - b.minZ < r) continue;
     // A grid aligned to the world (not to each box), so neighboring boxes
     // at the same height produce nodes that line up.
     const x0 = Math.ceil((b.minX + 0.1) / S);

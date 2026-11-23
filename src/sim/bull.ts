@@ -148,7 +148,7 @@ function approach(
     const k = Math.min(1, tuning.bullAccel * dt);
     b.vx += (wishX * tuning.bullSpeed - b.vx) * k;
     b.vz += (wishZ * tuning.bullSpeed - b.vz) * k;
-    if (link && link.kind === 'jump' && d < 3) jumpTo(b, graph.nodes[link.to]);
+    if (link && link.kind === 'jump' && d < 3) jumpTo(b, graph.nodes[link.to], world.boxes, tuning.bullRadius, tuning.bullHeight);
   }
   b.vy -= tuning.gravity * dt;
 

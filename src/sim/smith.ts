@@ -330,7 +330,7 @@ function walk(
     const k = Math.min(1, tuning.smithAccel * dt);
     s.vx += (wishX * tuning.smithSpeed - s.vx) * k;
     s.vz += (wishZ * tuning.smithSpeed - s.vz) * k;
-    if (link && link.kind === 'jump' && d < 3) jumpTo(s, graph.nodes[link.to]);
+    if (link && link.kind === 'jump' && d < 3) jumpTo(s, graph.nodes[link.to], world.boxes, tuning.smithRadius, tuning.smithHeight);
   }
   s.vy -= tuning.gravity * dt;
   // Move; if a low obstacle stopped it, step over it (same trick as the bull).
