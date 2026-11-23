@@ -6,7 +6,7 @@
 //   widens with speed.
 // Everything here is cosmetic: firing and ammo are decided by the simulation.
 import * as THREE from 'three';
-import { secondsToTicks, tuning } from '../../sim/config';
+import { tuning } from '../../sim/config';
 import type { PlayerState } from '../../sim/player';
 import type { Atmosphere } from '../atmospheres';
 import { directionFromAngles } from '../sky';
@@ -22,7 +22,7 @@ import { createRevolverReload } from './revolverReload';
 import { createAkimboSpin } from './akimboSpin';
 import { createRifleView } from './rifleView';
 import { adsAmount, isAkimbo, isPump, type WeaponId } from '../../sim/weapon';
-import { smoothstep } from './elastic';
+import { poseAt, smoothstep, ZERO_POSE, type GunPose } from './elastic';
 import { lookingThroughScope } from '../scopeOverlay';
 
 /** Mutable so the debug panel can change them. */
@@ -112,10 +112,24 @@ export const viewmodelSettings = {
   rifleAdsRecoil: 0.45,
   /** Aimed, sway and bob are this fraction of the normal ones (steady hands). */
   rifleAdsSteady: 0.15,
-
-  /** How far below the screen a weapon starts when you switch to it, meters. */
-  switchDrop: 0.22,
 };
+
+/**
+ * The DRAW (weapon switch): the new gun swings in from below the screen on
+ * the right, turned away, on an arc; it overshoots its rest pose, swings back
+ * a little and settles, all within weaponSwitchTime (the simulation lets it
+ * fire then: it must be on target). Offsets from the rest pose, keyed in
+ * fractions of the switch time. Each gun adds its own "signature" on top
+ * (the pump racked home, the barrels snapped shut, the revolver twirled, the
+ * lever slammed), timed to end right when the gun is ready: you HEAR it ready.
+ * (The old gun simply disappears: animating it out would only add delay.)
+ */
+const DRAW_KEYS: [number, GunPose][] = [
+  [0, { x: 0.1, y: -0.21, z: 0.06, pitch: -0.8, yaw: -0.45, roll: -0.9 }], // just below the screen, turned away
+  [0.55, { x: -0.012, y: 0.018, z: -0.01, pitch: 0.14, yaw: 0.06, roll: 0.18 }], // swung in PAST the rest pose
+  [0.8, { x: 0.003, y: -0.004, z: 0.002, pitch: -0.03, yaw: -0.01, roll: -0.04 }], // a little back the other way
+  [1, ZERO_POSE],
+];
 
 /** How far the revolver's hammer falls forward when it fires, radians (the model has it cocked, at 0). */
 const HAMMER_FIRED = 0.5;
@@ -235,7 +249,7 @@ export function createViewmodel(): Viewmodel {
   pump.root.visible = false;
   holder.add(pump.root);
   let shownWeapon: WeaponId = 'revolver';
-  let switchDrop = 0; // 1 = the gun is fully below the screen, 0 = in place
+  let drawTime = Infinity; // seconds since the current gun was drawn (weapon switch)
 
   // The kicking leg: directly in the scene (not in the holder), so the gun's
   // sway and bob don't shake it.
@@ -391,12 +405,10 @@ export function createViewmodel(): Viewmodel {
       inverseCamera.copy(worldCamera.quaternion).invert();
       sun.position.copy(sunDir).applyQuaternion(inverseCamera).multiplyScalar(5);
 
-      // --- Weapon switch: the new gun pops in from below the screen ---
-      // (The old one simply disappears: it's already out of view in a
-      // fraction of a second, animating it down too would only add delay.)
+      // --- Weapon switch: the new gun is drawn (DRAW_KEYS) ---
       if (player.weapon !== shownWeapon) {
         shownWeapon = player.weapon;
-        switchDrop = 1;
+        drawTime = 0;
         revolverReload.cancel(); // a reload in progress was cancelled by the switch
         akimboSpin.cancel();
         shotgun.cancel();
@@ -420,9 +432,11 @@ export function createViewmodel(): Viewmodel {
       ads = approach(ads, isRifle ? adsAmount(player) : 0, 30, dt);
       const aimed = smoothstep(ads);
       const steady = 1 - (1 - s.rifleAdsSteady) * aimed;
-      const switchTotal = secondsToTicks(tuning.weaponSwitchTime);
-      const switchTarget = switchTotal > 0 ? player.switchTicks / switchTotal : 0;
-      switchDrop = approach(switchDrop, Math.min(switchDrop, switchTarget), 30, dt);
+      // The draw's progress, 0..1: our own clock (smooth between ticks), but
+      // never later than the simulation (when it says ready, the gun is there).
+      drawTime += dt;
+      const drawK = player.switchTicks === 0 ? 1 : Math.min(1, drawTime / Math.max(0.01, tuning.weaponSwitchTime));
+      const dp = drawK < 1 ? poseAt(DRAW_KEYS, drawK) : ZERO_POSE;
       const isShotgun = shownWeapon === 'shotgun';
 
       // --- Recoil, flash, view kick: instant hit, exponential recovery ---
@@ -531,15 +545,14 @@ export function createViewmodel(): Viewmodel {
       const recoilBack = { revolver: 0.05, shotgun: s.shotgunRecoilBack, rifle: s.rifleRecoilBack }[kickWeapon];
       // The reloads move the whole gun too: `rp` = pose offsets (elastic.ts).
       holder.position.set(
-        rest.x + swayX + bobX + rp.x - slideTilt * 0.02 + legOut * 0.04,
-        rest.y + swayY + bobY + fallOffset + rp.y - slideTilt * 0.03 - legOut * 0.05
-          - switchDrop * s.switchDrop,
-        rest.z + kick * recoilBack + rp.z,
+        rest.x + swayX + bobX + rp.x + dp.x - slideTilt * 0.02 + legOut * 0.04,
+        rest.y + swayY + bobY + fallOffset + rp.y + dp.y - slideTilt * 0.03 - legOut * 0.05,
+        rest.z + kick * recoilBack + rp.z + dp.z,
       );
       holder.rotation.set(
-        rest.pitch + kick * recoilUp + rp.pitch - swayY * 2 - switchDrop * 0.6,
-        rest.yaw + swayX * 2 + rp.yaw,
-        rest.roll + rp.roll + slideTilt * 0.35 - legOut * 0.25,
+        rest.pitch + kick * recoilUp + rp.pitch + dp.pitch - swayY * 2,
+        rest.yaw + swayX * 2 + rp.yaw + dp.yaw,
+        rest.roll + rp.roll + dp.roll + slideTilt * 0.35 - legOut * 0.25,
       );
       if (akimbo) {
         // The left gun's holder: the MIRROR image of the right one. A mirror
