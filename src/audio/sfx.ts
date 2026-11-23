@@ -488,7 +488,7 @@ function ring(base: number, duration: number, volume: number): void {
  * - shells: two heavier clacks, lower;
  * - medkit: a cork pop and a warm, rising chime (two rings, the second higher).
  */
-export function playPickup(kind: 'bullets' | 'shells' | 'medkit' | 'coin' | 'iron'): void {
+export function playPickup(kind: 'bullets' | 'shells' | 'sticks' | 'medkit' | 'coin' | 'iron'): void {
   if (kind === 'iron') {
     // The Damned Iron: a heavy "clunk" of metal, then a low anvil ring that
     // lingers, and a breath of heat. Rare: it should sound like a prize.
@@ -509,6 +509,11 @@ export function playPickup(kind: 'bullets' | 'shells' | 'medkit' | 'coin' | 'iro
       noiseBurst({ start: i * 0.045, duration: 0.02, volume: 0.35, filter: 'bandpass', frequency: 5000 - i * 600, q: 8 });
     }
     ring(2200, 0.2, 0.08);
+  } else if (kind === 'sticks') {
+    // A bundle of dynamite: three soft cardboard "toks" one after the other,
+    // and a short hiss, as if a fuse caught for an instant (it didn't).
+    for (let i = 0; i < 3; i++) thump({ start: i * 0.05, duration: 0.06, volume: 0.35, from: 300, to: 140 });
+    noiseBurst({ start: 0.12, duration: 0.18, volume: 0.12, filter: 'bandpass', frequency: 4200, q: 1 });
   } else if (kind === 'shells') {
     for (let i = 0; i < 2; i++) {
       noiseBurst({ start: i * 0.08, duration: 0.04, volume: 0.5, filter: 'bandpass', frequency: 1800, q: 4 });

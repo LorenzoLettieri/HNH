@@ -34,7 +34,7 @@ import { AMMO_TYPE, WEAPONS, type AmmoType, type WeaponId } from './weapon';
 import type { World } from './world';
 
 /** 'iron' = the Damned Iron, dropped only by the Damned Smith (smith.ts), spent at the Forge. */
-export type PickupKind = 'bullets' | 'shells' | 'medkit' | 'coin' | 'iron';
+export type PickupKind = 'bullets' | 'shells' | 'sticks' | 'medkit' | 'coin' | 'iron';
 
 /**
  * Is this kind of ammo any use to you? Yes if you own at least one weapon
@@ -177,6 +177,7 @@ function pickKind(roll: number, owned: Record<WeaponId, boolean>): PickupKind {
   const weights: [PickupKind, number][] = [
     ['bullets', ammo('bullets', tuning.dropWeightBullets)],
     ['shells', ammo('shells', tuning.dropWeightShells)],
+    ['sticks', ammo('sticks', tuning.dropWeightSticks)],
     ['medkit', tuning.dropWeightMedkit],
   ];
   const total = weights.reduce((sum, [, w]) => sum + w, 0);
@@ -263,9 +264,14 @@ function collect(game: GameState, d: Pickup): boolean {
   }
   // Ammo: rounds for one pocket, up to what it holds.
   if (!usesAmmo(p.owned, kind)) return false; // (the J debug key can drop it anyway: it stays on the ground)
-  const max = kind === 'shells' ? tuning.shotgunReserveMax : tuning.revolverReserveMax;
+  // One line per pocket: how much it holds, how much a drop gives.
+  const pockets: Record<AmmoType, { max: number; amount: number }> = {
+    bullets: { max: tuning.revolverReserveMax, amount: tuning.ammoPickupBullets },
+    shells: { max: tuning.shotgunReserveMax, amount: tuning.ammoPickupShells },
+    sticks: { max: tuning.dynamiteReserveMax, amount: tuning.ammoPickupSticks },
+  };
+  const { max, amount } = pockets[kind];
   if (p.reserve[kind] >= max) return false;
-  const amount = kind === 'shells' ? tuning.ammoPickupShells : tuning.ammoPickupBullets;
   p.reserve[kind] = Math.min(max, p.reserve[kind] + amount);
   return true;
 }

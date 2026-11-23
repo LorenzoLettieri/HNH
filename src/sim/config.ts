@@ -320,11 +320,14 @@ export const tuning = {
   dropChanceMax: 0.8,
   /**
    * What a drop is: WEIGHTS, not percentages (see pickKind in pickups.ts).
-   * 5/4/3 = 42% bullets, 33% shells, 25% medkits. Set one to 0 to never drop it.
+   * 5/4/3/1 = 38% bullets, 31% shells, 23% medkits, 8% dynamite (with every
+   * weapon). Set one to 0 to never drop it.
    */
   dropWeightBullets: 5,
   dropWeightShells: 4,
   dropWeightMedkit: 3,
+  /** A bundle of dynamite: rare on purpose (the launcher is the strongest gun against a crowd). */
+  dropWeightSticks: 1,
   /** Seconds a drop stays on the ground before vanishing. */
   dropLifetime: 10,
   /**
@@ -356,6 +359,8 @@ export const tuning = {
   ammoPickupBullets: 18,
   /** Shotgun shells in a 'shells' drop. */
   ammoPickupShells: 5,
+  /** Dynamite sticks in a 'sticks' drop (a bundle). */
+  ammoPickupSticks: 3,
   // --- Shops (see shop.ts) ---
   /** How close to a vendor you must be to trade (horizontal distance, meters). The counter is ~1.6 m from him. */
   shopReach: 3,
@@ -365,6 +370,8 @@ export const tuning = {
   shotgunPrice: 600,
   /** Price of the lever-action carbine at the armory. */
   riflePrice: 1000,
+  /** Price of the dynamite launcher: the most expensive gun (it comes with dynamiteReserveStart sticks). */
+  dynamitePrice: 1500,
   /** Price of the shovel (it replaces the kick on F). */
   shovelPrice: 400,
   // --- Weapon upgrades: decks of cards at the armory (see upgrades.ts) ---

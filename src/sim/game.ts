@@ -246,9 +246,9 @@ export function dropPickupsInFront(game: GameState): void {
   const p = game.player;
   const fx = -Math.sin(p.yaw);
   const fz = -Math.cos(p.yaw);
-  const kinds = ['coin', 'bullets', 'shells', 'medkit'] as const; // the coin on the left: the gun doesn't hide it
+  const kinds = ['coin', 'bullets', 'shells', 'sticks', 'medkit'] as const; // the coin on the left: the gun doesn't hide it
   kinds.forEach((kind, i) => {
-    const side = i - 1.5; // -1.5 .. +1.5: from left to right
+    const side = i - (kinds.length - 1) / 2; // centered on the aim: from left to right
     const x = p.x + fx * 4 - fz * side * 1.2;
     const z = p.z + fz * 4 + fx * side * 1.2;
     game.pickups.push(createPickup(game, kind, x, p.y + 0.5, z, kind === 'coin' ? tuning.coinValue : 0));

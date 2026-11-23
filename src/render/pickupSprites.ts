@@ -7,6 +7,8 @@
 //   1: shells  — two red shotgun shells with brass bases
 //   2: medkit  — a bottle of glowing green "tonic" with a red-cross label
 //   3: coin    — a pile of gold coins (vildenaro): two messy stacks
+//   4: iron    — the Damned Iron: a black ingot with red-hot cracks
+//   5: sticks  — a bundle of three dynamite sticks tied with twine, fuses up
 // Coordinates: x right, y DOWN (like a canvas), row 15 = the floor.
 import * as THREE from 'three';
 import type { PickupKind } from '../sim/pickups';
@@ -14,7 +16,7 @@ import { buildSheet, PixelFrame, type SpriteSheet } from './enemies/spriteSheet'
 
 export const PICKUP_FRAME = 16;
 /** Which frame each kind uses. */
-export const PICKUP_FRAMES: Record<PickupKind, number> = { bullets: 0, shells: 1, medkit: 2, coin: 3, iron: 4 };
+export const PICKUP_FRAMES: Record<PickupKind, number> = { bullets: 0, shells: 1, medkit: 2, coin: 3, iron: 4, sticks: 5 };
 
 const C = {
   outline: 0x120a08,
@@ -47,6 +49,13 @@ const C = {
   goldLight: 0xffe890,
   goldDark: 0x9a6418,
   goldStamp: 0x6a3c0c,
+  // dynamite: the same reds as the stick in flight (render/dynamite.ts), twine and fuse
+  stickLight: 0xe0483a,
+  stick: 0xb3261e,
+  stickDark: 0x741612,
+  twine: 0xcdb27a,
+  twineDark: 0x8a7040,
+  ember: 0xffc050,
 };
 
 /**
@@ -183,6 +192,39 @@ function paintIron(): PixelFrame {
 }
 
 /**
+ * A bundle of dynamite: three red sticks side by side, the middle one a bit
+ * taller (the same trick as the bullets: a less boring silhouette), tied
+ * with two rings of twine, the fuses sticking up and twisted together, a
+ * spark on top. Red like the shells, but THREE thin tall tubes instead of
+ * two fat ones with brass: the shape tells them apart.
+ */
+function paintSticks(): PixelFrame {
+  const f = new PixelFrame(PICKUP_FRAME, PICKUP_FRAME);
+  const stick = (x: number, top: number) => {
+    column(f, x, top, 4, 16 - top, C.stickLight, C.stick, C.stickDark, true);
+    f.rect(x + 1, top, 2, 1, C.stickDark); // the folded paper on top
+  };
+  stick(2, 5);
+  stick(10, 5);
+  stick(6, 3); // drawn last: the middle one in front
+  // The twine around the three (light on top, dark on the bottom of each ring).
+  for (const y of [7, 12]) {
+    f.rect(2, y, 12, 1, C.twine);
+    f.rect(2, y + 1, 12, 1, C.twineDark);
+  }
+  // Fuses twisted together toward the middle, and a spark (in the glow mask).
+  f.set(4, 4, C.twine);
+  f.set(5, 3, C.twine);
+  f.set(11, 4, C.twine);
+  f.set(10, 3, C.twine);
+  f.set(8, 2, C.twine);
+  f.set(8, 1, C.twine);
+  f.set(8, 0, C.ember, true);
+  f.outline(C.outline);
+  return f;
+}
+
+/**
  * The coin pile as a small 2D canvas, for the HUD's vildenaro counter: the
  * same pixels as the pickup on the ground, so the HUD and the world speak the
  * same language ("that thing there = this number here"). CSS scales it up
@@ -214,7 +256,7 @@ const SELF_LIGHT = 0.4;
  * to the lit color: the dark parts never go fully black.
  */
 export function pickupSheet(): SpriteSheet & { emissive: THREE.CanvasTexture } {
-  const frames = [paintBullets(), paintShells(), paintMedkit(), paintCoin(), paintIron()];
+  const frames = [paintBullets(), paintShells(), paintMedkit(), paintCoin(), paintIron(), paintSticks()];
   const sheet = buildSheet(frames);
   const n = PICKUP_FRAME;
   const w = n * frames.length;

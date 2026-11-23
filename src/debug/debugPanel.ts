@@ -87,6 +87,7 @@ export function createDebugPanel(options: {
   shop.number(tuning, 'shopReach', 1, 6, 0.1);
   shop.number(tuning, 'shotgunPrice', 0, 3000, 50);
   shop.number(tuning, 'riflePrice', 0, 3000, 50);
+  shop.number(tuning, 'dynamitePrice', 0, 3000, 50);
   shop.number(tuning, 'shovelPrice', 0, 3000, 50);
   shop.button('+500 vildenaro', () => options.onGiveMoney(500));
   shop.button('+1 Ferro Dannato', () => options.onGiveIron());
@@ -223,6 +224,7 @@ export function createDebugPanel(options: {
   drops.number(tuning, 'dropWeightBullets', 0, 10, 1);
   drops.number(tuning, 'dropWeightShells', 0, 10, 1);
   drops.number(tuning, 'dropWeightMedkit', 0, 10, 1);
+  drops.number(tuning, 'dropWeightSticks', 0, 10, 1);
   drops.number(tuning, 'dropLifetime', 1, 60, 1);
   drops.number(tuning, 'pickupRadius', 0.3, 3, 0.1);
   drops.number(tuning, 'pickupReachBelow', 0, 4, 0.1);
@@ -230,6 +232,7 @@ export function createDebugPanel(options: {
   drops.number(tuning, 'medkitHeal', 5, 100, 5);
   drops.number(tuning, 'ammoPickupBullets', 0, 36, 1);
   drops.number(tuning, 'ammoPickupShells', 0, 12, 1);
+  drops.number(tuning, 'ammoPickupSticks', 0, 10, 1);
   drops.number(tuning, 'coinsPerWeight', 0, 5, 1);
   drops.number(tuning, 'coinValue', 1, 100, 1);
   drops.number(tuning, 'dropBurstSpeedMin', 0, 10, 0.5);

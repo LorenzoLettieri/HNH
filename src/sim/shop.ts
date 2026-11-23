@@ -44,6 +44,7 @@ export function shopCatalog(kind: ShopSpawn['kind']): ShopItem[] {
         { id: 'revolver', price: 0 }, // never bought: you always have it
         { id: 'shotgun', price: tuning.shotgunPrice },
         { id: 'rifle', price: tuning.riflePrice },
+        { id: 'dynamite', price: tuning.dynamitePrice },
         { id: 'shovel', price: tuning.shovelPrice },
       ];
     case 'forge':

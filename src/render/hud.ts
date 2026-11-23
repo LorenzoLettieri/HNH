@@ -70,7 +70,7 @@ const FLASH_SHIFT = 30;
 /** How fast the red flash fades (per second). */
 const FLASH_FADE = 2;
 /** Screen tint for each pickup: same colors as their glow (render/pickups.ts). */
-const PICKUP_TINTS = { bullets: 'rgb(255, 200, 70)', shells: 'rgb(255, 90, 40)', medkit: 'rgb(70, 255, 100)', coin: 'rgb(255, 190, 40)', iron: 'rgb(255, 70, 30)' };
+const PICKUP_TINTS = { bullets: 'rgb(255, 200, 70)', shells: 'rgb(255, 90, 40)', medkit: 'rgb(70, 255, 100)', coin: 'rgb(255, 190, 40)', iron: 'rgb(255, 70, 30)', sticks: 'rgb(255, 50, 30)' };
 /** Coins tint the screen less: you pick up dozens, it shouldn't feel like a camera flash every time. */
 const COIN_FLASH = 0.4;
 let pickupTime = 0; // 0..1, the short flash when you collect something

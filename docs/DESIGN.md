@@ -709,7 +709,7 @@ futuro **poligono di tiro / tutorial**.
   richiede 0,18 s e non si può durante la ricarica. **Ricarica un colpo alla volta** dallo sportello
   laterale (0,3 s per portarla allo sportello + 0,38 s a colpo): un click la interrompe e spari (dopo
   0,12 s). **Si compra all'armeria** per 1200 vildenaro, con 24 proiettili in tasca.
-- **Lancia-dinamite** [IN CORSO: passi 1–4a: candelotto, esplosione, ed è un'arma vera (tasto 4, con `?guns=all`)] — tasto 4, l'ultima arma per ora.
+- **Lancia-dinamite** [IN CORSO: passi 1–4: candelotto, esplosione, arma vera (tasto 4), all'armeria per 1500] — tasto 4, l'ultima arma per ora.
   Ispirato al lanciagranate di Junkrat ma western: un lanciatore steampunk a tamburo che spara i classici
   **candelotti rossi**. L'arma **ad area e a traiettoria** (le altre tre sono hitscan): vola ad arco con la
   gravità, si tira dietro i muretti, sui tetti, in mezzo all'orda. Decisioni [DECISO, novembre 2026]:
@@ -729,8 +729,10 @@ futuro **poligono di tiro / tutorial**.
   art, **la miccia si accorcia**: leggi quanto manca; sfrigolio, "tonk" sui rimbalzi; esplosione grande con palla di
   fuoco, luce, fumo, scossone e boato) [FATTO] → 4a. arma vera nella simulazione: **tasto 4**, **tamburo da 5**,
   un candelotto ogni **0,6 s**, ricarica del tamburo intero in **1,6 s**, terza tasca (10 all'inizio, massimo 20),
-  forma nell'HUD e silhouette nella barra; non si rinforza alla Forgia (per ora) [FATTO] → 4b. raccoglibile,
-  articolo nello shop col prezzo → 5. lanciatore in mano → 6. animazioni (sparo, cambio arma, ricarica) →
+  forma nell'HUD e silhouette nella barra; non si rinforza alla Forgia (per ora) [FATTO] → 4b. **all'armeria per
+  1500 vildenaro** (l'arma più cara: carabina 1000, doppietta 600) con 10 candelotti, e il **fascio di dinamite** che
+  cade dai nemici (solo se hai il lancia-dinamite, **raro**: peso 1 contro 5/4/3 di proiettili, cartucce e medikit,
+  3 candelotti) [FATTO] → 5. lanciatore in mano → 6. animazioni (sparo, cambio arma, ricarica) →
   7. premi dello Stile e taratura. Dopo: carte e Forgia.
 - **Fuoco alternativo (tasto destro)** [DECISO]: ogni arma può averne uno. Revolver: fanning;
   carabina: mira dal mirino; doppietta: da decidere.
