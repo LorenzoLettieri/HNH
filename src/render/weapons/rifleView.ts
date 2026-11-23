@@ -5,12 +5,12 @@
 // stock) and split into moving parts, each with its ORIGIN on its pivot:
 //
 //   frame          doesn't move
-//   ├── lever      origin on its pin: rotation.x > 0 swings the loop down (open)
-//   ├── hammer     origin on its screw: modeled cocked (0); < 0 = fallen (fired)
-//   ├── trigger    origin at its top: < 0 = pulled
-//   ├── bolt       the end of the bolt: slides back (+z) when the lever opens
-//   ├── case       a spent case in the chamber (only a template: hidden)
-//   └── round      a live round at the loading gate (reload)
+//   â”œâ”€â”€ lever      origin on its pin: rotation.x > 0 swings the loop down (open)
+//   â”œâ”€â”€ hammer     origin on its screw: modeled cocked (0); < 0 = fallen (fired)
+//   â”œâ”€â”€ trigger    origin at its top: < 0 = pulled
+//   â”œâ”€â”€ bolt       the end of the bolt: slides back (+z) when the lever opens
+//   â”œâ”€â”€ case       a spent case in the chamber (only a template: hidden)
+//   â””â”€â”€ round      a live round at the loading gate (reload)
 //
 // THE LEVER, the part that has to feel good. After every shot:
 //   1. the shot: hammer falls, trigger back, the gun kicks (viewmodel.ts);
@@ -35,7 +35,7 @@
 import * as THREE from 'three';
 import { secondsToTicks, tuning } from '../../sim/config';
 import type { PlayerState } from '../../sim/player';
-import { fireInterval } from '../../sim/weapon';
+import { adsAmount, fireInterval } from '../../sim/weapon';
 import type { LeverTimes } from '../../audio/sfx';
 import { ELASTIC_STEP, PoseSpring, Stroke, ZERO_POSE, phase, poseAt, smoothstep, travelTime, type GunPose } from './elastic';
 import { loadGunModel } from './gunModel';
@@ -45,7 +45,7 @@ import { createSpentCases, type CaseThrow } from './spentCases';
 // --- The scope (the Forge's optic) ------------------------------------------------
 // Measured on rifle.glb (each mesh's POSITION accessor has min/max, a free
 // bounding box): the front sight's tip is 0.073 above the grip, the receiver
-// spans about z −0.05 → −0.2, the muzzle is at −0.73. The scope sits on the
+// spans about z âˆ’0.05 â†’ âˆ’0.2, the muzzle is at âˆ’0.73. The scope sits on the
 // receiver, its tube a couple of centimeters above the iron sights (which
 // stay visible under it, like on a real rifle with "see-through" mounts).
 /** Height of the tube's axis above the grip, meters: the eye goes here when aiming (viewmodelSettings.rifleScopeAdsY). */
@@ -60,8 +60,8 @@ const LENS_GLINT = 0x6a90b0;
 
 /**
  * A scope out of a few cylinders. CylinderGeometry stands along +Y; turned
- * by −90° around X its top (+Y) points to −Z, along the barrel (the rotation
- * matrix sends y to −z). radiusTop is then the end toward the muzzle.
+ * by âˆ’90Â° around X its top (+Y) points to âˆ’Z, along the barrel (the rotation
+ * matrix sends y to âˆ’z). radiusTop is then the end toward the muzzle.
  */
 function createScope(): THREE.Group {
   const g = new THREE.Group();
@@ -69,7 +69,7 @@ function createScope(): THREE.Group {
     new THREE.MeshStandardMaterial({ color, emissive, roughness: 0.55, metalness: 0, flatShading: true });
   const blued = material(SCOPE_BLUED);
   const brass = material(SCOPE_BRASS);
-  /** A piece of tube from z0 (back) to z1 (front), radius rBack → rFront. */
+  /** A piece of tube from z0 (back) to z1 (front), radius rBack â†’ rFront. */
   const tube = (z0: number, z1: number, rBack: number, rFront: number, m: THREE.Material) => {
     const geo = new THREE.CylinderGeometry(rFront, rBack, z0 - z1, 10).rotateX(-Math.PI / 2);
     const mesh = new THREE.Mesh(geo, m);
@@ -103,7 +103,7 @@ function createScope(): THREE.Group {
 // --- The lever ---------------------------------------------------------------
 /** How far the lever swings open, radians: the stop it slams into. */
 const LEVER_OPEN = 0.85;
-/** How hard the hand throws it open / slams it shut, rad/s² (a constant push: it accelerates all the way). */
+/** How hard the hand throws it open / slams it shut, rad/sÂ² (a constant push: it accelerates all the way). */
 const LEVER_THROW = 300;
 const LEVER_SLAM = 520;
 /** Speed kept when it hits a stop (0 = dead stop, 1 = bounces forever). */
@@ -111,9 +111,23 @@ const LEVER_BOUNCE_OPEN = 0.3;
 const LEVER_BOUNCE_SHUT = 0.2;
 /** Below this speed a bounce is over: it rests against the stop, rad/s. */
 const LEVER_REST_SPEED = 0.6;
-/** How much a slam into a stop jolts the gun (per rad/s of the lever's speed). */
-const SLAM_JOLT_PITCH = 0.04;
-const SLAM_JOLT_Y = 0.012;
+/**
+ * How much a slam into a stop jolts the gun, as a kick to the pose spring's
+ * speed per rad/s of the lever's speed. Thrown OPEN, the lever yanks the gun
+ * down and forward; slammed SHUT it snaps it up and back into the hand.
+ */
+const SLAM_JOLT_PITCH = 0.08;
+const SLAM_JOLT_Y = 0.02;
+const SLAM_JOLT_Z = 0.02;
+const OPEN_JOLT_SHARE = 0.6;
+/**
+ * The slams reach your head too: a camera punch, radians per rad/s of the
+ * lever's speed. Slammed shut: a nod down (the "CLACK"); thrown open: a small one up.
+ */
+const PUNCH_SHUT = 0.0006;
+const PUNCH_OPEN = 0.0002;
+/** Aimed down the sights the cycle is this fraction of the hip one (the sights must stay readable). */
+const ADS_CYCLE = 0.35;
 
 // --- Hammer, trigger, bolt -----------------------------------------------------
 /** The hammer after the shot, radians (fallen forward onto the firing pin). */
@@ -155,18 +169,38 @@ const CASE_THROW: CaseThrow = { speed: { x: 0.6, y: 1.5, z: 0.25 }, scatter: 0.3
 
 // --- The gun's pose: a damped spring chasing keyframes ---------------------------
 const POSE_STIFFNESS = 900;
-const POSE_DAMPING_RATIO = 0.45;
+/** Below 1 the gun overshoots its keyframes and swings back: lower = more swagger. */
+const POSE_DAMPING_RATIO = 0.36;
 const Z = ZERO_POSE;
-/** [t, pose] of the lever cycle (t = fraction of rifleFireInterval since the shot). */
+/**
+ * [t, pose] of the lever cycle (t = fraction of rifleFireInterval since the
+ * shot). EXAGGERATED on purpose (the badass rule, CLAUDE.md; same recipe as
+ * the pump's CYCLE_KEYS): a flick the other way (anticipation), then the
+ * lever thrown and the gun CRANKED with it, pulled toward you, muzzle up and
+ * rolled onto its LEFT side, toward the middle of the screen (the top of the
+ * open action in view while the case flies out), it hangs there, then the
+ * slam snaps it back PAST its rest pose and the spring bounces it home. Back
+ * on target well before the next shot (0.85).
+ * Two things the screenshots taught: the left arm is rigid with the gun, and
+ * rolled onto its RIGHT side it swung up over half the screen (onto the left
+ * side it drops out of view instead); and an overshoot with the muzzle DOWN
+ * swings the stock up into your face, so the slam overshoots in height and
+ * depth, barely in pitch.
+ */
 const CYCLE_KEYS: [number, GunPose][] = [
   [0, Z],
-  [LEVER_THROW_AT - 0.04, { x: 0, y: 0.004, z: 0, pitch: 0.02, yaw: 0, roll: 0.04 }], // wind-up
-  [LEVER_THROW_AT + 0.07, { x: -0.004, y: 0.01, z: 0.008, pitch: 0.07, yaw: 0.03, roll: -0.25 }], // throw: canted more, the action in view
-  [LEVER_SHUT_AT, { x: -0.004, y: 0.01, z: 0.008, pitch: 0.06, yaw: 0.03, roll: -0.22 }],
-  [LEVER_SHUT_AT + 0.08, { x: 0, y: -0.004, z: 0, pitch: -0.03, yaw: 0, roll: 0.04 }], // snapped back
-  [0.8, Z],
+  [LEVER_THROW_AT - 0.06, { x: 0.004, y: -0.004, z: 0, pitch: 0.04, yaw: -0.02, roll: -0.08 }], // anticipation: a flick the other way
+  [LEVER_THROW_AT + 0.06, { x: -0.015, y: 0.015, z: 0.04, pitch: 0.16, yaw: 0.1, roll: 0.5 }], // THROW: cranked in, muzzle up, on its side
+  [LEVER_SHUT_AT - 0.02, { x: -0.02, y: 0.02, z: 0.045, pitch: 0.18, yaw: 0.12, roll: 0.55 }], // hang (the case in the air)
+  [LEVER_SHUT_AT + 0.06, { x: 0.006, y: 0.012, z: -0.035, pitch: -0.03, yaw: -0.03, roll: 0.06 }], // SLAM: snapped back past the rest (the spring swings the roll past it by itself)
+  [LEVER_SHUT_AT + 0.17, { x: 0, y: -0.003, z: 0.004, pitch: 0.02, yaw: 0, roll: 0 }], // settling
+  [0.85, Z],
   [1, Z],
 ];
+/** A pose scaled by k (the cycle aimed down the sights: less of it). */
+function scaled(p: GunPose, k: number): GunPose {
+  return { x: p.x * k, y: p.y * k, z: p.z * k, pitch: p.pitch * k, yaw: p.yaw * k, roll: p.roll * k };
+}
 /**
  * The reload pose: rolled onto its left side, so the RIGHT side (where the
  * loading gate is) faces up toward you; closer, muzzle up a little.
@@ -217,6 +251,8 @@ export interface RifleView {
   draw(): void;
   /** Stop every animation (weapon switched away). */
   cancel(): void;
+  /** The camera punch of the lever's slams since the last call (radians, + = up), for the viewmodel. */
+  takePunch(): number;
   /** Advance the animations. Returns the pose offsets of the whole gun. */
   update(dt: number, player: PlayerState): GunPose;
 }
@@ -278,6 +314,7 @@ export function createRifleView(flightSpace: THREE.Object3D): RifleView {
   let lastRoundK = 0; // progress of the round being pushed in (to catch the push moment)
   const v = new THREE.Vector3();
   let drawTime = Infinity; // seconds since the gun was drawn
+  let punch = 0; // camera punch collected since the viewmodel last took it
 
   return {
     root,
@@ -300,10 +337,16 @@ export function createRifleView(flightSpace: THREE.Object3D): RifleView {
       cocked = true;
       ejected = true;
       hammer = 0;
+      punch = 0;
       cases.clear();
     },
+    takePunch() {
+      const p = punch;
+      punch = 0;
+      return p;
+    },
     update(dt, player) {
-      scope.visible = player.forged.rifle > 0; // the Forge's optic (docs/DESIGN.md §6d)
+      scope.visible = player.forged.rifle > 0; // the Forge's optic (docs/DESIGN.md Â§6d)
       const interval = fireInterval(player, 'rifle'); // "Leva da pistolero" makes it shorter
       const perRoundTicks = secondsToTicks(tuning.rifleReloadPerRound);
       const reloading = player.reloadTicks > 0;
@@ -316,6 +359,8 @@ export function createRifleView(flightSpace: THREE.Object3D): RifleView {
         spring.vel.pitch += PUSH_DIP_PITCH;
       }
       lastRoundK = roundK;
+      // Aimed: a smaller cycle (and smaller slams), so the sights stay usable.
+      const cycleScale = 1 - (1 - ADS_CYCLE) * adsAmount(player);
 
       // --- Lever and gun pose, in small fixed steps (springs need them) ---
       leftover += Math.min(dt, 0.1);
@@ -329,11 +374,15 @@ export function createRifleView(flightSpace: THREE.Object3D): RifleView {
         const open = drawing ? drawTime < DRAW_SHUT_AT * drawSpan : t >= LEVER_THROW_AT && t < LEVER_SHUT_AT;
         lever.step(open, ELASTIC_STEP);
         if (lever.impact !== 0) {
-          // The lever hit a stop: the whole gun feels it. Shut (negative
-          // speed) jolts it more than open: that's the "CLACK" of the cycle.
-          const k = Math.abs(lever.impact) * (lever.impact < 0 ? 1 : 0.5);
+          // The lever hit a stop: the whole gun feels it. Slammed shut
+          // (negative speed): snapped up and back, the "CLACK" of the cycle.
+          // Thrown open: yanked down and forward, a bit less.
+          const shut = lever.impact < 0;
+          const k = Math.abs(lever.impact) * cycleScale * (shut ? 1 : -OPEN_JOLT_SHARE);
           spring.vel.pitch += SLAM_JOLT_PITCH * k;
           spring.vel.y += SLAM_JOLT_Y * k;
+          spring.vel.z += SLAM_JOLT_Z * k;
+          punch += lever.impact * cycleScale * (shut ? PUNCH_SHUT : PUNCH_OPEN); // down / up
           lever.impact = 0;
         }
         const target = reloading
@@ -341,7 +390,7 @@ export function createRifleView(flightSpace: THREE.Object3D): RifleView {
           : drawing
             ? poseAt(DRAW_LEVER_KEYS, drawTime / drawSpan)
             : t < 1
-              ? poseAt(CYCLE_KEYS, t)
+              ? scaled(poseAt(CYCLE_KEYS, t), cycleScale)
               : Z;
         spring.step(target, ELASTIC_STEP);
       }

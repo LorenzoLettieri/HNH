@@ -483,6 +483,7 @@ export function createViewmodel(): Viewmodel {
       viewKick += pump.takePunch(); // the pump's slams shake your view a little
       const shotgunPose = pumpShown ? pumpPose : doubleBarrelPose;
       const riflePose = rifle.update(dt, player);
+      viewKick += rifle.takePunch(); // and so do the lever's
 
       // --- Reload: flick open, cases out, rounds in, flick shut, spin (see revolverReload.ts) ---
       const rr = revolverReload.update(dt, revolverReloadTime, gun);
