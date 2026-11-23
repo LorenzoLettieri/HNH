@@ -19,6 +19,7 @@ import {
   playCarbineLever,
   playCarbineReloadStart,
   playCarbineRoundIn,
+  playPumpRack,
   playShot,
   playShotgun,
   playShotgunReload,
@@ -31,6 +32,7 @@ import type { MeleeTool } from '../sim/kick';
 import { createImpacts } from './impacts';
 import { hitStopSettings, requestHitStop } from './hitStop';
 import { leverTimes } from './weapons/rifleView';
+import { pumpTimes } from './weapons/pumpView';
 import { showHitmarker } from './hitmarker';
 import { spawnBlood, spawnSnort, spawnSparks } from './particles';
 import { soundAt } from './soundPosition';
@@ -53,7 +55,8 @@ export interface WeaponFx {
   handle(events: SimEvent[], camera: THREE.Camera): void;
   update(dt: number): void;
   /** Listeners for other modules (e.g. the viewmodel recoil). */
-  onShot: ((weapon: WeaponId, barrel: number) => void)[];
+  /** `forged` = the gun reinforced at the Forge (the shotgun: the pump-action). */
+  onShot: ((weapon: WeaponId, barrel: number, forged: boolean) => void)[];
   /** A reload starts: which weapon, and how many seconds it lasts (the simulation says: cards can change it). */
   onReload: ((weapon: WeaponId, seconds: number, forged: boolean) => void)[];
   onKick: ((tool: MeleeTool) => void)[];
@@ -84,8 +87,12 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
         switch (e.type) {
           case 'fire':
             // The gun went off: sound, light, recoil (once per trigger pull).
-            if (e.weapon === 'shotgun') playShotgun();
-            else if (e.weapon === 'rifle') {
+            if (e.weapon === 'shotgun') {
+              playShotgun();
+              // The pump-action: ch-CHK, timed on the animation (pumpView.ts). Once
+              // per shot: "Doppio botto" sends two fire events, the pump is racked once.
+              if (e.forged && e.barrel === 0) playPumpRack(pumpTimes(e.seconds));
+            } else if (e.weapon === 'rifle') {
               playCarbineShot();
               playCarbineLever(leverTimes(e.seconds)); // cla-CLACK, timed on the animation (the event says how long)
             } else playShot();
@@ -93,7 +100,7 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
             flash.position.copy(camera.position).addScaledVector(forward, 0.8);
             flashTime = FLASH_DURATION;
             flashPeak = e.weapon === 'shotgun' ? SHOTGUN_FLASH_INTENSITY : FLASH_INTENSITY;
-            for (const f of fx.onShot) f(e.weapon, e.barrel);
+            for (const f of fx.onShot) f(e.weapon, e.barrel, e.forged);
             break;
           case 'shot':
             // One bullet or pellet: where it landed. Pellets get smaller

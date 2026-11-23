@@ -267,6 +267,29 @@ export function playCarbineRoundIn(): void {
 }
 
 /**
+ * The pump-action's pump, timed on the animation (render/weapons/pumpView.ts:
+ * the fore-end is a Stroke, like the carbine's lever, so the same LeverTimes):
+ * wood sliding back on the tube, "CH-" when it hits the rear stop, the spent
+ * shell out (a duller sound than the carbine's brass: paper and a brass
+ * head), the slide forward and a heavy "-CHK" when it's shoved home. Lower
+ * and meatier than the lever: the "ch-CHK" every action movie taught us.
+ */
+export function playPumpRack(t: LeverTimes): void {
+  noiseBurst({ start: t.throwAt, duration: t.openAt - t.throwAt + 0.01, volume: 0.14, filter: 'bandpass', frequency: 700, frequencyEnd: 1800, q: 1.5 }); // slide back
+  noiseBurst({ start: t.openAt, duration: 0.05, volume: 0.6, filter: 'bandpass', frequency: 1900, q: 2.5 }); // CH-
+  thump({ start: t.openAt, duration: 0.04, volume: 0.3, from: 520, to: 260 });
+  noiseBurst({ start: t.ejectAt, duration: 0.04, volume: 0.15, filter: 'bandpass', frequency: 3000, q: 5 }); // shell out
+  noiseBurst({ start: t.shutStart, duration: t.shutAt - t.shutStart + 0.01, volume: 0.14, filter: 'bandpass', frequency: 1800, frequencyEnd: 800, q: 1.5 }); // slide forward
+  noiseBurst({ start: t.shutAt, duration: 0.08, volume: 1.0, filter: 'bandpass', frequency: 1100, q: 2 }); // -CHK
+  thump({ start: t.shutAt, duration: 0.08, volume: 0.55, from: 300, to: 110 });
+  noiseBurst({ start: t.shutAt + 0.01, duration: 0.02, volume: 0.3, filter: 'bandpass', frequency: 3600, q: 6 }); // the bolt locking
+  // The shell lands somewhere behind you: a dull plastic "tock", and a smaller bounce.
+  for (const [k, vol] of [[0.45, 0.12], [0.55, 0.05]]) {
+    noiseBurst({ start: t.ejectAt + k, duration: 0.03, volume: vol, filter: 'bandpass', frequency: 1800 + Math.random() * 400, q: 5 });
+  }
+}
+
+/**
  * Card "Duellante": the double-damage shot is ready. A dry "tic" (a short
  * click through a narrow filter) and a faint metallic ring after it (a
  * very high Q makes filtered noise ring like a tiny bell).

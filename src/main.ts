@@ -37,7 +37,7 @@ import { createMapOverlay } from './render/mapOverlay';
 import { shopInReach } from './sim/shop';
 import './render/crosshair'; // paints the crosshair once
 import { updateScopeOverlay } from './render/scopeOverlay';
-import { adsAmount, GEAR } from './sim/weapon';
+import { adsAmount, GEAR, magazineSize, WEAPONS } from './sim/weapon';
 import { updateHud } from './render/hud';
 import { createEndScreen } from './render/endScreen';
 import { updateAmmoHud } from './render/ammoHud';
@@ -155,7 +155,7 @@ const hitboxDebug = createHitboxDebug(scene);
 // The gun in your hand: its own scene and camera, drawn over the world.
 const viewmodel = createViewmodel();
 viewmodel.setAspect(window.innerWidth / window.innerHeight);
-weaponFx.onShot.push((weapon, barrel) => viewmodel.onShot(weapon, barrel));
+weaponFx.onShot.push((weapon, barrel, forged) => viewmodel.onShot(weapon, barrel, forged));
 weaponFx.onReload.push((weapon, seconds, forged) => viewmodel.onReload(weapon, seconds, forged));
 weaponFx.onKick.push((tool) => viewmodel.onKick(tool));
 
@@ -370,6 +370,13 @@ const prevPlayer = createPlayer();
 if (params.get('slow')) debugTime.timeScale = Number(params.get('slow'));
 // ?guns=all: start with every weapon (to try them without going to the shop).
 if (params.get('guns') === 'all') for (const w of GEAR) game.player.owned[w] = true; // the shovel too
+// ?forged=all: every gun already reinforced at the Forge, and loaded (akimbo, pump-action, scope).
+if (params.get('forged') === 'all') {
+  for (const w of WEAPONS) {
+    game.player.forged[w] = 1;
+    game.player.loaded[w] = magazineSize(game.player, w);
+  }
+}
 const startPos = params.get('pos')?.split(',').map(Number);
 const startLook = params.get('look')?.split(',').map(Number);
 if (startPos?.length === 3) [player.x, player.y, player.z] = startPos;

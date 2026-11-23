@@ -17,10 +17,11 @@ import { createKickLeg } from './kickLeg';
 import { createShovelView } from './shovelView';
 import type { MeleeTool } from '../../sim/kick';
 import { createShotgunView } from './shotgunView';
+import { createPumpView } from './pumpView';
 import { createRevolverReload } from './revolverReload';
 import { createAkimboSpin } from './akimboSpin';
 import { createRifleView } from './rifleView';
-import { adsAmount, isAkimbo, type WeaponId } from '../../sim/weapon';
+import { adsAmount, isAkimbo, isPump, type WeaponId } from '../../sim/weapon';
 import { smoothstep } from './elastic';
 import { lookingThroughScope } from '../scopeOverlay';
 
@@ -67,6 +68,17 @@ export const viewmodelSettings = {
   shotgunRecoilBack: 0.11,
   shotgunRecoilRecovery: 7,
   shotgunViewKick: 0.06,
+  /**
+   * The PUMP-ACTION (the Forge's shotgun, pumpView.ts): held from the hip
+   * like the carbine, with the carbine's arms, so the same pose (the arms
+   * are posed for it). Recoil and view kick are the shotgun's.
+   */
+  pumpX: 0.15,
+  pumpY: -0.15,
+  pumpZ: -0.36,
+  pumpPitch: 0.05,
+  pumpYaw: 0.01,
+  pumpRoll: 0.05,
 
   // --- Lever-action carbine (origin of its model: the right hand on the wrist) ---
   /** From the hip: low on the right, the barrel going into depth. (The arms in arms.glb are posed for this pose.) */
@@ -150,7 +162,8 @@ function flashTexture(): THREE.Texture {
 export interface Viewmodel {
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
-  onShot(weapon: WeaponId, barrel: number): void;
+  /** `forged` = the gun reinforced at the Forge (the shotgun: the pump-action fired). */
+  onShot(weapon: WeaponId, barrel: number, forged: boolean): void;
   /** A reload starts and lasts `seconds` (the revolver's timeline is stretched to fit). */
   onReload(weapon: WeaponId, seconds: number, forged: boolean): void;
   /** The melee attack started: play the leg (kickLeg.ts) or the shovel swing (shovelView.ts). */
@@ -216,6 +229,11 @@ export function createViewmodel(): Viewmodel {
   const shotgun = createShotgunView();
   shotgun.root.visible = false;
   holder.add(shotgun.root);
+  // The Forge's shotgun, the pump-action (see pumpView.ts): it takes the
+  // double barrel's place once the shotgun is reinforced.
+  const pump = createPumpView(scene);
+  pump.root.visible = false;
+  holder.add(pump.root);
   let shownWeapon: WeaponId = 'revolver';
   let switchDrop = 0; // 1 = the gun is fully below the screen, 0 = in place
 
@@ -240,6 +258,9 @@ export function createViewmodel(): Viewmodel {
   scene.add(holderL);
   const shotgunFlash = createFlash(flashMap);
   shotgun.root.add(shotgunFlash);
+  const pumpFlash = createFlash(flashMap);
+  pumpFlash.position.copy(pump.muzzle);
+  pump.root.add(pumpFlash);
 
   // The lever-action carbine (see rifleView.ts). Its spent cases fly in the
   // scene itself: once out of the gun they don't follow its sway.
@@ -282,7 +303,7 @@ export function createViewmodel(): Viewmodel {
   return {
     scene,
     camera,
-    onShot(weapon, barrel) {
+    onShot(weapon, barrel, forged) {
       kickWeapon = weapon;
       flashTime = 0.05;
       // Akimbo: barrel 1 = the LEFT revolver fired. Only that gun kicks,
@@ -304,6 +325,15 @@ export function createViewmodel(): Viewmodel {
         rifle.onShot();
         rifleFlash.material.rotation = Math.random() * Math.PI;
         rifleFlash.scale.setScalar(0.13 + Math.random() * 0.05);
+        return;
+      }
+      if (weapon === 'shotgun' && forged) {
+        // The pump-action: one barrel ("Doppio botto" fires twice through it,
+        // in the same instant: the second call just restarts the same things).
+        viewKick = s.shotgunViewKick;
+        pump.onShot();
+        pumpFlash.material.rotation = Math.random() * Math.PI;
+        pumpFlash.scale.setScalar(0.15 + Math.random() * 0.06);
         return;
       }
       if (weapon === 'shotgun') {
@@ -370,6 +400,7 @@ export function createViewmodel(): Viewmodel {
         revolverReload.cancel(); // a reload in progress was cancelled by the switch
         akimboSpin.cancel();
         shotgun.cancel();
+        pump.cancel();
         rifle.cancel();
         flashTime = 0;
       }
@@ -377,7 +408,10 @@ export function createViewmodel(): Viewmodel {
       // Akimbo: the left gun appears, the fanning hand goes away (it's holding a gun now).
       const akimbo = shownWeapon === 'revolver' && isAkimbo(player);
       holderL.visible = akimbo;
-      shotgun.root.visible = shownWeapon === 'shotgun';
+      // The shotgun: the double barrel, or the pump-action once reinforced at the Forge.
+      const pumpShown = shownWeapon === 'shotgun' && isPump(player);
+      shotgun.root.visible = shownWeapon === 'shotgun' && !pumpShown;
+      pump.root.visible = pumpShown;
       // Looking through the scope: the gun is "around" your eye, you see the scope view instead.
       rifle.root.visible = shownWeapon === 'rifle' && !lookingThroughScope(player);
       const isRifle = shownWeapon === 'rifle';
@@ -399,10 +433,11 @@ export function createViewmodel(): Viewmodel {
       flashTime -= dt;
       flash.visible = flashTime > 0 && shownWeapon === 'revolver' && !flashLeft;
       flashL.visible = flashTime > 0 && akimbo && flashLeft;
-      shotgunFlash.visible = flashTime > 0 && isShotgun;
+      shotgunFlash.visible = flashTime > 0 && isShotgun && !pumpShown;
+      pumpFlash.visible = flashTime > 0 && pumpShown;
       rifleFlash.visible = flashTime > 0 && isRifle && ads < 0.5; // aimed: the flash would fill the sights
       flashLight.intensity = flashTime > 0 ? (isShotgun ? 5 : isRifle ? 4 : 3) : 0;
-      const activeFlash = isShotgun ? shotgunFlash : isRifle ? rifleFlash : akimbo && flashLeft ? flashL : flash;
+      const activeFlash = pumpShown ? pumpFlash : isShotgun ? shotgunFlash : isRifle ? rifleFlash : akimbo && flashLeft ? flashL : flash;
       flashLight.position.copy(activeFlash.position).applyMatrix4(activeFlash.parent!.matrixWorld);
 
       // --- Cylinder turns to the next chamber; hammer re-cocks after a shot ---
@@ -417,8 +452,10 @@ export function createViewmodel(): Viewmodel {
       gunL.hammer.rotation.x = HAMMER_FIRED * (1 - cockedL);
       gunL.cylinder.rotation.z = cylinderAngleL;
 
-      // --- Shotgun: elastic reload (see shotgunView.ts) ---
-      const shotgunPose = shotgun.update(dt, player);
+      // --- Shotgun: elastic reload (see shotgunView.ts), or the pump-action's cycle (pumpView.ts) ---
+      const doubleBarrelPose = shotgun.update(dt, player);
+      const pumpPose = pump.update(dt, player);
+      const shotgunPose = pumpShown ? pumpPose : doubleBarrelPose;
       const riflePose = rifle.update(dt, player);
 
       // --- Reload: flick open, cases out, rounds in, flick shut, spin (see revolverReload.ts) ---
@@ -475,7 +512,9 @@ export function createViewmodel(): Viewmodel {
       // (sway, bob, slide, kick, switch) is shared.
       // The carbine's rest pose blends from the hip pose to the aimed one.
       const lerp = (a: number, b: number) => a + (b - a) * aimed;
-      const rest = isShotgun
+      const rest = pumpShown
+        ? { x: s.pumpX, y: s.pumpY, z: s.pumpZ, pitch: s.pumpPitch, yaw: s.pumpYaw, roll: s.pumpRoll }
+        : isShotgun
         ? { x: s.shotgunX, y: s.shotgunY, z: s.shotgunZ, pitch: s.shotgunPitch, yaw: s.shotgunYaw, roll: s.shotgunRoll }
         : isRifle
           ? {

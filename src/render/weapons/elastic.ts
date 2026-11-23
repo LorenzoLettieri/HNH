@@ -10,6 +10,8 @@
 //     the shotgun's barrels): pushed by the gun's accelerations, with hard
 //     stops it bounces against, a weak spring that makes sure it ends up
 //     open/shut, and a latch.
+//   - Stroke: a part THROWN by the hand from one stop to the other and
+//     bouncing on it (the carbine's lever, the pump-action's fore-end).
 //
 // Both are stepped at a fixed 1/240 s by the caller: a stiff spring
 // integrated with a long step becomes unstable and "explodes".
@@ -126,4 +128,69 @@ export class Hinge {
       if (!open) this.latched = true; // shut and latched: CLICK
     }
   }
+}
+
+/**
+ * A part THROWN by the hand between two stops: the carbine's lever (an
+ * angle, radians), the pump-action's fore-end (a slide, meters). A tiny
+ * physics simulation of one number and its speed: the hand pushes it toward
+ * one of the two stops with a CONSTANT force (so it keeps accelerating until
+ * it hits), and every stop bounces it back with part of its speed: a few
+ * smaller and smaller hops, then it rests. Compared to a keyframe this gets
+ * the two things that make it satisfying for free: the speed is highest
+ * exactly at the impact, and the impact has a rebound.
+ */
+export class Stroke {
+  /** 0 = shut (at rest), `travel` = fully open. */
+  pos = 0;
+  vel = 0;
+  /** Speed of the last impact against a stop (+ = the open stop; consumed by whoever reacts to it). */
+  impact = 0;
+
+  constructor(
+    /** Distance between the two stops. */
+    readonly travel: number,
+    /** How hard the hand throws it open / slams it shut (units/s²). */
+    readonly pushOpen: number,
+    readonly pushShut: number,
+    /** Speed kept when it hits a stop (0 = dead stop, 1 = bounces forever). */
+    private bounceOpen: number,
+    private bounceShut: number,
+    /** Below this speed a bounce is over: it rests against the stop. */
+    private restSpeed: number,
+  ) {}
+
+  reset(): void {
+    this.pos = 0;
+    this.vel = 0;
+    this.impact = 0;
+  }
+
+  step(open: boolean, dt: number): void {
+    this.vel += (open ? this.pushOpen : -this.pushShut) * dt;
+    this.pos += this.vel * dt;
+    if (this.pos >= this.travel && this.vel > 0) {
+      this.pos = this.travel;
+      this.hit(this.bounceOpen);
+    } else if (this.pos <= 0 && this.vel < 0) {
+      this.pos = 0;
+      this.hit(this.bounceShut);
+    }
+  }
+
+  private hit(bounce: number): void {
+    if (Math.abs(this.vel) > this.restSpeed * 4) this.impact = this.vel; // a real slam, not a resting nudge
+    this.vel = -this.vel * bounce;
+    if (Math.abs(this.vel) < this.restSpeed) this.vel = 0;
+  }
+}
+
+/**
+ * How long a Stroke takes to cover `distance` from a stop, pushed at a
+ * constant `acc` (for timing the sounds on the animation). Uniform
+ * acceleration from rest, the school formula: distance = ½·a·t², so
+ * t = √(2·distance / a).
+ */
+export function travelTime(distance: number, acc: number): number {
+  return Math.sqrt((2 * distance) / acc);
 }

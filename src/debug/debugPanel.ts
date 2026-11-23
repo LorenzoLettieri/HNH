@@ -267,6 +267,17 @@ export function createDebugPanel(options: {
   sg.number(viewmodelSettings, 'shotgunRecoilBack', 0, 0.3, 0.005);
   sg.number(viewmodelSettings, 'shotgunRecoilRecovery', 1, 30, 0.5);
   sg.number(viewmodelSettings, 'shotgunViewKick', 0, 0.2, 0.005);
+  // The pump-action (the Forge's shotgun, render/weapons/pumpView.ts).
+  sg.number(tuning, 'pumpAmmo', 1, 10, 1);
+  sg.number(tuning, 'pumpFireInterval', 0.2, 1.5, 0.01);
+  sg.number(tuning, 'pumpReloadStart', 0, 1, 0.01);
+  sg.number(tuning, 'pumpReloadPerShell', 0.1, 1, 0.01);
+  sg.number(viewmodelSettings, 'pumpX', -0.3, 0.3, 0.005);
+  sg.number(viewmodelSettings, 'pumpY', -0.3, 0.1, 0.005);
+  sg.number(viewmodelSettings, 'pumpZ', -0.6, 0, 0.005);
+  sg.number(viewmodelSettings, 'pumpPitch', -0.5, 1, 0.01);
+  sg.number(viewmodelSettings, 'pumpYaw', -0.3, 0.3, 0.005);
+  sg.number(viewmodelSettings, 'pumpRoll', -0.5, 0.5, 0.01);
   const rifle = panel.folder('Carbine (src/sim/config.ts + render/weapons/viewmodel.ts, rifleView.ts)');
   rifle.number(tuning, 'rifleDamage', 5, 300, 5);
   rifle.number(tuning, 'rifleHeadshotMultiplier', 1, 6, 0.25);

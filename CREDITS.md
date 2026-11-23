@@ -18,6 +18,8 @@
 - `shovel.glb`: **Shovel** by Quaternius, CC0. From Poly Pizza (https://poly.pizza/m/oNBQSf87ZJ).
   Scaled and turned for the viewmodel (origin on the grip) by `tools/blender/shovel.py`;
   the original is `assets-src/shovel/`.
+- `pumpShotgun.glb`: **Shotgun** by Quaternius, CC0. From Poly Pizza. The file as downloaded (only renamed):
+  turned, scaled and split into parts (the fore-end) in code when it loads, by `src/render/weapons/pumpView.ts`.
 - `rifleArms.glb`: made from PSX First Person Arms (below), posed on our carbine by `tools/blender/rifle_arms.py`.
 - `assets-src/psx-arms/`: **PSX First Person Arms** by Drillimpact, CC0. From itch.io:
   https://drillimpact.itch.io/psx-first-person-arms-free (original files).

@@ -37,9 +37,10 @@ import { secondsToTicks, tuning } from '../../sim/config';
 import type { PlayerState } from '../../sim/player';
 import { fireInterval } from '../../sim/weapon';
 import type { LeverTimes } from '../../audio/sfx';
-import { ELASTIC_STEP, PoseSpring, ZERO_POSE, phase, poseAt, smoothstep, type GunPose } from './elastic';
+import { ELASTIC_STEP, PoseSpring, Stroke, ZERO_POSE, phase, poseAt, smoothstep, travelTime, type GunPose } from './elastic';
 import { loadGunModel } from './gunModel';
 import { createRifleHands } from './hands';
+import { createSpentCases, type CaseThrow } from './spentCases';
 
 // --- The scope (the Forge's optic) ------------------------------------------------
 // Measured on rifle.glb (each mesh's POSITION accessor has min/max, a free
@@ -135,33 +136,22 @@ const EJECT_AT = 0.65;
 /**
  * When the moments of the cycle happen, seconds after the shot, for the
  * sounds (audio/sfx.ts). The lever accelerates at a constant rate from a
- * stop, so the time to cover an angle is the school formula for uniform
- * acceleration: angle = ½·a·t², so t = √(2·angle / a).
+ * stop (see travelTime in elastic.ts).
  */
 export function leverTimes(interval: number): LeverTimes {
   const throwAt = LEVER_THROW_AT * interval;
   const shutStart = LEVER_SHUT_AT * interval;
-  const travel = (angle: number, acc: number) => Math.sqrt((2 * angle) / acc);
   return {
     throwAt,
-    openAt: throwAt + travel(LEVER_OPEN, LEVER_THROW),
-    ejectAt: throwAt + travel(LEVER_OPEN * EJECT_AT, LEVER_THROW),
+    openAt: throwAt + travelTime(LEVER_OPEN, LEVER_THROW),
+    ejectAt: throwAt + travelTime(LEVER_OPEN * EJECT_AT, LEVER_THROW),
     shutStart,
-    shutAt: shutStart + travel(LEVER_OPEN, LEVER_SLAM),
+    shutAt: shutStart + travelTime(LEVER_OPEN, LEVER_SLAM),
   };
 }
 
-// --- The spent cases in flight -------------------------------------------------
-/** Speed of a case leaving the gun, m/s, in camera space: right, up, toward you. */
-const CASE_SPEED = { x: 0.6, y: 1.5, z: 0.25 };
-/** Random extra on each axis, so no two cases fly the same. */
-const CASE_SCATTER = 0.3;
-/** How fast it tumbles, rad/s. */
-const CASE_SPIN = 25;
-/** Gravity for the cases, m/s² (a bit less than real: we want to see them go). */
-const CASE_GRAVITY = 7;
-/** Seconds before a case is gone (it's off the screen by then). */
-const CASE_LIFE = 0.7;
+/** The spent cases in flight (spentCases.ts): out of the top, to the right, spinning fast. */
+const CASE_THROW: CaseThrow = { speed: { x: 0.6, y: 1.5, z: 0.25 }, scatter: 0.3, spin: 25, gravity: 7, life: 0.7 };
 
 // --- The gun's pose: a damped spring chasing keyframes ---------------------------
 const POSE_STIFFNESS = 900;
@@ -196,51 +186,6 @@ const ROUND_IN = new THREE.Vector3(-0.008, 0, -0.03);
 /** Phases of each round, fractions of rifleReloadPerRound: ready by... pushed in by... */
 const ROUND_READY_AT = 0.5;
 const ROUND_IN_AT = 0.92; // just before the simulation counts it in ('reloadRound': the click)
-
-/**
- * The lever as a tiny physics simulation: one angle and its speed. The hand
- * pushes it toward one of its two stops with a CONSTANT force (so it keeps
- * accelerating until it hits), and every stop bounces it back with part of
- * its speed: a few smaller and smaller hops, then it rests. Compared to a
- * keyframe this gets the two things that make it satisfying for free: the
- * speed is highest exactly at the impact, and the impact has a rebound.
- */
-class Lever {
-  angle = 0;
-  vel = 0;
-  /** Speed of the last impact against a stop (consumed by whoever reacts to it). */
-  impact = 0;
-
-  reset(): void {
-    this.angle = 0;
-    this.vel = 0;
-  }
-
-  step(open: boolean, dt: number): void {
-    this.vel += (open ? LEVER_THROW : -LEVER_SLAM) * dt;
-    this.angle += this.vel * dt;
-    if (this.angle >= LEVER_OPEN && this.vel > 0) {
-      this.angle = LEVER_OPEN;
-      this.hit(LEVER_BOUNCE_OPEN);
-    } else if (this.angle <= 0 && this.vel < 0) {
-      this.angle = 0;
-      this.hit(LEVER_BOUNCE_SHUT);
-    }
-  }
-
-  private hit(bounce: number): void {
-    if (Math.abs(this.vel) > LEVER_REST_SPEED * 4) this.impact = this.vel; // a real slam, not a resting nudge
-    this.vel = -this.vel * bounce;
-    if (Math.abs(this.vel) < LEVER_REST_SPEED) this.vel = 0;
-  }
-}
-
-interface FlyingCase {
-  mesh: THREE.Object3D;
-  vel: THREE.Vector3;
-  spin: THREE.Vector3;
-  age: number;
-}
 
 export interface RifleView {
   /** Goes inside the viewmodel holder. Its origin is the right hand on the wrist of the stock. */
@@ -299,39 +244,17 @@ export function createRifleView(flightSpace: THREE.Object3D): RifleView {
   const hands = createRifleHands();
   root.add(hands.right, hands.left);
 
-  const lever = new Lever();
+  // The lever: thrown between its two stops by the hand (Stroke, elastic.ts).
+  const lever = new Stroke(LEVER_OPEN, LEVER_THROW, LEVER_SLAM, LEVER_BOUNCE_OPEN, LEVER_BOUNCE_SHUT, LEVER_REST_SPEED);
   const spring = new PoseSpring(POSE_STIFFNESS, POSE_DAMPING_RATIO);
+  const cases = createSpentCases(flightSpace, CASE_THROW);
   let leftover = 0;
   let sinceShot = Infinity; // seconds since the last shot
   let hammer = 0; // current hammer angle (0 = cocked)
   let cocked = true; // the bolt has pushed the hammer back since the last shot
   let ejected = true; // the case of the last shot is already out
   let lastRoundK = 0; // progress of the round being pushed in (to catch the push moment)
-  const flying: FlyingCase[] = [];
   const v = new THREE.Vector3();
-
-  function ejectCase(): void {
-    if (!parts.case) return;
-    // A copy of the template, moved into the flight space at the same place
-    // on screen (attach() keeps the world transform while changing parent).
-    const mesh = parts.case.clone();
-    mesh.visible = true;
-    parts.case.parent!.add(mesh);
-    root.updateWorldMatrix(true, true);
-    flightSpace.attach(mesh);
-    const r = () => (Math.random() * 2 - 1) * CASE_SCATTER;
-    flying.push({
-      mesh,
-      vel: new THREE.Vector3(CASE_SPEED.x + r() * 0.5, CASE_SPEED.y + r(), CASE_SPEED.z + r() * 0.5),
-      spin: new THREE.Vector3(CASE_SPIN * (0.6 + Math.random() * 0.4), CASE_SPIN * 0.2 * r(), CASE_SPIN * 0.5),
-      age: 0,
-    });
-  }
-
-  function clearCases(): void {
-    for (const c of flying) c.mesh.removeFromParent();
-    flying.length = 0;
-  }
 
   return {
     root,
@@ -348,7 +271,7 @@ export function createRifleView(flightSpace: THREE.Object3D): RifleView {
       cocked = true;
       ejected = true;
       hammer = 0;
-      clearCases();
+      cases.clear();
     },
     update(dt, player) {
       scope.visible = player.forged.rifle > 0; // the Forge's optic (docs/DESIGN.md §6d)
@@ -384,10 +307,10 @@ export function createRifleView(flightSpace: THREE.Object3D): RifleView {
         const target = reloading ? RELOAD_POSE : t < 1 ? poseAt(CYCLE_KEYS, t) : Z;
         spring.step(target, ELASTIC_STEP);
       }
-      const open = lever.angle / LEVER_OPEN; // 0 = shut, 1 = fully open
+      const open = lever.pos / LEVER_OPEN; // 0 = shut, 1 = fully open
 
       // --- The parts the lever drives ---
-      parts.lever.rotation.x = lever.angle;
+      parts.lever.rotation.x = lever.pos;
       // The bolt rides back with the lever (+z = toward you).
       parts.bolt.position.z = boltRest + BOLT_TRAVEL * open;
       // The hammer: fallen after the shot; the bolt pushes it back as the
@@ -405,21 +328,9 @@ export function createRifleView(flightSpace: THREE.Object3D): RifleView {
       // --- The spent case: out when the lever is open enough ---
       if (!ejected && open >= EJECT_AT) {
         ejected = true;
-        ejectCase();
+        if (parts.case) cases.eject(parts.case);
       }
-      for (let i = flying.length - 1; i >= 0; i--) {
-        const c = flying[i];
-        c.age += dt;
-        c.vel.y -= CASE_GRAVITY * dt;
-        c.mesh.position.addScaledVector(c.vel, dt);
-        c.mesh.rotation.x += c.spin.x * dt;
-        c.mesh.rotation.y += c.spin.y * dt;
-        c.mesh.rotation.z += c.spin.z * dt;
-        if (c.age > CASE_LIFE) {
-          c.mesh.removeFromParent();
-          flying.splice(i, 1);
-        }
-      }
+      cases.update(dt);
 
       // --- Reload: the round slides up to the gate and is pushed in ---
       if (parts.round) {
