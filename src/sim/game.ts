@@ -4,6 +4,7 @@ import type { InputCommand } from './command';
 import { createBull, createEntities, createEyebat, createHound, createSharpshooter, createSmith, isEnemy, stepTarget, type Entity } from './entities';
 import { stepEyebat } from './eyebat';
 import { stepProjectiles, type Projectile } from './projectiles';
+import { stepDynamite, throwDynamite, type Dynamite } from './dynamite';
 import { stepGhoul } from './ghoul';
 import { stepHound } from './hound';
 import { stepBull } from './bull';
@@ -45,6 +46,8 @@ export interface GameState {
   airGoal: number;
   /** Enemy projectiles in flight (fireballs...). */
   projectiles: Projectile[];
+  /** The player's dynamite sticks in flight or rolling on the floor (dynamite.ts). */
+  dynamite: Dynamite[];
   /** Things on the ground to collect (enemy drops), see pickups.ts. */
   pickups: Pickup[];
   /** State of the seeded random generator (see random.ts): what the waves spawn. */
@@ -69,6 +72,7 @@ export function createGame(world: World, seed = 1): GameState {
     navGoalBig: -1,
     airGoal: -1,
     projectiles: [],
+    dynamite: [],
     pickups: [],
     rng: seed,
   };
@@ -164,6 +168,7 @@ export function stepGame(
   // Enemies are solid: push the player out of their bodies (after they moved, see bodyBlock.ts).
   blockPlayerWithBodies(game.player, game.entities, world, dt);
   game.projectiles = stepProjectiles(game.projectiles, game.player, world, dt, events);
+  game.dynamite = stepDynamite(game.dynamite, world, dt, events);
   stepWaves(game, world, events);
   stepPickups(game, world, dt, events);
   // Last: it needs the whole tick (your hits come first, the enemies' hits on you later).
@@ -177,6 +182,7 @@ export function stepGame(
     respawn(game.player, world);
     game.entities = game.entities.filter((e) => !isEnemy(e));
     game.projectiles = [];
+    game.dynamite = [];
     game.pickups = [];
     game.wave = createWaveState();
     game.stats = createStats(); // a new object: the event keeps the old one
@@ -195,6 +201,14 @@ export function spawnEyebatInFront(game: GameState): void {
   const x = p.x - Math.sin(p.yaw) * 8;
   const z = p.z - Math.cos(p.yaw) * 8;
   game.entities.push(createEyebat(game.nextEntityId++, x, p.y + 4, z));
+}
+
+/**
+ * Debug: throws a dynamite stick where you look (until the launcher is a
+ * real weapon, this is how you try the stick's physics).
+ */
+export function throwDynamiteDebug(game: GameState): void {
+  game.dynamite.push(throwDynamite(game.player, game.nextEntityId++));
 }
 
 /** Debug: spawns a hellhound 8 m in front of the player (G key). */

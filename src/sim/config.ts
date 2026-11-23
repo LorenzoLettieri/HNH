@@ -265,6 +265,26 @@ export const tuning = {
   /** Bullets that come with it when you buy it (in your pocket, shared with the revolver). */
   rifleBuyBullets: 24,
 
+  // --- Dynamite launcher ("il lancia-dinamite", see dynamite.ts) ---
+  /** Launch speed of a stick along the aim, m/s (slow enough to see the arc). */
+  dynamiteSpeed: 22,
+  /** Extra upward speed at launch, m/s: the arc starts a bit above the aim, like a lob. */
+  dynamiteLift: 2.5,
+  /** How much of YOUR velocity the stick keeps (0..1): throwing while running forward throws farther. */
+  dynamiteInherit: 0.5,
+  /** Seconds from the shot to the explosion, if it doesn't hit an enemy first. */
+  dynamiteFuse: 1.2,
+  /** Bounce: fraction of the speed INTO the surface it keeps, coming back out (0 = dead stop, 1 = superball). */
+  dynamiteBounce: 0.45,
+  /** Bounce: fraction of the speed ALONG the surface it keeps on each impact (friction of the hit). */
+  dynamiteBounceGrip: 0.75,
+  /** Below this speed into the floor it stops bouncing and rolls, m/s. */
+  dynamiteBounceMinSpeed: 2,
+  /** Rolling on the floor: how fast it slows down, m/s per second. */
+  dynamiteRollFriction: 6,
+  /** Radius of the explosion, meters (only the effect for now: the damage is the next step). */
+  dynamiteRadius: 4,
+
   // --- Drops and pickups (see pickups.ts) ---
   /** Drop chance per point of enemy weight (ghoulCost 1 → 30%, eyebatCost 2 → 60%, houndCost 3 → 80% (the cap), bull too). */
   dropChancePerWeight: 0.3,

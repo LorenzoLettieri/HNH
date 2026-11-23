@@ -9,7 +9,7 @@ import { hitStopScale } from './render/hitStop';
 import { buildCommand, controlSettings, queueRespawn, updateLook, view } from './controls';
 import { TICK_DT } from './sim/config';
 import { copyPlayer, createPlayer } from './sim/player';
-import { createGame, spawnBullInFront, spawnSharpshooterInFront, spawnEyebatInFront, spawnHoundInFront, spawnSmithInFront, dropPickupsInFront, stepGame } from './sim/game';
+import { createGame, spawnBullInFront, spawnSharpshooterInFront, spawnEyebatInFront, spawnHoundInFront, spawnSmithInFront, dropPickupsInFront, stepGame, throwDynamiteDebug } from './sim/game';
 import { jumpToWave } from './sim/waves';
 import { DEFAULT_LEVEL, LEVELS } from './levels';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
@@ -31,6 +31,7 @@ import { createSmithRenderer } from './render/enemies/smiths';
 import { createSharpshooterRenderer } from './render/enemies/sharpshooters';
 import { createProjectileRenderer } from './render/projectiles';
 import { createPickupRenderer } from './render/pickups';
+import { createDynamiteRenderer } from './render/dynamite';
 import { createVendorRenderer } from './render/vendors';
 import { createShopMenu } from './render/shopMenu';
 import { createMapOverlay } from './render/mapOverlay';
@@ -145,6 +146,7 @@ const smiths = createSmithRenderer(scene);
 const sharpshooters = createSharpshooterRenderer(scene, world);
 const projectiles = createProjectileRenderer(scene);
 const pickups = createPickupRenderer(scene);
+const dynamite = createDynamiteRenderer(scene);
 const vendors = createVendorRenderer(scene, world);
 const mapOverlay = createMapOverlay(world);
 const navDebug = createNavDebug(scene, getNavGraph(world));
@@ -204,6 +206,8 @@ const debugPanel = createDebugPanel({
     spawnTool('Fai apparire: Fabbro Dannato', spawnSmithInFront),
     spawnTool('Fai apparire: tiratore scelto (a 20 m)', spawnSharpshooterInFront),
     spawnTool('Fai cadere un raccoglibile di ogni tipo', dropPickupsInFront),
+    // Until the launcher is a real weapon: a stick thrown where you look (dynamite.ts).
+    spawnTool('Lancia un candelotto di dinamite', throwDynamiteDebug),
     // Respawn goes through the InputCommand like a key would (controls.ts):
     // the simulation only changes from commands.
     { label: 'Respawn', run: () => queueRespawn() },
@@ -476,6 +480,7 @@ renderer.setAnimationLoop((now: number) => {
   marks.update(game.entities, alpha, dt);
   projectiles.update(game.projectiles, events, camera, alpha, dt);
   pickups.update(game.pickups, camera, alpha, now / 1000);
+  dynamite.update(game.dynamite, alpha, dt);
   vendors.update(camera, now / 1000);
   // Walked away from the vendor (or died, and woke up at the spawn): the shop closes.
   const shopNearby = shopInReach(player, world);
