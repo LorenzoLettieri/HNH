@@ -187,12 +187,34 @@ const ROUND_IN = new THREE.Vector3(-0.008, 0, -0.03);
 const ROUND_READY_AT = 0.5;
 const ROUND_IN_AT = 0.92; // just before the simulation counts it in ('reloadRound': the click)
 
+// --- The draw (weapon switch, viewmodel.ts DRAW_KEYS) ---------------------------------
+/**
+ * The carbine's signature: it swings in canted, the lever thrown OPEN (the
+ * action in view), and the hand slams it shut at this fraction of
+ * weaponSwitchTime: the "-CLACK" lands just before it's ready to fire.
+ */
+const DRAW_SHUT_AT = 0.55;
+/** Its pose meanwhile (fractions of weaponSwitchTime): canted like the lever cycle's throw, snapped back by the slam. */
+const DRAW_LEVER_KEYS: [number, GunPose][] = [
+  [0, { x: -0.004, y: 0.01, z: 0.008, pitch: 0.07, yaw: 0.03, roll: -0.28 }],
+  [DRAW_SHUT_AT, { x: -0.004, y: 0.01, z: 0.008, pitch: 0.06, yaw: 0.03, roll: -0.25 }],
+  [DRAW_SHUT_AT + 0.14, { x: 0, y: -0.004, z: 0, pitch: -0.03, yaw: 0, roll: 0.04 }],
+  [1, Z],
+];
+/** When the draw's slam happens, seconds after 'weaponSwitch', for the sound. */
+export function rifleDrawTimes(): { shutStart: number; shutAt: number } {
+  const shutStart = DRAW_SHUT_AT * tuning.weaponSwitchTime;
+  return { shutStart, shutAt: shutStart + travelTime(LEVER_OPEN, LEVER_SLAM) };
+}
+
 export interface RifleView {
   /** Goes inside the viewmodel holder. Its origin is the right hand on the wrist of the stock. */
   root: THREE.Group;
   /** Muzzle, in root coordinates. */
   muzzle: THREE.Vector3;
   onShot(): void;
+  /** The gun is drawn (weapon switch): it comes in with the lever open and slams it shut. */
+  draw(): void;
   /** Stop every animation (weapon switched away). */
   cancel(): void;
   /** Advance the animations. Returns the pose offsets of the whole gun. */
@@ -255,6 +277,7 @@ export function createRifleView(flightSpace: THREE.Object3D): RifleView {
   let ejected = true; // the case of the last shot is already out
   let lastRoundK = 0; // progress of the round being pushed in (to catch the push moment)
   const v = new THREE.Vector3();
+  let drawTime = Infinity; // seconds since the gun was drawn
 
   return {
     root,
@@ -265,8 +288,14 @@ export function createRifleView(flightSpace: THREE.Object3D): RifleView {
       ejected = false;
       hammer = HAMMER_FIRED; // the hammer falls at once: it's what fired the shot
     },
+    draw() {
+      drawTime = 0;
+      lever.reset();
+      lever.pos = LEVER_OPEN; // thrown open: the hand slams it shut during the draw
+    },
     cancel() {
       sinceShot = Infinity;
+      drawTime = Infinity;
       lever.reset();
       cocked = true;
       ejected = true;
@@ -293,8 +322,11 @@ export function createRifleView(flightSpace: THREE.Object3D): RifleView {
       while (leftover >= ELASTIC_STEP) {
         leftover -= ELASTIC_STEP;
         sinceShot += ELASTIC_STEP;
+        drawTime += ELASTIC_STEP;
         const t = sinceShot / interval;
-        const open = t >= LEVER_THROW_AT && t < LEVER_SHUT_AT;
+        const drawSpan = Math.max(0.01, tuning.weaponSwitchTime);
+        const drawing = drawTime < drawSpan;
+        const open = drawing ? drawTime < DRAW_SHUT_AT * drawSpan : t >= LEVER_THROW_AT && t < LEVER_SHUT_AT;
         lever.step(open, ELASTIC_STEP);
         if (lever.impact !== 0) {
           // The lever hit a stop: the whole gun feels it. Shut (negative
@@ -304,7 +336,13 @@ export function createRifleView(flightSpace: THREE.Object3D): RifleView {
           spring.vel.y += SLAM_JOLT_Y * k;
           lever.impact = 0;
         }
-        const target = reloading ? RELOAD_POSE : t < 1 ? poseAt(CYCLE_KEYS, t) : Z;
+        const target = reloading
+          ? RELOAD_POSE
+          : drawing
+            ? poseAt(DRAW_LEVER_KEYS, drawTime / drawSpan)
+            : t < 1
+              ? poseAt(CYCLE_KEYS, t)
+              : Z;
         spring.step(target, ELASTIC_STEP);
       }
       const open = lever.pos / LEVER_OPEN; // 0 = shut, 1 = fully open

@@ -126,7 +126,7 @@ export const viewmodelSettings = {
  * (The old gun simply disappears: animating it out would only add delay.)
  */
 const DRAW_KEYS: [number, GunPose][] = [
-  [0, { x: 0.1, y: -0.21, z: 0.06, pitch: -0.8, yaw: -0.45, roll: -0.9 }], // just below the screen, turned away
+  [0, { x: 0.1, y: -0.21, z: 0.06, pitch: -0.8, yaw: -0.45, roll: -0.55 }], // just below the screen, turned away (not rolled more: the rigid left arm of the two-handed guns would sweep flat across the screen)
   [0.55, { x: -0.012, y: 0.018, z: -0.01, pitch: 0.14, yaw: 0.06, roll: 0.18 }], // swung in PAST the rest pose
   [0.8, { x: 0.003, y: -0.004, z: 0.002, pitch: -0.03, yaw: -0.01, roll: -0.04 }], // a little back the other way
   [1, ZERO_POSE],
@@ -424,6 +424,8 @@ export function createViewmodel(): Viewmodel {
         // Each gun's draw signature (see DRAW_KEYS).
         if (shownWeapon === 'shotgun' && isPump(player)) pump.draw();
         else if (shownWeapon === 'shotgun') shotgun.draw();
+        else if (shownWeapon === 'rifle') rifle.draw();
+        // (The revolver's twirl follows drawK directly: see revolverDraw.ts.)
       }
       revolver.visible = shownWeapon === 'revolver';
       // Akimbo: the left gun appears, the fanning hand goes away (it's holding a gun now).

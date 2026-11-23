@@ -17,6 +17,7 @@ import {
   playReload,
   playRevolverDraw,
   playCarbineShot,
+  playCarbineDraw,
   playCarbineLever,
   playCarbineReloadStart,
   playCarbineRoundIn,
@@ -31,13 +32,12 @@ import {
   playShotgunReload,
   playTargetDown,
   playTargetHit,
-  playWeaponSwitch,
 } from '../audio/sfx';
 import type { WeaponId } from '../sim/weapon';
 import type { MeleeTool } from '../sim/kick';
 import { createImpacts } from './impacts';
 import { hitStopSettings, requestHitStop } from './hitStop';
-import { leverTimes } from './weapons/rifleView';
+import { leverTimes, rifleDrawTimes } from './weapons/rifleView';
 import { shotgunDrawTimes } from './weapons/shotgunView';
 import { revolverDrawTimes } from './weapons/revolverDraw';
 import { pumpCloseTimes, pumpDrawTimes, pumpReloadTimes, pumpTimes } from './weapons/pumpView';
@@ -131,7 +131,7 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
             if (e.weapon === 'shotgun' && e.forged) playPumpDraw(pumpDrawTimes());
             else if (e.weapon === 'shotgun') playShotgunDraw(shotgunDrawTimes());
             else if (e.weapon === 'revolver') playRevolverDraw(revolverDrawTimes(), e.forged);
-            else playWeaponSwitch();
+            else playCarbineDraw(rifleDrawTimes());
             break;
           case 'duelReady':
             playDuelReady(); // "Duellante": the next carbine shot does double damage

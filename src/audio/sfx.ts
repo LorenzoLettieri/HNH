@@ -282,6 +282,19 @@ export function playCarbineLever(t: LeverTimes): void {
   }
 }
 
+/**
+ * The carbine drawn (weapon switch, rifleView.ts): a rush of air as it swings
+ * in with the lever open, the bolt scraping forward and the "-CLACK" of the
+ * lever slammed shut (the second half of playCarbineLever), the latch.
+ */
+export function playCarbineDraw(t: { shutStart: number; shutAt: number }): void {
+  noiseBurst({ duration: 0.12, volume: 0.14, filter: 'bandpass', frequency: 400, frequencyEnd: 1300, q: 1.2 }); // swing
+  noiseBurst({ start: t.shutStart, duration: t.shutAt - t.shutStart + 0.01, volume: 0.12, filter: 'bandpass', frequency: 3000, frequencyEnd: 1000, q: 2 }); // scrape forward
+  noiseBurst({ start: t.shutAt, duration: 0.07, volume: 1.0, filter: 'bandpass', frequency: 1400, q: 2 }); // -CLACK
+  thump({ start: t.shutAt, duration: 0.07, volume: 0.5, from: 360, to: 140 });
+  noiseBurst({ start: t.shutAt + 0.012, duration: 0.02, volume: 0.3, filter: 'bandpass', frequency: 4200, q: 6 }); // latch
+}
+
 /** Carbine reload, the start: the gun is turned over to show the loading gate. */
 export function playCarbineReloadStart(): void {
   noiseBurst({ duration: 0.15, volume: 0.25, filter: 'bandpass', frequency: 600, frequencyEnd: 1300, q: 1.5 });
@@ -370,11 +383,6 @@ export function playDuelReady(): void {
   noiseBurst({ start: 0.01, duration: 0.35, volume: 0.25, filter: 'bandpass', frequency: 2600, q: 60 });
 }
 
-/** Weapon switch: a leather-and-metal rustle as the new gun comes up. */
-export function playWeaponSwitch(): void {
-  noiseBurst({ duration: 0.12, volume: 0.3, filter: 'bandpass', frequency: 700, frequencyEnd: 1500, q: 1.5 });
-  noiseBurst({ start: 0.1, duration: 0.03, volume: 0.25, filter: 'bandpass', frequency: 2800, q: 4 });
-}
 
 /** Empty cylinder: the hammer falls on nothing. */
 export function playDryFire(): void {
