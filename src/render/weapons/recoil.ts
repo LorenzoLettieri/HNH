@@ -108,9 +108,9 @@ export const recoilSettings: Record<RecoilKind, RecoilProfile> = {
   // The launcher: a heavy, slow THUMP (a stick, not a bullet): the gun
   // bucks up a lot and comes back slowly, little twist, a big push of the view.
   dynamite: {
-    up: 0.45,
-    back: 0.13,
-    rise: 0.03,
+    up: 0.2,
+    back: 0.06,
+    rise: 0.015,
     twist: 0.05,
     scatter: 0.04,
     stiffness: 300,

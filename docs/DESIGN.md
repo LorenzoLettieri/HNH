@@ -736,7 +736,8 @@ futuro **poligono di tiro / tutorial**.
   **un'arma pesante a due mani** alla lanciagranate (la prima versione con l'impugnatura del revolver sembrava un
   revolver "gonfiato": scartata), tenuta con le braccia della carabina: calcio di noce, grande ponticello ad anello,
   **gabbia girevole d'ottone con cinque candelotti** a vista, canna grossa a bocca svasata, serbatoio d'aria compressa
-  di rame dentro l'astina dove sta la mano sinistra, manometro: è l'aria che spara il candelotto (steampunk) [FATTO] → 6. animazioni (sparo, cambio arma, ricarica) →
+  di rame dentro l'astina dove sta la mano sinistra, manometro: è l'aria che spara il candelotto (steampunk) [FATTO] → 6. animazioni: **sparo** [FATTO: sobbalzo pesante, arma ribaltata sul fianco, tamburo lanciato
+  di una camera dal cricchetto che sbatte con un CLACK, il candelotto sparato sparisce dalla camera], ricarica, cambio arma →
   7. premi dello Stile e taratura. Dopo: carte e Forgia.
 - **Fuoco alternativo (tasto destro)** [DECISO]: ogni arma può averne uno. Revolver: fanning;
   carabina: mira dal mirino; doppietta: da decidere.

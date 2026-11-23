@@ -356,6 +356,7 @@ export function createViewmodel(): Viewmodel {
       recoil.kick(r, scale);
       flashLeft = false;
       if (weapon === 'dynamite') {
+        dynamite.onShot();
         dynamiteFlash.material.rotation = Math.random() * Math.PI;
         dynamiteFlash.scale.setScalar(0.17 + Math.random() * 0.06); // a fat barrel: a fat flash
         return;
@@ -439,6 +440,7 @@ export function createViewmodel(): Viewmodel {
         shotgun.cancel();
         pump.cancel();
         rifle.cancel();
+        dynamite.cancel();
         flashTime = 0;
         // Each gun's draw signature (see DRAW_KEYS).
         if (shownWeapon === 'shotgun' && isPump(player)) pump.draw();
@@ -459,7 +461,6 @@ export function createViewmodel(): Viewmodel {
       const isRifle = shownWeapon === 'rifle';
       const isDynamite = shownWeapon === 'dynamite';
       dynamite.root.visible = isDynamite;
-      dynamite.update();
       dynamiteFlash.position.copy(dynamite.muzzle); // (the file can load after the first frames)
       // Aiming down the sights: the simulation says how far (it takes
       // rifleAdsTime); here it's only smoothed between ticks and eased.
@@ -520,6 +521,8 @@ export function createViewmodel(): Viewmodel {
       viewKick += pump.takePunch(); // the pump's slams shake your view a little
       const shotgunPose = pumpShown ? pumpPose : doubleBarrelPose;
       const riflePose = rifle.update(dt, player);
+      const dynamitePose = dynamite.update(dt, player);
+      viewKick += dynamite.takePunch(); // the drum's CLACK
       viewKick += rifle.takePunch(); // and so do the lever's
 
       // --- Reload: flick open, cases out, rounds in, flick shut, spin (see revolverReload.ts) ---
@@ -534,7 +537,7 @@ export function createViewmodel(): Viewmodel {
       const twirl = akimboSpin.update(dt);
       gun.spin.rotation.x = twirl.right + (revolverDraw ? drawSpin(drawK, false) : 0);
       gunL.spin.rotation.x = twirl.left + (revolverDraw ? drawSpin(drawK, true) : 0);
-      const rp = isShotgun ? shotgunPose : isRifle ? riflePose : akimboSpin.active ? twirl.pose : rr.pose;
+      const rp = isDynamite ? dynamitePose : isShotgun ? shotgunPose : isRifle ? riflePose : akimboSpin.active ? twirl.pose : rr.pose;
       const reload = revolverReload.active && !isShotgun ? 1 : 0; // hides the left hand
 
       // --- Left hand: fanning, ready pose between shots (lowered while reloading) ---

@@ -41,6 +41,7 @@ import { createImpacts } from './impacts';
 import { hitStopSettings, requestHitStop } from './hitStop';
 import { leverTimes, rifleDrawTimes } from './weapons/rifleView';
 import { shotgunDrawTimes } from './weapons/shotgunView';
+import { drumTimes } from './weapons/dynamiteView';
 import { revolverDrawTimes } from './weapons/revolverDraw';
 import { pumpCloseTimes, pumpDrawTimes, pumpReloadTimes, pumpTimes } from './weapons/pumpView';
 import { showHitmarker } from './hitmarker';
@@ -105,7 +106,7 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
             } else if (e.weapon === 'rifle') {
               playCarbineShot();
               playCarbineLever(leverTimes(e.seconds)); // cla-CLACK, timed on the animation (the event says how long)
-            } else if (e.weapon === 'dynamite') playDynamiteLaunch();
+            } else if (e.weapon === 'dynamite') playDynamiteLaunch(drumTimes(e.seconds)); // the drum's CLACK on the animation
             else playShot();
             camera.getWorldDirection(forward);
             flash.position.copy(camera.position).addScaledVector(forward, 0.8);

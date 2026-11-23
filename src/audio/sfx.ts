@@ -1392,14 +1392,23 @@ export function playFuseHiss(where: Where): LoopingSound {
 /**
  * The launcher fires a stick: not a bang but a deep hollow THOOMP (a
  * low sine falling fast, plus a puff of low noise: compressed air, the
- * steampunk part), then the drum turning to the next stick, a ratchet "clack".
+ * steampunk part), then the drum turning to the next stick, timed on the
+ * animation (`t`, from dynamiteView.ts): the ratchet's quick rattle while
+ * the cage spins, and the heavy CLACK when it slams into the stop.
  */
-export function playDynamiteLaunch(): void {
+export function playDynamiteLaunch(t: { turnAt: number; clackAt: number }): void {
   if (!ctx) return;
   thump({ duration: 0.22, volume: 0.9, from: 160, to: 45 });
   noiseBurst({ duration: 0.25, volume: 0.6, filter: 'lowpass', frequency: 900, frequencyEnd: 150 }); // the puff
   noiseBurst({ start: 0.02, duration: 0.18, volume: 0.25, filter: 'bandpass', frequency: 2500, frequencyEnd: 900, q: 1 }); // the stick whooshing out
-  noiseBurst({ start: 0.32, duration: 0.04, volume: 0.35, filter: 'bandpass', frequency: 1800, q: 6 }); // drum: clack
+  const spin = t.clackAt - t.turnAt;
+  for (let i = 0; i < 4; i++) {
+    // The ratchet's pawl clicking over the teeth, faster and faster (the cage accelerates).
+    const at = t.turnAt + spin * Math.sqrt(i / 4);
+    noiseBurst({ start: at, duration: 0.015, volume: 0.12, filter: 'bandpass', frequency: 3200, q: 8 });
+  }
+  noiseBurst({ start: t.clackAt, duration: 0.05, volume: 0.6, filter: 'bandpass', frequency: 1400, q: 5 }); // CLACK
+  thump({ start: t.clackAt, duration: 0.09, volume: 0.45, from: 240, to: 90 }); // the weight of the brass cage
 }
 
 /**
