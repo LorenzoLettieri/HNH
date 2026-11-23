@@ -178,20 +178,8 @@ export function stepGhoul(
       g.climbTicks = 0;
       return;
     }
-    // VENT: walk onto it; once on the grate, it launches you (from standing
-    // still, exactly as the graph simulated). Vents only launch ghouls that
-    // CHOSE to ride them: one just crossing the street would otherwise end up
-    // stranded on top of a tower.
-    // It waits until it's at the CENTER of the grate: that's where the graph
-    // simulated the launch, so the prediction matches what really happens.
-    // (Launched from the edge, the trajectory shifts and may hit a roof's eave.)
-    if (link.kind === 'vent' && link.via && Math.hypot(link.via.x - g.x, link.via.z - g.z) < 0.25) {
-      const vent = ventUnder(world.props, g.x, g.y, g.z);
-      if (vent) {
-        launchFromVent(g, vent);
-        g.onGround = false;
-      }
-    }
+    // VENT: walk onto the grate, and it launches you (see rideVent).
+    rideVent(g, link, world);
     // 'walk' and 'drop' need nothing special: walking off the edge IS dropping.
   }
 
@@ -459,6 +447,32 @@ interface JumpingBody {
  * bangs its head on the lintel, falls back and tries again forever.
  */
 const JUMP_PEAKS = [0.7, 0.55, 0.4, 0.3, 0.2, 0.12];
+
+/**
+ * How close to the center of the grate a body must be to get launched, meters.
+ * Steering toward a point, stop wishing to move only inside this radius,
+ * or it stops just short of it.
+ */
+export const VENT_RIDE_RADIUS = 0.25;
+
+/**
+ * Riding a vent (ghouls, hounds, bulls): when the next link is a vent and the
+ * body is at the CENTER of the grate, it's launched (from standing still,
+ * exactly as the graph simulated: so the prediction matches what really
+ * happens; launched from the edge, the trajectory shifts and may hit a
+ * roof's eave). Vents only launch enemies that CHOSE to ride them: one just
+ * crossing the street would otherwise end up stranded on top of a tower.
+ * Returns whether it took off.
+ */
+export function rideVent(b: JumpingBody, link: NavLink | null, world: World): boolean {
+  if (!link || link.kind !== 'vent' || !link.via || !b.onGround) return false;
+  if (Math.hypot(link.via.x - b.x, link.via.z - b.z) >= VENT_RIDE_RADIUS) return false;
+  const vent = ventUnder(world.props, b.x, b.y, b.z);
+  if (!vent) return false;
+  launchFromVent(b, vent);
+  b.onGround = false;
+  return true;
+}
 /** Closer than this to the target, it jumps even if no arc checks out (better than freezing). */
 const JUMP_FORCE_DIST = 1.2;
 

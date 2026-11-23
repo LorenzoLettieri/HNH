@@ -185,7 +185,12 @@ al contatto invece di spingerti.
   nodi ogni 1,5 m su ogni superficie + link "cammina / salta / cadi / arrampicati".
   I ghoul **si arrampicano sui muri fino a 15 m** e **usano gli sfiatatoi** (solo quando lo scelgono):
   nessun tetto è sicuro (campanile compreso).
-- **Flow field**: una sola ricerca (Dijkstra) dal giocatore, condivisa da tutti i ghoul.
+  **Cani e tori non si arrampicano ma prendono gli sfiatatoi** per raggiungerti sui tetti; senza uno
+  sfiatatoio che porti da te aspettano sotto. I tori, più grossi, arrivano solo dove ci passa il loro
+  corpo (le torri gemelle sì, la chiesa no: sbattono sulla gronda). Il Fabbro Dannato non vola: aspetta
+  sotto e ti tira giù con l'uncino.
+- **Flow field**: una sola ricerca (Dijkstra) dal giocatore, condivisa da tutti i ghoul (i cani ne hanno
+  una loro, calcolata senza le arrampicate).
 - Tasto **N** in gioco: mostra il grafo.
 - **Inseguimento e accerchiamento**: quando un ghoul ti **vede** sul suo stesso livello (entro 30 m),
   smette di seguire il grafo e corre **dove stai andando** (intercettazione, fino a 1,5 s di anticipo),

@@ -52,8 +52,10 @@ export interface NavBody {
   height: number;
   /** Highest step it jumps up onto, meters. */
   jumpHeight: number;
-  /** Can it climb walls and ride vents? */
+  /** Can it climb walls? */
   climbs: boolean;
+  /** Can it ride the steam vents? (Hounds and bulls don't climb, but they do take the vents.) */
+  ridesVents: boolean;
   /**
    * Distance between sampled nodes, meters. A wide body needs a finer grid:
    * in a 2.5 m alley a bull fits only in the middle 1.2 m, and with 1.5 m
@@ -65,20 +67,25 @@ export interface NavBody {
 /** Distance between sampled nodes for ghoul-sized bodies, meters. */
 export const NODE_SPACING = 1.5;
 
-/** Ghouls (and hounds, which are smaller and don't climb: they skip those links). */
+/**
+ * Ghouls (and hounds, which are smaller and don't climb: they get their own
+ * flow field without the climbing links, see NO_CLIMB).
+ */
 export const SMALL_BODY: NavBody = {
   get radius() { return tuning.ghoulRadius; },
   get height() { return tuning.ghoulHeight; },
   get jumpHeight() { return tuning.ghoulJumpHeight; },
   climbs: true,
+  ridesVents: true,
   spacing: NODE_SPACING,
 };
-/** Bulls: wide and tall, no climbing. */
+/** Bulls (and the Damned Smith): wide and tall, no climbing, but bulls ride the vents. */
 export const BIG_BODY: NavBody = {
   get radius() { return tuning.bullRadius; },
   get height() { return tuning.bullHeight; },
   get jumpHeight() { return tuning.bullJumpHeight; },
   climbs: false,
+  ridesVents: true,
   spacing: 1,
 };
 /** Max height a ghoul climbs up a wall, meters. */
@@ -206,14 +213,19 @@ export function buildNavGraph(boxes: Box[], props: Prop[] = [], body: NavBody = 
   });
 
   // VENT: ride a steam vent. Where does it throw you? Instead of guessing,
-  // we SIMULATE it: a virtual ghoul launched from the vent, same physics as
-  // the game, tick by tick until it lands. The node there is the destination.
+  // we SIMULATE it: a virtual body of THIS size launched from the vent, same
+  // physics as the game, tick by tick until it lands. The node there is the
+  // destination. (A bull is wider than a ghoul: where a ghoul flies past a
+  // roof's eave, a bull may hit it and fall back: then there's no link.)
   const graph = { nodes, links, cells, spacing: S };
   for (const p of props) {
-    if (p.type !== 'vent' || !body.climbs) continue;
+    if (p.type !== 'vent' || !body.ridesVents) continue;
     const from = nearestNode(graph, p.x, p.y, p.z);
-    const landing = simulateVentLaunch(p, boxes);
-    const to = landing ? nearestNode(graph, landing.x, landing.y, landing.z) : -1;
+    const landing = simulateVentLaunch(p, boxes, body);
+    // A vent is a way UP: if this body bumps into an eave and falls back
+    // about where it started, it's no way at all (it would ride it forever).
+    const up = landing !== null && landing.y > p.y + body.jumpHeight;
+    const to = landing && up ? nearestNode(graph, landing.x, landing.y, landing.z) : -1;
     if (from >= 0 && to >= 0 && to !== from) {
       // Cheap: it's the fastest way up. (Cost ≈ the horizontal distance.)
       links[from].push({
@@ -261,12 +273,27 @@ export interface FlowField {
 }
 
 /**
+ * Which links a kind of enemy may use. The same graph serves bodies that move
+ * differently: a hound is ghoul-sized but doesn't climb. Giving it the ghouls'
+ * flow field isn't enough: their shortest way to a roof is often a climb, so
+ * the hound would see "climb" as the next step and stop below, even with a
+ * vent a few meters away. It needs its OWN flow field, computed as if the
+ * climbing links didn't exist: then the shortest way is the vent.
+ */
+export type LinkFilter = (link: NavLink) => boolean;
+/** Everything but climbing (hounds). */
+export const NO_CLIMB: LinkFilter = (link) => link.kind !== 'climb';
+/** Everything but vents (the Damned Smith: too heavy to fly, it waits below and throws the hook). */
+export const NO_VENT: LinkFilter = (link) => link.kind !== 'vent';
+
+/**
  * Dijkstra's algorithm, run BACKWARD from the goal: "how far is the goal
  * from every node, following links in their direction?". We need the
  * reversed links for that (who links TO me?), computed once.
  * A binary heap keeps the "closest node not yet settled" quick to find.
+ * `allowed`: skip the links it says no to (as if they weren't in the graph).
  */
-export function computeFlowField(g: NavGraph, goal: number): FlowField {
+export function computeFlowField(g: NavGraph, goal: number, allowed?: LinkFilter): FlowField {
   const n = g.nodes.length;
   const dist = new Float64Array(n).fill(Infinity);
   const next: (NavLink | null)[] = new Array(n).fill(null);
@@ -280,6 +307,7 @@ export function computeFlowField(g: NavGraph, goal: number): FlowField {
     const [node, d] = heap.pop();
     if (d > dist[node]) continue; // an outdated entry: we already found a better way
     for (const { from, link } of incoming[node]) {
+      if (allowed && !allowed(link)) continue;
       const nd = d + link.cost;
       if (nd < dist[from]) {
         dist[from] = nd;
@@ -390,28 +418,38 @@ export function getNavGraph(world: { boxes: Box[]; props?: Prop[] }, body: NavBo
   return g;
 }
 
-const lastFlow = new WeakMap<NavGraph, { goal: number; field: FlowField }>();
+// One cached flow field per graph AND per filter (the ghouls' one, the hounds' one...).
+const lastFlow = new WeakMap<NavGraph, Map<LinkFilter | undefined, { goal: number; field: FlowField }>>();
 
-/** The flow field toward `goal`, recomputed only if the goal changed. */
-export function getFlowField(g: NavGraph, goal: number): FlowField {
-  const cached = lastFlow.get(g);
+/** The flow field toward `goal` (using only the links `allowed` lets through), recomputed only if the goal changed. */
+export function getFlowField(g: NavGraph, goal: number, allowed?: LinkFilter): FlowField {
+  let perFilter = lastFlow.get(g);
+  if (!perFilter) {
+    perFilter = new Map();
+    lastFlow.set(g, perFilter);
+  }
+  const cached = perFilter.get(allowed);
   if (cached && cached.goal === goal) return cached.field;
-  const field = computeFlowField(g, goal);
-  lastFlow.set(g, { goal, field });
+  const field = computeFlowField(g, goal, allowed);
+  perFilter.set(allowed, { goal, field });
   return field;
 }
 
 /**
- * Launches a ghoul-sized body from a vent (standing still on it, like the
- * ghouls do) and returns where it lands, or null if it never does.
- * The SAME function the ghoul uses to launch, so prediction = reality.
+ * Launches a body of the given size from a vent (standing still on it, like
+ * the enemies do) and returns where it lands, or null if it never does.
+ * The SAME function the enemies use to launch, so prediction = reality.
  */
-function simulateVentLaunch(vent: Extract<Prop, { type: 'vent' }>, boxes: Box[]): { x: number; y: number; z: number } | null {
+function simulateVentLaunch(
+  vent: Extract<Prop, { type: 'vent' }>,
+  boxes: Box[],
+  size: NavBody,
+): { x: number; y: number; z: number } | null {
   const body = { x: vent.x, y: vent.y, z: vent.z, vx: 0, vy: 0, vz: 0 };
   launchFromVent(body, vent);
   for (let t = 0; t < 600; t++) {
     body.vy -= tuning.gravity * TICK_DT;
-    const { landed } = moveAndCollide(body, tuning.ghoulRadius, tuning.ghoulHeight, boxes, TICK_DT);
+    const { landed } = moveAndCollide(body, size.radius, size.height, boxes, TICK_DT);
     if (landed) return { x: body.x, y: body.y, z: body.z };
   }
   return null;

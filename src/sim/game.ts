@@ -11,7 +11,7 @@ import { stepSmith } from './smith';
 import { stepSharpshooter } from './sharpshooter';
 import { createWaveState, scoreHits, stepWaves, wavePressure, type WaveState } from './waves';
 import { countStats, createStats, type Stats } from './stats';
-import { BIG_BODY, getFlowField, getNavGraph, nearestNode } from './nav';
+import { BIG_BODY, getFlowField, getNavGraph, nearestNode, NO_CLIMB, NO_VENT } from './nav';
 import type { SimEvent } from './events';
 import { cellAt, getAirGrid } from './airNav';
 import { createPlayer, currentHeight, respawn, stepPlayer, type PlayerState } from './player';
@@ -149,13 +149,15 @@ export function stepGame(
     if (e.type === 'target') stepTarget(e);
     else if (e.type === 'eyebat') stepEyebat(e, game, world, air, dt, events);
     else if (e.type === 'sharpshooter') stepSharpshooter(e, game, world, graph, dt, events);
-    else if (e.type === 'hound') stepHound(e, game.player, game.entities, world, graph, flow, dt, events);
+    // Hounds: the ghouls' graph, but their own flow field with no climbing (they ride the vents instead).
+    else if (e.type === 'hound') stepHound(e, game.player, game.entities, world, graph, getFlowField(graph, game.navGoal, NO_CLIMB), dt, events);
     else if (e.type === 'bull') {
       // Asked here, not every tick: with no bulls around it's never computed (cached per goal).
       stepBull(e, game.player, game.entities, world, bigGraph, getFlowField(bigGraph, game.navGoalBig), dt, events);
     } else if (e.type === 'smith') {
-      // The Smith has the bull's body: it walks on the bulls' graph.
-      stepSmith(e, game.player, game.entities, world, bigGraph, getFlowField(bigGraph, game.navGoalBig), dt, events);
+      // The Smith has the bull's body: it walks on the bulls' graph, but it doesn't ride the
+      // vents (too heavy to fly: it waits below and pulls you down with the hook).
+      stepSmith(e, game.player, game.entities, world, bigGraph, getFlowField(bigGraph, game.navGoalBig, NO_VENT), dt, events);
     }
     else if (e.state !== 'dead') stepGhoul(e, game.player, game.entities, world, graph, flow, dt, events, pressure);
   }

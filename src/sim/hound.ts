@@ -25,14 +25,16 @@
 // - BITE: a short wind-up, then the teeth close.
 // - RETREAT: hit and run. It runs away for a moment, then stalks again.
 //
-// A dog: it jumps gaps and hops low obstacles, but doesn't climb walls or
-// ride vents. When the way to you needs a climb, it waits below.
+// A dog: it jumps gaps and hops low obstacles, and RIDES THE VENTS to reach
+// you on the rooftops, but doesn't climb walls. It has its own flow field
+// with no climbing links (NO_CLIMB in nav.ts), so its way up is a vent; when
+// there's none, it waits below.
 import { moveAndCollide, overlapsAny } from './collision';
 import { secondsToTicks, tuning } from './config';
 import type { Entity, HoundEntity } from './entities';
 import type { SimEvent } from './events';
 import { interceptTime } from './eyebat';
-import { jumpTo } from './ghoul';
+import { jumpTo, rideVent, VENT_RIDE_RADIUS } from './ghoul';
 import { nearestNode, type FlowField, type NavGraph, type NavLink } from './nav';
 import { currentEyeHeight, hurtPlayer, type PlayerState } from './player';
 import { raycastBoxes } from './raycast';
@@ -154,7 +156,9 @@ export function stepHound(
   const dx = target[0] - h.x;
   const dz = target[1] - h.z;
   const toTarget = Math.hypot(dx, dz);
-  if (toTarget > 0.3) {
+  // Heading for a vent it must reach the center of the grate, not just get near it.
+  const arrived = link?.kind === 'vent' ? VENT_RIDE_RADIUS * 0.5 : 0.3;
+  if (toTarget > arrived) {
     wishX = dx / toTarget;
     wishZ = dz / toTarget;
   }
@@ -182,6 +186,8 @@ export function stepHound(
     h.vz += (targetVz - h.vz) * k;
     // Jump links (gaps, steps): the same ballistic jump as the ghoul.
     if (link && link.kind === 'jump' && toTarget < 3) jumpTo(h, graph.nodes[link.to], world.boxes, tuning.houndRadius, tuning.houndHeight);
+    // Vent links: on the center of the grate, up it goes (the same as the ghouls).
+    rideVent(h, link, world);
   }
   h.vy -= tuning.gravity * dt;
 
@@ -244,9 +250,9 @@ function setState(h: HoundEntity, state: HoundEntity['state']): void {
 }
 
 /**
- * Next point along the flow field (the ghouls' shared map of "which way to
- * the player"). Climbs and vents are for ghouls: in that case, or with no
- * path at all, it keeps the fallback target.
+ * Next point along the hounds' flow field (the map of "which way to the
+ * player" without climbing links). For a vent, the next point is the center
+ * of the grate. With no path at all, it keeps the fallback target.
  */
 function followFlow(
   h: HoundEntity,
@@ -255,8 +261,8 @@ function followFlow(
   fallback: [number, number],
 ): [[number, number], NavLink | null] {
   const next = h.navNode >= 0 ? flow.next[h.navNode] : null;
-  if (!next || next.kind === 'climb' || next.kind === 'vent') return [fallback, null];
-  const n = graph.nodes[next.to];
+  if (!next || next.kind === 'climb') return [fallback, null]; // (no climbs in its flow field: just in case)
+  const n = next.via ?? graph.nodes[next.to];
   return [[n.x, n.z], next];
 }
 

@@ -21,13 +21,15 @@
 //   with a wall behind you.
 //
 // Kicks and shotgun blasts don't push it (see knockBack in kick.ts): it's
-// too heavy. It doesn't climb or ride vents: if you're on a roof it waits below.
+// too heavy. It doesn't climb, but it RIDES THE VENTS up to the roofs (only
+// the ones its big body flies through: see the vent links in nav.ts); with no
+// vent to get to you, it waits below.
 import { moveAndCollide, overlapsAny } from './collision';
 import { secondsToTicks, tuning } from './config';
 import type { BullEntity, Entity } from './entities';
 import type { SimEvent } from './events';
 import { interceptTime } from './eyebat';
-import { jumpTo } from './ghoul';
+import { jumpTo, rideVent, VENT_RIDE_RADIUS } from './ghoul';
 import { knockBack } from './kick';
 import { nearestNode, type FlowField, type NavGraph, type NavLink } from './nav';
 import { hurtPlayer, type PlayerState } from './player';
@@ -106,21 +108,28 @@ function approach(
   let tx = player.x;
   let tz = player.z;
   let link: NavLink | null = null;
-  if (!clearPath(b, player, dist, world)) {
+  // (You up on a roof or a floating platform: the straight line may be clear
+  // at knee height, but it only leads under your feet. Then the graph too.)
+  const sameLevel = Math.abs(player.y - b.y) < 1.5;
+  if (!sameLevel || !clearPath(b, player, dist, world)) {
     const next = b.navNode >= 0 ? flow.next[b.navNode] : null;
-    // Climbs and vents are for ghouls: a bull waits below.
-    if (next && next.kind !== 'climb' && next.kind !== 'vent') {
-      tx = graph.nodes[next.to].x;
-      tz = graph.nodes[next.to].z;
+    // Walk, jump, drop, and vents to get up on the roofs (its graph has no
+    // climbing links: with no vent to get to you, it waits below).
+    if (next && next.kind !== 'climb') {
+      const n = next.via ?? graph.nodes[next.to]; // a vent: first the center of the grate
+      tx = n.x;
+      tz = n.z;
       link = next;
     }
   }
   const dx = tx - b.x;
   const dz = tz - b.z;
   const d = Math.hypot(dx, dz);
-  let wishX = d > 0.3 ? dx / d : 0;
-  let wishZ = d > 0.3 ? dz / d : 0;
-  if (d > 0.3) {
+  // Heading for a vent it must reach the center of the grate, not just get near it.
+  const arrived = link?.kind === 'vent' ? VENT_RIDE_RADIUS * 0.5 : 0.3;
+  let wishX = d > arrived ? dx / d : 0;
+  let wishZ = d > arrived ? dz / d : 0;
+  if (d > arrived) {
     b.dirX = wishX;
     b.dirZ = wishZ;
   }
@@ -149,6 +158,8 @@ function approach(
     b.vx += (wishX * tuning.bullSpeed - b.vx) * k;
     b.vz += (wishZ * tuning.bullSpeed - b.vz) * k;
     if (link && link.kind === 'jump' && d < 3) jumpTo(b, graph.nodes[link.to], world.boxes, tuning.bullRadius, tuning.bullHeight);
+    // On the center of a vent's grate: half a ton of bull, up in the air.
+    rideVent(b, link, world);
   }
   b.vy -= tuning.gravity * dt;
 
