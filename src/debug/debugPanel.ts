@@ -4,6 +4,7 @@ import { tuning } from '../sim/config';
 import { postSettings } from '../render/postprocess';
 import { cameraFeelSettings } from '../render/cameraFeel';
 import { viewmodelSettings } from '../render/weapons/viewmodel';
+import { recoilSettings, type RecoilKind } from '../render/weapons/recoil';
 import { fanSettings } from '../render/weapons/hands';
 import { shovelSettings } from '../render/weapons/shovelView';
 import { hitStopSettings } from '../render/hitStop';
@@ -263,10 +264,6 @@ export function createDebugPanel(options: {
   sg.number(viewmodelSettings, 'shotgunPitch', -0.5, 1, 0.01);
   sg.number(viewmodelSettings, 'shotgunYaw', -0.3, 0.3, 0.005);
   sg.number(viewmodelSettings, 'shotgunRoll', -0.5, 0.5, 0.01);
-  sg.number(viewmodelSettings, 'shotgunRecoil', 0, 1.5, 0.05);
-  sg.number(viewmodelSettings, 'shotgunRecoilBack', 0, 0.3, 0.005);
-  sg.number(viewmodelSettings, 'shotgunRecoilRecovery', 1, 30, 0.5);
-  sg.number(viewmodelSettings, 'shotgunViewKick', 0, 0.2, 0.005);
   // The pump-action (the Forge's shotgun, render/weapons/pumpView.ts).
   sg.number(tuning, 'pumpAmmo', 1, 10, 1);
   sg.number(tuning, 'pumpFireInterval', 0.2, 1.5, 0.01);
@@ -302,11 +299,29 @@ export function createDebugPanel(options: {
   rifle.number(viewmodelSettings, 'rifleRoll', -0.5, 0.5, 0.01);
   rifle.number(viewmodelSettings, 'rifleAdsY', -0.15, 0, 0.001);
   rifle.number(viewmodelSettings, 'rifleAdsZ', -0.4, 0, 0.005);
-  rifle.number(viewmodelSettings, 'rifleRecoil', 0, 1, 0.01);
-  rifle.number(viewmodelSettings, 'rifleRecoilBack', 0, 0.2, 0.005);
-  rifle.number(viewmodelSettings, 'rifleRecoilRecovery', 1, 30, 0.5);
-  rifle.number(viewmodelSettings, 'rifleViewKick', 0, 0.2, 0.005);
   rifle.number(viewmodelSettings, 'rifleAdsRecoil', 0, 1, 0.05);
+  // The shot's kick of every gun: the gun in your hand and your view (render/weapons/recoil.ts).
+  const kinds: RecoilKind[] = ['revolver', 'shotgun', 'pump', 'rifle'];
+  for (const kind of kinds) {
+    const r = recoilSettings[kind];
+    const recoil = panel.folder(`Recoil: ${kind} (render/weapons/recoil.ts)`);
+    recoil.number(r, 'up', 0, 1.5, 0.01);
+    recoil.number(r, 'back', 0, 0.3, 0.005);
+    recoil.number(r, 'rise', 0, 0.1, 0.002);
+    recoil.number(r, 'twist', -0.5, 0.5, 0.01);
+    recoil.number(r, 'scatter', 0, 0.3, 0.005);
+    recoil.number(r, 'stiffness', 50, 3000, 10);
+    recoil.number(r, 'bounce', 0.1, 1.5, 0.02);
+    recoil.number(r, 'snap', 0, 1, 0.05);
+    recoil.number(r, 'view', 0, 0.2, 0.005);
+    recoil.number(r, 'viewRoll', 0, 0.1, 0.002);
+    recoil.number(r, 'fov', 0, 15, 0.25);
+  }
+  const shotView = panel.folder('Recoil: the view (render/cameraFeel.ts)');
+  shotView.number(cameraFeelSettings, 'shotStiffness', 50, 3000, 10);
+  shotView.number(cameraFeelSettings, 'shotDamping', 0.1, 1.5, 0.02);
+  shotView.number(cameraFeelSettings, 'shotSnap', 0, 1, 0.05);
+  shotView.button('Copy recoil values', () => copyToClipboard(toSource(recoilSettings)));
   const kick = panel.folder('Kick (src/sim/config.ts, src/sim/kick.ts)');
   kick.number(tuning, 'kickWindup', 0, 0.3, 0.01);
   kick.number(tuning, 'kickCooldown', 0.1, 2, 0.05);
@@ -356,9 +371,6 @@ export function createDebugPanel(options: {
   gun.number(viewmodelSettings, 'x', -0.3, 0.3, 0.005);
   gun.number(viewmodelSettings, 'y', -0.3, 0.1, 0.005);
   gun.number(viewmodelSettings, 'z', -0.6, -0.1, 0.005);
-  gun.number(viewmodelSettings, 'recoil', 0, 1.5, 0.05);
-  gun.number(viewmodelSettings, 'recoilRecovery', 2, 30, 0.5);
-  gun.number(viewmodelSettings, 'viewKick', 0, 0.1, 0.005);
   gun.number(viewmodelSettings, 'sway', 0, 2, 0.05);
   gun.number(viewmodelSettings, 'bob', 0, 0.04, 0.001);
   gun.number(fanSettings, 'strikeTime', 0.05, 0.3, 0.01);

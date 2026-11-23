@@ -25,6 +25,8 @@ import { createRifleView } from './rifleView';
 import { adsAmount, isAkimbo, isPump, type WeaponId } from '../../sim/weapon';
 import { poseAt, smoothstep, ZERO_POSE, type GunPose } from './elastic';
 import { lookingThroughScope } from '../scopeOverlay';
+import { RecoilSpring, recoilSettings } from './recoil';
+import { shotKick } from '../cameraFeel';
 
 /** Mutable so the debug panel can change them. */
 export const viewmodelSettings = {
@@ -34,12 +36,7 @@ export const viewmodelSettings = {
   x: 0.11,
   y: -0.115,
   z: -0.36,
-  /** How much the gun kicks up on each shot, radians. */
-  recoil: 0.55,
-  /** How fast it recovers from the kick (higher = snappier). */
-  recoilRecovery: 10,
-  /** Camera "punch" on each shot, radians (visual only: your aim doesn't move). */
-  viewKick: 0.025,
+  // (The shot's recoil of every gun, and its punch on the view: recoil.ts.)
   /** Lag when turning the mouse. */
   sway: 0.5,
   /** Up-down/side bob while running. */
@@ -63,16 +60,10 @@ export const viewmodelSettings = {
   shotgunYaw: -0.2,
   /** Tilted on its side (roll), radians: shows a bit more of the gun's flank. */
   shotgunRoll: 0.05,
-  /** Kick up on each shot, radians: heavier than the revolver... */
-  shotgunRecoil: 0.3,
-  /** ...and it slams back into your shoulder, meters. */
-  shotgunRecoilBack: 0.11,
-  shotgunRecoilRecovery: 7,
-  shotgunViewKick: 0.06,
   /**
    * The PUMP-ACTION (the Forge's shotgun, pumpView.ts): held from the hip
    * like the carbine, with the carbine's arms, so the same pose (the arms
-   * are posed for it). Recoil and view kick are the shotgun's.
+   * are posed for it). Its recoil: recoilSettings.pump in recoil.ts.
    */
   pumpX: 0.15,
   pumpY: -0.15,
@@ -105,11 +96,7 @@ export const viewmodelSettings = {
    */
   rifleScopeAdsY: -0.097,
   rifleScopeAdsZ: -0.2,
-  rifleRecoil: 0.22,
-  rifleRecoilBack: 0.06,
-  rifleRecoilRecovery: 9,
-  rifleViewKick: 0.04,
-  /** Aimed, the gun kicks up less (so the sights come back on target): fraction of the recoil. */
+  /** Aimed, the gun kicks less (so the sights come back on target): fraction of the recoil (recoil.ts). */
   rifleAdsRecoil: 0.45,
   /** Aimed, sway and bob are this fraction of the normal ones (steady hands). */
   rifleAdsSteady: 0.15,
@@ -132,7 +119,7 @@ const DRAW_KEYS: [number, GunPose][] = [
   [1, ZERO_POSE],
 ];
 
-/** The revolver's draw: the hand catches the twirling gun, a jolt (fraction of a shot's recoil) and a view punch down. */
+/** The revolver's draw: the hand catches the twirling gun, a jolt (fraction of a shot's recoil, recoil.ts) and a view punch down. */
 const DRAW_CATCH_KICK = 0.3;
 const DRAW_CATCH_PUNCH = 0.012;
 
@@ -293,15 +280,14 @@ export function createViewmodel(): Viewmodel {
   let ads = 0; // 0 = from the hip, 1 = aimed down the sights (smoothed)
 
   // Animation state.
-  let kick = 0; // 0..1, recoil amount
-  let kickWeapon: WeaponId = 'revolver'; // which gun's recoil numbers apply
-  let viewKick = 0;
+  const recoil = new RecoilSpring(); // the shot's kick (recoil.ts)
+  let viewKick = 0; // the other punches of the view: melee, the pump's slams, the revolver's catch
   let flashTime = 0;
   let cylinderAngle = 0;
   let cylinderTarget = 0;
   let hammerTime = 1; // seconds since the last shot
   // The left gun (akimbo): its own recoil, cylinder and hammer; which gun flashed last.
-  let kickL = 0;
+  const recoilL = new RecoilSpring();
   let cylinderAngleL = 0;
   let cylinderTargetL = 0;
   let hammerTimeL = 1;
@@ -324,13 +310,17 @@ export function createViewmodel(): Viewmodel {
     scene,
     camera,
     onShot(weapon, barrel, forged) {
-      kickWeapon = weapon;
       flashTime = 0.05;
+      // The kick (recoil.ts): the gun's own, and a punch to your view.
+      // Aimed down the carbine's sights, both are smaller.
+      const r = recoilSettings[weapon === 'shotgun' && forged ? 'pump' : weapon];
+      const aimed = weapon === 'rifle' ? smoothstep(ads) : 0;
+      const scale = 1 - (1 - s.rifleAdsRecoil) * aimed;
+      shotKick(r.view * (1 - 0.5 * aimed), r.viewRoll, r.fov);
       // Akimbo: barrel 1 = the LEFT revolver fired. Only that gun kicks,
       // turns its cylinder and flashes; the right one stays still.
       if (weapon === 'revolver' && barrel === 1) {
-        kickL = 1;
-        viewKick = s.viewKick;
+        recoilL.kick(r);
         cylinderTargetL += Math.PI / 3;
         hammerTimeL = 0;
         flashLeft = true;
@@ -338,10 +328,9 @@ export function createViewmodel(): Viewmodel {
         flashL.scale.setScalar(0.09 + Math.random() * 0.05);
         return;
       }
-      kick = 1;
+      recoil.kick(r, scale);
       flashLeft = false;
       if (weapon === 'rifle') {
-        viewKick = s.rifleViewKick * (1 - 0.5 * ads);
         rifle.onShot();
         rifleFlash.material.rotation = Math.random() * Math.PI;
         rifleFlash.scale.setScalar(0.13 + Math.random() * 0.05);
@@ -349,22 +338,20 @@ export function createViewmodel(): Viewmodel {
       }
       if (weapon === 'shotgun' && forged) {
         // The pump-action: one barrel ("Doppio botto" fires twice through it,
-        // in the same instant: the second call just restarts the same things).
-        viewKick = s.shotgunViewKick;
+        // in the same instant: the second call just restarts the same things,
+        // and kicks twice as hard).
         pump.onShot();
         pumpFlash.material.rotation = Math.random() * Math.PI;
         pumpFlash.scale.setScalar(0.15 + Math.random() * 0.06);
         return;
       }
       if (weapon === 'shotgun') {
-        viewKick = s.shotgunViewKick;
         shotgunFlash.position.copy(shotgun.muzzles[barrel]);
         shotgunFlash.material.rotation = Math.random() * Math.PI;
         shotgunFlash.scale.setScalar(0.15 + Math.random() * 0.06);
         return;
       }
       fanning.onShot();
-      viewKick = s.viewKick;
       cylinderTarget += Math.PI / 3; // next chamber: 360° / 6
       hammerTime = 0;
       flash.material.rotation = Math.random() * Math.PI;
@@ -415,6 +402,8 @@ export function createViewmodel(): Viewmodel {
       if (player.weapon !== shownWeapon) {
         shownWeapon = player.weapon;
         drawTime = 0;
+        recoil.reset(); // the new gun doesn't carry the old one's kick
+        recoilL.reset();
         revolverReload.cancel(); // a reload in progress was cancelled by the switch
         akimboSpin.cancel();
         shotgun.cancel();
@@ -453,19 +442,17 @@ export function createViewmodel(): Viewmodel {
       if (shownWeapon === 'revolver') {
         const caught = (at: number) => lastDrawK < at && drawK >= at;
         if (caught(SPIN_TO)) {
-          kickWeapon = 'revolver';
-          kick = Math.max(kick, DRAW_CATCH_KICK);
+          recoil.kick(recoilSettings.revolver, DRAW_CATCH_KICK);
           viewKick -= DRAW_CATCH_PUNCH;
         }
-        if (caught(SPIN_TO + LEFT_LAG) && isAkimbo(player)) kickL = Math.max(kickL, DRAW_CATCH_KICK);
+        if (caught(SPIN_TO + LEFT_LAG) && isAkimbo(player)) recoilL.kick(recoilSettings.revolver, DRAW_CATCH_KICK);
       }
       lastDrawK = drawK;
       const isShotgun = shownWeapon === 'shotgun';
 
-      // --- Recoil, flash, view kick: instant hit, exponential recovery ---
-      const recovery = { revolver: s.recoilRecovery, shotgun: s.shotgunRecoilRecovery, rifle: s.rifleRecoilRecovery };
-      kick = approach(kick, 0, recovery[kickWeapon], dt);
-      kickL = approach(kickL, 0, s.recoilRecovery, dt);
+      // --- Recoil: springs kicked by the shots (recoil.ts); the other punches: instant hit, exponential recovery ---
+      recoil.update(dt);
+      recoilL.update(dt);
       viewKick = approach(viewKick, 0, 12, dt);
       flashTime -= dt;
       flash.visible = flashTime > 0 && shownWeapon === 'revolver' && !flashLeft;
@@ -565,18 +552,18 @@ export function createViewmodel(): Viewmodel {
               roll: lerp(s.rifleRoll, 0),
             }
           : { x: s.x, y: s.y, z: s.z, pitch: 0, yaw: -0.04, roll: 0 };
-      const recoilUp = { revolver: s.recoil, shotgun: s.shotgunRecoil, rifle: s.rifleRecoil * lerp(1, s.rifleAdsRecoil) }[kickWeapon];
-      const recoilBack = { revolver: 0.05, shotgun: s.shotgunRecoilBack, rifle: s.rifleRecoilBack }[kickWeapon];
-      // The reloads move the whole gun too: `rp` = pose offsets (elastic.ts).
+      // The reloads move the whole gun too: `rp` = pose offsets (elastic.ts);
+      // and so does the shot: `k` = the recoil spring's offsets (recoil.ts).
+      const k = recoil.pose;
       holder.position.set(
-        rest.x + swayX + bobX + rp.x + dp.x - slideTilt * 0.02 + legOut * 0.04,
-        rest.y + swayY + bobY + fallOffset + rp.y + dp.y - slideTilt * 0.03 - legOut * 0.05,
-        rest.z + kick * recoilBack + rp.z + dp.z,
+        rest.x + swayX + bobX + rp.x + dp.x + k.x - slideTilt * 0.02 + legOut * 0.04,
+        rest.y + swayY + bobY + fallOffset + rp.y + dp.y + k.y - slideTilt * 0.03 - legOut * 0.05,
+        rest.z + rp.z + dp.z + k.z,
       );
       holder.rotation.set(
-        rest.pitch + kick * recoilUp + rp.pitch + dp.pitch - swayY * 2,
-        rest.yaw + swayX * 2 + rp.yaw + dp.yaw,
-        rest.roll + rp.roll + dp.roll + slideTilt * 0.35 - legOut * 0.25,
+        rest.pitch + rp.pitch + dp.pitch + k.pitch - swayY * 2,
+        rest.yaw + swayX * 2 + rp.yaw + dp.yaw + k.yaw,
+        rest.roll + rp.roll + dp.roll + k.roll + slideTilt * 0.35 - legOut * 0.25,
       );
       if (akimbo) {
         // The left gun's holder: the MIRROR image of the right one. A mirror
@@ -585,16 +572,18 @@ export function createViewmodel(): Viewmodel {
         // the turns around Y and Z, and keeps the one around X. Two fixes on
         // top: the sway must NOT be mirrored (turning right, both guns lag the
         // same way: +2·swayX in x, +4·swayX in yaw undo the flip), and the
-        // recoil is its own (kickL instead of kick).
+        // recoil is its own: the right gun's (k) out, the left one's (kl) in,
+        // then mirrored like the rest (its twist goes toward the middle too).
+        const kl = recoilL.pose;
         holderL.position.set(
-          -holder.position.x + 2 * swayX,
-          holder.position.y,
-          holder.position.z + (kickL - kick) * recoilBack,
+          -(holder.position.x - k.x + kl.x) + 2 * swayX,
+          holder.position.y - k.y + kl.y,
+          holder.position.z - k.z + kl.z,
         );
         holderL.rotation.set(
-          holder.rotation.x + (kickL - kick) * recoilUp,
-          -holder.rotation.y + 4 * swayX,
-          -holder.rotation.z,
+          holder.rotation.x - k.pitch + kl.pitch,
+          -(holder.rotation.y - k.yaw + kl.yaw) + 4 * swayX,
+          -(holder.rotation.z - k.roll + kl.roll),
         );
       }
       return viewKick;

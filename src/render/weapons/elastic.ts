@@ -81,6 +81,37 @@ export class PoseSpring {
   }
 }
 
+/**
+ * How to KICK a damped spring at rest so that its peak is exactly 1 (the
+ * recoil of a shot, recoil.ts; the camera's shot punch, cameraFeel.ts).
+ * Two parts: a `jump` (an instant displacement: the shot moves the gun in the
+ * very frame it fires, no delay) and a `speed` (it keeps going a bit further,
+ * then the spring brings it back, past the rest and back again). `snap` = the
+ * share of the jump (0 = only speed, a softer start).
+ * The peak of a spring is linear in its starting state: kick it twice as
+ * hard and it goes twice as far. So we simulate one unit kick, measure its
+ * peak and divide by it. Cached: it only depends on the three numbers.
+ */
+const kickCache = new Map<string, { jump: number; speed: number }>();
+export function springKick(stiffness: number, dampingRatio: number, snap: number): { jump: number; speed: number } {
+  const key = `${stiffness}|${dampingRatio}|${snap}`;
+  const cached = kickCache.get(key);
+  if (cached) return cached;
+  const omega = Math.sqrt(stiffness);
+  const damping = 2 * dampingRatio * omega;
+  let x = snap;
+  let v = omega;
+  let peak = x;
+  for (let i = 0; i < 480 && v > 0; i++) {
+    v += (-stiffness * x - damping * v) * ELASTIC_STEP;
+    x += v * ELASTIC_STEP;
+    peak = Math.max(peak, x);
+  }
+  const kick = { jump: snap / peak, speed: omega / peak };
+  kickCache.set(key, kick);
+  return kick;
+}
+
 /** A part swinging on a pin, between 0 (shut) and `max` (open), moved by inertia. */
 export class Hinge {
   angle = 0;

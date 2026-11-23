@@ -4,6 +4,8 @@
 // - the camera tilts (rolls) a little when strafing, more while sliding;
 // - crouching lowers the eyes smoothly instead of snapping;
 // - getting hit snaps the head away from the hit (a damped spring);
+// - firing punches the view up, tilts it a little and widens the FOV for an
+//   instant (shotKick: the gun's numbers are in weapons/recoil.ts);
 // - aiming down the carbine's sights narrows the FOV: a zoom.
 //
 // THE ZOOM: a narrower field of view shows a smaller slice of the world on
@@ -15,6 +17,7 @@ import * as THREE from 'three';
 import { tuning } from '../sim/config';
 import type { PlayerState } from '../sim/player';
 import { adsAmount } from '../sim/weapon';
+import { ELASTIC_STEP, springKick } from './weapons/elastic';
 
 /** Mutable so the debug panel can change them. */
 export const cameraFeelSettings = {
@@ -51,6 +54,15 @@ export const cameraFeelSettings = {
   hurtShake: 1.5,
   /** ...and how fast it dies out (higher = shorter). */
   hurtShakeDecay: 10,
+  /**
+   * The SHOT's punch (shotKick): the spring that brings the view back after a
+   * shot, stiffness and damping ratio (<1 = it dips past the rest and back),
+   * and the share that happens in the very frame of the shot. How strong it
+   * is depends on the gun: view, viewRoll, fov in weapons/recoil.ts.
+   */
+  shotStiffness: 900,
+  shotDamping: 0.4,
+  shotSnap: 0.5,
 };
 
 let fov = cameraFeelSettings.baseFov;
@@ -63,13 +75,35 @@ let ads = 0; // 0 = from the hip, 1 = aimed (smoothed between ticks)
  */
 export function lookScale(camera: THREE.PerspectiveCamera): number {
   const half = (deg: number) => Math.tan(THREE.MathUtils.degToRad(deg) / 2);
-  return half(camera.fov) / half(cameraFeelSettings.baseFov);
+  // (Not counting the shot's FOV kick: the mouse mustn't change speed for an instant at every shot.)
+  return half(camera.fov - fovPunch) / half(cameraFeelSettings.baseFov);
 }
 let roll = 0;
 let eyeHeight = tuning.eyeHeight;
 // Hit snap: one damped spring per axis (angle in radians and its speed).
 const snap = { pitch: 0, pitchVel: 0, roll: 0, rollVel: 0 };
 let shake = 0; // current shake amplitude, radians
+// Shot punch: the same kind of spring, for pitch, roll (radians) and FOV (degrees).
+const shot = { pitch: 0, pitchVel: 0, roll: 0, rollVel: 0, fov: 0, fovVel: 0 };
+let fovPunch = 0; // degrees the shot adds to the FOV right now
+
+/**
+ * A shot: the view is punched UP by `up` radians, tilted by `roll` radians
+ * to a random side and the FOV widened by `fov` degrees, all at the peak of
+ * a kicked spring (elastic.ts springKick): most of it in this very frame,
+ * then back with a small dip past the rest. Shots in a row add up.
+ */
+export function shotKick(up: number, roll: number, fov: number): void {
+  const s = cameraFeelSettings;
+  const { jump, speed } = springKick(s.shotStiffness, s.shotDamping, s.shotSnap);
+  const side = Math.random() < 0.5 ? -1 : 1;
+  shot.pitch += up * jump;
+  shot.pitchVel += up * speed;
+  shot.roll += side * roll * jump;
+  shot.rollVel += side * roll * speed;
+  shot.fov += fov * jump;
+  shot.fovVel += fov * speed;
+}
 
 /**
  * The player got hit from `angle` (screen angle: 0 = in front, +π/2 = right,
@@ -128,8 +162,23 @@ export function updateCameraFeel(
   ads = approach(ads, adsAmount(player), 30, dt);
   const target = player.forged.rifle > 0 ? s.opticAdsFov : s.adsFov;
   const zoomed = fov + (target - fov) * ads * ads * (3 - 2 * ads); // smoothstep
-  if (Math.abs(camera.fov - zoomed) > 0.01) {
-    camera.fov = zoomed;
+  // The shot's punch: one more spring per axis, at fixed small steps.
+  const k = s.shotStiffness;
+  const c = 2 * s.shotDamping * Math.sqrt(k);
+  for (let left = Math.min(dt, 0.1); left > 0; left -= ELASTIC_STEP) {
+    const h = Math.min(left, ELASTIC_STEP);
+    shot.pitchVel += (-k * shot.pitch - c * shot.pitchVel) * h;
+    shot.pitch += shot.pitchVel * h;
+    shot.rollVel += (-k * shot.roll - c * shot.rollVel) * h;
+    shot.roll += shot.rollVel * h;
+    shot.fovVel += (-k * shot.fov - c * shot.fovVel) * h;
+    shot.fov += shot.fovVel * h;
+  }
+  // (Looking through the scope a widening FOV would read as the zoom slipping: much less of it.)
+  fovPunch = shot.fov * (1 - 0.8 * ads);
+  const punched = zoomed + fovPunch;
+  if (Math.abs(camera.fov - punched) > 0.01) {
+    camera.fov = punched;
     camera.updateProjectionMatrix(); // the projection matrix depends on the FOV
   }
 
@@ -151,8 +200,8 @@ export function updateCameraFeel(
   // Shake: a new random offset every frame, smaller and smaller (exponential decay).
   shake *= Math.exp(-s.hurtShakeDecay * dt);
   const jitter = () => (Math.random() * 2 - 1) * shake;
-  camera.rotation.z = roll + snap.roll + jitter();
-  camera.rotation.x += snap.pitch + jitter();
+  camera.rotation.z = roll + snap.roll + shot.roll + jitter();
+  camera.rotation.x += snap.pitch + shot.pitch + jitter();
   camera.rotation.y += jitter();
 
   // 3. Eye height: glide toward standing or crouched height.
