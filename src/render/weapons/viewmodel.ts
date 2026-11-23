@@ -22,6 +22,7 @@ import { createRevolverReload } from './revolverReload';
 import { createAkimboSpin } from './akimboSpin';
 import { drawHammer, drawSpin, LEFT_LAG, SPIN_TO } from './revolverDraw';
 import { createRifleView } from './rifleView';
+import { createDynamiteView } from './dynamiteView';
 import { adsAmount, isAkimbo, isPump, type WeaponId } from '../../sim/weapon';
 import { poseAt, smoothstep, ZERO_POSE, type GunPose } from './elastic';
 import { lookingThroughScope } from '../scopeOverlay';
@@ -71,6 +72,15 @@ export const viewmodelSettings = {
   pumpPitch: 0.05,
   pumpYaw: 0.01,
   pumpRoll: 0.05,
+
+  // --- Dynamite launcher (dynamiteView.ts; the origin is the right hand on the grip, held by the revolver's arm) ---
+  /** Low on the right and turned a little outward (like the shotgun): straight from behind you'd see only the receiver. */
+  dynamiteX: 0.17,
+  dynamiteY: -0.17,
+  dynamiteZ: -0.42,
+  dynamitePitch: 0.08,
+  dynamiteYaw: 0.07,
+  dynamiteRoll: 0.1,
 
   // --- Lever-action carbine (origin of its model: the right hand on the wrist) ---
   /** From the hip: low on the right, the barrel going into depth. (The arms in arms.glb are posed for this pose.) */
@@ -277,6 +287,13 @@ export function createViewmodel(): Viewmodel {
   const rifleFlash = createFlash(flashMap);
   rifleFlash.position.copy(rifle.muzzle);
   rifle.root.add(rifleFlash);
+
+  // The dynamite launcher (see dynamiteView.ts).
+  const dynamite = createDynamiteView();
+  dynamite.root.visible = false;
+  holder.add(dynamite.root);
+  const dynamiteFlash = createFlash(flashMap);
+  dynamite.root.add(dynamiteFlash);
   let ads = 0; // 0 = from the hip, 1 = aimed down the sights (smoothed)
 
   // Animation state.
@@ -330,7 +347,11 @@ export function createViewmodel(): Viewmodel {
       }
       recoil.kick(r, scale);
       flashLeft = false;
-      if (weapon === 'dynamite') return; // no model in hand yet (next steps): only the kick of the view
+      if (weapon === 'dynamite') {
+        dynamiteFlash.material.rotation = Math.random() * Math.PI;
+        dynamiteFlash.scale.setScalar(0.17 + Math.random() * 0.06); // a fat barrel: a fat flash
+        return;
+      }
       if (weapon === 'rifle') {
         rifle.onShot();
         rifleFlash.material.rotation = Math.random() * Math.PI;
@@ -428,6 +449,9 @@ export function createViewmodel(): Viewmodel {
       // Looking through the scope: the gun is "around" your eye, you see the scope view instead.
       rifle.root.visible = shownWeapon === 'rifle' && !lookingThroughScope(player);
       const isRifle = shownWeapon === 'rifle';
+      const isDynamite = shownWeapon === 'dynamite';
+      dynamite.root.visible = isDynamite;
+      dynamiteFlash.position.copy(dynamite.muzzle); // (the file can load after the first frames)
       // Aiming down the sights: the simulation says how far (it takes
       // rifleAdsTime); here it's only smoothed between ticks and eased.
       ads = approach(ads, isRifle ? adsAmount(player) : 0, 30, dt);
@@ -461,8 +485,11 @@ export function createViewmodel(): Viewmodel {
       shotgunFlash.visible = flashTime > 0 && isShotgun && !pumpShown;
       pumpFlash.visible = flashTime > 0 && pumpShown;
       rifleFlash.visible = flashTime > 0 && isRifle && ads < 0.5; // aimed: the flash would fill the sights
-      flashLight.intensity = flashTime > 0 ? (isShotgun ? 5 : isRifle ? 4 : 3) : 0;
-      const activeFlash = pumpShown ? pumpFlash : isShotgun ? shotgunFlash : isRifle ? rifleFlash : akimbo && flashLeft ? flashL : flash;
+      dynamiteFlash.visible = flashTime > 0 && isDynamite;
+      flashLight.intensity = flashTime > 0 ? (isShotgun || isDynamite ? 5 : isRifle ? 4 : 3) : 0;
+      const activeFlash = isDynamite
+        ? dynamiteFlash
+        : pumpShown ? pumpFlash : isShotgun ? shotgunFlash : isRifle ? rifleFlash : akimbo && flashLeft ? flashL : flash;
       flashLight.position.copy(activeFlash.position).applyMatrix4(activeFlash.parent!.matrixWorld);
 
       // --- Cylinder turns to the next chamber; hammer re-cocks after a shot ---
@@ -540,7 +567,9 @@ export function createViewmodel(): Viewmodel {
       // (sway, bob, slide, kick, switch) is shared.
       // The carbine's rest pose blends from the hip pose to the aimed one.
       const lerp = (a: number, b: number) => a + (b - a) * aimed;
-      const rest = pumpShown
+      const rest = isDynamite
+        ? { x: s.dynamiteX, y: s.dynamiteY, z: s.dynamiteZ, pitch: s.dynamitePitch, yaw: s.dynamiteYaw, roll: s.dynamiteRoll }
+        : pumpShown
         ? { x: s.pumpX, y: s.pumpY, z: s.pumpZ, pitch: s.pumpPitch, yaw: s.pumpYaw, roll: s.pumpRoll }
         : isShotgun
         ? { x: s.shotgunX, y: s.shotgunY, z: s.shotgunZ, pitch: s.shotgunPitch, yaw: s.shotgunYaw, roll: s.shotgunRoll }

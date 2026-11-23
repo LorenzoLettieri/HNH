@@ -279,7 +279,7 @@ export function createDebugPanel(options: {
   sg.number(viewmodelSettings, 'pumpPitch', -0.5, 1, 0.01);
   sg.number(viewmodelSettings, 'pumpYaw', -0.3, 0.3, 0.005);
   sg.number(viewmodelSettings, 'pumpRoll', -0.5, 0.5, 0.01);
-  const dyn = panel.folder('Dynamite (src/sim/config.ts + dynamite.ts, explosion.ts)');
+  const dyn = panel.folder('Dynamite (src/sim/config.ts + dynamite.ts, explosion.ts, render/weapons/dynamiteView.ts)');
   dyn.number(tuning, 'dynamiteSpeed', 5, 50, 0.5);
   dyn.number(tuning, 'dynamiteLift', 0, 10, 0.25);
   dyn.number(tuning, 'dynamiteInherit', 0, 1, 0.05);
@@ -296,6 +296,13 @@ export function createDebugPanel(options: {
   dyn.number(tuning, 'dynamiteSelfPush', 0, 30, 0.5);
   dyn.number(tuning, 'dynamiteSmithScale', 0, 1, 0.05);
   dyn.number(cameraFeelSettings, 'blastShake', 0, 8, 0.1);
+  // The launcher in your hand (render/weapons/dynamiteView.ts): its rest pose.
+  dyn.number(viewmodelSettings, 'dynamiteX', -0.3, 0.3, 0.005);
+  dyn.number(viewmodelSettings, 'dynamiteY', -0.3, 0.1, 0.005);
+  dyn.number(viewmodelSettings, 'dynamiteZ', -0.6, 0, 0.005);
+  dyn.number(viewmodelSettings, 'dynamitePitch', -0.5, 0.5, 0.01);
+  dyn.number(viewmodelSettings, 'dynamiteYaw', -0.5, 0.5, 0.005);
+  dyn.number(viewmodelSettings, 'dynamiteRoll', -0.5, 0.5, 0.01);
 
   const rifle = panel.folder('Carbine (src/sim/config.ts + render/weapons/viewmodel.ts, rifleView.ts)');
   rifle.number(tuning, 'rifleDamage', 5, 300, 5);
