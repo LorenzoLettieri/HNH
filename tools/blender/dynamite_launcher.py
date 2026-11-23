@@ -1,8 +1,7 @@
 """
 The dynamite launcher ("il lancia-dinamite"): a heavy steampunk drum
 launcher, held with TWO hands like a grenade launcher. A walnut stock with
-a brass butt plate, a big loop guard under the wrist (the fingers go
-through it, like the carbine's lever), a massive blued receiver, a brass
+a brass butt plate, a thick wrist that fills the right fist, a massive blued receiver, a brass
 REVOLVING CAGE holding five red dynamite sticks (their fuses poke out of
 the back plate, toward you), a fat barrel with a flared muzzle, a copper
 tank of compressed air under it wrapped in a walnut fore-end for the left
@@ -74,12 +73,20 @@ TANK_R = 0.019
 FORE_START, FORE_END = 0.262, 0.44  # the walnut fore-end around the tank (the left hand holds it)
 FORE_BOTTOM = LEFT_PALM.z + 0.016   # its belly sits on the left palm
 # The stock: rings along the line from the wrist (at the right hand) back to the butt, dropping.
+# The WRIST must fill the right fist. The carbine's right hand grips the
+# LOWER BAR of the carbine's lever: its fist's hole (measured on the vertices
+# of rifleArms.glb, a slice at a time) is about 5 cm wide and 4.5 cm tall,
+# centered RIGHT_FIST below the origin. The game lifts the arm by that much
+# (render/weapons/dynamiteView.ts, FIST): the hole lands on the origin, where
+# this wrist is, as thick as the hole.
+RIGHT_FIST = Vector((-0.003, 0.010, -0.072))
 STOCK = [  # (y, z of the center, half width, half height)
-    (0.035, 0.012, 0.015, 0.022),
-    (-0.020, 0.006, 0.0135, 0.019),   # the wrist: the right hand closes around it
-    (-0.075, -0.010, 0.016, 0.028),
-    (-0.160, -0.040, 0.021, 0.048),
-    (-0.260, -0.062, 0.023, 0.060),
+    (0.040, 0.008, 0.017, 0.030),
+    (0.014, 0.001, 0.019, 0.024),
+    (-0.030, -0.002, 0.019, 0.023),   # the wrist: the right hand closes around it
+    (-0.080, -0.018, 0.019, 0.032),
+    (-0.165, -0.048, 0.022, 0.050),
+    (-0.260, -0.068, 0.023, 0.060),
 ]
 
 # Palette (0-255).
@@ -289,7 +296,7 @@ def build(m):
     parts.append(lib.assign(butt, m['brass']))
     # A brass strap around the wrist, where the stock meets the receiver.
     parts.append(lib.assign(lib.loft('wristband', [
-        lib.ellipse_ring((0, yy, 0.011), (1, 0, 0), (0, 0, 1), 0.0165, 0.0245, n=10) for yy in (0.028, 0.040)
+        lib.ellipse_ring((0, yy, 0.008), (1, 0, 0), (0, 0, 1), 0.0185, 0.032, n=10) for yy in (0.040, 0.052)
     ], cap_start=True, cap_end=True), m['brass']))
 
     # --- Receiver: a massive blued block from the wrist to the drum, a hump on top ---
@@ -307,13 +314,12 @@ def build(m):
             rv = lib.cylinder_mesh('rivet', (side * 0.032, yy, zz), 0.0032, 0.004, 'x', rotation=(0, math.pi / 2, 0), vertices=6)
             parts.append(lib.assign(rv, m['brass']))
 
-    # --- The big loop guard under the wrist (the right hand's fingers go through it) ---
-    guard_path = [(0, 0.040, -0.016), (0, 0.030, -0.040), (0, 0.000, -0.056), (0, -0.026, -0.050),
-                  (0, -0.030, -0.032), (0, -0.016, -0.012)]
+    # --- Trigger and its guard, in front of the hand (the index finger reaches forward) ---
+    guard_path = [(0, 0.052, -0.026), (0, 0.054, -0.044), (0, 0.070, -0.054), (0, 0.090, -0.048), (0, 0.094, -0.034)]
     guard = sweep('guard', guard_path, lambda c, side, across, i: [
         c + side * sx * 0.0055 + across * sy * 0.0025 for sx, sy in ((1, 1), (-1, 1), (-1, -1), (1, -1))])
     parts.append(lib.assign(guard, m['iron']))
-    trigger = lib.box_mesh('trigger', (0, 0.026, -0.024), (0.005, 0.005, 0.026), 'x', rotation=(-0.35, 0, 0))
+    trigger = lib.box_mesh('trigger', (0, 0.068, -0.040), (0.005, 0.005, 0.022), 'x', rotation=(-0.35, 0, 0))
     parts.append(lib.assign(trigger, m['iron']))
 
     # --- The drum's axle (the frame holds it; the drum turns on it) ---
@@ -462,6 +468,7 @@ def main():
         for a in arms:
             a.parent = frame
             a.matrix_parent_inverse.identity()
+        arms[0].location = -RIGHT_FIST + Vector((0, RIGHT_FIST.y, 0))  # the right fist's hole on the wrist (as in the game)
         lib.render_frame(os.path.join(PREVIEW_DIR, 'dynamite_eye.png'), 0)
         # The hands from the side, close: do they really hold it?
         frame.location = (0, 0, 0)

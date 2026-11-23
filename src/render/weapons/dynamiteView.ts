@@ -17,6 +17,7 @@
 import * as THREE from 'three';
 import { loadGunModel } from './gunModel';
 import { createRifleHands } from './hands';
+import { viewmodelSettings } from './viewmodel';
 
 /**
  * Where the muzzle is, in the model's coordinates: the same numbers as the
@@ -26,10 +27,21 @@ import { createRifleHands } from './hands';
  */
 const MUZZLE = new THREE.Vector3(0, 0.081, -0.65);
 
+/**
+ * The carbine's right hand grips the LOWER BAR of the carbine's lever, not
+ * its wrist: the hole of the fist is 7.2 cm below the origin (measured on
+ * the vertices of rifleArms.glb). The arm is lifted by that much, so the fist
+ * closes around this gun's wrist (at the origin, as thick as the hole; the
+ * Blender script has the same number: RIGHT_FIST).
+ */
+const FIST = new THREE.Vector3(0.003, 0.072, 0);
+
 export interface DynamiteView {
   root: THREE.Group;
   /** Where the flash goes (model coordinates). */
   muzzle: THREE.Vector3;
+  /** Call every frame: applies the right arm's turn (debug panel). */
+  update(): void;
 }
 
 export function createDynamiteView(): DynamiteView {
@@ -39,7 +51,22 @@ export function createDynamiteView(): DynamiteView {
     if (m) muzzle.copy(m.position);
   });
   // The carbine's arms: the launcher was built around their hands.
+  // The RIGHT arm, though, is posed to grab the carbine's lever from below:
+  // lifted (FIST) so the fist wraps this wrist, then hung from a PIVOT on the
+  // wrist (the origin), which can be turned (debug panel): the hand stays
+  // wrapped around the wrist, only the forearm swings (the shoulder is off
+  // screen anyway).
   const hands = createRifleHands();
-  root.add(hands.right, hands.left);
-  return { root, muzzle };
+  const fist = new THREE.Group();
+  hands.right.position.copy(FIST);
+  fist.add(hands.right);
+  root.add(fist, hands.left);
+  return {
+    root,
+    muzzle,
+    update() {
+      const s = viewmodelSettings;
+      fist.rotation.set(s.dynamiteHandPitch, s.dynamiteHandYaw, s.dynamiteHandRoll);
+    },
+  };
 }

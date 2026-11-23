@@ -303,6 +303,9 @@ export function createDebugPanel(options: {
   dyn.number(viewmodelSettings, 'dynamitePitch', -0.5, 0.5, 0.01);
   dyn.number(viewmodelSettings, 'dynamiteYaw', -0.5, 0.5, 0.005);
   dyn.number(viewmodelSettings, 'dynamiteRoll', -0.5, 0.5, 0.01);
+  dyn.number(viewmodelSettings, 'dynamiteHandPitch', -1, 1, 0.01);
+  dyn.number(viewmodelSettings, 'dynamiteHandYaw', -1, 1, 0.01);
+  dyn.number(viewmodelSettings, 'dynamiteHandRoll', -1, 1, 0.01);
 
   const rifle = panel.folder('Carbine (src/sim/config.ts + render/weapons/viewmodel.ts, rifleView.ts)');
   rifle.number(tuning, 'rifleDamage', 5, 300, 5);

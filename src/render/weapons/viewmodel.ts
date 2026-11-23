@@ -81,6 +81,14 @@ export const viewmodelSettings = {
   dynamitePitch: 0.05,
   dynamiteYaw: 0.01,
   dynamiteRoll: 0.05,
+  /**
+   * The right arm turned around the fist (dynamiteView.ts), radians: pitch
+   * < 0 raises the forearm along the stock, roll turns the hand over the top
+   * of the wrist. The carbine's arm grabs a lever from below: too upright here.
+   */
+  dynamiteHandPitch: -0.2,
+  dynamiteHandYaw: 0,
+  dynamiteHandRoll: 0,
 
   // --- Lever-action carbine (origin of its model: the right hand on the wrist) ---
   /** From the hip: low on the right, the barrel going into depth. (The arms in arms.glb are posed for this pose.) */
@@ -451,6 +459,7 @@ export function createViewmodel(): Viewmodel {
       const isRifle = shownWeapon === 'rifle';
       const isDynamite = shownWeapon === 'dynamite';
       dynamite.root.visible = isDynamite;
+      dynamite.update();
       dynamiteFlash.position.copy(dynamite.muzzle); // (the file can load after the first frames)
       // Aiming down the sights: the simulation says how far (it takes
       // rifleAdsTime); here it's only smoothed between ticks and eased.
