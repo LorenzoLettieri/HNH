@@ -15,13 +15,16 @@ Run it with:  npm run models   (or tools/blender/.venv/bin/python tools/blender/
 Like the shotgun there's NO skeleton: rigid parts, each with its ORIGIN on
 its pivot, found by NAME by the game (render/weapons/dynamiteView.ts):
 
-    frame            stock, receiver, barrel, tank, fore-end, gauge (doesn't move)
-    ├── drum         origin ON THE DRUM'S AXIS: rotate it (around its own
-    │   │            axis, Blender Y = three.js -Z) to bring the next stick up
-    │   ├── stick_0  the five sticks, origin at their BACK end (the fuse side):
-    │   ├── ...      slide them back along the axis to pull them out
-    │   └── stick_4  (stick_0 is the one in front of the barrel)
-    └── muzzle       an empty at the mouth of the barrel: where the flash goes
+    frame              stock, receiver, barrel, tank, fore-end, gauge (doesn't move)
+    ├── crane          the yoke the drum swings out on (to reload), like the
+    │   │              revolver's: origin ON ITS PIN (CRANE_PIVOT, parallel to
+    │   │              the barrel, low on the left): rotate it to swing the drum out
+    │   └── drum       origin ON THE DRUM'S AXIS: rotate it (around its own
+    │       │          axis, Blender Y = three.js -Z) to bring the next stick up
+    │       ├── stick_0  the five sticks, origin at their BACK end (the fuse side):
+    │       ├── ...      slide them along the axis to push them in
+    │       └── stick_4  (stick_0 is the one in front of the barrel)
+    └── muzzle         an empty at the mouth of the barrel: where the flash goes
 
 Coordinates (Blender): X = right, Y = forward (the barrel), Z = up.
 THE HANDS ARE THE CARBINE'S (public/models/rifleArms.glb, the same ones the
@@ -70,6 +73,9 @@ BORE_R = 0.022
 BELL_R = 0.044            # the flared muzzle
 TANK_Z = BARREL_Z - 0.056  # the air tank under the barrel
 TANK_R = 0.019
+# The crane's pin: low on the LEFT of the drum (the side you see), so the
+# drum swings out to the left, toward the middle of the screen, for the reload.
+CRANE_PIVOT = (-0.046, -0.034)  # (x, z)
 FORE_START, FORE_END = 0.262, 0.44  # the walnut fore-end around the tank (the left hand holds it)
 FORE_BOTTOM = LEFT_PALM.z + 0.016   # its belly sits on the left palm
 # The stock: rings along the line from the wrist (at the right hand) back to the butt, dropping.
@@ -322,8 +328,9 @@ def build(m):
     trigger = lib.box_mesh('trigger', (0, 0.068, -0.040), (0.005, 0.005, 0.022), 'x', rotation=(-0.35, 0, 0))
     parts.append(lib.assign(trigger, m['iron']))
 
-    # --- The drum's axle (the frame holds it; the drum turns on it) ---
-    parts.append(tube('axle', 0, DRUM_Z, [(DRUM_BACK - 0.008, 0.011), (DRUM_FRONT + PLATE + 0.008, 0.011)], m['iron'], n=8))
+    # --- The crane's knuckles on the frame: where its pin goes, front and back ---
+    for y0 in (DRUM_BACK - 0.012, DRUM_FRONT + PLATE + 0.004):
+        parts.append(tube('knuckle', CRANE_PIVOT[0], CRANE_PIVOT[1], [(y0, 0.010), (y0 + 0.008, 0.010)], m['blued'], n=8))
 
     # --- Barrel: fat blued tube with a real hole and a flared muzzle (a bell) ---
     barrel = lib.loft('barrel', [
@@ -391,6 +398,21 @@ def build(m):
     drum_parts.append(tube('hub', 0, DRUM_Z, [(DRUM_BACK + PLATE, 0.016), (DRUM_FRONT, 0.016)], m['iron'], n=8))
     drum = join('drum', drum_parts)
 
+    # --- The crane: its pin, the drum's axle, and two arms joining them ---
+    px, pz = CRANE_PIVOT
+    y_back, y_front = DRUM_BACK - 0.012, DRUM_FRONT + PLATE + 0.012
+    crane_parts = [
+        tube('pin', px, pz, [(y_back, 0.0065), (y_front, 0.0065)], m['iron'], n=8),
+        tube('axle', 0, DRUM_Z, [(y_back, 0.011), (y_front, 0.011)], m['iron'], n=8),
+    ]
+    arm_len = math.hypot(0 - px, DRUM_Z - pz)
+    arm_angle = math.atan2(DRUM_Z - pz, 0 - px)  # in the XZ plane, from the pin to the axle
+    for y0 in (y_back + 0.004, y_front - 0.004):
+        arm = lib.box_mesh('crane_arm', ((px + 0) / 2, y0, (pz + DRUM_Z) / 2), (arm_len, 0.008, 0.016), 'x',
+                           rotation=(0, -arm_angle, 0))
+        crane_parts.append(lib.assign(arm, m['blued']))
+    crane = join('crane', crane_parts)
+
     sticks = []
     for k in range(STICKS):
         x, z = chamber(k)
@@ -412,12 +434,14 @@ def build(m):
 
     # --- Hierarchy (see the top of the file) ---
     set_origin(frame, (0, 0, 0))
+    set_origin(crane, (CRANE_PIVOT[0], DRUM_BACK, CRANE_PIVOT[1]))
     set_origin(drum, (0, DRUM_BACK, DRUM_Z))
     for s in sticks:
         parent(s, drum)
-    parent(drum, frame)
+    parent(drum, crane)
+    parent(crane, frame)
     parent(muzzle, frame)
-    return frame, drum, sticks, muzzle
+    return frame, crane, drum, sticks, muzzle
 
 
 # ============================================================================
@@ -446,11 +470,11 @@ def main():
         'fuse': lib.material('fuse', color=(205, 178, 122), roughness=1),
         'gauge': lib.material('gauge', gauge_texture(), roughness=0.4),
     }
-    frame, drum, sticks, muzzle = build(m)
+    frame, crane, drum, sticks, muzzle = build(m)
 
     os.makedirs(os.path.dirname(OUT_GLB), exist_ok=True)
     bpy.ops.object.select_all(action='DESELECT')
-    for o in (frame, drum, *sticks, muzzle):
+    for o in (frame, crane, drum, *sticks, muzzle):
         o.select_set(True)
     bpy.ops.export_scene.gltf(filepath=OUT_GLB, export_format='GLB', use_selection=True, export_yup=True,
                               export_animations=False, export_skins=False)
@@ -470,6 +494,10 @@ def main():
             a.matrix_parent_inverse.identity()
         arms[0].location = -RIGHT_FIST + Vector((0, RIGHT_FIST.y, 0))  # the right fist's hole on the wrist (as in the game)
         lib.render_frame(os.path.join(PREVIEW_DIR, 'dynamite_eye.png'), 0)
+        # Reloading: the drum swung out on the crane (the game opens it about this much).
+        crane.rotation_euler.y = -1.5  # Blender +Y = three.js -Z: a three.js +Z turn is a Blender -Y turn
+        lib.render_frame(os.path.join(PREVIEW_DIR, 'dynamite_eye_open.png'), 0)
+        crane.rotation_euler.y = 0
         # The hands from the side, close: do they really hold it?
         frame.location = (0, 0, 0)
         frame.rotation_euler = (0, 0, 0)

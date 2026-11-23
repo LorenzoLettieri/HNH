@@ -390,7 +390,8 @@ export function createViewmodel(): Viewmodel {
     },
     onReload(weapon, seconds, forged) {
       // (The carbine's reload follows the simulation's timer directly: rifleView.ts.)
-      if (weapon === 'shotgun' && !forged) shotgun.onReload(); // (the pump-action reloads one shell at a time)
+      if (weapon === 'dynamite') dynamite.onReload(seconds); // the drum swung out, sticks in, slammed shut, spun
+      else if (weapon === 'shotgun' && !forged) shotgun.onReload(); // (the pump-action reloads one shell at a time)
       else if (weapon === 'revolver' && forged) akimboSpin.start(seconds); // akimbo: the gunslinger's twirl
       else if (weapon === 'revolver') {
         revolverReloadTime = seconds; // "Tamburo veloce" makes it shorter

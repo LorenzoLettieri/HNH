@@ -6,7 +6,6 @@ import { tuning } from '../sim/config';
 import {
   playDryFire,
   playDynamiteLaunch,
-  playDynamiteReload,
   playDuelReady,
   playFireballHit,
   playRicochet,
@@ -193,7 +192,9 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
             if (e.weapon === 'shotgun' && e.forged) playPumpReloadStart(pumpReloadTimes()); // flung up: a rush of air
             else if (e.weapon === 'shotgun') playShotgunReload(e.seconds);
             else if (e.weapon === 'rifle') playCarbineReloadStart();
-            else if (e.weapon === 'dynamite') playDynamiteReload(e.seconds);
+            else if (e.weapon === 'dynamite') {
+              // (its sounds come from the animation itself: dynamiteView.ts)
+            }
             else if (e.forged) playAkimboSpin(spinTurnTimes(e.seconds), e.seconds);
             else playReload(e.seconds);
             for (const f of fx.onReload) f(e.weapon, e.seconds, e.forged);

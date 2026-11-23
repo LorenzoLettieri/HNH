@@ -24,11 +24,25 @@
 //          ratchet: it accelerates all the way and SLAMS into the stop, CLACK,
 //          bounces; the slam jolts the gun and punches your view
 //   ~0.7   snapped back past its rest pose, bounces home, ready (0.88)
+//
+// THE RELOAD (timeline in fractions of the reload's length, the 'reloadStart'
+// event says how long; same recipe as the revolver's, revolverReload.ts):
+//   a wind-up, then a FLICK of the wrist: the drum swings out to the left on
+//   its crane BY INERTIA (a Hinge of elastic.ts, pushed by the gun's angular
+//   acceleration: nobody opens it, the flick throws it out) and bangs against
+//   its stop; the gun turns the open drum toward you; the new sticks are
+//   pushed into the empty chambers ONE AT A TIME (each one shoved in from
+//   behind, with a little dip of the gun); a flick the other way slams the
+//   drum shut, and it's spun like a wheel of fortune that slows down and
+//   stops on a chamber. Every sound is played HERE, at the moment its piece
+//   moves (the hinge hits its stop, a stick lands, the drum latches, a
+//   chamber clicks past): the physics decides when, the sound follows.
 import * as THREE from 'three';
 import { tuning } from '../../sim/config';
 import type { PlayerState } from '../../sim/player';
 import { magazineSize } from '../../sim/weapon';
-import { ELASTIC_STEP, PoseSpring, poseAt, Stroke, travelTime, ZERO_POSE, type GunPose } from './elastic';
+import { ELASTIC_STEP, Hinge, phase, PoseSpring, poseAt, smoothstep, Stroke, travelTime, ZERO_POSE, type GunPose } from './elastic';
+import { playDrumOpen, playDrumShut, playDrumTick, playStickIn } from '../../audio/sfx';
 import { loadGunModel } from './gunModel';
 import { createRifleHands } from './hands';
 import { viewmodelSettings } from './viewmodel';
@@ -90,6 +104,40 @@ const CYCLE_KEYS: [number, GunPose][] = [
   [1, Z],
 ];
 
+// --- The reload (fractions of the reload's length) -----------------------------------
+/** The crane: how far it swings out (radians), how much the gun's swing throws it, the spring, the bounce. */
+const CRANE_OPEN = 1.5;
+const CRANE_INERTIA = 1.6;
+const CRANE_ASSIST = 260;
+const CRANE_DAMPING = 9;
+const CRANE_BOUNCE = 0.3;
+/** It may swing out from here, and must swing back from here. */
+const OPEN_START = 0.11;
+const CLOSE_START = 0.78;
+/** The new sticks go in between these two moments, one after the other; each takes INSERT_TIME. */
+const INSERT_FROM = 0.3;
+const INSERT_TO = 0.7;
+const INSERT_TIME = 0.06;
+/** Where a stick comes from: this far behind its chamber (three.js +Z = toward you), meters. */
+const INSERT_DEPTH = 0.16;
+/** The gun's dip when a stick is shoved home (spring speed). */
+const SHOVE_Y = -0.12;
+const SHOVE_PITCH = -0.35;
+/** The wheel of fortune: whole turns, from SPIN_FROM to the end of the reload (ease-out: fast, then slower). */
+const SPIN_TURNS = 2;
+const SPIN_FROM = 0.8;
+const RELOAD_KEYS: [number, GunPose][] = [
+  [0, Z],
+  [0.05, { x: -0.004, y: 0, z: 0, pitch: -0.03, yaw: 0, roll: 0.16 }], // wind-up...
+  [0.11, { x: 0.012, y: 0.006, z: 0, pitch: 0.06, yaw: -0.02, roll: -0.45 }], // ...FLICK clockwise: the drum flies out
+  [0.22, { x: -0.03, y: 0.035, z: 0.06, pitch: 0.18, yaw: 0.28, roll: 0.3 }], // the open drum turned toward you
+  [0.72, { x: -0.03, y: 0.035, z: 0.06, pitch: 0.18, yaw: 0.28, roll: 0.3 }],
+  [0.76, { x: -0.03, y: 0.03, z: 0.05, pitch: 0.12, yaw: 0.22, roll: 0.05 }], // wind-up...
+  [0.8, { x: -0.02, y: 0.02, z: 0.03, pitch: 0.05, yaw: 0.12, roll: 0.75 }], // ...FLICK the other way: SLAM shut
+  [0.92, Z],
+  [1, Z],
+];
+
 /** When the drum moves, seconds after the shot (the sounds follow the animation). */
 export interface DrumTimes {
   turnAt: number;
@@ -105,6 +153,8 @@ export interface DynamiteView {
   /** Where the flash goes (model coordinates). */
   muzzle: THREE.Vector3;
   onShot(): void;
+  /** A reload starts and lasts `seconds`. */
+  onReload(seconds: number): void;
   /** Stop every animation (weapon switched away). */
   cancel(): void;
   /** The camera punch of the drum's slams since the last call (radians), for the viewmodel. */
@@ -117,16 +167,20 @@ export function createDynamiteView(): DynamiteView {
   const muzzle = MUZZLE.clone();
   // Parts, filled in when the file has loaded (until then empty stand-ins).
   let drum = new THREE.Object3D();
+  let crane = new THREE.Object3D();
   let sticks: THREE.Object3D[] = [];
+  let stickRest: number[] = []; // each stick's z at rest, in the drum's coordinates
   const root = loadGunModel('dynamiteLauncher.glb', (model) => {
     const m = model.getObjectByName('muzzle');
     if (m) muzzle.copy(m.position);
     drum = model.getObjectByName('drum') ?? drum;
+    crane = model.getObjectByName('crane') ?? crane;
     sticks = [];
     for (let k = 0; k < CHAMBERS; k++) {
       const s = model.getObjectByName(`stick_${k}`);
       if (s) sticks.push(s);
     }
+    stickRest = sticks.map((s) => s.position.z);
   });
   // The carbine's arms: the launcher was built around their hands.
   // The RIGHT arm, though, is posed to grab the carbine's lever from below:
@@ -153,6 +207,21 @@ export function createDynamiteView(): DynamiteView {
   let leftover = 0;
   let sinceShot = Infinity;
   let punch = 0;
+  // The reload.
+  const hinge = new Hinge(CRANE_OPEN, CRANE_ASSIST, CRANE_DAMPING, CRANE_BOUNCE);
+  let reloadTime = 1; // how long this reload lasts, seconds
+  let sinceReload = Infinity;
+  let wasOpenStop = false; // the crane was against its open stop (to hear the bang once)
+  let refill = 0; // how many sticks go in during this reload
+  let firstEmpty = 0; // how many chambers from `top` still had a stick when it started
+  let shoved = 0; // sticks already shoved home
+  let ticked = 0; // chambers clicked past during the spin
+
+  /** When the i-th stick of this reload starts sliding in (fraction of the reload). */
+  function insertAt(i: number): number {
+    const gap = refill > 1 ? (INSERT_TO - INSERT_FROM - INSERT_TIME) / (refill - 1) : 0;
+    return INSERT_FROM + i * gap;
+  }
 
   /** The turn in progress counts as done: one more whole chamber. */
   function settle(): void {
@@ -170,8 +239,18 @@ export function createDynamiteView(): DynamiteView {
       sinceShot = 0;
       top = (top + 1) % CHAMBERS;
     },
+    onReload(seconds) {
+      settle(); // (the last shot's turn, if it hadn't finished)
+      sinceShot = Infinity;
+      reloadTime = Math.max(0.1, seconds);
+      sinceReload = 0;
+      shoved = 0;
+      ticked = 0;
+    },
     cancel() {
       settle(); // put away mid-cycle: the drum finishes its turn off screen
+      sinceReload = Infinity;
+      hinge.reset();
       sinceShot = Infinity;
       punch = 0;
     },
@@ -184,13 +263,23 @@ export function createDynamiteView(): DynamiteView {
       const s = viewmodelSettings;
       fist.rotation.set(s.dynamiteHandPitch, s.dynamiteHandYaw, s.dynamiteHandRoll);
       const interval = tuning.dynamiteFireInterval;
+      const magazine = magazineSize(player, 'dynamite');
+      const loaded = Math.min(player.loaded.dynamite, magazine);
+      if (sinceReload === 0) {
+        // The reload just started: the sim refills at the END, so this is what's in the drum now.
+        firstEmpty = loaded;
+        refill = Math.min(magazine - loaded, tuning.infiniteAmmo ? magazine : player.reserve.sticks);
+      }
+      const reloading = sinceReload < reloadTime;
 
       // In small fixed steps: springs and strokes need them (elastic.ts).
       leftover += Math.min(dt, 0.1);
       while (leftover >= ELASTIC_STEP) {
         leftover -= ELASTIC_STEP;
         sinceShot += ELASTIC_STEP;
+        sinceReload += ELASTIC_STEP;
         const t = sinceShot / interval;
+        const u = sinceReload / reloadTime; // the reload's progress, 0..1 (≥ 1: none)
         ratchet.step(cycling && t >= DRUM_TURN_AT, ELASTIC_STEP);
         if (ratchet.impact > 0) {
           // CLACK: the heavy cage hits the stop, the whole gun feels it.
@@ -201,17 +290,54 @@ export function createDynamiteView(): DynamiteView {
           punch -= PUNCH * k;
         }
         ratchet.impact = 0;
-        spring.step(t < 1 ? poseAt(CYCLE_KEYS, t) : Z, ELASTIC_STEP);
+        // The crane: thrown out and back by the gun's swing (inertia), like the revolver's.
+        const wasLatched = hinge.latched;
+        hinge.step(-CRANE_INERTIA * spring.acc.roll, u >= OPEN_START && u < CLOSE_START, ELASTIC_STEP);
+        const atStop = hinge.angle >= CRANE_OPEN - 1e-6;
+        if (atStop && !wasOpenStop) playDrumOpen(); // BANG against the open stop
+        wasOpenStop = atStop;
+        if (hinge.latched && !wasLatched) playDrumShut(); // SLAM shut, latched
+        // A stick shoved home: the gun dips, the sound.
+        while (u < 1 && shoved < refill && u >= insertAt(shoved) + INSERT_TIME) {
+          shoved++;
+          spring.vel.y += SHOVE_Y;
+          spring.vel.pitch += SHOVE_PITCH;
+          playStickIn();
+        }
+        const target = u < 1 ? poseAt(RELOAD_KEYS, u) : t < 1 ? poseAt(CYCLE_KEYS, t) : Z;
+        spring.step(target, ELASTIC_STEP);
+      }
+      crane.rotation.z = hinge.angle;
+      // The wheel of fortune: whole turns after the slam, ease-out (u³ backward:
+      // fast at first, slowing to a stop exactly on a chamber).
+      const u = sinceReload / reloadTime;
+      const k = reloading ? 1 - (1 - phase(u, SPIN_FROM, 1)) ** 3 : 0;
+      const spin = k * SPIN_TURNS * 2 * Math.PI;
+      // A click every chamber that goes past, quieter as it slows.
+      const clicks = Math.floor(spin / STEP);
+      while (ticked < clicks) {
+        ticked++;
+        playDrumTick(1 - ticked / (SPIN_TURNS * CHAMBERS + 1));
       }
       // +Z in three.js turns the chambers the right way: chamber k+1 comes up
       // to where chamber k was (see `chamber` in the Blender script).
-      drum.rotation.z = (turned + ratchet.pos / STEP) * STEP;
+      drum.rotation.z = (turned + ratchet.pos / STEP) * STEP + spin;
 
       // The sticks: the chambers from `top` onward hold the rounds the gun
-      // still has (the simulation counts them); the others are empty.
-      const loaded = Math.min(player.loaded.dynamite, magazineSize(player, 'dynamite'));
-      sticks.forEach((stick, k) => {
-        stick.visible = (k - top + CHAMBERS) % CHAMBERS < loaded;
+      // still has (the simulation counts them); the others are empty. During
+      // a reload the new ones appear one at a time, slid in from behind.
+      sticks.forEach((stick, c) => {
+        const slot = (c - top + CHAMBERS) % CHAMBERS; // 0 = in front of the barrel
+        let shown = slot < loaded;
+        let out = 0; // how far out of its chamber, toward you
+        if (reloading && slot >= firstEmpty && slot < firstEmpty + refill) {
+          const i = slot - firstEmpty; // the i-th stick of this reload
+          const a = (u - insertAt(i)) / INSERT_TIME; // 0..1 while it slides in
+          shown = a >= -0.6; // it appears a moment before, behind its chamber
+          out = INSERT_DEPTH * (1 - smoothstep(Math.min(1, Math.max(0, a))));
+        }
+        stick.visible = shown;
+        if (stickRest.length) stick.position.z = stickRest[c] + out;
       });
 
       return { ...spring.pose };

@@ -1412,21 +1412,34 @@ export function playDynamiteLaunch(t: { turnAt: number; clackAt: number }): void
 }
 
 /**
- * Swapping the drum (`duration` seconds): it swings open (a metal clack),
- * five sticks thud into their chambers one after the other (soft cardboard
- * thuds), the drum slams shut and is spun with a ratchet.
+ * The launcher's reload, piece by piece: each sound is played by the view
+ * (render/weapons/dynamiteView.ts) at the moment its piece moves, so it's
+ * always on the animation (the physics decides when, the sound follows).
  */
-export function playDynamiteReload(duration: number): void {
+/** The drum swings out and BANGS against the crane's stop: iron on iron, and the cage rattling. */
+export function playDrumOpen(): void {
   if (!ctx) return;
-  noiseBurst({ duration: 0.05, volume: 0.4, filter: 'bandpass', frequency: 1500, q: 5 }); // open
-  for (let i = 0; i < 5; i++) {
-    const start = duration * (0.2 + i * 0.1);
-    thump({ start, duration: 0.07, volume: 0.35, from: 240, to: 110 });
-    noiseBurst({ start, duration: 0.04, volume: 0.15, filter: 'bandpass', frequency: 700, q: 2 });
-  }
-  noiseBurst({ start: duration * 0.78, duration: 0.06, volume: 0.6, filter: 'bandpass', frequency: 1300, q: 4 }); // SLAM shut
-  thump({ start: duration * 0.78, duration: 0.1, volume: 0.4, from: 200, to: 80 });
-  for (let i = 0; i < 4; i++) {
-    noiseBurst({ start: duration * 0.84 + i * 0.035, duration: 0.02, volume: 0.15, filter: 'bandpass', frequency: 2600, q: 8 }); // the ratchet
-  }
+  noiseBurst({ duration: 0.05, volume: 0.55, filter: 'bandpass', frequency: 1300, q: 5 });
+  thump({ duration: 0.08, volume: 0.35, from: 260, to: 110 });
+  noiseBurst({ start: 0.04, duration: 0.12, volume: 0.12, filter: 'bandpass', frequency: 3000, q: 3 }); // the cage rattling
+}
+
+/** A stick shoved into its chamber: a soft cardboard THUD and the scrape of paper on brass. */
+export function playStickIn(): void {
+  if (!ctx) return;
+  noiseBurst({ duration: 0.06, volume: 0.2, filter: 'bandpass', frequency: 2400, frequencyEnd: 900, q: 2 }); // the scrape
+  thump({ start: 0.04, duration: 0.07, volume: 0.4, from: 230, to: 100 });
+}
+
+/** The drum slammed shut and latched: the heaviest CLACK of the gun. */
+export function playDrumShut(): void {
+  if (!ctx) return;
+  noiseBurst({ duration: 0.06, volume: 0.75, filter: 'bandpass', frequency: 1100, q: 4 });
+  thump({ duration: 0.12, volume: 0.55, from: 200, to: 70 });
+}
+
+/** One chamber clicking past the pawl while the drum spins (`volume` 0..1: quieter as it slows). */
+export function playDrumTick(volume: number): void {
+  if (!ctx) return;
+  noiseBurst({ duration: 0.018, volume: 0.05 + 0.2 * Math.max(0, volume), filter: 'bandpass', frequency: 3200, q: 8 });
 }
