@@ -191,6 +191,11 @@ export interface SharpshooterEntity extends EntityBase {
   climbTicks: number;
   /** Ticks left to reach the perch before it gives up (stuck, pushed away...). */
   moveTicksLeft: number;
+  /**
+   * It stopped on its way to the perch to shoot you (you got too close): after
+   * the shot it goes on to the same perch (see sharpshooterCorneredRange).
+   */
+  pausedMove: boolean;
   /** Killed by a headshot: the skull is gone (for the death animation). */
   headless: boolean;
 }
@@ -431,6 +436,7 @@ export function createSharpshooter(
     climbTo: -1,
     climbTicks: 0,
     moveTicksLeft: 0,
+    pausedMove: false,
     headless: false,
   };
 }

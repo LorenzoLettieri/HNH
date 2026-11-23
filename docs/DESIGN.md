@@ -346,6 +346,11 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
     meglio resta dov'è.
     **Mentre si sposta non spara**: è il momento di raggiungerlo, e a metà di un muro è un bersaglio facile
     (si arrampica a 2,4 m/s, cammina a 3,4: più lento di un ghoul).
+    **Ma alle strette reagisce** (passo 174): se mentre cammina ti ha **entro 10 m e in vista** e il fucile è
+    pronto, si ferma e ti spara con la mira e il blocco di sempre (stessi tempi, niente scorciatoie: il laser
+    avvisa come sempre), poi, tirata la leva, **riprende il cammino verso la stessa postazione**. Raggiungerlo
+    resta la mossa giusta, ma non è più un bersaglio gratis: avvicinarsi vuol dire schivare almeno un colpo.
+    Soglia `sharpshooterCorneredRange`.
     Provato in simulazione (giocatore fermo, 8 tiratori dagli spawn della città): con il peso dell'altezza a 3
     quasi tutti si fermavano in strada (camminare costava più che salire); con la distanza minima a 12 si
     ammassavano tutti sul tetto più alto accanto a te. Con 6 e 18: tetti da 4 a 8 m, a 24–40 m, quasi tutti

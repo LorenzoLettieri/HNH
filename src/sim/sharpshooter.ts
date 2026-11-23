@@ -5,13 +5,18 @@
 // the rifle points.
 //
 //   move ──(on its perch, or nowhere better to go)──▶ idle ──(cooldown over, you're in sight)──▶ aim
-//    ▲                                                 │ ▲                                         │
-//    └────(hasn't seen you for RelocateTime)───────────┘ └──── fires the bullet ◀──── lock ◀──────┘
+//    ▲ │                                               │ ▲                                         │
+//    │ └──(cornered: you're close and in sight)────────┼─┼───────────────────────────────────────▶ │
+//    └────(hasn't seen you for RelocateTime,           │ │                                         │
+//          or it was cornered: walks on)───────────────┘ └──── fires the bullet ◀──── lock ◀──────┘
 //
 // - MOVE: choose a perch (perch.ts: high up, at the right distance, with a
 //   view of you) and go there along the ghouls' navigation graph: walking,
 //   jumping, dropping, climbing walls, riding vents. It doesn't shoot while
-//   it moves: that's your chance to close in (or to shoot it off a wall).
+//   it moves: that's your chance to close in (or to shoot it off a wall)...
+//   unless you get TOO close: within sharpshooterCorneredRange, in its sight,
+//   with the rifle ready, it stops and fights back (the usual aim and lock),
+//   then walks on to the same perch (pausedMove).
 // - IDLE: laser off, the rifle getting ready. If it can't see you for a while
 //   (you hid, you went elsewhere), it looks for a new perch.
 // - AIM: the laser glides toward where you WILL be when the bullet arrives
@@ -53,6 +58,11 @@ const WALK_ACCEL = 4;
 const ARRIVE_DIST = 0.4;
 /** Just arrived: it takes position for this long before it can aim, seconds. */
 const SETTLE_TIME = 0.2;
+/**
+ * Cornered, it stopped to shoot you: after the shot (or after giving up the
+ * aim) it stands this long, the time to work the lever, then walks on, seconds.
+ */
+const RESUME_AFTER_SHOT = 0.35;
 
 export function stepSharpshooter(
   s: SharpshooterEntity,
@@ -80,7 +90,7 @@ export function stepSharpshooter(
     if (node >= 0) s.navNode = node;
   }
   if (s.state === 'move') {
-    stepMove(s, game, world, graph, dt);
+    stepMove(s, game, world, graph, dt, events);
     return;
   }
 
@@ -99,6 +109,15 @@ export function stepSharpshooter(
     // Laser off: the rifle simply turns toward you (the renderer uses the aim
     // to know which way it faces).
     pointAt(s, player.x, chestY(player), player.z, Math.PI);
+    // It had stopped on its way to shoot you (cornered): once the lever is
+    // worked, it goes on to the same perch, with the time it had left.
+    if (s.pausedMove) {
+      if (s.stateTicks >= secondsToTicks(RESUME_AFTER_SHOT)) {
+        s.pausedMove = false;
+        setState(s, 'move');
+      }
+      return;
+    }
     const sees = player.health > 0 && canSee(s, player, world);
     s.unseenTicks = sees ? 0 : s.unseenTicks + 1;
     if (s.onGround && s.unseenTicks >= secondsToTicks(tuning.sharpshooterRelocateTime)) {
@@ -235,7 +254,27 @@ function canSee(s: SharpshooterEntity, p: PlayerState, world: World): boolean {
  * from the node it stands on, take the link the flow field says, and handle
  * the special ones (jump, climb, vent) when it's in position.
  */
-function stepMove(s: SharpshooterEntity, game: GameState, world: World, graph: NavGraph, dt: number): void {
+function stepMove(
+  s: SharpshooterEntity,
+  game: GameState,
+  world: World,
+  graph: NavGraph,
+  dt: number,
+  events: SimEvent[],
+): void {
+  // CORNERED: you're close and in sight, and the rifle is ready. Walking on
+  // with you a few meters away would be a free kill for you: it stops and
+  // fights back, with the usual aim and lock (the laser warns you as always).
+  // pausedMove remembers it was going somewhere: after the shot it goes on
+  // (see the idle state). Only with its feet down: not in mid-jump or on a vent ride.
+  if (s.onGround && s.shootCooldownTicks === 0 && cornered(s, game.player, world)) {
+    s.pausedMove = true;
+    setState(s, 'aim');
+    s.lostSightTicks = 0;
+    events.push({ type: 'sharpshooterAim', entityId: s.id });
+    return;
+  }
+
   // No destination yet (just spawned, or it lost you): choose one. It must
   // know where it stands, so only with its feet on the ground.
   if (s.perchNode < 0 && s.onGround && s.navNode >= 0) {
@@ -354,6 +393,16 @@ function stepMove(s: SharpshooterEntity, game: GameState, world: World, graph: N
     s.aimY = 0;
     s.aimZ = s.vz / speedAfter;
   }
+}
+
+/**
+ * Are you close (horizontally: right under its ledge counts too) and in its
+ * sight? The cheap test first: the ray only when you're close.
+ */
+function cornered(s: SharpshooterEntity, p: PlayerState, world: World): boolean {
+  if (p.health <= 0) return false;
+  if (Math.hypot(p.x - s.x, p.z - s.z) > tuning.sharpshooterCorneredRange) return false;
+  return canSee(s, p, world);
 }
 
 /** Stops moving: back to waiting, with a full RelocateTime before it tries again. */

@@ -828,6 +828,12 @@ export const tuning = {
   /** Not seeing you for this long (seconds), it looks for a new perch. */
   sharpshooterRelocateTime: 3,
   /**
+   * Cornered: on its way to the perch, if you're closer than this (meters,
+   * horizontally) and it sees you, it stops and shoots you (the usual aim and
+   * lock, no shortcuts), then goes on walking to the same perch.
+   */
+  sharpshooterCorneredRange: 10,
+  /**
    * Where a perch can be: at least / at most this far from you (horizontally),
    * meters. Closer is too easy to reach (with 12 they all crowded on the
    * tallest roof next to you); farther, you'd step out of its range
