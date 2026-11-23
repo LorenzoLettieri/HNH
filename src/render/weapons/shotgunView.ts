@@ -68,12 +68,41 @@ const KEYS: [number, GunPose][] = [
   [1, Z],
 ];
 
+// --- The draw (weapon switch, viewmodel.ts DRAW_KEYS) ---------------------------------
+// The double barrel's signature: it swings in BROKEN OPEN, dips, and a wrist
+// flick up snaps the barrels shut, "CLACK", just before it's ready to fire.
+// The same physics hinge as the reload: held open, then thrown at the shut
+// stop (DRAW_SNAP_SPEED) at DRAW_CLOSE_AT; the flick stopping helps by
+// inertia, and the latch jolts the gun.
+/** When the barrels are let go, fraction of weaponSwitchTime. */
+const DRAW_CLOSE_AT = 0.58;
+/** How fast they're thrown shut, rad/s (with the hinge's spring: 0.05 s to the latch). */
+const DRAW_SNAP_SPEED = 14;
+/** Seconds from the throw to the latch (for the sound): the hinge simulated with these numbers and no inertia; the flick only speeds it up a hair. */
+const DRAW_SNAP_TIME = 0.05;
+/** The latch jolts the gun: a kick to the pose spring's speed (muzzle up). */
+const DRAW_SNAP_JOLT = 1.6;
+/** The wrist: a dip, then a flick up that stops hard (fractions of weaponSwitchTime). */
+const DRAW_FLICK_KEYS: [number, GunPose][] = [
+  [0, Z],
+  [0.42, { x: 0, y: -0.012, z: 0, pitch: -0.16, yaw: 0, roll: 0 }], // dip
+  [DRAW_CLOSE_AT + 0.04, { x: 0, y: 0.02, z: -0.005, pitch: 0.28, yaw: 0, roll: 0 }], // FLICK up
+  [0.82, Z],
+  [1, Z],
+];
+/** When the barrels snap shut, seconds after 'weaponSwitch', for the sound. */
+export function shotgunDrawTimes(): { snapAt: number } {
+  return { snapAt: DRAW_CLOSE_AT * tuning.weaponSwitchTime + DRAW_SNAP_TIME };
+}
+
 export interface ShotgunView {
   /** Goes inside the viewmodel holder. Its origin is the right hand on the grip. */
   root: THREE.Group;
   /** Muzzle of each barrel (0 = right, 1 = left), in root coordinates. */
   muzzles: [THREE.Vector3, THREE.Vector3];
   onReload(): void;
+  /** The gun is drawn (weapon switch): it comes in broken open and snaps shut. */
+  draw(): void;
   /** Stop any reload animation (weapon switched away). */
   cancel(): void;
   /** Advance the animations. Returns the pose offsets of the whole gun (elastic reload). */
@@ -112,6 +141,7 @@ export function createShotgunView(): ShotgunView {
   let ejectAt = -1; // seconds into the reload when the ejectors kicked (-1 = not yet)
   let leverOpen = 0;
   let leftover = 0;
+  let drawTime = Infinity; // seconds since the gun was drawn
 
   return {
     root,
@@ -121,8 +151,17 @@ export function createShotgunView(): ShotgunView {
       ejectAt = -1;
       hinge.reset();
     },
+    draw() {
+      drawTime = 0;
+      // Broken open, the top lever aside.
+      hinge.reset();
+      hinge.latched = false;
+      hinge.angle = OPEN_ANGLE;
+      leverOpen = 1;
+    },
     cancel() {
       time = -1;
+      drawTime = Infinity;
       hinge.reset();
     },
     update(dt, player) {
@@ -141,20 +180,29 @@ export function createShotgunView(): ShotgunView {
           if (time >= duration) time = -1;
         }
         const t = time >= 0 ? time / duration : -1;
-        spring.step(t < 0 ? Z : poseAt(KEYS, t), ELASTIC_STEP);
+        // The draw: held open until DRAW_CLOSE_AT, then thrown shut.
+        const drawSpan = Math.max(0.01, tuning.weaponSwitchTime);
+        const drawing = drawTime < drawSpan;
+        const before = drawTime;
+        drawTime += ELASTIC_STEP;
+        if (before < DRAW_CLOSE_AT * drawSpan && drawTime >= DRAW_CLOSE_AT * drawSpan) hinge.vel = -DRAW_SNAP_SPEED;
+        const drawOpen = drawing && drawTime < DRAW_CLOSE_AT * drawSpan;
+        spring.step(t >= 0 ? poseAt(KEYS, t) : drawing ? poseAt(DRAW_FLICK_KEYS, drawTime / drawSpan) : Z, ELASTIC_STEP);
         // Inertia: when the gun's muzzle ACCELERATES UPWARD (the jerk down
         // stopping, or the hinge pushed up), the barrels lag behind = they
         // drop open; when it decelerates going up (the flick stopping), they
         // keep going up = they close.
         const drive = BARREL_INERTIA_PITCH * spring.acc.pitch + BARREL_INERTIA_LIFT * spring.acc.y;
-        hinge.step(drive, t >= UNLATCH && t < CLOSE_START, ELASTIC_STEP);
+        const wasLatched = hinge.latched;
+        hinge.step(drive, (t >= UNLATCH && t < CLOSE_START) || drawOpen, ELASTIC_STEP);
+        if (drawing && !wasLatched && hinge.latched) spring.vel.pitch += DRAW_SNAP_JOLT; // CLACK: the gun feels it
         if (ejectAt < 0 && hinge.angle > EJECT_ANGLE) ejectAt = time;
       }
       const t = time >= 0 ? time / duration : -1;
       if (barrels) barrels.rotation.x = -hinge.angle;
 
       // --- Top lever: pushed aside by the thumb, springs back when the barrels latch ---
-      const leverWanted = t >= 0 && !(t >= CLOSE_START && hinge.latched) ? 1 : 0;
+      const leverWanted = (t >= 0 && !(t >= CLOSE_START && hinge.latched)) || (t < 0 && !hinge.latched) ? 1 : 0;
       leverOpen = leverWanted + (leverOpen - leverWanted) * Math.exp(-(leverWanted ? 25 : 60) * dt);
       if (lever) lever.rotation.y = -LEVER_ANGLE * leverOpen;
 

@@ -26,6 +26,7 @@ import {
   playPumpShellIn,
   playShot,
   playShotgun,
+  playShotgunDraw,
   playShotgunReload,
   playTargetDown,
   playTargetHit,
@@ -36,6 +37,7 @@ import type { MeleeTool } from '../sim/kick';
 import { createImpacts } from './impacts';
 import { hitStopSettings, requestHitStop } from './hitStop';
 import { leverTimes } from './weapons/rifleView';
+import { shotgunDrawTimes } from './weapons/shotgunView';
 import { pumpCloseTimes, pumpDrawTimes, pumpReloadTimes, pumpTimes } from './weapons/pumpView';
 import { showHitmarker } from './hitmarker';
 import { spawnBlood, spawnSnort, spawnSparks } from './particles';
@@ -125,6 +127,7 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
             // Each gun is drawn its own way (render/weapons/*View.ts): its
             // signature sound lands when the gun is ready to fire.
             if (e.weapon === 'shotgun' && e.forged) playPumpDraw(pumpDrawTimes());
+            else if (e.weapon === 'shotgun') playShotgunDraw(shotgunDrawTimes());
             else playWeaponSwitch();
             break;
           case 'duelReady':

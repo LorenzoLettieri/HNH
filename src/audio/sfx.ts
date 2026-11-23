@@ -207,6 +207,18 @@ export function playShotgunReload(duration: number): void {
 }
 
 /**
+ * The double barrel drawn (weapon switch): a rush of air as it swings in
+ * broken open, then the barrels SNAP shut (the same snap as the reload's
+ * end) and the top lever springs back.
+ */
+export function playShotgunDraw(t: { snapAt: number }): void {
+  noiseBurst({ duration: 0.12, volume: 0.14, filter: 'bandpass', frequency: 400, frequencyEnd: 1300, q: 1.2 }); // swing
+  noiseBurst({ start: t.snapAt, duration: 0.07, volume: 0.8, filter: 'bandpass', frequency: 1500, q: 2 }); // snap shut
+  thump({ start: t.snapAt, duration: 0.06, volume: 0.4, from: 350, to: 150 });
+  noiseBurst({ start: t.snapAt + 0.015, duration: 0.025, volume: 0.35, filter: 'bandpass', frequency: 3200, q: 5 }); // lever back
+}
+
+/**
  * The carbine's shot: the same recipe again, tuned between the two. A long
  * barrel means a SHARPER crack than the revolver (more highs) but a big
  * charge: a solid punch, and a long echo rolling off the canyon walls.

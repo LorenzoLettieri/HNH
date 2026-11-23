@@ -417,6 +417,7 @@ export function createViewmodel(): Viewmodel {
         flashTime = 0;
         // Each gun's draw signature (see DRAW_KEYS).
         if (shownWeapon === 'shotgun' && isPump(player)) pump.draw();
+        else if (shownWeapon === 'shotgun') shotgun.draw();
       }
       revolver.visible = shownWeapon === 'revolver';
       // Akimbo: the left gun appears, the fanning hand goes away (it's holding a gun now).
