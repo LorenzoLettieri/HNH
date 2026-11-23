@@ -500,7 +500,6 @@ const props: Prop[] = [
   { type: 'lantern', mount: 'ground', x: 0, y: 14, z: 24, rotation: 45 }, // middle of the bridge
   { type: 'lantern', mount: 'ground', x: -25.5, y: 1, z: 17.3, rotation: 0 }, // on the general store's counter
   { type: 'lantern', mount: 'ground', x: 19.6, y: 5.3, z: 23.3, rotation: 0 }, // on the armory's counter, next to the vendor
-  { type: 'lantern', mount: 'ground', x: -37.5, y: 1.1, z: -15, rotation: 0 }, // on the forge's brick hearth (placeholder for a real fire)
 
   // Signs on the sidewalks (board hangs toward +X, or -X with rotation 180).
   { type: 'sign', x: -5.6, y: 0, z: -21, rotation: 0, text: 'SALOON' },
@@ -509,6 +508,11 @@ const props: Prop[] = [
   { type: 'sign', x: 5.6, y: 0, z: -8, rotation: 180, text: 'CHURCH' },
   { type: 'sign', x: 13.2, y: 0, z: 30.2, rotation: 180, text: 'GUNSMITH' }, // under the balcony, board toward Main Street
   { type: 'sign', x: -32.4, y: 0, z: -18.6, rotation: 0, text: 'FORGE' }, // corner of the blacksmith's shed, board toward the water tower
+
+  // The FORGE under the blacksmith's shed (see `shops` below): the brick
+  // hearth with its fire, hood and chimney, and the anvil you work the iron on.
+  { type: 'forge', x: -37.5, y: 0, z: -15 },
+  { type: 'anvil', x: -34.5, y: 0, z: -14 },
 
   // Barrels.
   { type: 'barrel', x: -7.2, y: 0, z: -21.5, rotation: 15 },
@@ -686,9 +690,7 @@ export const town: World = {
     ...buildingOf(DEPOT, 'clapboardOchre', 'tinRoof'), // x 35..42, z -35..-25
 
     // --- West: BLACKSMITH's open shed (forge + anvil) and a HOUSE ---
-    ...shed(-36.5, -15, 7, 6, 3.5),
-    box(-37.5, 0, -15, 2, 1.1, 2, 'brick'), // forge
-    box(-34.5, 0, -14, 1, 0.8, 0.6, 'metal'), // anvil
+    ...shed(-36.5, -15, 7, 6, 3.5), // hearth and anvil are props (see `props`)
     ...buildingOf(HOUSE_WEST, 'boards'), // x -39.5..-32.5, z 12..20
     // --- Cross Street west: an abandoned covered wagon in the middle, up on
     //     its wheels: you can SLIDE under it (1.1 m), the ghouls go around ---

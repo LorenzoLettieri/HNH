@@ -3,8 +3,10 @@
 import * as THREE from 'three';
 import type { Prop, World } from '../../sim/world';
 import type { FireSource } from '../fireLights';
+import { createAnvil } from './anvil';
 import { createBarrel } from './barrel';
 import type { PropModel } from './common';
+import { createForge } from './forge';
 import { createGrass } from './grass';
 import { createLantern } from './lantern';
 import { createSign } from './sign';
@@ -41,6 +43,12 @@ export function createProps(scene: THREE.Scene, world: World): LevelProps {
         break;
       case 'lantern':
         model = createLantern(p.mount);
+        break;
+      case 'forge':
+        model = createForge();
+        break;
+      case 'anvil':
+        model = createAnvil();
         break;
       case 'vent':
         model = createVent();

@@ -66,6 +66,10 @@ export type Prop =
    * Flush with the ground: no collision box, only a launch zone.
    */
   | { type: 'vent'; x: number; y: number; z: number; up: number; pushX?: number; pushZ?: number }
+  /** Blacksmith's hearth: brick forge with glowing coals, an iron hood and a chimney. */
+  | { type: 'forge'; x: number; y: number; z: number }
+  /** Anvil on a wooden stump, horn toward +X, with a red-hot bar and a hammer on it. */
+  | { type: 'anvil'; x: number; y: number; z: number }
   /** A patch of grass tufts scattered in a circle (purely visual). */
   | { type: 'grass'; x: number; z: number; radius: number; count: number };
 

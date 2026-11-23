@@ -350,3 +350,113 @@ export function targetTexture(): THREE.Texture {
     return c.toTexture();
   });
 }
+
+/**
+ * Forge bricks: dark red bricks in a running bond, blackened by soot toward
+ * the top (where the fire is) with streaks running down. 32×32 px = 1 m:
+ * on a 1 m tall box the top row of the image is the top of the hearth.
+ */
+export function sootyBrickTexture(): THREE.Texture {
+  return cached('sootyBrick', () => {
+    const S = 32;
+    const BRICK_W = 8;
+    const BRICK_H = 4; // mortar line included
+    const c = new PixelCanvas(S, S);
+    const rand = seededRandom(21);
+    // Soot streaks: some columns are blackened further down than others.
+    const streak: number[] = [];
+    for (let x = 0; x < S; x++) streak.push(rand() < 0.25 ? 6 + rand() * 12 : 0);
+    for (let y = 0; y < S; y++) {
+      const row = Math.floor(y / BRICK_H);
+      const offset = row % 2 === 0 ? 0 : BRICK_W / 2; // running bond: every other row shifted
+      for (let x = 0; x < S; x++) {
+        const brick = Math.floor((x + offset) / BRICK_W);
+        const mortar = y % BRICK_H === 0 || (x + offset) % BRICK_W === 0;
+        let color = mortar
+          ? 0x3e3028
+          : shade(0x7a3424, 0.8 + seededRandom(row * 31 + brick * 7)() * 0.35);
+        // Soot: 0 at the top edge → full color 14 px down (streaks reach further).
+        const reach = 14 + streak[x];
+        if (y < reach) color = mixColor(0x16100e, color, Math.pow(y / reach, 0.7));
+        c.set(x, y, color);
+      }
+    }
+    c.noise(rand, 0.18);
+    return c.toTexture();
+  });
+}
+
+/**
+ * Burning coal, seen from above: lumps (a "Voronoi" pattern: every pixel
+ * belongs to the nearest of some random points) with glowing cracks between
+ * them, and some lumps red-hot in the middle. Two textures like the vent:
+ * the color, and the glow mask used as emissive map (white = glows).
+ */
+export function coalTextures(): { color: THREE.Texture; glow: THREE.Texture } {
+  const color = cached('coalColor', () => paintCoal(false));
+  const glow = cached('coalGlow', () => paintCoal(true));
+  return { color, glow };
+}
+
+function paintCoal(glowMask: boolean): THREE.Texture {
+  const S = 32;
+  const c = new PixelCanvas(S, S);
+  const rand = seededRandom(22);
+  const points: { x: number; y: number; hot: boolean }[] = [];
+  for (let i = 0; i < 16; i++) points.push({ x: rand() * S, y: rand() * S, hot: rand() < 0.35 });
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      // Distance to the nearest (d1) and second nearest (d2) point. Distances
+      // "wrap around" the edges, so the texture tiles without a seam.
+      let d1 = Infinity;
+      let d2 = Infinity;
+      let nearest = points[0];
+      for (const p of points) {
+        const dx = Math.min(Math.abs(x - p.x), S - Math.abs(x - p.x));
+        const dy = Math.min(Math.abs(y - p.y), S - Math.abs(y - p.y));
+        const d = Math.hypot(dx, dy);
+        if (d < d1) {
+          d2 = d1;
+          d1 = d;
+          nearest = p;
+        } else if (d < d2) {
+          d2 = d;
+        }
+      }
+      const crack = d2 - d1 < 1.3; // almost as close to two points = on the border between lumps
+      const heat = nearest.hot ? Math.max(0, 1 - d1 / 5) : 0; // hot lumps glow in the middle
+      if (glowMask) {
+        const g = crack ? 255 : Math.round(heat * 170);
+        c.set(x, y, (g << 16) | (g << 8) | g);
+      } else if (crack) {
+        c.set(x, y, 0x3a0c04);
+      } else {
+        // Lumps: lighter in the middle (a hint of volume), black at the edge.
+        const coal = shade(0x26232a, 0.6 + 0.7 * Math.max(0, 1 - d1 / 6));
+        c.set(x, y, mixColor(coal, 0x6a1c08, heat));
+      }
+    }
+  }
+  if (!glowMask) c.noise(rand, 0.2);
+  return c.toTexture();
+}
+
+/** The anvil's face: worn, polished steel with hammer scratches. */
+export function polishedSteelTexture(): THREE.Texture {
+  return cached('polishedSteel', () => {
+    const c = new PixelCanvas(16, 16);
+    const rand = seededRandom(23);
+    c.fill(0x8a8a94);
+    c.noise(rand, 0.15);
+    // Scratches: short light lines along the face.
+    for (let i = 0; i < 6; i++) {
+      const y = Math.floor(rand() * 16);
+      const x0 = Math.floor(rand() * 16);
+      const len = 3 + Math.floor(rand() * 5);
+      for (let x = x0; x < x0 + len; x++) c.set(x, y, 0xb4b4bc);
+    }
+    // Dents from missed blows.
+    for (let i = 0; i < 4; i++) c.set(rand() * 16, rand() * 16, 0x5a5a62);
+    return c.toTexture();
+  });
+}
