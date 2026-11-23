@@ -20,6 +20,7 @@ import { createShotgunView } from './shotgunView';
 import { createPumpView } from './pumpView';
 import { createRevolverReload } from './revolverReload';
 import { createAkimboSpin } from './akimboSpin';
+import { drawHammer, drawSpin, LEFT_LAG, SPIN_TO } from './revolverDraw';
 import { createRifleView } from './rifleView';
 import { adsAmount, isAkimbo, isPump, type WeaponId } from '../../sim/weapon';
 import { poseAt, smoothstep, ZERO_POSE, type GunPose } from './elastic';
@@ -130,6 +131,10 @@ const DRAW_KEYS: [number, GunPose][] = [
   [0.8, { x: 0.003, y: -0.004, z: 0.002, pitch: -0.03, yaw: -0.01, roll: -0.04 }], // a little back the other way
   [1, ZERO_POSE],
 ];
+
+/** The revolver's draw: the hand catches the twirling gun, a jolt (fraction of a shot's recoil) and a view punch down. */
+const DRAW_CATCH_KICK = 0.3;
+const DRAW_CATCH_PUNCH = 0.012;
 
 /** How far the revolver's hammer falls forward when it fires, radians (the model has it cocked, at 0). */
 const HAMMER_FIRED = 0.5;
@@ -250,6 +255,7 @@ export function createViewmodel(): Viewmodel {
   holder.add(pump.root);
   let shownWeapon: WeaponId = 'revolver';
   let drawTime = Infinity; // seconds since the current gun was drawn (weapon switch)
+  let lastDrawK = 1; // the draw's progress last frame (to catch the revolver's catch)
 
   // The kicking leg: directly in the scene (not in the holder), so the gun's
   // sway and bob don't shake it.
@@ -440,6 +446,18 @@ export function createViewmodel(): Viewmodel {
       drawTime += dt;
       const drawK = player.switchTicks === 0 ? 1 : Math.min(1, drawTime / Math.max(0.01, tuning.weaponSwitchTime));
       const dp = drawK < 1 ? poseAt(DRAW_KEYS, drawK) : ZERO_POSE;
+      // The revolver's draw (revolverDraw.ts): twirled in, CAUGHT by the hand.
+      const revolverDraw = shownWeapon === 'revolver' && drawK < 1;
+      if (shownWeapon === 'revolver') {
+        const caught = (at: number) => lastDrawK < at && drawK >= at;
+        if (caught(SPIN_TO)) {
+          kickWeapon = 'revolver';
+          kick = Math.max(kick, DRAW_CATCH_KICK);
+          viewKick -= DRAW_CATCH_PUNCH;
+        }
+        if (caught(SPIN_TO + LEFT_LAG) && isAkimbo(player)) kickL = Math.max(kickL, DRAW_CATCH_KICK);
+      }
+      lastDrawK = drawK;
       const isShotgun = shownWeapon === 'shotgun';
 
       // --- Recoil, flash, view kick: instant hit, exponential recovery ---
@@ -461,12 +479,13 @@ export function createViewmodel(): Viewmodel {
       cylinderAngle = approach(cylinderAngle, cylinderTarget, 25, dt);
       hammerTime += dt;
       const cocked = Math.min(1, Math.max(0, (hammerTime - 0.06) / (tuning.revolverFireInterval * 0.6)));
-      gun.hammer.rotation.x = HAMMER_FIRED * (1 - cocked); // 0 = cocked, as modeled
+      // (Drawing: fallen while it twirls, thumbed back at the end.)
+      gun.hammer.rotation.x = HAMMER_FIRED * Math.max(1 - cocked, revolverDraw ? drawHammer(drawK, false) : 0); // 0 = cocked, as modeled
       // The same for the left gun, on its own shots.
       cylinderAngleL = approach(cylinderAngleL, cylinderTargetL, 25, dt);
       hammerTimeL += dt;
       const cockedL = Math.min(1, Math.max(0, (hammerTimeL - 0.06) / (tuning.revolverFireInterval * 0.6)));
-      gunL.hammer.rotation.x = HAMMER_FIRED * (1 - cockedL);
+      gunL.hammer.rotation.x = HAMMER_FIRED * Math.max(1 - cockedL, revolverDraw ? drawHammer(drawK, true) : 0);
       gunL.cylinder.rotation.z = cylinderAngleL;
 
       // --- Shotgun: elastic reload (see shotgunView.ts), or the pump-action's cycle (pumpView.ts) ---
@@ -486,8 +505,8 @@ export function createViewmodel(): Viewmodel {
       gun.cylinder.rotation.z = cylinderAngle;
       // --- Akimbo reload: both guns twirled round the finger (see akimboSpin.ts) ---
       const twirl = akimboSpin.update(dt);
-      gun.spin.rotation.x = twirl.right;
-      gunL.spin.rotation.x = twirl.left;
+      gun.spin.rotation.x = twirl.right + (revolverDraw ? drawSpin(drawK, false) : 0);
+      gunL.spin.rotation.x = twirl.left + (revolverDraw ? drawSpin(drawK, true) : 0);
       const rp = isShotgun ? shotgunPose : isRifle ? riflePose : akimboSpin.active ? twirl.pose : rr.pose;
       const reload = revolverReload.active && !isShotgun ? 1 : 0; // hides the left hand
 

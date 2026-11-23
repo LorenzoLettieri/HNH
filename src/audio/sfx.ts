@@ -207,6 +207,22 @@ export function playShotgunReload(duration: number): void {
 }
 
 /**
+ * The revolver drawn (weapon switch, render/weapons/revolverDraw.ts): the
+ * "whoom" of one turn round the finger, the grip slapping into the palm,
+ * the hammer clicked back. Akimbo: the left gun does it all again a beat later.
+ */
+export function playRevolverDraw(t: { spinAt: number; catchAt: number; cockAt: number; leftLag: number }, akimbo: boolean): void {
+  for (const lag of akimbo ? [0, t.leftLag] : [0]) {
+    const quiet = lag > 0 ? 0.8 : 1;
+    noiseBurst({ start: t.spinAt + lag, duration: t.catchAt - t.spinAt, volume: 0.16 * quiet, filter: 'bandpass', frequency: 500, frequencyEnd: 1400, q: 1.4 }); // whoom
+    noiseBurst({ start: t.catchAt + lag, duration: 0.04, volume: 0.35 * quiet, filter: 'lowpass', frequency: 900 }); // slap in the palm
+    thump({ start: t.catchAt + lag, duration: 0.04, volume: 0.2 * quiet, from: 200, to: 110 });
+    noiseBurst({ start: t.cockAt + lag, duration: 0.02, volume: 0.35 * quiet, filter: 'bandpass', frequency: 3800, q: 6 }); // click
+    noiseBurst({ start: t.cockAt + lag + 0.025, duration: 0.015, volume: 0.25 * quiet, filter: 'bandpass', frequency: 5200, q: 8 }); // ...clack
+  }
+}
+
+/**
  * The double barrel drawn (weapon switch): a rush of air as it swings in
  * broken open, then the barrels SNAP shut (the same snap as the reload's
  * end) and the top lever springs back.

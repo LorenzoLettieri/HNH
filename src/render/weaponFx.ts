@@ -15,6 +15,7 @@ import {
   playShovelSwing,
   playAkimboSpin,
   playReload,
+  playRevolverDraw,
   playCarbineShot,
   playCarbineLever,
   playCarbineReloadStart,
@@ -38,6 +39,7 @@ import { createImpacts } from './impacts';
 import { hitStopSettings, requestHitStop } from './hitStop';
 import { leverTimes } from './weapons/rifleView';
 import { shotgunDrawTimes } from './weapons/shotgunView';
+import { revolverDrawTimes } from './weapons/revolverDraw';
 import { pumpCloseTimes, pumpDrawTimes, pumpReloadTimes, pumpTimes } from './weapons/pumpView';
 import { showHitmarker } from './hitmarker';
 import { spawnBlood, spawnSnort, spawnSparks } from './particles';
@@ -128,6 +130,7 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
             // signature sound lands when the gun is ready to fire.
             if (e.weapon === 'shotgun' && e.forged) playPumpDraw(pumpDrawTimes());
             else if (e.weapon === 'shotgun') playShotgunDraw(shotgunDrawTimes());
+            else if (e.weapon === 'revolver') playRevolverDraw(revolverDrawTimes(), e.forged);
             else playWeaponSwitch();
             break;
           case 'duelReady':
