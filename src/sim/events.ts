@@ -20,8 +20,8 @@ export type SimEvent =
    * gun, 1 = left; the pump-action: the pump is racked after the shot).
    */
   | { type: 'fire'; weapon: WeaponId; barrel: number; seconds: number; forged: boolean }
-  /** You switched weapon: the new one is coming up. */
-  | { type: 'weaponSwitch'; weapon: WeaponId }
+  /** You switched weapon: the new one is coming up. `forged`: its reinforced version (each gun is drawn its own way). */
+  | { type: 'weaponSwitch'; weapon: WeaponId; forged: boolean }
   /** One bullet or pellet: where it went and what it hit (impacts, blood). A shotgun blast is many of these. */
   | {
       type: 'shot';

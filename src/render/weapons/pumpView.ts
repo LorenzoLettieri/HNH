@@ -324,6 +324,19 @@ export function pumpCloseTimes(): { yankAt: number; openAt: number; shutStart: n
   };
 }
 
+// --- The draw (weapon switch, viewmodel.ts DRAW_KEYS) ---------------------------------
+/**
+ * The pump's signature: it swings in with the fore-end pulled back, and the
+ * hand SHOVES it home at this fraction of weaponSwitchTime: the "-CHK" lands
+ * just before the gun is ready to fire.
+ */
+const DRAW_SHOVE_AT = 0.62;
+/** When the draw's shove happens, seconds after 'weaponSwitch', for the sound. */
+export function pumpDrawTimes(): { shutStart: number; shutAt: number } {
+  const shutStart = DRAW_SHOVE_AT * tuning.weaponSwitchTime;
+  return { shutStart, shutAt: shutStart + travelTime(PUMP_TRAVEL, PUMP_SHOVE) };
+}
+
 // --- A shell, built in code (a red paper hull on a brass head) ------------------------
 const HULL_COLOR = 0x9a1c14;
 const BRASS_COLOR = 0xb08a3c;
@@ -345,6 +358,8 @@ export interface PumpView {
   /** Muzzle, in root coordinates. */
   muzzle: THREE.Vector3;
   onShot(): void;
+  /** The gun is drawn (weapon switch): it comes in with the fore-end back, and racks it home. */
+  draw(): void;
   /** The camera punch of the pump's slams since the last call (radians, + = up), for the viewmodel. */
   takePunch(): number;
   /** Stop every animation (weapon switched away). */
@@ -400,6 +415,7 @@ export function createPumpView(flightSpace: THREE.Object3D): PumpView {
   const target = new THREE.Vector3();
   const onForeEnd = new THREE.Vector3();
   const shellAt = new THREE.Vector3();
+  let drawTime = Infinity; // seconds since the gun was drawn
 
   return {
     root,
@@ -414,8 +430,15 @@ export function createPumpView(flightSpace: THREE.Object3D): PumpView {
       ejected = false;
       closeTime = Infinity; // a shot cuts the close short: the pump cycle takes over
     },
+    draw() {
+      drawTime = 0;
+      pump.reset();
+      pump.pos = PUMP_TRAVEL; // pulled back: the hand shoves it home during the draw
+      hand.copy(FORE_END_CENTER).setZ(FORE_END_CENTER.z + PUMP_TRAVEL);
+    },
     cancel() {
       sinceShot = Infinity;
+      drawTime = Infinity;
       closeTime = Infinity;
       wasReloading = false;
       pump.reset();
@@ -457,12 +480,15 @@ export function createPumpView(flightSpace: THREE.Object3D): PumpView {
         leftover -= ELASTIC_STEP;
         sinceShot += ELASTIC_STEP;
         closeTime += ELASTIC_STEP;
+        drawTime += ELASTIC_STEP;
         const t = sinceShot / interval;
         const closing = closeTime < CLOSE_TIME;
         // Open (pulled back): during the pump cycle after a shot, and in the
         // rack that closes a reload. (Shut while reloading: the shells go into the tube.)
         const open = reloading
           ? false
+          : drawTime < tuning.weaponSwitchTime
+            ? drawTime < DRAW_SHOVE_AT * tuning.weaponSwitchTime // the draw: back, then shoved home
           : closing
             ? closeTime >= CLOSE_HAND_TIME && closeTime < CLOSE_RACK_BACK_UNTIL
             : t >= PUMP_BACK_AT && t < PUMP_FORWARD_AT;

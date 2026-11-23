@@ -20,6 +20,7 @@ import {
   playCarbineReloadStart,
   playCarbineRoundIn,
   playPumpClose,
+  playPumpDraw,
   playPumpRack,
   playPumpReloadStart,
   playPumpShellIn,
@@ -35,7 +36,7 @@ import type { MeleeTool } from '../sim/kick';
 import { createImpacts } from './impacts';
 import { hitStopSettings, requestHitStop } from './hitStop';
 import { leverTimes } from './weapons/rifleView';
-import { pumpCloseTimes, pumpReloadTimes, pumpTimes } from './weapons/pumpView';
+import { pumpCloseTimes, pumpDrawTimes, pumpReloadTimes, pumpTimes } from './weapons/pumpView';
 import { showHitmarker } from './hitmarker';
 import { spawnBlood, spawnSnort, spawnSparks } from './particles';
 import { soundAt } from './soundPosition';
@@ -121,7 +122,10 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
             }
             break;
           case 'weaponSwitch':
-            playWeaponSwitch();
+            // Each gun is drawn its own way (render/weapons/*View.ts): its
+            // signature sound lands when the gun is ready to fire.
+            if (e.weapon === 'shotgun' && e.forged) playPumpDraw(pumpDrawTimes());
+            else playWeaponSwitch();
             break;
           case 'duelReady':
             playDuelReady(); // "Duellante": the next carbine shot does double damage

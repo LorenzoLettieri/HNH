@@ -320,6 +320,12 @@ export function playPumpShellIn(): void {
   noiseBurst({ start: 0.02, duration: 0.015, volume: 0.2, filter: 'bandpass', frequency: 4200, q: 6 }); // click
 }
 
+/** The pump-action drawn (weapon switch): it swings in with the fore-end back and it's shoved home, "-CHK". */
+export function playPumpDraw(t: { shutStart: number; shutAt: number }): void {
+  whoosh(0);
+  pumpHome(t.shutStart, t.shutAt);
+}
+
 /** The end of the reload: the hand back on the fore-end and a full rack, "ch-CHK" (it chambers a shell). */
 export function playPumpClose(t: { yankAt: number; openAt: number; shutStart: number; shutAt: number }): void {
   pumpBack(t.yankAt, t.openAt);

@@ -405,7 +405,7 @@ export function switchWeapon(p: PlayerState, w: WeaponId, events: SimEvent[]): v
   p.adsTicks = 0;
   p.fanShotsLeft = 0; // a fanning burst stops: the revolver is put away
   p.fanQueued = false;
-  events.push({ type: 'weaponSwitch', weapon: w });
+  events.push({ type: 'weaponSwitch', weapon: w, forged: p.forged[w] > 0 });
 }
 
 /**
