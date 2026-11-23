@@ -272,6 +272,7 @@ export function createDebugPanel(options: {
   sg.number(tuning, 'pumpFireInterval', 0.2, 1.5, 0.01);
   sg.number(tuning, 'pumpReloadStart', 0, 1, 0.01);
   sg.number(tuning, 'pumpReloadPerShell', 0.1, 1, 0.01);
+  sg.number(tuning, 'pumpReloadClose', 0, 0.5, 0.01);
   sg.number(viewmodelSettings, 'pumpX', -0.3, 0.3, 0.005);
   sg.number(viewmodelSettings, 'pumpY', -0.3, 0.1, 0.005);
   sg.number(viewmodelSettings, 'pumpZ', -0.6, 0, 0.005);

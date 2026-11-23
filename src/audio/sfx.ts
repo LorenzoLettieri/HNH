@@ -276,19 +276,54 @@ export function playCarbineRoundIn(): void {
  */
 export function playPumpRack(t: LeverTimes): void {
   // The whole gun flung onto its side (the flourish in pumpView.ts): a rush of air.
-  noiseBurst({ start: Math.max(0, t.throwAt - 0.03), duration: 0.12, volume: 0.14, filter: 'bandpass', frequency: 400, frequencyEnd: 1300, q: 1.2 });
-  noiseBurst({ start: t.throwAt, duration: t.openAt - t.throwAt + 0.01, volume: 0.14, filter: 'bandpass', frequency: 700, frequencyEnd: 1800, q: 1.5 }); // slide back
-  noiseBurst({ start: t.openAt, duration: 0.05, volume: 0.6, filter: 'bandpass', frequency: 1900, q: 2.5 }); // CH-
-  thump({ start: t.openAt, duration: 0.04, volume: 0.3, from: 520, to: 260 });
+  whoosh(Math.max(0, t.throwAt - 0.03));
+  pumpBack(t.throwAt, t.openAt);
   noiseBurst({ start: t.ejectAt, duration: 0.04, volume: 0.15, filter: 'bandpass', frequency: 3000, q: 5 }); // shell out
-  noiseBurst({ start: t.shutStart, duration: t.shutAt - t.shutStart + 0.01, volume: 0.14, filter: 'bandpass', frequency: 1800, frequencyEnd: 800, q: 1.5 }); // slide forward
-  noiseBurst({ start: t.shutAt, duration: 0.08, volume: 1.0, filter: 'bandpass', frequency: 1100, q: 2 }); // -CHK
-  thump({ start: t.shutAt, duration: 0.08, volume: 0.55, from: 300, to: 110 });
-  noiseBurst({ start: t.shutAt + 0.01, duration: 0.02, volume: 0.3, filter: 'bandpass', frequency: 3600, q: 6 }); // the bolt locking
+  pumpHome(t.shutStart, t.shutAt);
   // The shell lands somewhere behind you: a dull plastic "tock", and a smaller bounce.
   for (const [k, vol] of [[0.45, 0.12], [0.55, 0.05]]) {
     noiseBurst({ start: t.ejectAt + k, duration: 0.03, volume: vol, filter: 'bandpass', frequency: 1800 + Math.random() * 400, q: 5 });
   }
+}
+
+/** A rush of air: the gun flung around. */
+function whoosh(start: number): void {
+  noiseBurst({ start, duration: 0.12, volume: 0.14, filter: 'bandpass', frequency: 400, frequencyEnd: 1300, q: 1.2 });
+}
+/** The fore-end yanked back: wood sliding on the tube, "CH-" on the rear stop. */
+function pumpBack(start: number, hit: number): void {
+  noiseBurst({ start, duration: hit - start + 0.01, volume: 0.14, filter: 'bandpass', frequency: 700, frequencyEnd: 1800, q: 1.5 }); // slide back
+  noiseBurst({ start: hit, duration: 0.05, volume: 0.6, filter: 'bandpass', frequency: 1900, q: 2.5 }); // CH-
+  thump({ start: hit, duration: 0.04, volume: 0.3, from: 520, to: 260 });
+}
+/** The fore-end shoved home: the slide forward and the heavy "-CHK", the bolt locking. */
+function pumpHome(start: number, hit: number): void {
+  noiseBurst({ start, duration: hit - start + 0.01, volume: 0.14, filter: 'bandpass', frequency: 1800, frequencyEnd: 800, q: 1.5 }); // slide forward
+  noiseBurst({ start: hit, duration: 0.08, volume: 1.0, filter: 'bandpass', frequency: 1100, q: 2 }); // -CHK
+  thump({ start: hit, duration: 0.08, volume: 0.55, from: 300, to: 110 });
+  noiseBurst({ start: hit + 0.01, duration: 0.02, volume: 0.3, filter: 'bandpass', frequency: 3600, q: 6 }); // the bolt locking
+}
+
+/** The pump-action's reload starts (pumpView.ts): the gun flung onto its side, the fore-end yanked open. */
+export function playPumpReloadStart(t: { flipAt: number; yankAt: number; openAt: number }): void {
+  whoosh(t.flipAt);
+  pumpBack(t.yankAt, t.openAt);
+}
+
+/**
+ * A shell SLAPPED in through the port: the meaty slap of a gloved palm (low,
+ * soft noise and a thud), the shell knocking into place, a tiny click.
+ */
+export function playPumpShellIn(): void {
+  noiseBurst({ duration: 0.05, volume: 0.45, filter: 'lowpass', frequency: 900 }); // slap
+  thump({ duration: 0.06, volume: 0.35, from: 180, to: 90 });
+  noiseBurst({ start: 0.008, duration: 0.04, volume: 0.35, filter: 'bandpass', frequency: 1200, q: 3 }); // knock
+  noiseBurst({ start: 0.02, duration: 0.015, volume: 0.2, filter: 'bandpass', frequency: 4200, q: 6 }); // click
+}
+
+/** The end of the reload: the hand back on the fore-end and the big "-CHK". */
+export function playPumpClose(t: { shutStart: number; shutAt: number }): void {
+  pumpHome(t.shutStart, t.shutAt);
 }
 
 /**

@@ -19,7 +19,10 @@ import {
   playCarbineLever,
   playCarbineReloadStart,
   playCarbineRoundIn,
+  playPumpClose,
   playPumpRack,
+  playPumpReloadStart,
+  playPumpShellIn,
   playShot,
   playShotgun,
   playShotgunReload,
@@ -32,7 +35,7 @@ import type { MeleeTool } from '../sim/kick';
 import { createImpacts } from './impacts';
 import { hitStopSettings, requestHitStop } from './hitStop';
 import { leverTimes } from './weapons/rifleView';
-import { pumpTimes } from './weapons/pumpView';
+import { pumpCloseTimes, pumpReloadTimes, pumpTimes } from './weapons/pumpView';
 import { showHitmarker } from './hitmarker';
 import { spawnBlood, spawnSnort, spawnSparks } from './particles';
 import { soundAt } from './soundPosition';
@@ -172,7 +175,7 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
             playDryFire();
             break;
           case 'reloadStart':
-            if (e.weapon === 'shotgun' && e.forged) playCarbineReloadStart(); // the pump-action: to the loading port, like the carbine's gate
+            if (e.weapon === 'shotgun' && e.forged) playPumpReloadStart(pumpReloadTimes()); // flung on its side, fore-end yanked open
             else if (e.weapon === 'shotgun') playShotgunReload(e.seconds);
             else if (e.weapon === 'rifle') playCarbineReloadStart();
             else if (e.forged) playAkimboSpin(spinTurnTimes(e.seconds), e.seconds);
@@ -180,9 +183,12 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
             for (const f of fx.onReload) f(e.weapon, e.seconds, e.forged);
             break;
           case 'reloadRound':
-            playCarbineRoundIn();
+            // (Only the pump-action's shells are slapped in; the carbine's and the slide reload's click in.)
+            if (e.weapon === 'shotgun') playPumpShellIn();
+            else playCarbineRoundIn();
             break;
           case 'reloadEnd':
+            if (e.weapon === 'shotgun' && e.forged) playPumpClose(pumpCloseTimes()); // the hand shoves the fore-end home
             break;
           case 'hit':
             if (e.surface === 'metal') {

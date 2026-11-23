@@ -816,7 +816,7 @@ scegli un'arma, e l'arma si **trasforma**:
   0,32 (ogni pistola ogni 0,48). Il fanning le svuota tutte e due. La seconda pistola è la prima **specchiata**
   (niente modelli nuovi). **Ricarica da pistolero**: le due pistole fanno tre giri attorno al dito (la sinistra
   un attimo dopo) e tornano in mano cariche, 1,3 s: non è una vera ricarica, ma è più bella.
-- **Doppietta → fucile a pompa**. [IN CORSO: meccanica fatta; in mano con la pompata (astina che scorre col braccio sinistro, cartuccia espulsa, "ch-CHK"); manca l'animazione della ricarica] Una canna, **6 cartucce** nel serbatoio
+- **Doppietta → fucile a pompa**. [IN CORSO: meccanica fatta; in mano con la pompata (astina che scorre col braccio sinistro, cartuccia espulsa, "ch-CHK"); ricarica fatta: **dalla finestra di espulsione**, arma lanciata sul fianco, ogni cartuccia infilata con uno schiaffo, astina sbattuta in avanti alla fine; la ricarica finisce con 0,15 s di chiusura (`pumpReloadClose`) prima di poter sparare, anche se la interrompi con un click] Una canna, **6 cartucce** nel serbatoio
   tubolare, **una pompata tra un colpo e l'altro** (0,55 s: la doppietta spara due colpi quasi insieme e poi
   ricarica tutto, la pompa ha un ritmo costante), **ricarica una cartuccia alla volta** come la carabina
   (interrompibile con un click). **Doppio botto**: sul primo colpo a serbatoio pieno partono due cartucce

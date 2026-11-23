@@ -228,6 +228,12 @@ export const tuning = {
   /** It reloads one shell at a time, like the carbine: seconds to bring it to the loading port, then per shell. */
   pumpReloadStart: 0.25,
   pumpReloadPerShell: 0.4,
+  /**
+   * The pump-action's reload ends with the left hand back on the fore-end,
+   * SLAMMING it shut: seconds before it can fire (also when a click stops
+   * the reload). The animation (render/weapons/pumpView.ts) fits in here.
+   */
+  pumpReloadClose: 0.15,
   /** Debug: reloading doesn't use up the reserve. */
   infiniteAmmo: false,
 

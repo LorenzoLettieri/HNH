@@ -19,16 +19,16 @@
 //      punches your view (takePunch). Exaggerated on purpose: see CYCLE_KEYS.
 // The left arm is a child of the fore-end, so it rides along with it.
 //
-// THE RELOAD (one shell at a time, like the simulation): for now only the
-// gun's pose, rolled to show its belly (where the shells go into the tube),
-// and a dip each time a shell goes in. The shells and the hand come next.
+// THE RELOAD (one shell at a time, like the simulation): the gun flung onto
+// its side, the fore-end yanked open, every shell SLAPPED in through the port
+// by the left hand, then the fore-end slammed home. See "The reload" below.
 // Everything here is cosmetic: ammo and timing are decided by the simulation.
 import * as THREE from 'three';
 import { secondsToTicks, tuning } from '../../sim/config';
 import type { PlayerState } from '../../sim/player';
-import { fireInterval } from '../../sim/weapon';
+import { fireInterval, magazineSize } from '../../sim/weapon';
 import type { LeverTimes } from '../../audio/sfx';
-import { ELASTIC_STEP, PoseSpring, Stroke, ZERO_POSE, poseAt, travelTime, type GunPose } from './elastic';
+import { ELASTIC_STEP, PoseSpring, Stroke, ZERO_POSE, phase, poseAt, smoothstep, travelTime, type GunPose } from './elastic';
 import { loadGunModel } from './gunModel';
 import { createRifleHands } from './hands';
 import { createSpentCases, type CaseThrow } from './spentCases';
@@ -215,18 +215,106 @@ const CYCLE_KEYS: [number, GunPose][] = [
   [0.85, Z],
   [1, Z],
 ];
+// --- The reload: one shell at a time through the ejection port ------------------------
+// Badass before realistic (docs/DESIGN.md, pillar 5): the gun is flung onto its
+// side, the fore-end yanked back, and every shell is SLAPPED in through the
+// open port, the one side you can see. At the end the hand grabs the
+// fore-end and slams it home. The timeline follows the simulation's timer
+// (player.reloadTicks): the start (pumpReloadStart), then one stretch per
+// shell (pumpReloadPerShell), then the close (pumpReloadClose, after the
+// 'reloadEnd' event).
+//
+// The left hand is placed by its PALM (the point that holds the fore-end):
+// all the positions below are where the palm goes, in the gun's coordinates
+// (x = its right side, which faces up while reloading; y = its top; z = back).
+/** Center of the fore-end (file coordinates → meters): where the palm holds it, pump shut. */
+const FORE_END_CENTER = fitted(new THREE.Vector3(2.107, -0.005, 0));
+/** Out of the port: the gun's right side. */
+const OUT = new THREE.Vector3(1, 0, 0);
+const PORT_AT = fitted(PORT);
+/** At the belt, grabbing a shell: down, off the screen, toward you. */
+const HAND_AWAY = FORE_END_CENTER.clone().add(new THREE.Vector3(-0.1, -0.1, 0.2));
+/** Lined up over the port, shell in the palm. */
+const HAND_READY = PORT_AT.clone().addScaledVector(OUT, 0.05).add(new THREE.Vector3(0, 0.01, 0.01));
+/** The wind-up of the slap: pulled back a bit more (anticipation). */
+const HAND_WINDUP = HAND_READY.clone().addScaledVector(OUT, 0.025);
+/** SLAPPED in: the shell's center half inside the port. */
+const HAND_IN = PORT_AT.clone().addScaledVector(OUT, 0.012);
 /**
- * The reload pose: rolled onto its left side like the carbine, so the RIGHT
- * side (the ejection port) faces up toward you; closer, muzzle up a little.
- * (Rolled the other way, to show the belly, the left arm, which rides on the
- * fore-end, swung up across half the screen.)
+ * How much the hand turns (around the gun's barrel axis, radians) to bring
+ * the palm, posed cupped UNDER the fore-end, over the port on the gun's side.
  */
-const RELOAD_POSE: GunPose = { x: -0.07, y: 0.02, z: 0.05, pitch: 0.25, yaw: 0.15, roll: 1.1 };
-/** The dip of the gun when a shell is pushed in, as a speed kick to the spring. */
-const PUSH_DIP_Y = -0.15;
-const PUSH_DIP_PITCH = -0.5;
-/** A shell goes in at this fraction of pumpReloadPerShell (just before the simulation counts it). */
-const SHELL_IN_AT = 0.92;
+const HAND_PORT_ROLL = -0.4;
+/** How fast the hand chases its target (1/s): fast, only to smooth the jumps (a reload stopped by a click). */
+const HAND_RATE = 40;
+
+/**
+ * The reload pose: rolled onto its left side, so the RIGHT side (the
+ * ejection port) faces up toward you; closer, muzzle up. (Rolled the other
+ * way, to show the belly, the left arm swung up across half the screen.)
+ */
+const RELOAD_POSE: GunPose = { x: -0.07, y: 0.02, z: 0.06, pitch: 0.28, yaw: 0.15, roll: 1.15 };
+const pose = (p: Partial<GunPose>): GunPose => ({ ...RELOAD_POSE, ...p });
+
+/** The start, in fractions of pumpReloadStart: a wind-up, then FLUNG onto its side past the reload pose. */
+const FLIP_KEYS: [number, GunPose][] = [
+  [0, Z],
+  [0.2, { x: 0.01, y: -0.015, z: 0, pitch: -0.1, yaw: -0.04, roll: -0.2 }], // anticipation: the other way
+  [0.65, pose({ y: 0.035, pitch: 0.4, roll: 1.32 })], // flung: past the reload pose (the spring overshoots more)...
+  [1, RELOAD_POSE], // ...and back
+];
+/** ...when the hand yanks the fore-end back (the port opens), and when it lets go of it. */
+const RELOAD_YANK_AT = 0.25;
+const LET_GO_AT = 0.55;
+
+/** Each shell, in fractions of pumpReloadPerShell (the simulation counts it in at 1). */
+const FETCH_UNTIL = 0.3; // the hand is at the belt, grabbing it
+const READY_AT = 0.68; // lined up over the port
+const SLAP_AT = 0.84; // the wind-up is over: the slap starts...
+const SLAP_IN = 0.96; // ...and the shell is in
+/** The gun leans into the hand as it comes (it "meets" the slap). */
+const SHELL_KEYS: [number, GunPose][] = [
+  [0, RELOAD_POSE],
+  [READY_AT, pose({ roll: 1.27, pitch: 0.31 })],
+  [SLAP_AT, pose({ roll: 1.3, pitch: 0.32 })],
+  [SLAP_IN, RELOAD_POSE],
+  [1, RELOAD_POSE],
+];
+/** The slap hits the gun's side: a kick to the spring's speed (down, and rolled back), and to your view. */
+const SLAP_KICK_Y = -0.3;
+const SLAP_KICK_PITCH = -0.9;
+const SLAP_KICK_ROLL = -2.5;
+const SLAP_PUNCH = -0.012;
+
+/**
+ * The close, in seconds after 'reloadEnd' (it fits in pumpReloadClose,
+ * when the gun can fire again): the hand back on the fore-end, then shoved home.
+ */
+const CLOSE_HAND_TIME = 0.05;
+/**
+ * The gun flips back up and settles, over this long (seconds). The slam is
+ * in pitch and height (thrown down PAST the rest); the roll is NOT pushed past
+ * it: coming back from 1.3 rad, the spring overshoots by itself (~30% with
+ * its damping), and rolled the wrong way the left arm lies flat across the screen.
+ */
+const CLOSE_TIME = 0.35;
+const CLOSE_KEYS: [number, GunPose][] = [
+  [0, RELOAD_POSE],
+  [CLOSE_HAND_TIME / CLOSE_TIME, pose({ roll: 1.3 })], // the hand grabs: a last lean (anticipation)
+  [0.4, { x: 0.01, y: -0.025, z: -0.03, pitch: -0.16, yaw: -0.03, roll: 0.25 }], // flipped back, slammed down
+  [0.7, { x: 0, y: 0.004, z: 0.004, pitch: 0.03, yaw: 0, roll: 0.02 }],
+  [1, Z],
+];
+
+/** When the moments of the reload's start happen, seconds after 'reloadStart', for the sounds. */
+export function pumpReloadTimes(): { flipAt: number; yankAt: number; openAt: number } {
+  const yankAt = RELOAD_YANK_AT * tuning.pumpReloadStart;
+  return { flipAt: 0.2 * tuning.pumpReloadStart, yankAt, openAt: yankAt + travelTime(PUMP_TRAVEL, PUMP_PULL) };
+}
+/** ...and of the close, seconds after 'reloadEnd'. */
+export function pumpCloseTimes(): { shutStart: number; shutAt: number } {
+  return { shutStart: CLOSE_HAND_TIME, shutAt: CLOSE_HAND_TIME + travelTime(PUMP_TRAVEL, PUMP_SHOVE) };
+}
 
 // --- A shell, built in code (a red paper hull on a brass head) ------------------------
 const HULL_COLOR = 0x9a1c14;
@@ -267,16 +355,26 @@ export function createPumpView(flightSpace: THREE.Object3D): PumpView {
   // and sorted into the two groups above (which exist from the start).
   root.add(loadGunModel('pumpShotgun.glb', (model) => fitModel(model, frame, foreEnd)));
 
-  // Hands: the carbine's (see LEFT_HAND_OFFSET). The left arm is a child of
-  // the fore-end: when the fore-end slides, the arm slides with it.
+  // Hands: the carbine's (see LEFT_HAND_OFFSET). The left arm hangs from a
+  // group placed on its PALM: put the group on the fore-end and the hand
+  // holds it; move it and the whole arm follows; turn it and the arm turns
+  // around the hand, not around the shoulder. (A pivot, like the akimbo
+  // spin's: a group at the point you want to rotate around.)
   const hands = createRifleHands();
-  hands.left.position.copy(LEFT_HAND_OFFSET);
-  frame.add(hands.right);
-  foreEnd.add(hands.left);
+  const palm = new THREE.Group();
+  const cup = FORE_END_CENTER.clone().sub(LEFT_HAND_OFFSET); // where the palm is, in the arm model
+  hands.left.position.copy(cup).negate();
+  palm.add(hands.left);
+  palm.position.copy(FORE_END_CENTER);
+  frame.add(hands.right, palm);
+  // The shell in the hand (reload): lies in the cupped palm, along the gun.
+  const handShell = createShell();
+  handShell.visible = false;
+  palm.add(handShell);
 
   // The template of the spent shell, hidden in the ejection port.
   const shellTemplate = createShell();
-  shellTemplate.position.copy(fitted(PORT));
+  shellTemplate.position.copy(PORT_AT);
   shellTemplate.visible = false;
   frame.add(shellTemplate);
 
@@ -286,8 +384,14 @@ export function createPumpView(flightSpace: THREE.Object3D): PumpView {
   let leftover = 0;
   let sinceShot = Infinity; // seconds since the last shot
   let ejected = true; // the shell of the last shot is already out
-  let lastShellK = 0; // progress of the shell being pushed in (to catch the push moment)
   let punch = 0; // camera punch collected since the viewmodel last took it
+  let wasReloading = false;
+  let closeTime = Infinity; // seconds since the reload ended (the close plays while < CLOSE_TIME)
+  let lastShellK = -1; // the shell's progress last frame (to catch the moment of the slap)
+  let handRoll = 0;
+  const hand = new THREE.Vector3().copy(FORE_END_CENTER); // the palm's smoothed position
+  const target = new THREE.Vector3();
+  const onForeEnd = new THREE.Vector3();
 
   return {
     root,
@@ -300,23 +404,42 @@ export function createPumpView(flightSpace: THREE.Object3D): PumpView {
     onShot() {
       sinceShot = 0;
       ejected = false;
+      closeTime = Infinity; // a shot cuts the close short: the pump cycle takes over
     },
     cancel() {
       sinceShot = Infinity;
+      closeTime = Infinity;
+      wasReloading = false;
       pump.reset();
       ejected = true;
       shells.clear();
+      handShell.visible = false;
     },
     update(dt, player) {
       const interval = fireInterval(player, 'shotgun'); // the pump's own interval (pumpFireInterval)
+      // --- Where the reload is, from the simulation's timer ---
+      // reloadTicks counts down: first the start (pumpReloadStart), then one
+      // stretch per shell. openK = progress of the start (0..1), shellK = of
+      // the shell being loaded; -1 = not in that part.
+      const startTicks = Math.max(1, secondsToTicks(tuning.pumpReloadStart));
       const perShellTicks = secondsToTicks(tuning.pumpReloadPerShell);
-      const reloading = player.reloadTicks > 0;
-      // Progress of the shell being pushed in (0..1), -1 while the gun is
-      // still turning (the first shell's start time). The same as the carbine.
-      const shellK = reloading && player.reloadTicks <= perShellTicks ? 1 - player.reloadTicks / perShellTicks : -1;
-      if (lastShellK < SHELL_IN_AT && shellK >= SHELL_IN_AT) {
-        spring.vel.y += PUSH_DIP_Y;
-        spring.vel.pitch += PUSH_DIP_PITCH;
+      const r = player.reloadTicks;
+      const reloading = r > 0;
+      const openK = reloading && r > perShellTicks ? Math.max(0, 1 - (r - perShellTicks) / startTicks) : -1;
+      const shellK = reloading && r <= perShellTicks ? 1 - r / perShellTicks : -1;
+      // Is this the last shell? (Tube full or pocket empty after it.) Then the
+      // hand goes straight back to the fore-end after the slap.
+      const lastShell =
+        player.loaded.shotgun + 1 >= magazineSize(player, 'shotgun') || (!tuning.infiniteAmmo && player.reserve.shells <= 1);
+      // The reload just ended (done, or a click stopped it): the close.
+      if (wasReloading && !reloading) closeTime = 0;
+      wasReloading = reloading;
+      // The slap: the moment the shell goes in.
+      if (shellK >= SLAP_IN && lastShellK < SLAP_IN) {
+        spring.vel.y += SLAP_KICK_Y;
+        spring.vel.pitch += SLAP_KICK_PITCH;
+        spring.vel.roll += SLAP_KICK_ROLL;
+        punch += SLAP_PUNCH;
       }
       lastShellK = shellK;
 
@@ -325,8 +448,17 @@ export function createPumpView(flightSpace: THREE.Object3D): PumpView {
       while (leftover >= ELASTIC_STEP) {
         leftover -= ELASTIC_STEP;
         sinceShot += ELASTIC_STEP;
+        closeTime += ELASTIC_STEP;
         const t = sinceShot / interval;
-        pump.step(t >= PUMP_BACK_AT && t < PUMP_FORWARD_AT, ELASTIC_STEP);
+        const closing = closeTime < CLOSE_TIME;
+        // Open (pulled back): during the pump cycle after a shot, from the
+        // yank at the start of a reload, and in the close until the hand shoves it.
+        const open = reloading
+          ? openK < 0 || openK >= RELOAD_YANK_AT
+          : closing
+            ? closeTime < CLOSE_HAND_TIME
+            : t >= PUMP_BACK_AT && t < PUMP_FORWARD_AT;
+        pump.step(open, ELASTIC_STEP);
         if (pump.impact !== 0) {
           // The fore-end hit a stop: the whole gun feels it. Shoved home
           // (negative speed) jolts it more, and pushes it away from you; the
@@ -338,10 +470,55 @@ export function createPumpView(flightSpace: THREE.Object3D): PumpView {
           punch += pump.impact < 0 ? pump.impact * PUNCH_SHUT : pump.impact * PUNCH_BACK; // down / up
           pump.impact = 0;
         }
-        const target = reloading ? RELOAD_POSE : t < 1 ? poseAt(CYCLE_KEYS, t) : Z;
-        spring.step(target, ELASTIC_STEP);
+        const goal = reloading
+          ? openK >= 0
+            ? poseAt(FLIP_KEYS, openK)
+            : poseAt(SHELL_KEYS, shellK)
+          : closing
+            ? poseAt(CLOSE_KEYS, closeTime / CLOSE_TIME)
+            : t < 1
+              ? poseAt(CYCLE_KEYS, t)
+              : Z;
+        spring.step(goal, ELASTIC_STEP);
       }
       foreEnd.position.z = pump.pos; // +z = back toward you
+
+      // --- The left hand: on the fore-end, or fetching and slapping in shells ---
+      onForeEnd.copy(FORE_END_CENTER).setZ(FORE_END_CENTER.z + pump.pos);
+      let atPort = 0; // 0 = palm under the fore-end, 1 = turned over the port
+      if (openK >= 0) {
+        // The start: holds the fore-end for the yank, then lets go and drops to the belt.
+        target.copy(onForeEnd).lerp(HAND_AWAY, smoothstep(phase(openK, LET_GO_AT, 1)));
+      } else if (shellK >= 0) {
+        if (shellK < FETCH_UNTIL) target.copy(HAND_AWAY);
+        else if (shellK < READY_AT) {
+          const k = smoothstep(phase(shellK, FETCH_UNTIL, READY_AT));
+          target.copy(HAND_AWAY).lerp(HAND_READY, k);
+          atPort = k;
+        } else if (shellK < SLAP_AT) {
+          target.copy(HAND_READY).lerp(HAND_WINDUP, smoothstep(phase(shellK, READY_AT, SLAP_AT)));
+          atPort = 1;
+        } else if (shellK < SLAP_IN) {
+          // The slap: k² = it ACCELERATES into the gun (ease-in), fastest at the impact.
+          const k = phase(shellK, SLAP_AT, SLAP_IN);
+          target.copy(HAND_WINDUP).lerp(HAND_IN, k * k);
+          atPort = 1;
+        } else {
+          target.copy(lastShell ? onForeEnd : HAND_IN);
+          atPort = lastShell ? 0 : 1;
+        }
+      } else target.copy(onForeEnd);
+      // Smoothed only to hide the jumps between parts (or a reload cut short).
+      // Once it has hold of the fore-end it rides it exactly: no lag on the pump.
+      const ease = 1 - Math.exp(-HAND_RATE * dt);
+      const holding = (openK >= 0 && openK < LET_GO_AT) || (!reloading && !(closeTime < CLOSE_HAND_TIME));
+      if (holding && hand.distanceTo(onForeEnd) < 0.02) hand.copy(onForeEnd);
+      else hand.lerp(target, ease);
+      handRoll += (HAND_PORT_ROLL * atPort - handRoll) * ease;
+      palm.position.copy(hand);
+      palm.rotation.z = handRoll;
+      // The shell in the palm: from the moment it's grabbed until it's in.
+      handShell.visible = shellK >= FETCH_UNTIL && shellK < SLAP_IN;
 
       // --- The spent shell: out when the fore-end is back far enough ---
       if (!ejected && pump.pos >= PUMP_TRAVEL * EJECT_AT) {

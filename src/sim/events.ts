@@ -141,7 +141,8 @@ export type SimEvent =
    * reload, or the revolver's "Ricarica in scivolata" card.
    */
   | { type: 'reloadRound'; weapon: WeaponId }
-  | { type: 'reloadEnd' }
+  /** A reload is over (done or stopped by a click). `forged`: the pump-action slams its fore-end shut now. */
+  | { type: 'reloadEnd'; weapon: WeaponId; forged: boolean }
   /** You bought something at a shop (sound, the panel's thanks). */
   | { type: 'purchase'; item: PurchaseId; price: number }
   /**

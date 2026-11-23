@@ -229,7 +229,7 @@ export function stepWeapon(
       if (oneByOne && moved > 0) events.push({ type: 'reloadRound', weapon: p.weapon });
       const more = oneByOne && currentAmmo(p) < full && (tuning.infiniteAmmo || p.reserve[pocket] > 0);
       if (more) p.reloadTicks = secondsToTicks(reloadPerRound(p.weapon));
-      else events.push({ type: 'reloadEnd' });
+      else endReload(p, events, 0);
     }
   }
 
@@ -258,8 +258,7 @@ export function stepWeapon(
   // reloading and shoot (after a moment: the gun comes back up from the gate).
   if (oneByOne && p.reloadTicks > 0 && clicked && currentAmmo(p) > 0) {
     p.reloadTicks = 0;
-    p.fireCooldownTicks = Math.max(p.fireCooldownTicks, secondsToTicks(tuning.rifleReloadInterrupt));
-    events.push({ type: 'reloadEnd' });
+    endReload(p, events, tuning.rifleReloadInterrupt);
   }
 
   // Aiming down the sights (the carbine's alternate fire, right mouse
@@ -382,6 +381,19 @@ function stepSlideReload(p: PlayerState, full: number, events: SimEvent[]): void
     events.push({ type: 'reloadRound', weapon: 'revolver' });
   }
   p.slideReloadTicks = secondsToTicks(tuning.slideReloadInterval); // next round, if you keep sliding
+}
+
+/**
+ * A reload is over (done, or stopped by a click). `cooldown` = seconds before
+ * the gun can fire (the carbine coming back up from the gate after a click).
+ * The pump-action always waits at least pumpReloadClose: the hand goes back
+ * to the fore-end and slams it shut.
+ */
+function endReload(p: PlayerState, events: SimEvent[], cooldown: number): void {
+  const pump = p.weapon === 'shotgun' && isPump(p);
+  const seconds = pump ? Math.max(cooldown, tuning.pumpReloadClose) : cooldown;
+  p.fireCooldownTicks = Math.max(p.fireCooldownTicks, secondsToTicks(seconds));
+  events.push({ type: 'reloadEnd', weapon: p.weapon, forged: p.forged[p.weapon] > 0 });
 }
 
 /** Puts `w` in your hands. Also used by the shop: a weapon you just bought goes straight to your hands. */
