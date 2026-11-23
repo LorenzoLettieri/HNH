@@ -1383,3 +1383,36 @@ export function playFuseHiss(where: Where): LoopingSound {
     },
   };
 }
+
+/**
+ * The launcher fires a stick: not a bang but a deep hollow THOOMP (a
+ * low sine falling fast, plus a puff of low noise: compressed air, the
+ * steampunk part), then the drum turning to the next stick, a ratchet "clack".
+ */
+export function playDynamiteLaunch(): void {
+  if (!ctx) return;
+  thump({ duration: 0.22, volume: 0.9, from: 160, to: 45 });
+  noiseBurst({ duration: 0.25, volume: 0.6, filter: 'lowpass', frequency: 900, frequencyEnd: 150 }); // the puff
+  noiseBurst({ start: 0.02, duration: 0.18, volume: 0.25, filter: 'bandpass', frequency: 2500, frequencyEnd: 900, q: 1 }); // the stick whooshing out
+  noiseBurst({ start: 0.32, duration: 0.04, volume: 0.35, filter: 'bandpass', frequency: 1800, q: 6 }); // drum: clack
+}
+
+/**
+ * Swapping the drum (`duration` seconds): it swings open (a metal clack),
+ * five sticks thud into their chambers one after the other (soft cardboard
+ * thuds), the drum slams shut and is spun with a ratchet.
+ */
+export function playDynamiteReload(duration: number): void {
+  if (!ctx) return;
+  noiseBurst({ duration: 0.05, volume: 0.4, filter: 'bandpass', frequency: 1500, q: 5 }); // open
+  for (let i = 0; i < 5; i++) {
+    const start = duration * (0.2 + i * 0.1);
+    thump({ start, duration: 0.07, volume: 0.35, from: 240, to: 110 });
+    noiseBurst({ start, duration: 0.04, volume: 0.15, filter: 'bandpass', frequency: 700, q: 2 });
+  }
+  noiseBurst({ start: duration * 0.78, duration: 0.06, volume: 0.6, filter: 'bandpass', frequency: 1300, q: 4 }); // SLAM shut
+  thump({ start: duration * 0.78, duration: 0.1, volume: 0.4, from: 200, to: 80 });
+  for (let i = 0; i < 4; i++) {
+    noiseBurst({ start: duration * 0.84 + i * 0.035, duration: 0.02, volume: 0.15, filter: 'bandpass', frequency: 2600, q: 8 }); // the ratchet
+  }
+}

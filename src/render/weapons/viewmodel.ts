@@ -330,6 +330,7 @@ export function createViewmodel(): Viewmodel {
       }
       recoil.kick(r, scale);
       flashLeft = false;
+      if (weapon === 'dynamite') return; // no model in hand yet (next steps): only the kick of the view
       if (weapon === 'rifle') {
         rifle.onShot();
         rifleFlash.material.rotation = Math.random() * Math.PI;

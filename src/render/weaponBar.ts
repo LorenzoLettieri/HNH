@@ -80,6 +80,25 @@ const SILHOUETTES: Record<WeaponId, Silhouette> = {
       for (let y = 2; y < 9; y++) ctx.fillRect(Math.round(1 + (8 - y) * 0.1), y, 11 - Math.max(0, y - 5) * 3, 1);
     },
   },
+  // Dynamite launcher, 36 × 13: a short fat barrel, the DRUM full of sticks
+  // (a big round block with gaps between the sticks), pistol grip, a
+  // stubby stock. Squat on purpose: it reads as "heavy" next to the others.
+  dynamite: {
+    width: 36,
+    height: 13,
+    draw(ctx) {
+      ctx.fillRect(18, 2, 17, 5); // barrel (fat: a stick goes through it)
+      ctx.fillRect(34, 1, 2, 7); // muzzle ring
+      ctx.fillRect(9, 0, 11, 10); // drum...
+      ctx.clearRect(10, 3, 9, 1); // ...with the sticks showing between its bands
+      ctx.clearRect(10, 6, 9, 1);
+      ctx.fillRect(4, 3, 6, 5); // frame
+      ctx.fillRect(13, 11, 6, 1); // trigger guard
+      ctx.fillRect(14, 10, 1, 1); // trigger
+      for (let y = 8; y < 13; y++) ctx.fillRect(Math.round(10 - (y - 8) * 0.6), y, 3, 1); // grip
+      ctx.fillRect(0, 4, 5, 4); // stock
+    },
+  },
 };
 
 const bar = document.getElementById('weapon-bar')!;

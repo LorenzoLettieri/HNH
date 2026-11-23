@@ -105,6 +105,21 @@ export const recoilSettings: Record<RecoilKind, RecoilProfile> = {
     viewRoll: 0.012,
     fov: 2.5,
   },
+  // The launcher: a heavy, slow THUMP (a stick, not a bullet): the gun
+  // bucks up a lot and comes back slowly, little twist, a big push of the view.
+  dynamite: {
+    up: 0.45,
+    back: 0.13,
+    rise: 0.03,
+    twist: 0.05,
+    scatter: 0.04,
+    stiffness: 300,
+    bounce: 0.42,
+    snap: 0.5,
+    view: 0.05,
+    viewRoll: 0.01,
+    fov: 3,
+  },
 };
 
 const CHANNELS = ['x', 'y', 'z', 'pitch', 'yaw', 'roll'] as const;

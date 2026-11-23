@@ -5,6 +5,8 @@ import type { SimEvent } from '../sim/events';
 import { tuning } from '../sim/config';
 import {
   playDryFire,
+  playDynamiteLaunch,
+  playDynamiteReload,
   playDuelReady,
   playFireballHit,
   playRicochet,
@@ -103,7 +105,8 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
             } else if (e.weapon === 'rifle') {
               playCarbineShot();
               playCarbineLever(leverTimes(e.seconds)); // cla-CLACK, timed on the animation (the event says how long)
-            } else playShot();
+            } else if (e.weapon === 'dynamite') playDynamiteLaunch();
+            else playShot();
             camera.getWorldDirection(forward);
             flash.position.copy(camera.position).addScaledVector(forward, 0.8);
             flashTime = FLASH_DURATION;
@@ -189,6 +192,7 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
             if (e.weapon === 'shotgun' && e.forged) playPumpReloadStart(pumpReloadTimes()); // flung up: a rush of air
             else if (e.weapon === 'shotgun') playShotgunReload(e.seconds);
             else if (e.weapon === 'rifle') playCarbineReloadStart();
+            else if (e.weapon === 'dynamite') playDynamiteReload(e.seconds);
             else if (e.forged) playAkimboSpin(spinTurnTimes(e.seconds), e.seconds);
             else playReload(e.seconds);
             for (const f of fx.onReload) f(e.weapon, e.seconds, e.forged);

@@ -45,6 +45,10 @@ const ITEM_TEXT: Record<ShopItemId, { name: string; desc: string }> = {
     name: 'Carabina a leva',
     desc: 'Otto colpi, stesse cartucce del revolver. Lenta, ma da lontano e in testa non sbaglia. Tasto destro per mirare.',
   },
+  dynamite: {
+    name: 'Lancia-dinamite',
+    desc: 'Cinque candelotti nel tamburo. Rimbalzano e scoppiano dopo un attimo, o subito se toccano qualcuno. Ai tuoi piedi: un salto fino ai tetti.',
+  },
   shovel: {
     name: 'Badile da becchino',
     desc: 'Prende il posto dello stivale (F). Più lungo, più largo, tre volte il danno. Scava fosse, ne riempie altre.',
@@ -152,6 +156,7 @@ const WEAPON_NAMES: Record<GearId, string> = {
   revolver: 'Revolver',
   shotgun: 'Doppietta',
   rifle: 'Carabina',
+  dynamite: 'Lancia-dinamite',
   shovel: 'Badile',
 };
 

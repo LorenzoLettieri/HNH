@@ -44,9 +44,9 @@ import { hasCard } from './upgrades';
 import { applyGunDamage, hitCenter, lineFree } from './gunDamage';
 import { explode, lastShotBlast } from './explosion';
 
-export type WeaponId = 'revolver' | 'shotgun' | 'rifle';
-/** Weapon slots, in order: key 1 = revolver, key 2 = shotgun, key 3 = carbine. */
-export const WEAPONS: readonly WeaponId[] = ['revolver', 'shotgun', 'rifle'];
+export type WeaponId = 'revolver' | 'shotgun' | 'rifle' | 'dynamite';
+/** Weapon slots, in order: key 1 = revolver, key 2 = shotgun, key 3 = carbine, key 4 = dynamite launcher. */
+export const WEAPONS: readonly WeaponId[] = ['revolver', 'shotgun', 'rifle', 'dynamite'];
 
 /**
  * The reinforced revolver is AKIMBO (the Forge, docs/DESIGN.md §6d): a
@@ -99,9 +99,9 @@ export type GearId = WeaponId | 'shovel';
 export const GEAR: readonly GearId[] = [...WEAPONS, 'shovel'];
 
 /** What's in your pockets: kinds of cartridges. */
-export type AmmoType = 'bullets' | 'shells';
+export type AmmoType = 'bullets' | 'shells' | 'sticks';
 /** Which cartridges each weapon shoots (and so which pocket its reload empties). */
-export const AMMO_TYPE: Record<WeaponId, AmmoType> = { revolver: 'bullets', shotgun: 'shells', rifle: 'bullets' };
+export const AMMO_TYPE: Record<WeaponId, AmmoType> = { revolver: 'bullets', shotgun: 'shells', rifle: 'bullets', dynamite: 'sticks' };
 
 /**
  * Rounds a full weapon holds. (Functions, not constants: tuning changes at
@@ -118,6 +118,8 @@ export function magazineSize(p: PlayerState, w: WeaponId): number {
       return isPump(p) ? tuning.pumpAmmo : tuning.shotgunAmmo;
     case 'rifle':
       return tuning.rifleAmmo;
+    case 'dynamite':
+      return tuning.dynamiteAmmo;
   }
 }
 /** Seconds between two shots (for the carbine: the lever's cycle). The player, because cards can change it. */
@@ -129,6 +131,8 @@ export function fireInterval(p: PlayerState, w: WeaponId): number {
       return isPump(p) ? tuning.pumpFireInterval : tuning.shotgunFireInterval;
     case 'rifle':
       return tuning.rifleFireInterval * (hasCard(p, 'gunslingerLever') ? tuning.gunslingerLeverScale : 1);
+    case 'dynamite':
+      return tuning.dynamiteFireInterval;
   }
 }
 /**
@@ -146,6 +150,8 @@ function reloadTime(p: PlayerState, w: WeaponId): number {
       return isPump(p) ? tuning.pumpReloadStart + tuning.pumpReloadPerShell : tuning.shotgunReloadTime;
     case 'rifle':
       return tuning.rifleReloadStart + tuning.rifleReloadPerRound;
+    case 'dynamite':
+      return tuning.dynamiteReloadTime;
   }
 }
 /**
@@ -333,6 +339,12 @@ export function stepWeapon(
     } else if (p.weapon === 'rifle') {
       events.push({ type: 'fire', weapon: 'rifle', barrel: 0, seconds: fireInterval(p, 'rifle'), forged: p.forged.rifle > 0 });
       fireRifle(p, world, entities, events, rng);
+    } else if (p.weapon === 'dynamite') {
+      // Not hitscan: the weapon only says "a stick leaves the barrel"; the
+      // stick itself (a projectile with its own physics) is created by
+      // stepGame when it reads this event, because the list of sticks lives
+      // in the GameState and the weapon doesn't know about it.
+      events.push({ type: 'fire', weapon: 'dynamite', barrel: 0, seconds: fireInterval(p, 'dynamite'), forged: false });
     } else {
       events.push({ type: 'fire', weapon: 'revolver', barrel: revolverHand(p, full, ammo), seconds: fireInterval(p, 'revolver'), forged: p.forged.revolver > 0 });
       fireRevolver(p, world, entities, events, lastRound);

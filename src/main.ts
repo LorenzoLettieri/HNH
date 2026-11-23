@@ -7,9 +7,9 @@ import { createMenu } from './menu';
 import { createDebugPanel, debugTime, type DebugTool } from './debug/debugPanel';
 import { hitStopScale } from './render/hitStop';
 import { buildCommand, controlSettings, queueRespawn, updateLook, view } from './controls';
-import { TICK_DT } from './sim/config';
+import { TICK_DT, tuning } from './sim/config';
 import { copyPlayer, createPlayer } from './sim/player';
-import { createGame, spawnBullInFront, spawnSharpshooterInFront, spawnEyebatInFront, spawnHoundInFront, spawnSmithInFront, dropPickupsInFront, stepGame, throwDynamiteDebug } from './sim/game';
+import { createGame, spawnBullInFront, spawnSharpshooterInFront, spawnEyebatInFront, spawnHoundInFront, spawnSmithInFront, dropPickupsInFront, stepGame } from './sim/game';
 import { jumpToWave } from './sim/waves';
 import { DEFAULT_LEVEL, LEVELS } from './levels';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
@@ -39,7 +39,8 @@ import { createMapOverlay } from './render/mapOverlay';
 import { shopInReach } from './sim/shop';
 import './render/crosshair'; // paints the crosshair once
 import { updateScopeOverlay } from './render/scopeOverlay';
-import { adsAmount, GEAR, magazineSize, WEAPONS } from './sim/weapon';
+import { adsAmount, GEAR, magazineSize } from './sim/weapon';
+import { FORGEABLE } from './sim/forge';
 import { updateHud } from './render/hud';
 import { createEndScreen } from './render/endScreen';
 import { updateAmmoHud } from './render/ammoHud';
@@ -208,8 +209,6 @@ const debugPanel = createDebugPanel({
     spawnTool('Fai apparire: Fabbro Dannato', spawnSmithInFront),
     spawnTool('Fai apparire: tiratore scelto (a 20 m)', spawnSharpshooterInFront),
     spawnTool('Fai cadere un raccoglibile di ogni tipo', dropPickupsInFront),
-    // Until the launcher is a real weapon: a stick thrown where you look (dynamite.ts).
-    spawnTool('Lancia un candelotto di dinamite', (g) => throwDynamiteDebug(g, world)),
     // Respawn goes through the InputCommand like a key would (controls.ts):
     // the simulation only changes from commands.
     { label: 'Respawn', run: () => queueRespawn() },
@@ -375,10 +374,13 @@ const prevPlayer = createPlayer();
 // ?slow=0.2: slow motion from the start (see debugTime).
 if (params.get('slow')) debugTime.timeScale = Number(params.get('slow'));
 // ?guns=all: start with every weapon (to try them without going to the shop).
-if (params.get('guns') === 'all') for (const w of GEAR) game.player.owned[w] = true; // the shovel too
+if (params.get('guns') === 'all') {
+  for (const w of GEAR) game.player.owned[w] = true; // the shovel too
+  game.player.reserve.sticks = tuning.dynamiteReserveStart; // the launcher's spare sticks (bought, they come with it)
+}
 // ?forged=all: every gun already reinforced at the Forge, and loaded (akimbo, pump-action, scope).
 if (params.get('forged') === 'all') {
-  for (const w of WEAPONS) {
+  for (const w of FORGEABLE) {
     game.player.forged[w] = 1;
     game.player.loaded[w] = magazineSize(game.player, w);
   }

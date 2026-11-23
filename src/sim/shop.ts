@@ -104,6 +104,10 @@ export function stepShop(p: PlayerState, cmd: InputCommand, world: World, events
     p.loaded.rifle = tuning.rifleAmmo;
     p.reserve.bullets = Math.min(tuning.revolverReserveMax, p.reserve.bullets + tuning.rifleBuyBullets);
   }
+  if (id === 'dynamite') {
+    p.loaded.dynamite = tuning.dynamiteAmmo;
+    p.reserve.sticks = Math.max(p.reserve.sticks, tuning.dynamiteReserveStart);
+  }
   switchWeapon(p, id, events);
   events.push({ type: 'purchase', item: id, price: item.price });
 }

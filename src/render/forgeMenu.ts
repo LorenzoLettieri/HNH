@@ -11,12 +11,12 @@ import { playForge, playPurchaseDenied } from '../audio/sfx';
 import { queueForge } from '../controls';
 import { tuning } from '../sim/config';
 import type { SimEvent } from '../sim/events';
-import { forgeRefusal } from '../sim/forge';
+import { FORGEABLE, forgeRefusal, type ForgeableWeapon } from '../sim/forge';
 import type { PlayerState } from '../sim/player';
-import { WEAPONS, type WeaponId } from '../sim/weapon';
+import type { WeaponId } from '../sim/weapon';
 
 /** What each gun becomes. For now only the damage changes; the new look comes later. */
-const FORGE_TEXT: Record<WeaponId, { name: string; desc: string }> = {
+const FORGE_TEXT: Record<ForgeableWeapon, { name: string; desc: string }> = {
   revolver: { name: 'Revolver → Akimbo', desc: 'Il doppio del danno. (Presto: un secondo revolver nell’altra mano.)' },
   shotgun: { name: 'Doppietta → Fucile a pompa', desc: 'Il doppio del danno. (Presto: il fucile a pompa.)' },
   rifle: { name: 'Carabina → Ottica', desc: 'Il doppio del danno e un cannocchiale: mirando, uno zoom tre volte più forte.' },
@@ -76,7 +76,7 @@ export function createForgeRows(noFocus: (el: HTMLElement) => void): ForgeRows {
     build(list) {
       this.reset();
       list.replaceChildren();
-      rows = WEAPONS.map((weapon) => {
+      rows = FORGEABLE.map((weapon) => {
         // Same markup as the shop's boxes (index.html styles .shop-item).
         const el = document.createElement('button');
         el.className = 'shop-item';

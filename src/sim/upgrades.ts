@@ -125,7 +125,7 @@ export function deckOf(weapon: GearId): CardId[] {
 
 /** Every weapon with no cards: the starting state (and after death). */
 export function noCards(): Record<GearId, CardId[]> {
-  return { revolver: [], shotgun: [], rifle: [], shovel: [] };
+  return { revolver: [], shotgun: [], rifle: [], dynamite: [], shovel: [] };
 }
 
 /** Do you have this card? (The weapons ask this to change how they work.) */

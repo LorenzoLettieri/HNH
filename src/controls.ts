@@ -67,12 +67,13 @@ export function buildCommand(tick: number): InputCommand {
   const reload = isKeyDown('KeyR') || wasPressed('KeyR');
   // F: the boot.
   const kick = isKeyDown('KeyF') || wasPressed('KeyF');
-  // Weapons: 1/2/3 pick a slot; Q or the wheel cycle. (wasPressed for all of
+  // Weapons: 1/2/3/4 pick a slot; Q or the wheel cycle. (wasPressed for all of
   // them: holding Q must not switch back and forth every tick.)
   let weaponSelect = 0;
   if (wasPressed('Digit1')) weaponSelect = 1;
   if (wasPressed('Digit2')) weaponSelect = 2;
   if (wasPressed('Digit3')) weaponSelect = 3;
+  if (wasPressed('Digit4')) weaponSelect = 4;
   if (wasPressed('KeyQ') || wasPressed('WheelDown')) weaponSelect = -1;
   if (wasPressed('WheelUp')) weaponSelect = -2;
   const buy = pendingBuy;

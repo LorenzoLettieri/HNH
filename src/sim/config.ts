@@ -265,7 +265,16 @@ export const tuning = {
   /** Bullets that come with it when you buy it (in your pocket, shared with the revolver). */
   rifleBuyBullets: 24,
 
-  // --- Dynamite launcher ("il lancia-dinamite", see dynamite.ts) ---
+  // --- Dynamite launcher ("il lancia-dinamite", see dynamite.ts and weapon.ts) ---
+  /** Sticks in the drum. */
+  dynamiteAmmo: 5,
+  /** Seconds between two sticks (the drum turning to the next one). */
+  dynamiteFireInterval: 0.6,
+  /** Seconds to swap the drum: all the sticks at once, like the revolver. */
+  dynamiteReloadTime: 1.6,
+  /** Spare sticks at the start (when you get the launcher) and the most you can carry. */
+  dynamiteReserveStart: 10,
+  dynamiteReserveMax: 20,
   /** Launch speed of a stick along the aim, m/s (slow enough to see the arc). */
   dynamiteSpeed: 22,
   /** Extra upward speed at launch, m/s: the arc starts a bit above the aim, like a lob. */

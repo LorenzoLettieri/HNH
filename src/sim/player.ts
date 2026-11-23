@@ -205,6 +205,7 @@ export function copyPlayer(from: PlayerState, to: PlayerState): void {
     revolver: [...from.cards.revolver],
     shotgun: [...from.cards.shotgun],
     rifle: [...from.cards.rifle],
+    dynamite: [...from.cards.dynamite],
     shovel: [...from.cards.shovel],
   };
 }
@@ -483,22 +484,22 @@ function airSteer(p: PlayerState, wishX: number, wishZ: number, dt: number): voi
 
 /** Spare rounds at the start: only for the weapons you start with (the shotgun's come when you buy it). */
 function startingReserve(): Record<AmmoType, number> {
-  return { bullets: tuning.revolverReserveStart, shells: 0 };
+  return { bullets: tuning.revolverReserveStart, shells: 0, sticks: 0 };
 }
 
 /** Every weapon full (the ones you don't own too: they come loaded when you buy them). */
 function fullWeapons(): Record<WeaponId, number> {
-  return { revolver: tuning.revolverAmmo, shotgun: tuning.shotgunAmmo, rifle: tuning.rifleAmmo };
+  return { revolver: tuning.revolverAmmo, shotgun: tuning.shotgunAmmo, rifle: tuning.rifleAmmo, dynamite: tuning.dynamiteAmmo };
 }
 
 /** You start with the revolver only (and your boots: no shovel). */
 /** Every gun at forge level 0. */
 function noForge(): Record<WeaponId, number> {
-  return { revolver: 0, shotgun: 0, rifle: 0 };
+  return { revolver: 0, shotgun: 0, rifle: 0, dynamite: 0 };
 }
 
 function startingWeapons(): Record<GearId, boolean> {
-  return { revolver: true, shotgun: false, rifle: false, shovel: false };
+  return { revolver: true, shotgun: false, rifle: false, dynamite: false, shovel: false };
 }
 
 export function respawn(p: PlayerState, world: World): void {

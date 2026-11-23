@@ -15,7 +15,19 @@ import { magazineSize, type WeaponId } from './weapon';
 import type { World } from './world';
 
 /** Why a gun can't be reinforced right now (null = it can). */
-export type ForgeRefusal = 'far' | 'notOwned' | 'maxed' | 'noIron';
+export type ForgeRefusal = 'far' | 'notOwned' | 'maxed' | 'noIron' | 'notForgeable';
+
+/**
+ * The guns the Forge knows how to reinforce. The dynamite launcher isn't
+ * one of them (yet: docs/DESIGN.md, "Dopo: carte e Forgia"). A type of its
+ * own, so the Forge's texts (forgeMenu.ts) must exist for exactly these.
+ */
+export type ForgeableWeapon = Exclude<WeaponId, 'dynamite'>;
+export const FORGEABLE: readonly ForgeableWeapon[] = ['revolver', 'shotgun', 'rifle'];
+
+function isForgeable(w: WeaponId): w is ForgeableWeapon {
+  return (FORGEABLE as readonly WeaponId[]).includes(w);
+}
 
 /**
  * Can this gun be reinforced? One function for both sides: the simulation
@@ -24,6 +36,7 @@ export type ForgeRefusal = 'far' | 'notOwned' | 'maxed' | 'noIron';
  * The distance isn't checked here: the panel is open only near the Forge.
  */
 export function forgeRefusal(p: PlayerState, weapon: WeaponId): ForgeRefusal | null {
+  if (!isForgeable(weapon)) return 'notForgeable';
   if (!p.owned[weapon]) return 'notOwned';
   if (p.forged[weapon] >= tuning.forgeMaxLevel) return 'maxed';
   if (p.damnedIron < tuning.forgeIronCost) return 'noIron';

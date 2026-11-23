@@ -121,6 +121,11 @@ export function stepGame(
   stepKick(game.player, cmd, world, game.entities, events);
   // Fire and wall slams from the shotgun's cards: their kills are yours too.
   stepStatus(game.player, game.entities, events);
+  // The launcher fired: a new stick leaves the barrel (weapon.ts only reports the shot).
+  for (let i = firstNewEvent; i < events.length; i++) {
+    const e = events[i];
+    if (e.type === 'fire' && e.weapon === 'dynamite') game.dynamite.push(throwDynamite(game.player, world, game.nextEntityId++));
+  }
   // Your dynamite: its explosions are your hits too (score, drops, style).
   game.dynamite = stepDynamite(game.dynamite, game.player, world, game.entities, dt, events);
   const playerHits = events.slice(firstNewEvent);
@@ -202,14 +207,6 @@ export function spawnEyebatInFront(game: GameState): void {
   const x = p.x - Math.sin(p.yaw) * 8;
   const z = p.z - Math.cos(p.yaw) * 8;
   game.entities.push(createEyebat(game.nextEntityId++, x, p.y + 4, z));
-}
-
-/**
- * Debug: throws a dynamite stick where you look (until the launcher is a
- * real weapon, this is how you try the stick's physics).
- */
-export function throwDynamiteDebug(game: GameState, world: World): void {
-  game.dynamite.push(throwDynamite(game.player, world, game.nextEntityId++));
 }
 
 /** Debug: spawns a hellhound 8 m in front of the player (G key). */
