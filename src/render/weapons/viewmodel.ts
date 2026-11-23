@@ -455,6 +455,7 @@ export function createViewmodel(): Viewmodel {
       // --- Shotgun: elastic reload (see shotgunView.ts), or the pump-action's cycle (pumpView.ts) ---
       const doubleBarrelPose = shotgun.update(dt, player);
       const pumpPose = pump.update(dt, player);
+      viewKick += pump.takePunch(); // the pump's slams shake your view a little
       const shotgunPose = pumpShown ? pumpPose : doubleBarrelPose;
       const riflePose = rifle.update(dt, player);
 

@@ -275,6 +275,8 @@ export function playCarbineRoundIn(): void {
  * and meatier than the lever: the "ch-CHK" every action movie taught us.
  */
 export function playPumpRack(t: LeverTimes): void {
+  // The whole gun flung onto its side (the flourish in pumpView.ts): a rush of air.
+  noiseBurst({ start: Math.max(0, t.throwAt - 0.03), duration: 0.12, volume: 0.14, filter: 'bandpass', frequency: 400, frequencyEnd: 1300, q: 1.2 });
   noiseBurst({ start: t.throwAt, duration: t.openAt - t.throwAt + 0.01, volume: 0.14, filter: 'bandpass', frequency: 700, frequencyEnd: 1800, q: 1.5 }); // slide back
   noiseBurst({ start: t.openAt, duration: 0.05, volume: 0.6, filter: 'bandpass', frequency: 1900, q: 2.5 }); // CH-
   thump({ start: t.openAt, duration: 0.04, volume: 0.3, from: 520, to: 260 });

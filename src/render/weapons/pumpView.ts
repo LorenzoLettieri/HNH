@@ -9,12 +9,14 @@
 //
 // THE PUMP, after every shot (timeline in fractions of pumpFireInterval):
 //   1. the shot: the gun kicks (viewmodel.ts);
-//   2. the left hand YANKS the fore-end back: a Stroke (elastic.ts), the same
-//      tiny physics as the carbine's lever: a constant push, it slams into
-//      the rear stop and bounces a little ("ch-"); the spent shell flies out
-//      of the ejection port on the right;
-//   3. the hand SHOVES it forward, harder: it slams shut ("-CHK") and the
-//      jolt goes into the whole gun (an impulse to its pose spring).
+//   2. a small wind-up, then the left hand YANKS the fore-end back while the
+//      whole gun is flung up and onto its side: a Stroke (elastic.ts), the
+//      same tiny physics as the carbine's lever: a constant push, it slams
+//      into the rear stop and bounces ("ch-"); the spent shell is flung high
+//      out of the ejection port;
+//   3. the hand SHOVES it forward, harder: it slams shut ("-CHK"), the gun
+//      is thrown down past its rest pose and springs back, and the slam
+//      punches your view (takePunch). Exaggerated on purpose: see CYCLE_KEYS.
 // The left arm is a child of the fore-end, so it rides along with it.
 //
 // THE RELOAD (one shell at a time, like the simulation): for now only the
@@ -128,20 +130,31 @@ function fitModel(model: THREE.Object3D, frame: THREE.Group, foreEnd: THREE.Grou
 // --- The pump ---------------------------------------------------------------------
 /** How far the fore-end slides back, meters (the gap between it and the receiver). */
 const PUMP_TRAVEL = 0.065;
-/** How hard the hand yanks it back / shoves it forward, m/s² (a constant push: it accelerates all the way). */
-const PUMP_PULL = 40;
-const PUMP_SHOVE = 70;
+/**
+ * How hard the hand yanks it back / shoves it forward, m/s² (a constant push:
+ * it accelerates all the way). VIOLENT: it gets there in ~0.04 s and hits the
+ * stop at ~3–4 m/s.
+ */
+const PUMP_PULL = 80;
+const PUMP_SHOVE = 120;
 /** Speed kept when it hits a stop; below REST it stays there, m/s. */
-const PUMP_BOUNCE_BACK = 0.25;
-const PUMP_BOUNCE_SHUT = 0.15;
+const PUMP_BOUNCE_BACK = 0.35;
+const PUMP_BOUNCE_SHUT = 0.2;
 const PUMP_REST_SPEED = 0.05;
 /** How much a slam into a stop jolts the gun, per m/s of the fore-end's speed. */
-const JOLT_PITCH = 0.25;
-const JOLT_Y = 0.06;
-const JOLT_Z = 0.05;
+const JOLT_PITCH = 0.4;
+const JOLT_Y = 0.08;
+const JOLT_Z = 0.1;
+/**
+ * The slams reach your head too: a camera punch (radians per m/s of the
+ * fore-end's speed, visual only, like the kick's). Shoved home = a nod down
+ * with the "CHK" (~0.024 rad); the rear stop = a smaller jerk up.
+ */
+const PUNCH_SHUT = 0.006;
+const PUNCH_BACK = 0.003;
 
 /** Timeline in fractions of pumpFireInterval: when the hand pulls, when it shoves. */
-const PUMP_BACK_AT = 0.2;
+const PUMP_BACK_AT = 0.18;
 const PUMP_FORWARD_AT = 0.45;
 /** The spent shell flies out when the fore-end is this far back (fraction of the travel). */
 const EJECT_AT = 0.6;
@@ -159,8 +172,11 @@ export function pumpTimes(interval: number): LeverTimes {
   };
 }
 
-/** The spent shell: heavier than the carbine's brass, it flies out to the right and tumbles slower. */
-const SHELL_THROW: CaseThrow = { speed: { x: 1.0, y: 1.1, z: 0.2 }, scatter: 0.25, spin: 14, gravity: 7, life: 0.8 };
+/**
+ * The spent shell: flung HIGH, up past your face and over your shoulder, in a
+ * slow tumble (lighter gravity than real: it stays on screen longer).
+ */
+const SHELL_THROW: CaseThrow = { speed: { x: 0.8, y: 1.9, z: 0.55 }, scatter: 0.2, spin: 16, gravity: 5.5, life: 1.0 };
 
 // --- The left arm on the fore-end ---------------------------------------------------
 /**
@@ -173,15 +189,29 @@ const LEFT_HAND_OFFSET = new THREE.Vector3(0, -0.006, -0.04);
 
 // --- The gun's pose: a damped spring chasing keyframes -------------------------------
 const POSE_STIFFNESS = 900;
-const POSE_DAMPING_RATIO = 0.45;
+/** Below 0.5 the gun overshoots more: it slams past the rest pose and bounces back. */
+const POSE_DAMPING_RATIO = 0.36;
 const Z = ZERO_POSE;
-/** [t, pose] of the pump cycle (t = fraction of pumpFireInterval since the shot). */
+const BACK = PUMP_BACK_AT;
+const FWD = PUMP_FORWARD_AT;
+/**
+ * [t, pose] of the pump cycle (t = fraction of pumpFireInterval since the
+ * shot). Exaggerated on purpose, built on three classic animation rules:
+ *   ANTICIPATION  before the yank the gun dips and cants the other way, a
+ *                 tiny wind-up that makes the big move read;
+ *   EXAGGERATION  the yank throws it up, across and onto its side (port
+ *                 toward you, ~37°), and it HANGS there while the shell flies;
+ *   FOLLOW-THROUGH the shove slams it down and forward PAST the rest pose,
+ *                 then it settles back (the spring adds its own overshoot).
+ * It's back at rest well before the next shot can go (t = 1).
+ */
 const CYCLE_KEYS: [number, GunPose][] = [
   [0, Z],
-  [PUMP_BACK_AT - 0.03, { x: 0, y: 0.004, z: 0, pitch: 0.03, yaw: 0, roll: 0 }], // wind-up
-  [PUMP_BACK_AT + 0.08, { x: -0.006, y: -0.006, z: 0.01, pitch: -0.05, yaw: 0.03, roll: 0.18 }], // yanked: canted, the port in view
-  [PUMP_FORWARD_AT, { x: -0.006, y: -0.006, z: 0.01, pitch: -0.04, yaw: 0.03, roll: 0.16 }],
-  [PUMP_FORWARD_AT + 0.08, { x: 0, y: 0, z: -0.004, pitch: 0.02, yaw: 0, roll: 0 }], // shoved home
+  [BACK - 0.05, { x: 0.01, y: -0.012, z: 0, pitch: -0.08, yaw: -0.04, roll: -0.12 }], // anticipation
+  [BACK + 0.06, { x: -0.035, y: 0.03, z: 0.05, pitch: 0.3, yaw: 0.18, roll: 0.6 }], // YANK: up, across, on its side
+  [FWD - 0.02, { x: -0.04, y: 0.035, z: 0.055, pitch: 0.34, yaw: 0.2, roll: 0.65 }], // hang (the shell in the air)
+  [FWD + 0.05, { x: 0.01, y: -0.02, z: -0.03, pitch: -0.12, yaw: -0.03, roll: -0.1 }], // SHOVE: past the rest
+  [FWD + 0.16, { x: 0, y: 0.004, z: 0.004, pitch: 0.03, yaw: 0, roll: 0.02 }], // settling
   [0.85, Z],
   [1, Z],
 ];
@@ -219,6 +249,8 @@ export interface PumpView {
   /** Muzzle, in root coordinates. */
   muzzle: THREE.Vector3;
   onShot(): void;
+  /** The camera punch of the pump's slams since the last call (radians, + = up), for the viewmodel. */
+  takePunch(): number;
   /** Stop every animation (weapon switched away). */
   cancel(): void;
   /** Advance the animations. Returns the pose offsets of the whole gun. */
@@ -255,10 +287,16 @@ export function createPumpView(flightSpace: THREE.Object3D): PumpView {
   let sinceShot = Infinity; // seconds since the last shot
   let ejected = true; // the shell of the last shot is already out
   let lastShellK = 0; // progress of the shell being pushed in (to catch the push moment)
+  let punch = 0; // camera punch collected since the viewmodel last took it
 
   return {
     root,
     muzzle: fitted(MUZZLE),
+    takePunch() {
+      const p = punch;
+      punch = 0;
+      return p;
+    },
     onShot() {
       sinceShot = 0;
       ejected = false;
@@ -297,6 +335,7 @@ export function createPumpView(flightSpace: THREE.Object3D): PumpView {
           spring.vel.pitch += JOLT_PITCH * k;
           spring.vel.y += JOLT_Y * k;
           spring.vel.z += JOLT_Z * k * (pump.impact < 0 ? -1 : 1);
+          punch += pump.impact < 0 ? pump.impact * PUNCH_SHUT : pump.impact * PUNCH_BACK; // down / up
           pump.impact = 0;
         }
         const target = reloading ? RELOAD_POSE : t < 1 ? poseAt(CYCLE_KEYS, t) : Z;
