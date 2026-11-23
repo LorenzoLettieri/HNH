@@ -16,6 +16,9 @@ verticalità deve essere la cosa più forte che puoi fare, non solo la più dive
 2. **Pressione da ogni direzione** — ogni nemico rende scomoda una posizione diversa: nessun posto è sicuro a lungo.
 3. **Leggibilità** — ogni minaccia è annunciata (suono, luccichio, proiettile visibile): morire deve sembrare colpa tua, non del gioco.
 4. **Atmosfera** — luci, nebbia, particelle e cielo curati; due ambientazioni: High Noon e High Midnight.
+5. **Sentirsi un figo** [DECISO, novembre 2026] — animazioni **esagerate e super soddisfacenti** su ogni gesto (armi,
+   ricariche, melee): anticipazione, pose teatrali, urti con rimbalzo, scossoni, suoni a tempo. Badass prima che realistico,
+   senza mai togliere la mira o la leggibilità. Riferimento: la pompata del fucile a pompa.
 
 ### Cosa vogliamo evitare
 - Il "camperare" fermo su un tetto.

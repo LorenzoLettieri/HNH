@@ -229,6 +229,15 @@ Mappa per l'utente, da aggiornare ogni volta che si aggiunge un file/cartella ri
 - Movimento **veloce e snappy**: accelerazione a terra alta, attrito alto, air-strafe, bhop,
   slide, slide-jump, wall jump, coyote time, jump buffer. Niente smoothing sull'input.
 - Il feel conta più delle feature: preferire meno cose ma ben tarate.
+- **Animazioni esagerate e super soddisfacenti, sempre** (regola di default, decisa con l'utente dopo la pompata del
+  fucile a pompa, passo 161): il giocatore si deve sentire **un figo**. Ogni gesto (sparo, ricarica, cambio arma,
+  melee, raccolta) va fatto **badass**, non realistico e timido. Strumenti: **anticipazione** (un piccolo movimento
+  contrario prima del gesto), **esagerazione** (pose ampie e teatrali, anche irrealistiche), **follow-through e
+  overshoot** (si supera la posa di riposo e si torna rimbalzando: molle poco smorzate di `elastic.ts`), **pezzi che
+  sbattono** su un finecorsa con rimbalzo (`Stroke`, `Hinge`), **scossone all'arma e colpo alla vista** sugli urti,
+  bossoli e oggetti che volano in modo spettacolare, **suono sincronizzato** sull'animazione. Unico limite:
+  l'arma torna leggibile e in mira prima che si possa sparare di nuovo, e il centro dello schermo resta libero il più
+  possibile. Esempio di riferimento: `CYCLE_KEYS` in `src/render/weapons/pumpView.ts`.
 
 ## Convenzioni
 - Codice, nomi e commenti in inglese; comunicazione con l'utente in italiano.
