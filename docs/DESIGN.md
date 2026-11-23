@@ -739,7 +739,8 @@ futuro **poligono di tiro / tutorial**.
   di rame dentro l'astina dove sta la mano sinistra, manometro: è l'aria che spara il candelotto (steampunk) [FATTO] → 6. animazioni: **sparo** [FATTO: sobbalzo pesante, arma ribaltata sul fianco, tamburo lanciato
   di una camera dal cricchetto che sbatte con un CLACK, il candelotto sparato sparisce dalla camera], **ricarica** [FATTO: colpo di polso, il tamburo si apre di lato
   per inerzia sul braccetto, candelotti infilati uno alla volta, colpo di polso inverso che lo richiude, giro da ruota
-  della fortuna], cambio arma →
+  della fortuna], **cambio arma** [FATTO: entra col tamburo che gira forte, il cricchetto rallenta, si blocca con
+  un CLACK prima che l'arma sia pronta] →
   7. premi dello Stile e taratura. Dopo: carte e Forgia.
 - **Fuoco alternativo (tasto destro)** [DECISO]: ogni arma può averne uno. Revolver: fanning;
   carabina: mira dal mirino; doppietta: da decidere.

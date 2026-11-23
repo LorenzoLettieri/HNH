@@ -37,6 +37,10 @@
 //   stops on a chamber. Every sound is played HERE, at the moment its piece
 //   moves (the hinge hits its stop, a stick lands, the drum latches, a
 //   chamber clicks past): the physics decides when, the sound follows.
+//
+// THE DRAW (weapon switch; its signature, like the other guns'): it swings in
+// canted with the drum SPINNING hard, the pawl clicking slower and slower,
+// and the drum LOCKS with a CLACK right before the gun is ready to fire.
 import * as THREE from 'three';
 import { tuning } from '../../sim/config';
 import type { PlayerState } from '../../sim/player';
@@ -138,6 +142,19 @@ const RELOAD_KEYS: [number, GunPose][] = [
   [1, Z],
 ];
 
+// --- The draw (fractions of weaponSwitchTime) ---------------------------------------
+/** Whole turns the drum spins (whole: it stops where it started, the right chamber up). */
+const DRAW_SPIN_TURNS = 2;
+/** When it locks: CLACK. */
+const DRAW_LOCK_AT = 0.72;
+/** The gun's pose meanwhile: canted (the spinning cage in view), snapped back by the lock. */
+const DRAW_KEYS: [number, GunPose][] = [
+  [0, { x: -0.01, y: 0.01, z: 0.01, pitch: 0.06, yaw: 0.05, roll: 0.35 }],
+  [DRAW_LOCK_AT, { x: -0.012, y: 0.012, z: 0.01, pitch: 0.07, yaw: 0.05, roll: 0.3 }],
+  [DRAW_LOCK_AT + 0.12, { x: 0.004, y: -0.004, z: -0.01, pitch: -0.03, yaw: -0.01, roll: -0.06 }],
+  [1, Z],
+];
+
 /** When the drum moves, seconds after the shot (the sounds follow the animation). */
 export interface DrumTimes {
   turnAt: number;
@@ -153,6 +170,8 @@ export interface DynamiteView {
   /** Where the flash goes (model coordinates). */
   muzzle: THREE.Vector3;
   onShot(): void;
+  /** The gun is drawn (weapon switch): the drum spins and locks. */
+  draw(): void;
   /** A reload starts and lasts `seconds`. */
   onReload(seconds: number): void;
   /** Stop every animation (weapon switched away). */
@@ -216,6 +235,10 @@ export function createDynamiteView(): DynamiteView {
   let firstEmpty = 0; // how many chambers from `top` still had a stick when it started
   let shoved = 0; // sticks already shoved home
   let ticked = 0; // chambers clicked past during the spin
+  // The draw.
+  let sinceDraw = Infinity;
+  let drawTicked = 0;
+  let drawLocked = true;
 
   /** When the i-th stick of this reload starts sliding in (fraction of the reload). */
   function insertAt(i: number): number {
@@ -239,6 +262,11 @@ export function createDynamiteView(): DynamiteView {
       sinceShot = 0;
       top = (top + 1) % CHAMBERS;
     },
+    draw() {
+      sinceDraw = 0;
+      drawTicked = 0;
+      drawLocked = false;
+    },
     onReload(seconds) {
       settle(); // (the last shot's turn, if it hadn't finished)
       sinceShot = Infinity;
@@ -250,6 +278,7 @@ export function createDynamiteView(): DynamiteView {
     cancel() {
       settle(); // put away mid-cycle: the drum finishes its turn off screen
       sinceReload = Infinity;
+      sinceDraw = Infinity;
       hinge.reset();
       sinceShot = Infinity;
       punch = 0;
@@ -278,6 +307,7 @@ export function createDynamiteView(): DynamiteView {
         leftover -= ELASTIC_STEP;
         sinceShot += ELASTIC_STEP;
         sinceReload += ELASTIC_STEP;
+        sinceDraw += ELASTIC_STEP;
         const t = sinceShot / interval;
         const u = sinceReload / reloadTime; // the reload's progress, 0..1 (≥ 1: none)
         ratchet.step(cycling && t >= DRUM_TURN_AT, ELASTIC_STEP);
@@ -304,7 +334,16 @@ export function createDynamiteView(): DynamiteView {
           spring.vel.pitch += SHOVE_PITCH;
           playStickIn();
         }
-        const target = u < 1 ? poseAt(RELOAD_KEYS, u) : t < 1 ? poseAt(CYCLE_KEYS, t) : Z;
+        const d = sinceDraw / Math.max(0.01, tuning.weaponSwitchTime); // the draw's progress
+        if (!drawLocked && d >= DRAW_LOCK_AT) {
+          // The drum LOCKS: CLACK, and the gun feels it.
+          drawLocked = true;
+          spring.vel.roll += JOLT_ROLL * 8;
+          spring.vel.pitch += JOLT_PITCH * 8;
+          punch -= PUNCH * 8;
+          playDrumShut();
+        }
+        const target = u < 1 ? poseAt(RELOAD_KEYS, u) : d < 1 ? poseAt(DRAW_KEYS, d) : t < 1 ? poseAt(CYCLE_KEYS, t) : Z;
         spring.step(target, ELASTIC_STEP);
       }
       crane.rotation.z = hinge.angle;
@@ -319,9 +358,16 @@ export function createDynamiteView(): DynamiteView {
         ticked++;
         playDrumTick(1 - ticked / (SPIN_TURNS * CHAMBERS + 1));
       }
+      // The draw's spin: whole turns, ease-out, locked at DRAW_LOCK_AT.
+      const d = sinceDraw / Math.max(0.01, tuning.weaponSwitchTime);
+      const drawSpin = d < DRAW_LOCK_AT ? (1 - (1 - d / DRAW_LOCK_AT) ** 3) * DRAW_SPIN_TURNS * 2 * Math.PI : 0;
+      while (d < DRAW_LOCK_AT && drawTicked < Math.floor(drawSpin / STEP)) {
+        drawTicked++;
+        playDrumTick(1 - drawTicked / (DRAW_SPIN_TURNS * CHAMBERS + 1));
+      }
       // +Z in three.js turns the chambers the right way: chamber k+1 comes up
       // to where chamber k was (see `chamber` in the Blender script).
-      drum.rotation.z = (turned + ratchet.pos / STEP) * STEP + spin;
+      drum.rotation.z = (turned + ratchet.pos / STEP) * STEP + spin + drawSpin;
 
       // The sticks: the chambers from `top` onward hold the rounds the gun
       // still has (the simulation counts them); the others are empty. During

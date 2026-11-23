@@ -447,6 +447,7 @@ export function createViewmodel(): Viewmodel {
         if (shownWeapon === 'shotgun' && isPump(player)) pump.draw();
         else if (shownWeapon === 'shotgun') shotgun.draw();
         else if (shownWeapon === 'rifle') rifle.draw();
+        else if (shownWeapon === 'dynamite') dynamite.draw();
         // (The revolver's twirl follows drawK directly: see revolverDraw.ts.)
       }
       revolver.visible = shownWeapon === 'revolver';

@@ -134,7 +134,8 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
             if (e.weapon === 'shotgun' && e.forged) playPumpDraw(pumpDrawTimes());
             else if (e.weapon === 'shotgun') playShotgunDraw(shotgunDrawTimes());
             else if (e.weapon === 'revolver') playRevolverDraw(revolverDrawTimes(), e.forged);
-            else playCarbineDraw(rifleDrawTimes());
+            else if (e.weapon === 'rifle') playCarbineDraw(rifleDrawTimes());
+            // (the dynamite launcher's spinning drum plays its own clicks and CLACK: dynamiteView.ts)
             break;
           case 'duelReady':
             playDuelReady(); // "Duellante": the next carbine shot does double damage
