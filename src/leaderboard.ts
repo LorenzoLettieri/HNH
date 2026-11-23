@@ -46,7 +46,7 @@ export interface SubmitResult extends Placement {
 }
 /** Longest name accepted (the server will enforce the same). */
 export const NAME_MAX_LENGTH = 16;
-/** Name used when the player didn't write one. */
+/** Last-resort name for an empty one (players without a name get a random one: randomName.ts). */
 export const DEFAULT_NAME = 'Pistolero';
 
 /**

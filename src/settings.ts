@@ -9,6 +9,7 @@
 import { controlSettings } from './controls';
 import { setVolume, sfxSettings } from './audio/sfx';
 import { cleanName } from './leaderboard';
+import { randomName } from './randomName';
 
 /** localStorage key. One JSON object holds all the settings. */
 const STORAGE_KEY = 'hnh.settings';
@@ -31,7 +32,7 @@ export const settings = {
   earRinging: true,
   /** The world goes muffled for a moment when you get hit. */
   hitMuffle: true,
-  /** Name on the leaderboard ('' = not chosen yet: DEFAULT_NAME in leaderboard.ts). */
+  /** Name on the leaderboard. Never empty after loadSettings: no name = a random one (randomName.ts). */
   playerName: '',
 };
 export type Settings = typeof settings;
@@ -61,8 +62,8 @@ function clean<K extends keyof Settings>(key: K, value: unknown): Settings[K] | 
   if (typeof fallback === 'boolean') return typeof value === 'boolean' ? (value as Settings[K]) : undefined;
   if (typeof fallback === 'string') {
     if (typeof value !== 'string') return undefined;
-    // An empty box stays empty (so the menu doesn't fight you while you type),
-    // anything else goes through the same cleaning the leaderboard applies.
+    // An empty name means "pick one for me" (set() draws it), anything else
+    // goes through the same cleaning the leaderboard applies.
     return (value.trim() === '' ? '' : cleanName(value)) as Settings[K];
   }
   const n = Number(value);
@@ -91,12 +92,17 @@ export function loadSettings(): void {
     // Nothing usable saved: keep the defaults.
   }
   apply();
+  // No name yet (first visit, or saved back when nameless players were all
+  // "Pistolero"): draw one now and SAVE it, so every game goes on the same row.
+  if (settings.playerName === '') set('playerName', '');
 }
 
 /** Changes one setting, applies it right away and saves them all. */
 export function set<K extends keyof Settings>(key: K, value: Settings[K]): void {
-  const v = clean(key, value);
+  let v = clean(key, value);
   if (v === undefined) return;
+  // Emptying the name box = a new random name (a free "reroll").
+  if (key === 'playerName' && v === '') v = randomName() as Settings[K];
   settings[key] = v;
   apply();
   try {

@@ -5,7 +5,7 @@
 // Every page is a <div class="menu-page" data-page="..."> and every button
 // with data-goto="..." switches to that page: like a tiny client-side router.
 import { SENSITIVITY_MAX, SENSITIVITY_MIN, set, settings, type Settings } from './settings';
-import { DEFAULT_NAME, NAME_MAX_LENGTH } from './leaderboard';
+import { NAME_MAX_LENGTH } from './leaderboard';
 import { fillScoreTable } from './render/scoreTable';
 import { canLockEscape, isFullscreen, toggleFullscreen, watchFullscreen } from './fullscreen';
 
@@ -34,7 +34,8 @@ export function createMenu(options: { onPlay: () => void }): Menu {
   // --- Leaderboard page -----------------------------------------------------
   const nameBox = document.getElementById('set-name') as HTMLInputElement;
   nameBox.maxLength = NAME_MAX_LENGTH;
-  nameBox.placeholder = DEFAULT_NAME;
+  // Seen only while the box is empty: leaving it empty draws a random name (settings.ts).
+  nameBox.placeholder = 'Vuoto = nome a caso';
   // 'change', not 'input': the name is cleaned (spaces at the ends removed),
   // and cleaning on every keystroke would eat the space before you type the
   // next word. 'change' fires when you leave the box or press Enter.
