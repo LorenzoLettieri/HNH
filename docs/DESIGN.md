@@ -671,9 +671,9 @@ evento (stile gli eventi di Diablo 4) **durante un'ondata**.
 - I livelli dei patti salgono **a salti interi** ("rimette 1 colpo" → "2 colpi"), mai +10%.
 
 **Elenco degli eventi** [DECISO l'elenco, da progettare uno per uno]. Verbi diversi, così non sono tutti "uccidi X":
-- **Il Cuore di Brace** (zona che si sposta): un cristallo infernale cammina per la mappa sul grafo dei ghoul,
+- **Il Cuore di Brace** (zona che si sposta) [FATTO, da tarare: passo 12]: un cristallo infernale cammina per la mappa sul grafo dei ghoul,
   un po' più lento di te; bisogna uccidere N nemici **dentro il suo raggio** (15–20 m, anello a terra come
-  l'onda del Fabbro). Proposta: conta la posizione del **nemico**, non la tua (carabina e dinamite aiutano da fuori).
+  l'onda del Fabbro). Conta la posizione del **nemico**, non la tua (carabina e dinamite aiutano da fuori).
 - **Lo Sciacallo** (bersaglio in fuga): un diavoletto veloce col sacco del vildenaro scappa per la mappa
   (salta, si arrampica, prende gli sfiatatoi: sfuggente col movimento, non con una hitbox minuscola); va ucciso
   prima che finisca l'ondata o che scappi. Perde monete a ogni colpo. IA: **mappa di fuga** (il flow field
@@ -758,6 +758,18 @@ maledizioni**: **nemici più veloci** (×1,3: non si toccano le velocità, si ac
 d'IA in più ogni ~3 tick, così camminata, salti, cariche e preavvisi accelerano insieme) e **buio** (notte fonda sopra
 qualsiasi atmosfera, `DEVIL_NIGHT`: nebbia a 4–24 m, solo le lanterne accese; sulla mappa niente nemici). La Scommessa
 vinta dà **2 fiches** (`wagerFiches`: dura due ondate, e una la giochi maledetto).
+**Passo 12** [FATTO, da tarare]: **il Cuore di Brace**, il quarto evento (`src/sim/emberHeart.ts`, `src/render/emberHeart.ts`).
+Un cristallo di brace **dorme** su una strada a cielo aperto, con la colonna di luce sopra. **Lo tocchi e si sveglia**: il suo
+**cerchio di 16 m** si apre (anello di fuoco a trattini che gira a terra + una cortina di fiamme bassa lungo il bordo, che si
+vede anche dietro casse e portici), e il cristallo comincia a **vagare per le strade** a 4,5 m/s (tu corri a 6,5): sceglie una
+meta a 18–40 m, ci va (solo camminando sul grafo: niente salti né tetti, una zona che salta su un tetto ti lascerebbe indietro),
+si ferma 2 s, riparte. **Ogni nemico che muore nel cerchio gli dà le sue anime = il suo peso** nelle ondate (ghoul 1, toro 5):
+anime e non uccisioni, così un toro ucciso nel cerchio vale di più. Ne vuole **metà del peso dell'ondata** (`emberHeartShare`
+0,5: ~8 all'ondata 4, ~19 alla 10). Il cerchio è una **colonna** (conta solo la distanza a terra: un Malocchio sopra o un ghoul su
+un tetto dentro contano). **Niente orologio: l'ondata è l'orologio**, e ogni nemico ucciso fuori dal cerchio è un'anima persa.
+A schermo: il cristallo **batte come un cuore** (più veloce man mano che si riempie), da ogni uccisione un'**anima di fuoco** vola
+nel cristallo su un arco e lui la ingoia con una nota che sale; pieno, **scoppia**; fallito, si spegne e sprofonda. Riga
+dell'HUD "ANIME 3 / 9", sulla mappa (Tab) il cerchio intero in scala.
 
 **Ordine proposto**: prima lo **scheletro comune** con l'evento più semplice (Campane o Scommessa): comparsa e
 annuncio, timer, successo/fallimento, valuta nuova nell'HUD; poi il barista e i drink; poi gli eventi con un'IA

@@ -126,6 +126,13 @@ export type SimEvent =
   | { type: 'bellRung'; index: number; count: number; x: number; y: number; z: number; last: boolean }
   /** You ran through a ring of the Pony Express (ponyExpress.ts): the `index`-th of `count`, where, and whether it was the last one. */
   | { type: 'ringPassed'; index: number; count: number; x: number; y: number; z: number; last: boolean }
+  /** You touched the Ember Heart (emberHeart.ts): it wakes up and starts wandering. Where its middle is. */
+  | { type: 'emberHeartWake'; x: number; y: number; z: number }
+  /**
+   * An enemy died inside the heart's circle: its `souls` (its weight) fed the
+   * heart, now at `total` of `goal`. From where the enemy died (the soul flies from there).
+   */
+  | { type: 'emberHeartFed'; fromX: number; fromY: number; fromZ: number; souls: number; total: number; goal: number }
   | { type: 'ghoulAttack'; entityId: number }
   | { type: 'ghoulLunge'; entityId: number } // starts crouching for a pounce (the warning)
   /** A hound starts its ambush: the howl (the warning). */

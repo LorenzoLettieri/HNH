@@ -17,6 +17,7 @@
 // Markup and CSS in index.html (#map, #map-legend).
 import type { GameState } from '../sim/game';
 import { isEnemy } from '../sim/entities';
+import { tuning } from '../sim/config';
 import type { ShopSpawn, World } from '../sim/world';
 import { coinIcon } from './pickupSprites';
 import './fonts'; // the labels are written in Rye
@@ -262,6 +263,48 @@ export function createMapOverlay(world: World): MapOverlay {
         ctx.strokeStyle = '#000';
         ctx.strokeRect(tx - half, ty - half, half * 2, half * 2);
         label('TAVOLO', tx, ty + half, '#ff5040');
+      }
+
+      // The Ember Heart (src/sim/emberHeart.ts): an orange diamond (the
+      // crystal); asleep with a pulsing ring like the bells, awake with its
+      // whole CIRCLE to scale (tuning.emberHeartRadius × meters-to-pixels):
+      // on the map you see which enemies are inside it.
+      if (ev?.kind === 'emberHeart') {
+        const hx = mapX(ev.px + (ev.x - ev.px) * alpha);
+        const hy = mapY(ev.pz + (ev.z - ev.pz) * alpha);
+        if (ev.awake) {
+          ctx.beginPath();
+          ctx.arc(hx, hy, tuning.emberHeartRadius * scale, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255, 110, 30, 0.14)';
+          ctx.fill();
+          ctx.setLineDash([4 * unit, 3 * unit]);
+          ctx.lineWidth = 2 * unit;
+          ctx.strokeStyle = '#ff7a28';
+          ctx.stroke();
+          ctx.setLineDash([]);
+        } else {
+          const phase = (time % PING_TIME) / PING_TIME;
+          ctx.globalAlpha = 1 - phase;
+          ctx.lineWidth = 2 * unit;
+          ctx.strokeStyle = '#ff7a28';
+          ctx.beginPath();
+          ctx.arc(hx, hy, (BELL_RADIUS + phase * PING_RADIUS * 1.5) * unit, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+        const r = BELL_RADIUS * 1.2 * unit;
+        ctx.beginPath();
+        ctx.moveTo(hx, hy - r);
+        ctx.lineTo(hx + r * 0.7, hy);
+        ctx.lineTo(hx, hy + r);
+        ctx.lineTo(hx - r * 0.7, hy);
+        ctx.closePath();
+        ctx.fillStyle = '#ff9a30';
+        ctx.fill();
+        ctx.lineWidth = unit;
+        ctx.strokeStyle = '#000';
+        ctx.stroke();
+        label(ev.awake ? `CUORE ${ev.souls}/${ev.goal}` : 'CUORE', hx, hy + r, '#ffa040');
       }
 
       // Enemies: red dots, at the same in-between position the renderer

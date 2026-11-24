@@ -1155,6 +1155,21 @@ export const tuning = {
   /** ...but never more than this on the clock (seconds): a fast start can't bank a minute. */
   ponyMaxTime: 15,
 
+  // "Il Cuore di Brace" (src/sim/emberHeart.ts)
+  /** Radius of its circle, meters (on the ground plane: it's a column, height doesn't matter). */
+  emberHeartRadius: 16,
+  /** Souls it wants: this share of the wave's whole weight (waveBudget: ~half the horde). */
+  emberHeartShare: 0.5,
+  /** How fast it wanders, m/s (you run at 6.5: a bit slower than you, so you can keep up). */
+  emberHeartSpeed: 4.5,
+  /** Each leg of its wandering ends between these many meters (on the ground plane) from where it starts. */
+  emberHeartLegMin: 18,
+  emberHeartLegMax: 40,
+  /** Seconds it rests at the end of each leg (and right after waking up). */
+  emberHeartRest: 2,
+  /** Your chest this close to the crystal's middle wakes it up (meters). */
+  emberHeartWakeReach: 2.2,
+
   // --- Enemy projectiles (src/sim/projectiles.ts) ---
   /** Radius of an enemy projectile, meters (for hitting the player). */
   projectileRadius: 0.25,

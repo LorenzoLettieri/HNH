@@ -90,6 +90,13 @@ export function createDebugPanel(options: {
   waves.number(tuning, 'ponyStartTime', 3, 60, 1);
   waves.number(tuning, 'ponyRingBonus', 1, 30, 1);
   waves.number(tuning, 'ponyMaxTime', 5, 120, 1);
+  waves.number(tuning, 'emberHeartRadius', 4, 40, 1);
+  waves.number(tuning, 'emberHeartShare', 0.1, 1, 0.05);
+  waves.number(tuning, 'emberHeartSpeed', 0, 10, 0.5);
+  waves.number(tuning, 'emberHeartLegMin', 0, 60, 1);
+  waves.number(tuning, 'emberHeartLegMax', 5, 100, 1);
+  waves.number(tuning, 'emberHeartRest', 0, 10, 0.5);
+  waves.number(tuning, 'emberHeartWakeReach', 0.5, 5, 0.1);
   waves.number(tuning, 'ghoulSpawnWeight', 0, 30, 1);
   waves.number(tuning, 'eyebatSpawnWeight', 0, 30, 1);
   waves.number(tuning, 'houndSpawnWeight', 0, 30, 1);

@@ -918,6 +918,98 @@ export function playRingPassed(where: Where, index: number, last: boolean): void
 }
 
 /**
+ * "Il Cuore di Brace" wakes up (you touched it): a big WHOOMPH of fire (noise
+ * through a band-pass sweeping UP: the flames rushing out), a deep boom, the
+ * first heavy heartbeat (lub-dub) and a low ring that hangs in the air like a
+ * drone. Positional, but loud: it's the start of something.
+ */
+export function playEmberHeartWake(where: Where): void {
+  const out = placeSound({ volume: Math.max(0.6, where.volume), pan: where.pan });
+  if (!out) return;
+  noiseBurst({ out, duration: 0.8, volume: 0.8, filter: 'bandpass', frequency: 180, frequencyEnd: 1800, q: 1.1 });
+  thump({ out, duration: 1.3, volume: 0.9, from: 80, to: 26 });
+  thump({ out, start: 0.45, duration: 0.25, volume: 0.7, from: 70, to: 34 });
+  thump({ out, start: 0.66, duration: 0.25, volume: 0.5, from: 62, to: 30 });
+  ring(98, 3.5, 0.18, out);
+}
+
+/**
+ * One beat of the Ember Heart: a muffled lub-dub (two low thumps) with a few
+ * embers popping on top (tiny clicks of high noise), so it doesn't sound
+ * like YOUR heartbeat at low health (a single soft thump, playHeartbeat).
+ * `strength` 0..1: it beats harder as it fills up.
+ */
+export function playEmberHeartBeat(where: Where, strength: number): void {
+  const out = placeSound({ volume: where.volume * (0.5 + 0.5 * strength), pan: where.pan });
+  if (!out) return;
+  thump({ out, duration: 0.2, volume: 0.55, from: 66, to: 34 });
+  thump({ out, start: 0.19, duration: 0.2, volume: 0.38, from: 58, to: 30 });
+  for (let i = 0; i < 3; i++) {
+    noiseBurst({ out, start: 0.02 + Math.random() * 0.3, duration: 0.012, volume: 0.18, filter: 'highpass', frequency: 3500 });
+  }
+}
+
+/**
+ * A soul reached the Ember Heart: a SUCK (noise whose band-pass sweeps DOWN
+ * while it gets louder: the reverse of a whoosh, something pulled in), a
+ * gulp (a short low thump) and a chime that climbs with how full the heart
+ * is (`fill` 0..1: two octaves of the pentatonic scale), so you hear it fill.
+ */
+export function playEmberHeartFeed(where: Where, fill: number): void {
+  const out = placeSound({ volume: Math.max(0.35, where.volume), pan: where.pan });
+  if (!out || !ctx) return;
+  const t0 = ctx.currentTime;
+  const src = ctx.createBufferSource();
+  src.buffer = noiseBuffer;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.Q.value = 2;
+  filter.frequency.setValueAtTime(2600, t0);
+  filter.frequency.exponentialRampToValueAtTime(260, t0 + 0.22);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.02, t0);
+  gain.gain.exponentialRampToValueAtTime(0.45, t0 + 0.2); // getting louder: it's coming IN
+  gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.26);
+  src.connect(filter).connect(gain).connect(out);
+  src.start(t0, Math.random() * 0.5, 0.3);
+  thump({ out, start: 0.2, duration: 0.18, volume: 0.6, from: 110, to: 45 });
+  const steps = [0, 3, 5, 7, 10]; // minor pentatonic: darker than the Pony Express's
+  const step = Math.min(9, Math.floor(fill * 10));
+  const semitones = steps[step % 5] + 12 * Math.floor(step / 5);
+  setTimeout(() => ring(220 * 2 ** (semitones / 12), 0.8, 0.14, out), 200);
+}
+
+/**
+ * The Ember Heart is full and bursts: a huge boom, the crystal shattering
+ * (a spray of short high clicks and a high inharmonic ring: glass and metal)
+ * and the fire roaring out.
+ */
+export function playEmberHeartBurst(where: Where): void {
+  const out = placeSound({ volume: Math.max(0.7, where.volume), pan: where.pan });
+  if (!out) return;
+  thump({ out, duration: 1.6, volume: 1, from: 95, to: 24 });
+  noiseBurst({ out, duration: 1.2, volume: 0.7, filter: 'lowpass', frequency: 2200, frequencyEnd: 150 });
+  for (let i = 0; i < 16; i++) {
+    noiseBurst({ out, start: i * 0.018 + Math.random() * 0.03, duration: 0.03, volume: 0.25, filter: 'bandpass', frequency: 4000 + Math.random() * 3000, q: 6 });
+  }
+  ring(1450, 1.6, 0.16, out);
+  ring(620, 2.4, 0.14, out);
+}
+
+/**
+ * The Ember Heart dies (the wave ended before it was full): a long falling
+ * hiss (embers going out: noise through a low-pass that closes), a dying
+ * thump, and a dull crack of the crystal.
+ */
+export function playEmberHeartDie(where: Where): void {
+  const out = placeSound({ volume: Math.max(0.4, where.volume), pan: where.pan });
+  if (!out) return;
+  noiseBurst({ out, duration: 1.6, volume: 0.45, filter: 'lowpass', frequency: 3000, frequencyEnd: 180 });
+  thump({ out, duration: 0.9, volume: 0.6, from: 55, to: 22 });
+  noiseBurst({ out, start: 0.3, duration: 0.06, volume: 0.4, filter: 'bandpass', frequency: 900, q: 3 });
+}
+
+/**
  * The devil's laugh: three "HA"s, each lower than the one before. A voice
  * is a buzz (sawtooth, full of harmonics) shaped by the throat: a band-pass
  * at ~700 Hz (a FORMANT, the resonance that makes an "a" sound like an "a").

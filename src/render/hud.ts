@@ -164,6 +164,10 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
     if (e.type === 'wagerCurse') {
       queueBanner(WAGER_CURSE_TEXT[e.curse].name, `${WAGER_CURSE_TEXT[e.curse].rule} · sopravvivi`, 4, () => {}); // its sound: playWagerCurse (render/wagerTable.ts)
     }
+    // The Ember Heart (emberHeart.ts) woke up: its sound is at the crystal (render/emberHeart.ts).
+    if (e.type === 'emberHeartWake') {
+      queueBanner('IL CUORE SI È RISVEGLIATO', 'uccidi i nemici dentro il suo cerchio di fuoco, e seguilo', 3, () => {});
+    }
     // The banner says what the climax gives you; tint and sounds are in highNoon.ts.
     if (e.type === 'highNoon') showBanner('HIGH NOON', 'caricatore infinito', 2.5, 'hot');
   }
@@ -247,6 +251,12 @@ function updateEventLine(game: GameState): void {
           ? `SCOMMESSA FATTA · prossima ondata: ${curse}`
           : `${curse} · sopravvivi all’ondata`;
     eventGoal.classList.toggle('hurry', ev.phase === 'cursed');
+    return;
+  }
+  // The Ember Heart has no clock either (the wave is its clock): souls fed, out of how many.
+  if (ev.kind === 'emberHeart') {
+    eventGoal.textContent = ev.awake ? `ANIME ${ev.souls} / ${ev.goal} · uccidi nel cerchio` : 'tocca il cristallo di brace per risvegliarlo';
+    eventGoal.classList.remove('hurry');
     return;
   }
   if (ev.ticksLeft < 0) {

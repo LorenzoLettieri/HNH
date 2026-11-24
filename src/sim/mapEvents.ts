@@ -4,7 +4,7 @@
 //
 // This file is the SKELETON shared by every event: WHEN one appears, its
 // lifecycle (active → success or failure), the prize and the events it
-// reports. What each event asks you to do lives in its own file (bells.ts, ponyExpress.ts, wager.ts):
+// reports. What each event asks you to do lives in its own file (bells.ts, ponyExpress.ts, wager.ts, emberHeart.ts):
 // a create function and a step function that says "running / success /
 // failure". If the wave ends first, the event fails. One exception: the
 // devil's wager (wager.ts) spans two waves (the bet, then the cursed wave),
@@ -31,6 +31,7 @@ import type { World } from './world';
 import { createBellsEvent, stepBells, type BellsEvent } from './bells';
 import { createPonyExpressEvent, stepPonyExpress, type PonyExpressEvent } from './ponyExpress';
 import { createWagerEvent, stepWager, type WagerEvent } from './wager';
+import { createEmberHeartEvent, stepEmberHeart, type EmberHeartEvent } from './emberHeart';
 import type { InputCommand } from './command';
 
 /**
@@ -46,7 +47,7 @@ export type MapEventKind = ActiveMapEvent['kind'];
  * which ones after a check on `kind`. Every kind has `kind` and `wave` (the
  * wave it showed up in: it ends with it).
  */
-export type ActiveMapEvent = BellsEvent | PonyExpressEvent | WagerEvent;
+export type ActiveMapEvent = BellsEvent | PonyExpressEvent | WagerEvent | EmberHeartEvent;
 
 /**
  * How to build each kind. A Record over every MapEventKind: a kind with no
@@ -57,6 +58,7 @@ const CREATORS: Record<MapEventKind, (world: World, rng: RandomState, wave: numb
   bells: createBellsEvent,
   ponyExpress: createPonyExpressEvent,
   wager: createWagerEvent,
+  emberHeart: createEmberHeartEvent,
 };
 const KINDS = Object.keys(CREATORS) as MapEventKind[];
 
@@ -131,6 +133,8 @@ function stepEvent(ev: ActiveMapEvent, game: GameState, world: World, cmd: Input
       return stepPonyExpress(ev, game.player, events);
     case 'wager':
       return stepWager(ev, game.player, cmd, events, firstEvent);
+    case 'emberHeart':
+      return stepEmberHeart(ev, game, world, events, firstEvent);
   }
 }
 
