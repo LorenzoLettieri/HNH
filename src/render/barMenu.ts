@@ -20,7 +20,6 @@ import type { PlayerState } from '../sim/player';
  * A Record: a new drink with no text is a compile error.
  */
 const DRINK_TEXT: Record<DrinkId, { name: string; gift: string; cost?: string }> = {
-  undertakerWhiskey: { name: 'Whiskey del Becchino', gift: `+${tuning.whiskeyHealth} salute massima.` },
   bloodyMary: { name: 'Bloody Mary', gift: `Ogni uccisione ti cura di ${tuning.bloodyMaryHeal}.` },
   steamArmor: { name: 'Corazza di vapore', gift: `Sopra i ${tuning.steamArmorSpeed} m/s i proiettili ti fanno metà danno.` },
   deadMansHand: { name: 'Mano del morto', gift: `L'ultimo colpo di ogni caricatore fa danno ×${tuning.deadHandMultiplier}. Tutte le armi.` },
@@ -39,18 +38,6 @@ const DRINK_TEXT: Record<DrinkId, { name: string; gift: string; cost?: string }>
   },
   silverSpur: { name: "Sperone d'argento", gift: "Ogni wall jump spinge un colpo nell'arma che hai in mano." },
   lastBreath: { name: 'Ultimo respiro', gift: 'Una volta per ondata, un colpo letale ti lascia a 1 di salute e respinge i nemici vicini.' },
-  lightningShine: { name: 'Acquavite Fulmine', gift: `Corri più veloce: +${tuning.shineSpeed} m/s.` },
-  deadMansRum: { name: 'Rum del Morto', gift: `La catena dello Stile dura ${tuning.rumChainSeconds} s in più.` },
-  devilsMilk: {
-    name: 'Latte del Diavolo',
-    gift: `+${tuning.devilsMilkDamage * 100}% di danno con tutto.`,
-    cost: `−${tuning.devilsMilkHealthCost} salute massima.`,
-  },
-  hellfireBourbon: {
-    name: 'Bourbon Infernale',
-    gift: `+${tuning.bourbonMultiplier} al moltiplicatore di punti e vildenaro.`,
-    cost: `Prendi il ${tuning.bourbonHurt * 100}% di danno in più.`,
-  },
   crookedHorseshoe: {
     name: 'Ferro di cavallo storto',
     gift: `Le monete valgono il doppio.`,
@@ -77,7 +64,7 @@ const DRINK_TEXT: Record<DrinkId, { name: string; gift: string; cost?: string }>
 /** Roman numerals for the levels: I, II, III (it's a saloon, not a spreadsheet). */
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V'];
 
-/** "Whiskey del Becchino II"; no numeral for a drink with one level only (it has no II). */
+/** "Bloody Mary II"; no numeral for a drink with one level only (it has no II). Today every drink has one level. */
 function levelName(drink: DrinkId, level: number): string {
   const name = DRINK_TEXT[drink].name;
   return drinkMaxLevel(drink) > 1 ? `${name} ${ROMAN[level] ?? level}` : name;
@@ -161,7 +148,7 @@ export function createBarRows(noFocus: (el: HTMLElement) => void): BarRows {
     return r;
   }
 
-  /** What you've had: "Whiskey del Becchino II · Latte del Diavolo I". */
+  /** What you've had: "Bloody Mary · Ali del corvo". */
   function summary(list: HTMLElement, player: PlayerState): void {
     const had = DRINKS.filter((d) => drinkLevel(player, d) > 0).map((d) => levelName(d, drinkLevel(player, d)));
     if (had.length === 0) return;

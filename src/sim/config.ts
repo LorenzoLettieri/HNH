@@ -1064,24 +1064,16 @@ export const tuning = {
   /** Fiches for a completed event (one fiche = one drink at the saloon, for now). */
   mapEventFiches: 1,
   // --- The barman's drinks, the pacts (src/sim/drinks.ts) ---
-  /** Fiches per drink, how many drinks on the counter, the highest level of each. */
+  /**
+   * Fiches per drink, how many drinks on the counter, and the highest level
+   * of a drink marked 'levels' in DRINK_INFO (none for now: every drink has
+   * one level, the user's choice; the mechanism stays for later).
+   */
   drinkPrice: 1,
   drinkOfferSize: 3,
   drinkMaxLevel: 3,
-  /** Whiskey del Becchino: + max health per level. */
-  whiskeyHealth: 25,
-  /** Bloody Mary: health back for each kill, per level. */
+  /** Bloody Mary: health back for each kill. */
   bloodyMaryHeal: 1,
-  /** Acquavite Fulmine: + ground speed per level, m/s. */
-  shineSpeed: 0.75,
-  /** Rum del Morto: + seconds of style chain per level. */
-  rumChainSeconds: 1,
-  /** Latte del Diavolo: + damage per level (0.5 = +50%), and the max health it costs per level. */
-  devilsMilkDamage: 0.5,
-  devilsMilkHealthCost: 25,
-  /** Bourbon Infernale: + style multiplier on score and vildenaro per level, and + damage taken per level (0.25 = +25%). */
-  bourbonMultiplier: 0.5,
-  bourbonHurt: 0.25,
   /** Corazza di vapore: at this ground speed or more (m/s), enemy projectiles do this × their damage. */
   steamArmorSpeed: 12,
   steamArmorScale: 0.5,

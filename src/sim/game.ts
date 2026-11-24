@@ -1,7 +1,7 @@
 // The whole game state in one object, and the one function that advances it
 // by one tick. Main loop (and one day the server) only talk to this.
 import { knockBack } from './kick';
-import { hasDrink, healPerKill, maxHealth, rewardBonus, stepBar } from './drinks';
+import { hasDrink, healPerKill, maxHealth, stepBar } from './drinks';
 import type { InputCommand } from './command';
 import { createBull, createEntities, createEyebat, createHound, createSharpshooter, createSmith, isEnemy, stepTarget, type Entity } from './entities';
 import { stepEyebat } from './eyebat';
@@ -163,7 +163,7 @@ export function stepGame(
   // The style multiplies what you earn. Read BEFORE stepStyle (end of the
   // tick): a kill counts with the rank you had when you pulled the trigger,
   // not with the rank that same kill is about to give you.
-  scoreHits(game.stats, playerHits, styleMultiplier(game.style) + rewardBonus(game.player));
+  scoreHits(game.stats, playerHits, styleMultiplier(game.style));
   dropFromKills(game, playerHits);
   // Bloody Mary (drinks.ts): every kill of yours gives some health back.
   const kills = playerHits.filter((e) => e.type === 'hit' && e.killed && e.target !== 'target').length;

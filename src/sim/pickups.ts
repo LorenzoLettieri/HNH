@@ -22,7 +22,7 @@
 // same spot (coins and ammo would hide each other).
 //
 // Pure simulation, like everything in src/sim: the renderer reads the list.
-import { coinBurstScale, coinValueScale, hasDrink, inDebt, maxHealth, rewardBonus } from './drinks';
+import { coinBurstScale, coinValueScale, hasDrink, inDebt, maxHealth } from './drinks';
 import { secondsToTicks, tuning } from './config';
 import type { SimEvent } from './events';
 import type { Enemy } from './entities';
@@ -107,8 +107,8 @@ interface Loot {
 function whatDrops(game: GameState, enemy: Enemy): Loot[] {
   const loot: Loot[] = [];
   const coins = Math.round(enemyCost(enemy) * tuning.coinsPerWeight);
-  // The style's multiplier, plus Bourbon Infernale's; × Ferro di cavallo storto and Avidità (drinks.ts).
-  const coinValue = Math.max(1, Math.round(tuning.coinValue * (styleMultiplier(game.style) + rewardBonus(game.player)) * coinValueScale(game.player)));
+  // The style's multiplier, × Ferro di cavallo storto and Avidità (drinks.ts).
+  const coinValue = Math.max(1, Math.round(tuning.coinValue * styleMultiplier(game.style) * coinValueScale(game.player)));
   for (let i = 0; i < coins; i++) loot.push({ kind: 'coin', value: coinValue });
   // The Damned Smith ALWAYS leaves its Damned Iron (the reason to kill it).
   if (enemy.type === 'smith') loot.push({ kind: 'iron', value: 0 });

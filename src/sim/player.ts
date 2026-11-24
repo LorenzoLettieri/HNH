@@ -1,5 +1,5 @@
 import { raycastBoxes } from './raycast';
-import { damageTakenMultiplier, hasDrink, maxHealth, noDrinks, runSpeed, type DrinkId } from './drinks';
+import { hasDrink, maxHealth, noDrinks, type DrinkId } from './drinks';
 import type { InputCommand } from './command';
 import { findWall, moveAndCollide, overlapsAny } from './collision';
 import type { World } from './world';
@@ -363,12 +363,12 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
   if (p.sliding) {
     // Sliding: very little friction, and only a bit of steering (like in the air).
     applyFriction(p, tuning.slideFriction, dt);
-    accelerate(p, wishX, wishZ, runSpeed(p), tuning.airSpeedCap, tuning.slideSteer, dt);
+    accelerate(p, wishX, wishZ, tuning.maxGroundSpeed, tuning.airSpeedCap, tuning.slideSteer, dt);
   } else if (p.onGround) {
     // On foot (standing or crouch-walking): friction + ground acceleration.
     // Right after landing there's a grace window with no friction: a hop
     // within it keeps all your speed (forgiving bunny hopping).
-    const maxSpeed = p.crouched ? tuning.crouchSpeed : runSpeed(p);
+    const maxSpeed = p.crouched ? tuning.crouchSpeed : tuning.maxGroundSpeed;
     if (p.groundTicks >= secondsToTicks(tuning.bhopGraceTime)) {
       applyFriction(p, tuning.groundFriction, dt);
     }
@@ -377,7 +377,7 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
     // In the air: Quake air acceleration (air-strafing) + air control.
     // (No extra "air brake" needed: Quake's acceleration already slows you
     // down hard when you hold the opposite direction.)
-    accelerate(p, wishX, wishZ, runSpeed(p), tuning.airSpeedCap, tuning.airAccel, dt);
+    accelerate(p, wishX, wishZ, tuning.maxGroundSpeed, tuning.airSpeedCap, tuning.airAccel, dt);
     airSteer(p, wishX, wishZ, dt);
   }
 
@@ -658,8 +658,7 @@ function landingSoon(p: PlayerState, world: World): boolean {
 
 /** Damages the player and pushes them away from (fromX, fromZ). */
 export function hurtPlayer(p: PlayerState, amount: number, fromX: number, fromZ: number, push: number): void {
-  // Bourbon Infernale's price: every hit is heavier (rounded: health stays a whole number).
-  const after = p.health - Math.round(amount * damageTakenMultiplier(p));
+  const after = p.health - amount;
   if (amount > 0) p.cleanKills = 0; // "Contratto del becchino": the clean streak is over
   // Drink "Ultimo respiro": once per wave, a lethal hit leaves you at 1.
   if (after <= 0 && p.health > 0 && hasDrink(p, 'lastBreath') && !p.lastBreathUsed) {

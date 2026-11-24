@@ -30,7 +30,7 @@
 //
 // BOTTOMLESS (the HIGH NOON climax, see style.ts): the gun in your hands is
 // always full and firing doesn't use rounds. No reloading: you just shoot.
-import { drinkDamageMultiplier, hasDrink } from './drinks';
+import { hasDrink } from './drinks';
 import type { InputCommand } from './command';
 import { secondsToTicks, tuning } from './config';
 import type { SimEvent } from './events';
@@ -88,11 +88,11 @@ export function forgeMultiplier(p: PlayerState, weapon: WeaponId): number {
 }
 
 /**
- * Everything that multiplies a gun's own bullet: the Forge, the barman's
- * Latte del Diavolo, and this shot's power (Mano del morto on the last round).
+ * Everything that multiplies a gun's own bullet: the Forge and this shot's
+ * power (the drink Mano del morto on the last round).
  */
 function gunPower(p: PlayerState, weapon: WeaponId): number {
-  return forgeMultiplier(p, weapon) * drinkDamageMultiplier(p) * p.shotPower;
+  return forgeMultiplier(p, weapon) * p.shotPower;
 }
 
 /**

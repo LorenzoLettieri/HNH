@@ -10,7 +10,7 @@
 // (barOffer: same numbers → same drinks, so reopening the panel is never a
 // free reroll), and a step that reads the command's request (stepBar). The
 // effects are read where they matter, through small functions here
-// (maxHealth, runSpeed...): the rest of the code asks "how much?", not
+// (maxHealth, healPerKill...): the rest of the code asks "how much?", not
 // "which drinks do you have?".
 import type { InputCommand } from './command';
 import { tuning } from './config';
@@ -29,10 +29,7 @@ import type { World } from './world';
  */
 export const DRINK_INFO = {
   // Pure buffs
-  undertakerWhiskey: { levels: 'levels' },
-  bloodyMary: { levels: 'levels' },
-  lightningShine: { levels: 'levels' },
-  deadMansRum: { levels: 'levels' },
+  bloodyMary: { levels: 1 },
   steamArmor: { levels: 1 },
   deadMansHand: { levels: 1 },
   quickDraw: { levels: 1 },
@@ -48,8 +45,6 @@ export const DRINK_INFO = {
   undertakerContract: { levels: 1 },
   silverSpur: { levels: 1 },
   // Pacts with a price
-  devilsMilk: { levels: 'levels' },
-  hellfireBourbon: { levels: 'levels' },
   crookedHorseshoe: { levels: 1 },
   greed: { levels: 1 },
   devilsDebt: { levels: 1 },
@@ -65,7 +60,8 @@ export const DRINKS = Object.keys(DRINK_INFO) as DrinkId[];
 
 /** The highest level of a drink. */
 export function drinkMaxLevel(id: DrinkId): number {
-  const levels = DRINK_INFO[id].levels;
+  // Widened on purpose: today no drink says 'levels', but the option stays.
+  const levels = DRINK_INFO[id].levels as 'levels' | 1;
   return levels === 'levels' ? tuning.drinkMaxLevel : levels;
 }
 
@@ -86,41 +82,14 @@ export function drinkLevel(p: PlayerState, id: DrinkId): number {
 
 // --- The effects: how much, asked by the code that needs it -----------------
 
-/** Max health: Whiskey del Becchino adds, Latte del Diavolo takes away (never under 25). */
+/** Max health: Contratto del becchino adds, Mano del baro takes away (never under 25). */
 export function maxHealth(p: PlayerState): number {
   return Math.max(
     25,
     tuning.playerMaxHealth +
-      tuning.whiskeyHealth * p.drinks.undertakerWhiskey -
-      tuning.devilsMilkHealthCost * p.drinks.devilsMilk +
       p.contractHealth - // Contratto del becchino: what clean play has earned
       p.cardSharpPenalty, // Mano del baro: what the failed events have cost
   );
-}
-
-/** Ground speed: Acquavite Fulmine adds to the run. */
-export function runSpeed(p: PlayerState): number {
-  return tuning.maxGroundSpeed + tuning.shineSpeed * p.drinks.lightningShine;
-}
-
-/** Your damage, every gun and blast and the boot: Latte del Diavolo (×1.5, ×2, ×2.5). */
-export function drinkDamageMultiplier(p: PlayerState): number {
-  return 1 + tuning.devilsMilkDamage * p.drinks.devilsMilk;
-}
-
-/** Damage you TAKE: Bourbon Infernale's price (×1.25, ×1.5...). */
-export function damageTakenMultiplier(p: PlayerState): number {
-  return 1 + tuning.bourbonHurt * p.drinks.hellfireBourbon;
-}
-
-/** Added to the style multiplier on score and vildenaro: Bourbon Infernale. */
-export function rewardBonus(p: PlayerState): number {
-  return tuning.bourbonMultiplier * p.drinks.hellfireBourbon;
-}
-
-/** Seconds added to the style chain: Rum del Morto. */
-export function chainBonus(p: PlayerState): number {
-  return tuning.rumChainSeconds * p.drinks.deadMansRum;
 }
 
 /** Health back for each kill: Bloody Mary. */

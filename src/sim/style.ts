@@ -33,7 +33,6 @@
 //   enemy projectiles and bull charges dodged by a hair.
 // Movement alone keeps the chain alive: the movement IS the game. But
 // repeating the same action is worth less and less (freshness): variety pays.
-import { chainBonus } from './drinks';
 import type { SimEvent } from './events';
 import { secondsToTicks, TICK_DT, tuning } from './config';
 import { horizontalSpeed, type PlayerState } from './player';
@@ -301,7 +300,7 @@ export function stepStyle(style: StyleState, player: PlayerState, events: SimEve
   // Something stylish: more points, and the countdown starts again from the top.
   if (gained > 0) {
     style.points += gained;
-    style.chainTicks = secondsToTicks(tuning.styleChainTime + chainBonus(player)); // + Rum del Morto (drinks.ts)
+    style.chainTicks = secondsToTicks(tuning.styleChainTime);
   }
   style.points = Math.max(0, style.points - lost);
 

@@ -105,7 +105,6 @@ export function createDebugPanel(options: {
   shop.number(tuning, 'drinkPrice', 0, 5, 1);
   shop.number(tuning, 'drinkOfferSize', 1, 6, 1);
   shop.number(tuning, 'drinkMaxLevel', 1, 5, 1);
-  shop.number(tuning, 'whiskeyHealth', 0, 100, 5);
   shop.number(tuning, 'bloodyMaryHeal', 0, 20, 1);
   shop.number(tuning, 'steamArmorSpeed', 5, 20, 0.5);
   shop.number(tuning, 'steamArmorScale', 0, 1, 0.05);
@@ -137,12 +136,6 @@ export function createDebugPanel(options: {
   shop.number(tuning, 'contractHealth', 0, 25, 1);
   shop.number(tuning, 'cardSharpFichesScale', 1, 5, 1);
   shop.number(tuning, 'cardSharpHealthCost', 0, 75, 5);
-  shop.number(tuning, 'shineSpeed', 0, 3, 0.25);
-  shop.number(tuning, 'rumChainSeconds', 0, 5, 0.5);
-  shop.number(tuning, 'devilsMilkDamage', 0, 2, 0.25);
-  shop.number(tuning, 'devilsMilkHealthCost', 0, 75, 5);
-  shop.number(tuning, 'bourbonMultiplier', 0, 2, 0.25);
-  shop.number(tuning, 'bourbonHurt', 0, 1, 0.05);
   shop.number(tuning, 'forgeDamageMultiplier', 1, 5, 0.5);
   shop.number(tuning, 'forgeIronCost', 0, 5, 1);
   shop.number(tuning, 'forgeIronCostStep', 0, 5, 1);

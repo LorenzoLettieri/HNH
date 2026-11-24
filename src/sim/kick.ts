@@ -18,7 +18,7 @@
 // numbers are picked once per attack by meleeStats(): the attack doesn't
 // care WHAT hits, only how far, how wide, how hard. (Like a Laravel
 // controller that receives a config array instead of an if per case.)
-import { drinkDamageMultiplier, hasDrink } from './drinks';
+import { hasDrink } from './drinks';
 import { stun } from './status';
 import type { InputCommand } from './command';
 import { secondsToTicks, tuning } from './config';
@@ -173,7 +173,7 @@ function landKick(
       z: cz - dz * toYou,
       flesh: isEnemy(e),
     });
-    const killed = damage(e, stats.damage * drinkDamageMultiplier(p)); // × Latte del Diavolo (drinks.ts)
+    const killed = damage(e, stats.damage);
     events.push({
       type: 'hit',
       entityId: e.id,
