@@ -19,3 +19,10 @@ Si provano con `?drinks=all` (o `?drinks=id1,id2`) nell'URL.
 - Ultimo respiro: una volta per ondata, un colpo letale ti lascia a 1 di salute e respinge i nemici vicini **[FATTO]** (`lastBreath`)
 - Bloody Mary: ogni uccisione ti cura di 1. **[FATTO]** (`bloodyMary`)
 - Bobby: Gli attacchi corpo a corpo respingono i proiettili **[FATTO]** (`bobby`)
+
+Proposte di Claude scelte dall'utente:
+
+- Tequila del torero: ogni "OLÉ!" (schivare la carica del toro) e ogni "PER UN PELO" ti cura di 10. **[FATTO]** (`toreroTequila`)
+- Contratto del becchino: ogni 15 uccisioni senza prendere danni, +5 salute massima fino alla morte. **[FATTO]** (`undertakerContract`)
+- Sperone d'argento: ogni wall jump spinge un colpo nell'arma che hai in mano. **[FATTO]** (`silverSpur`)
+- Mano del baro (patto): gli eventi danno 2 fiches invece di 1, ma un evento fallito ti toglie 25 di salute massima. **[FATTO]** (`cardSharp`)

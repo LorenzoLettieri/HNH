@@ -44,6 +44,9 @@ export const DRINK_INFO = {
   bobby: { levels: 1 },
   hotHolster: { levels: 1 },
   lastBreath: { levels: 1 },
+  toreroTequila: { levels: 1 },
+  undertakerContract: { levels: 1 },
+  silverSpur: { levels: 1 },
   // Pacts with a price
   devilsMilk: { levels: 'levels' },
   hellfireBourbon: { levels: 'levels' },
@@ -51,6 +54,7 @@ export const DRINK_INFO = {
   greed: { levels: 1 },
   devilsDebt: { levels: 1 },
   bloodForLead: { levels: 1 },
+  cardSharp: { levels: 1 },
 } as const satisfies Record<string, { levels: 'levels' | 1 }>;
 
 /** A drink's id: the keys of DRINK_INFO (one place to add a drink). */
@@ -88,7 +92,9 @@ export function maxHealth(p: PlayerState): number {
     25,
     tuning.playerMaxHealth +
       tuning.whiskeyHealth * p.drinks.undertakerWhiskey -
-      tuning.devilsMilkHealthCost * p.drinks.devilsMilk,
+      tuning.devilsMilkHealthCost * p.drinks.devilsMilk +
+      p.contractHealth - // Contratto del becchino: what clean play has earned
+      p.cardSharpPenalty, // Mano del baro: what the failed events have cost
   );
 }
 

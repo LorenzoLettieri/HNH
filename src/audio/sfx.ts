@@ -973,6 +973,47 @@ export function playLastBreath(): void {
   noiseBurst({ start: 0.5, duration: 0.6, volume: 0.25, filter: 'bandpass', frequency: 600, frequencyEnd: 1800, q: 1 });
 }
 
+/**
+ * Drink "Tequila del torero": a risky dodge healed you. A quick flamenco
+ * strum: the notes of a chord (E, G#, B, E: the Phrygian flavor of a Spanish
+ * guitar) plucked one after the other, each a short triangle wave dying fast.
+ */
+export function playTequila(): void {
+  if (!ctx) return;
+  [165, 208, 247, 330, 415].forEach((freq, i) => {
+    const t0 = ctx!.currentTime + i * 0.025;
+    const osc = ctx!.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.value = freq;
+    const gain = ctx!.createGain();
+    gain.gain.setValueAtTime(0.12, t0);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.6);
+    osc.connect(gain).connect(world);
+    osc.start(t0);
+    osc.stop(t0 + 0.62);
+  });
+  noiseBurst({ duration: 0.05, volume: 0.15, filter: 'highpass', frequency: 3000 }); // the nails on the strings
+}
+
+/**
+ * Drink "Contratto del becchino": the contract paid. A pen scratching the
+ * ledger (a band of noise sliding) and a low bell: one more line signed.
+ */
+export function playContract(): void {
+  noiseBurst({ duration: 0.25, volume: 0.25, filter: 'bandpass', frequency: 3500, frequencyEnd: 2000, q: 3 });
+  setTimeout(() => ring(147, 2, 0.25), 200);
+}
+
+/**
+ * Drink "Sperone d'argento": a wall jump loaded a round. The spur's rowel
+ * jingling (three tiny high rings) and the click of the round going in.
+ */
+export function playSpur(): void {
+  for (let i = 0; i < 3; i++) setTimeout(() => ring(3200 + i * 260, 0.25, 0.05), i * 35);
+  noiseBurst({ start: 0.08, duration: 0.03, volume: 0.35, filter: 'highpass', frequency: 2200 });
+  thump({ start: 0.08, duration: 0.04, volume: 0.25, from: 600, to: 300 });
+}
+
 /** The Damned Smith falls: a huge clatter of armor and a last low groan. */
 export function playSmithDeath(where: Where): void {
   const out = placeSound(where);

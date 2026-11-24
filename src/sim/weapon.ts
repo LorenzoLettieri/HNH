@@ -416,6 +416,21 @@ function stepHotHolster(p: PlayerState): void {
 }
 
 /**
+ * Drink "Sperone d'argento": one round from the pocket into the gun in your
+ * hands (if it has room and the pocket has one). Not during a reload (it
+ * owns the gun until it's done). Returns whether a round went in.
+ */
+export function spurRound(p: PlayerState): boolean {
+  const w = p.weapon;
+  const pocket = AMMO_TYPE[w];
+  if (p.reloadTicks > 0 || p.loaded[w] >= magazineSize(p, w)) return false;
+  if (!tuning.infiniteAmmo && p.reserve[pocket] <= 0) return false;
+  p.loaded[w]++;
+  if (!tuning.infiniteAmmo) p.reserve[pocket]--;
+  return true;
+}
+
+/**
  * Card "Ricarica in scivolata": while you slide with the revolver in your
  * hands, a round goes from the pocket into the cylinder every
  * slideReloadInterval seconds. Not during a normal reload or a fanning

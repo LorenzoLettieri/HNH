@@ -78,6 +78,12 @@ export type SimEvent =
   | { type: 'projectileBatted'; x: number; y: number; z: number }
   /** Drink "Ultimo respiro": a lethal hit left you at 1, and the enemies around were thrown away. */
   | { type: 'lastBreath'; x: number; y: number; z: number }
+  /** Drink "Tequila del torero": a risky dodge healed you. */
+  | { type: 'tequilaHeal'; amount: number }
+  /** Drink "Contratto del becchino": clean kills paid off, your max health is now this. */
+  | { type: 'contractPaid'; maxHealth: number }
+  /** Drink "Sperone d'argento": a wall jump pushed a round into this gun. */
+  | { type: 'spurRound'; weapon: WeaponId }
   /** Drink "Ali del corvo": a jump in mid-air, from where your feet are. */
   | { type: 'airJump'; x: number; y: number; z: number }
   /** Drink "Zoccolo del diavolo": a hard landing's shockwave, and how many enemies it threw. */

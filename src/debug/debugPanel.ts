@@ -132,6 +132,11 @@ export function createDebugPanel(options: {
   shop.number(tuning, 'hotHolsterTime', 0.25, 5, 0.25);
   shop.number(tuning, 'lastBreathRadius', 0, 12, 0.5);
   shop.number(tuning, 'lastBreathPush', 0, 25, 1);
+  shop.number(tuning, 'tequilaHeal', 0, 50, 1);
+  shop.number(tuning, 'contractKills', 1, 50, 1);
+  shop.number(tuning, 'contractHealth', 0, 25, 1);
+  shop.number(tuning, 'cardSharpFichesScale', 1, 5, 1);
+  shop.number(tuning, 'cardSharpHealthCost', 0, 75, 5);
   shop.number(tuning, 'shineSpeed', 0, 3, 0.25);
   shop.number(tuning, 'rumChainSeconds', 0, 5, 0.5);
   shop.number(tuning, 'devilsMilkDamage', 0, 2, 0.25);

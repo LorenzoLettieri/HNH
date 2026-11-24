@@ -145,6 +145,11 @@ export interface PlayerState {
   /** "Ultimo respiro": already used in this wave; and "it just saved you this tick" (game.ts throws the enemies away). */
   lastBreathUsed: boolean;
   lastBreathNow: boolean;
+  /** "Contratto del becchino": kills since you last took damage, and the max health they've earned so far. */
+  cleanKills: number;
+  contractHealth: number;
+  /** "Mano del baro": max health lost to failed map events. */
+  cardSharpPenalty: number;
   /**
    * Card "Volo di piombo": shells spent on shotgun jumps since you left the
    * ground. A kill before landing gives them back (refundLeadFlight in weapon.ts).
@@ -219,6 +224,9 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     holsterTicks: { revolver: 0, shotgun: 0, rifle: 0, dynamite: 0 },
     lastBreathUsed: false,
     lastBreathNow: false,
+    cleanKills: 0,
+    contractHealth: 0,
+    cardSharpPenalty: 0,
     leadFlightShells: 0,
     quietTicks: 0,
     aimHeldTicks: 0,
@@ -560,6 +568,8 @@ export function respawn(p: PlayerState, world: World): void {
   p.vx = p.vy = p.vz = 0;
   p.crouched = false;
   p.sliding = false;
+  p.contractHealth = 0; // (before the max health is read below)
+  p.cardSharpPenalty = 0;
   p.drinks = noDrinks(); // before the health: dead = no more drinks, back to the plain max
   p.health = maxHealth(p);
   p.loaded = fullWeapons();
@@ -573,6 +583,9 @@ export function respawn(p: PlayerState, world: World): void {
   p.fiches = 0;
   p.lastBreathUsed = false;
   p.lastBreathNow = false;
+  p.cleanKills = 0;
+  p.contractHealth = 0;
+  p.cardSharpPenalty = 0;
   p.forged = noForge();
   p.reloadTicks = 0;
   p.fanShotsLeft = 0;
@@ -647,6 +660,7 @@ function landingSoon(p: PlayerState, world: World): boolean {
 export function hurtPlayer(p: PlayerState, amount: number, fromX: number, fromZ: number, push: number): void {
   // Bourbon Infernale's price: every hit is heavier (rounded: health stays a whole number).
   const after = p.health - Math.round(amount * damageTakenMultiplier(p));
+  if (amount > 0) p.cleanKills = 0; // "Contratto del becchino": the clean streak is over
   // Drink "Ultimo respiro": once per wave, a lethal hit leaves you at 1.
   if (after <= 0 && p.health > 0 && hasDrink(p, 'lastBreath') && !p.lastBreathUsed) {
     p.health = 1;

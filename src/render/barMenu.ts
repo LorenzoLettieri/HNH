@@ -32,6 +32,12 @@ const DRINK_TEXT: Record<DrinkId, { name: string; gift: string; cost?: string }>
   hardHoof: { name: 'Zoccolo duro', gift: `Calcio e badile stordiscono i nemici colpiti per ${tuning.hardHoofStun} s.` },
   bobby: { name: 'Bobby', gift: 'Calcio e badile rispediscono i proiettili nemici da dove vengono.' },
   hotHolster: { name: 'Fondina calda', gift: `Le armi che non hai in mano si ricaricano da sole, un colpo ogni ${tuning.hotHolsterTime} s.` },
+  toreroTequila: { name: 'Tequila del torero', gift: `Ogni "OLÉ!" e ogni "PER UN PELO" ti cura di ${tuning.tequilaHeal}.` },
+  undertakerContract: {
+    name: 'Contratto del becchino',
+    gift: `Ogni ${tuning.contractKills} uccisioni senza prendere danni, +${tuning.contractHealth} salute massima.`,
+  },
+  silverSpur: { name: "Sperone d'argento", gift: "Ogni wall jump spinge un colpo nell'arma che hai in mano." },
   lastBreath: { name: 'Ultimo respiro', gift: 'Una volta per ondata, un colpo letale ti lascia a 1 di salute e respinge i nemici vicini.' },
   lightningShine: { name: 'Acquavite Fulmine', gift: `Corri più veloce: +${tuning.shineSpeed} m/s.` },
   deadMansRum: { name: 'Rum del Morto', gift: `La catena dello Stile dura ${tuning.rumChainSeconds} s in più.` },
@@ -55,6 +61,11 @@ const DRINK_TEXT: Record<DrinkId, { name: string; gift: string; cost?: string }>
     name: 'Debito col diavolo',
     gift: `Puoi comprare andando sotto zero, fino a −${tuning.devilsDebtLimit}.`,
     cost: 'Finché hai debiti, i nemici non lasciano munizioni né medikit.',
+  },
+  cardSharp: {
+    name: 'Mano del baro',
+    gift: `Gli eventi sulla mappa danno il doppio delle fiches.`,
+    cost: `Un evento fallito ti toglie ${tuning.cardSharpHealthCost} salute massima.`,
   },
   bloodForLead: {
     name: 'Sangue per piombo',

@@ -19,6 +19,7 @@
 // that waves.ts already reports (the same trick as the dynamite: the weapon
 // only says "fire", game.ts creates the stick). waves.ts doesn't even know
 // map events exist.
+import { hasDrink, maxHealth } from './drinks';
 import { tuning } from './config';
 import type { SimEvent } from './events';
 import type { GameState } from './game';
@@ -134,8 +135,14 @@ function finish(game: GameState, events: SimEvent[], success: boolean): void {
   // The prize: fiches straight into your pocket (no pickup to run to: the
   // event already made you run). Failing gives nothing here; an event that
   // leaves something anyway (the jackal's coins) does it on its own.
-  const fiches = success ? tuning.mapEventFiches : 0;
+  // Drink "Mano del baro": double the fiches when you win, max health when you lose.
+  const sharp = hasDrink(game.player, 'cardSharp');
+  const fiches = success ? tuning.mapEventFiches * (sharp ? tuning.cardSharpFichesScale : 1) : 0;
   game.player.fiches += fiches;
+  if (!success && sharp) {
+    game.player.cardSharpPenalty += tuning.cardSharpHealthCost;
+    game.player.health = Math.min(game.player.health, maxHealth(game.player));
+  }
   events.push({ type: 'mapEventEnd', kind: ended.kind, success, fiches });
 }
 

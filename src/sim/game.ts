@@ -20,7 +20,7 @@ import { BIG_BODY, getFlowField, getNavGraph, nearestNode, NO_CLIMB, NO_VENT } f
 import type { SimEvent } from './events';
 import { cellAt, getAirGrid } from './airNav';
 import { createPlayer, currentHeight, respawn, stepPlayer, type PlayerState } from './player';
-import { refundLeadFlight, stepWeapon } from './weapon';
+import { refundLeadFlight, spurRound, stepWeapon } from './weapon';
 import { stepStatus, stepStunned } from './status';
 import { stepKick } from './kick';
 import { blockPlayerWithBodies } from './bodyBlock';
@@ -165,12 +165,13 @@ export function stepGame(
   // not with the rank that same kill is about to give you.
   scoreHits(game.stats, playerHits, styleMultiplier(game.style) + rewardBonus(game.player));
   dropFromKills(game, playerHits);
-  // Gin del Serpente a Sonagli (drinks.ts): every kill of yours gives some health back.
+  // Bloody Mary (drinks.ts): every kill of yours gives some health back.
+  const kills = playerHits.filter((e) => e.type === 'hit' && e.killed && e.target !== 'target').length;
   const heal = healPerKill(game.player);
   if (heal > 0 && game.player.health > 0) {
-    const kills = playerHits.filter((e) => e.type === 'hit' && e.killed && e.target !== 'target').length;
     game.player.health = Math.min(maxHealth(game.player), game.player.health + kills * heal);
   }
+  stepContract(game.player, kills, events);
 
   // Navigation: where's the player on the graph? (Only while standing:
   // in mid-jump we keep the last known node.) Checked 4 times a second;
@@ -227,6 +228,7 @@ export function stepGame(
   stepPickups(game, world, dt, events);
   // Last: it needs the whole tick (your hits come first, the enemies' hits on you later).
   stepStyle(game.style, game.player, events, tickEvents);
+  stepTequila(game.player, events, tickEvents);
   countStats(game.stats, events.slice(tickEvents), game.style);
 
   // Dead: game over, CoD style. Report how far you got, then start over from
@@ -255,6 +257,38 @@ export function stepGame(
  * player's step doesn't know the enemies or the fires, the game does (the
  * same split as the dynamite: player.ts only reports the landing).
  */
+/**
+ * Drink "Contratto del becchino": count the kills since you last took damage
+ * (hurtPlayer resets the count); every contractKills of them, the contract
+ * pays: + contractHealth max health, and that much health with it.
+ */
+function stepContract(p: PlayerState, kills: number, events: SimEvent[]): void {
+  if (!hasDrink(p, 'undertakerContract') || kills === 0 || p.health <= 0) return;
+  for (let i = 0; i < kills; i++) {
+    if (++p.cleanKills < tuning.contractKills) continue;
+    p.cleanKills = 0;
+    p.contractHealth += tuning.contractHealth;
+    p.health = Math.min(maxHealth(p), p.health + tuning.contractHealth);
+    events.push({ type: 'contractPaid', maxHealth: maxHealth(p) });
+  }
+}
+
+/**
+ * Drink "Tequila del torero": the risky dodges heal. It listens to the
+ * style's own awards (the same "OLÉ!" and "PER UN PELO" you see on screen),
+ * so a dodge counts for the drink exactly when it counts for the style.
+ */
+function stepTequila(p: PlayerState, events: SimEvent[], from: number): void {
+  if (!hasDrink(p, 'toreroTequila') || p.health <= 0) return;
+  const end = events.length;
+  for (let i = from; i < end; i++) {
+    const e = events[i];
+    if (e.type !== 'styleAward' || (e.award !== 'torero' && e.award !== 'nearMiss')) continue;
+    p.health = Math.min(maxHealth(p), p.health + tuning.tequilaHeal);
+    events.push({ type: 'tequilaHeal', amount: tuning.tequilaHeal });
+  }
+}
+
 function lastBreath(game: GameState, events: SimEvent[]): void {
   const p = game.player;
   for (const en of game.entities) {
@@ -286,6 +320,12 @@ function stepPactMoves(game: GameState, events: SimEvent[], from: number, dt: nu
       hits++;
     }
     events.push({ type: 'hoofSlam', x: p.x, y: p.y, z: p.z, radius: tuning.hoofRadius, hits });
+  }
+  // Drink "Sperone d'argento": every wall jump pushes a round from the pocket into the gun in your hands.
+  if (hasDrink(p, 'silverSpur')) {
+    for (let i = from; i < end; i++) {
+      if (events[i].type === 'wallJump' && spurRound(p)) events.push({ type: 'spurRound', weapon: p.weapon });
+    }
   }
   // A patch of fire every emberTrailSpacing meters of slide (speed × time = meters this tick).
   if (p.sliding && p.onGround && hasDrink(p, 'emberTrail')) {

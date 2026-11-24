@@ -1123,6 +1123,14 @@ export const tuning = {
   /** Ultimo respiro: the enemies within this radius are thrown away when it saves you. */
   lastBreathRadius: 5,
   lastBreathPush: 14,
+  /** Tequila del torero: health back for every OLÉ! (a bull's charge dodged close) and every PER UN PELO (a projectile by a hair). */
+  tequilaHeal: 10,
+  /** Contratto del becchino: every this many kills in a row without taking damage, + this much max health (until you die). */
+  contractKills: 15,
+  contractHealth: 5,
+  /** Mano del baro: a completed event gives this × the fiches; a failed one takes this much max health (until you die). */
+  cardSharpFichesScale: 2,
+  cardSharpHealthCost: 25,
 
   // "Le Campane del Giudizio" (src/sim/bells.ts)
   /** How many bells to ring, in order. */

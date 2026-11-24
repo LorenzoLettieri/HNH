@@ -9,11 +9,14 @@
 // - "Zoccolo duro": sparks over the head of a stunned enemy (seeing stars).
 // - "Bobby": a projectile batted back: sparks and a bright TING.
 // - "Ultimo respiro": death said no: a ring of blood, a hard shake, a heartbeat and a bell.
+// - Sounds only (the health number and the ammo already show it): "Tequila del torero"
+//   (a flamenco strum), "Contratto del becchino" (a pen on the ledger, a bell),
+//   "Sperone d'argento" (the spur's jingle and a round clicking in).
 // ("Scia di brace" is drawn by holyFire.ts: its patches are the same pools,
 // orange.)
 import * as THREE from 'three';
 import type { SimEvent } from '../sim/events';
-import { playAirJump, playBatted, playHoofSlam, playLastBreath } from '../audio/sfx';
+import { playAirJump, playBatted, playContract, playHoofSlam, playLastBreath, playSpur, playTequila } from '../audio/sfx';
 import type { Entity } from '../sim/entities';
 import { soundAt } from './soundPosition';
 import { spawnBlood, spawnDirt, spawnSmoke, spawnSparks } from './particles';
@@ -49,7 +52,10 @@ export function handlePactEvents(events: SimEvent[], entities: Entity[], camera:
     }
   }
   for (const e of events) {
-    if (e.type === 'projectileBatted') {
+    if (e.type === 'tequilaHeal') playTequila();
+    else if (e.type === 'contractPaid') playContract();
+    else if (e.type === 'spurRound') playSpur();
+    else if (e.type === 'projectileBatted') {
       point.set(e.x, e.y, e.z);
       spawnSparks(point, dir.set(0, 1, 0), 12);
       playBatted(soundAt(camera, e.x, e.y, e.z));
