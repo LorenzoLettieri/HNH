@@ -27,6 +27,12 @@ export interface Atmosphere {
 
   /** 0 = no stars, 1 = full stars. */
   stars: number;
+  /**
+   * Eclipse: how far the black moon has slid over the sun (0 = no moon,
+   * 1 = sun fully covered, only the corona of flames around it). Going from 0
+   * to 1 the moon visibly slides in from the side.
+   */
+  eclipse: number;
 
   /** Directional light coming from the sun/moon: color and strength. */
   sunLightColor: number;
@@ -77,6 +83,7 @@ export const HIGH_NOON: Atmosphere = {
   sunGlowTightness: 6,
   sunBrightness: 2.2,
   stars: 0,
+  eclipse: 0,
   sunLightColor: 0xffa060,
   sunLightIntensity: 3.2,
   lanternColor: 0xffa040,
@@ -113,6 +120,7 @@ export const HIGH_MIDNIGHT: Atmosphere = {
   sunGlowTightness: 12,
   sunBrightness: 2,
   stars: 1,
+  eclipse: 0,
   sunLightColor: 0x9080e0,
   sunLightIntensity: 1.1,
   lanternColor: 0xff9030,
@@ -134,7 +142,49 @@ export const HIGH_MIDNIGHT: Atmosphere = {
   ambientIntensity: 0.45,
 };
 
-export const ATMOSPHERES = [HIGH_NOON, HIGH_MIDNIGHT];
+/**
+ * The Fire Eclipse: the Damned Smith's waves (render/eclipse.ts). A black moon
+ * in front of the sun with a crown of flames around it; the sky goes dark but
+ * the horizon burns all around (in a real total eclipse you're in the moon's
+ * shadow, but far away there's still sunlight: a sunset in every direction).
+ * The sun is about where High Noon's is, so the moon slides over THAT sun.
+ */
+export const FIRE_ECLIPSE: Atmosphere = {
+  name: 'Fire Eclipse',
+  skyTop: 0x0a0103,
+  skyHorizon: 0x7a1806,
+  skyCurve: 0.35,
+  sunColor: 0xff5a18,
+  sunSize: 9,
+  sunElevation: 26,
+  sunAzimuth: 15,
+  sunGlow: 0.9,
+  sunGlowTightness: 4,
+  sunBrightness: 3,
+  stars: 0.35, // a total eclipse shows the brightest stars
+  eclipse: 1,
+  sunLightColor: 0xff3010,
+  sunLightIntensity: 0.9,
+  lanternColor: 0xff8030,
+  lanternIntensity: 12,
+  // Ash and embers drifting from the forges of hell.
+  dustColor: 0xff6020,
+  dustAmount: 0.8,
+  dustAlpha: 0.8,
+  dustWindX: 0.8,
+  dustWindZ: 0.3,
+  dustBlink: 0.5,
+  fogNear: 10,
+  fogFar: 75,
+  groundFogDensity: 0.03,
+  groundFogFalloff: 0.6,
+  godRays: 0.9,
+  ambientSky: 0x802010,
+  ambientGround: 0x200404,
+  ambientIntensity: 0.5,
+};
+
+export const ATMOSPHERES = [HIGH_NOON, HIGH_MIDNIGHT, FIRE_ECLIPSE];
 
 /**
  * A preset in between a and b: t = 0 is a, t = 1 is b. Every number goes

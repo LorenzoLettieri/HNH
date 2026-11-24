@@ -32,6 +32,8 @@ const fragmentShader = /* glsl */ `
   uniform float sunGlowTightness;
   uniform float stars;
   uniform float sunBrightness;
+  uniform float eclipse;
+  uniform float time;            // seconds: the corona's flames move
 
   varying vec3 vDirection;
 
@@ -58,6 +60,38 @@ const fragmentShader = /* glsl */ `
     // The disk is brighter than "white" (HDR): the bloom picks it up.
     color = mix(color, sunColor * sunBrightness, disk);
 
+    // 2b. Eclipse. We need coordinates "on the sky around the sun": two unit
+    //     vectors perpendicular to sunDirection (and to each other), made with
+    //     cross products. Like the x/y axes of a sheet of paper held up
+    //     against the sun.
+    if (eclipse > 0.0) {
+      vec3 side = normalize(cross(sunDirection, vec3(0.0, 1.0, 0.0)));
+      vec3 up = cross(side, sunDirection);
+      float sunRadius = acos(sunCos);                   // angular radius (radians)
+      float r = acos(clamp(d, -1.0, 1.0)) / sunRadius;  // distance from the sun, in sun radii
+      float around = atan(dot(dir, up), dot(dir, side)); // angle around the sun (-PI..PI)
+
+      // The moon: a disk a bit bigger than the sun, coming in from the side.
+      // eclipse 0 → 2.1 radii away (not touching), 1 → right in front.
+      vec3 moonDir = normalize(sunDirection + side * (1.0 - eclipse) * 2.1 * sunRadius);
+      float moon = step(cos(sunRadius * 1.04), dot(dir, moonDir));
+      // Against the blinding sky you can't see the moon: only where it covers the disk.
+      color = mix(color, vec3(0.012, 0.0, 0.0), moon * disk);
+
+      // The corona: flames around the edge. Their length changes with the
+      // angle: a few sines at unrelated frequencies, moving with time (the
+      // same cheap "noise" as the torches' flicker). It grows as the moon covers.
+      float flames = 0.5 + 0.5 * sin(around * 7.0 + time * 1.3) * sin(around * 11.0 - time * 2.1);
+      flames = flames * 0.7 + 0.3 * (0.5 + 0.5 * sin(around * 23.0 + time * 3.7));
+      float reach = 0.2 + 1.1 * flames * flames;                // how far the flame goes, in radii
+      float ring = step(1.0, r) * step(r, 1.0 + reach);
+      float hot = step(r, 1.0 + reach * 0.4);          // the inner part: brighter, yellower
+      float corona = ring * pow(eclipse, 3.0);
+      vec3 flameColor = mix(sunColor * 0.8, vec3(1.0, 0.55, 0.15), hot);
+      color = mix(color, flameColor * sunBrightness * (0.5 + 0.5 * hot), corona);
+      disk = max(disk, corona);                         // no stars over the moon or in the flames
+    }
+
     // 3. Stars: split the sky into tiny cells, light up a few random ones.
     vec3 cell = floor(dir * 250.0);
     float star = step(0.997, hash(cell)) * stars * smoothstep(0.02, 0.3, height);
@@ -83,6 +117,8 @@ export function createSky(): THREE.Mesh {
       sunGlowTightness: { value: 1 },
       stars: { value: 0 },
       sunBrightness: { value: 1 },
+      eclipse: { value: 0 },
+      time: { value: 0 },
     },
     side: THREE.BackSide, // we're INSIDE the sphere: draw its inner faces
     depthWrite: false, // never hides anything: it's infinitely far away
@@ -106,6 +142,12 @@ export function applySky(sky: THREE.Mesh, a: Atmosphere): void {
   u.sunGlowTightness.value = a.sunGlowTightness;
   u.stars.value = a.stars;
   u.sunBrightness.value = a.sunBrightness;
+  u.eclipse.value = a.eclipse;
+}
+
+/** Call every frame: the eclipse's corona flickers. `time` in seconds. */
+export function updateSky(sky: THREE.Mesh, time: number): void {
+  (sky.material as THREE.ShaderMaterial).uniforms.time.value = time;
 }
 
 /** Unit vector pointing at (elevation, azimuth). Azimuth 0 = north = -Z. */

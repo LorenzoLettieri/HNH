@@ -658,6 +658,7 @@ export function createDebugPanel(options: {
     folder.number(obj, 'sunGlowTightness', 1, 30, 0.5, apply);
     folder.number(obj, 'sunBrightness', 0.5, 8, 0.1, apply);
     folder.number(obj, 'stars', 0, 1, 0.05, apply);
+    folder.number(obj, 'eclipse', 0, 1, 0.01, apply);
     folder.number(obj, 'sunLightIntensity', 0, 8, 0.1, apply);
     folder.number(obj, 'lanternIntensity', 0, 40, 0.5, apply);
     folder.number(obj, 'dustAmount', 0, 1, 0.05, apply);

@@ -17,8 +17,8 @@ import { triggerLandingDip, updateLandingDip } from './render/landingDip';
 import { lookScale, updateCameraFeel } from './render/cameraFeel';
 import { createGroundMeshes, createLevelMeshes, loadMaterials } from './render/materials';
 import { createDecalMeshes } from './render/decals';
-import { ATMOSPHERES, HIGH_MIDNIGHT, mixAtmosphere, type Atmosphere } from './render/atmospheres';
-import { createNightfall } from './render/nightfall';
+import { ATMOSPHERES, FIRE_ECLIPSE, mixAtmosphere, type Atmosphere } from './render/atmospheres';
+import { createEclipse } from './render/eclipse';
 import { applySunLight, createSunLight } from './render/sunLight';
 import { applyFireLights, createFireLights, updateFireLights } from './render/fireLights';
 import { createProps } from './render/props';
@@ -61,7 +61,7 @@ import { applyParticles, createParticles, updateParticles } from './render/parti
 import { updateBurning } from './render/burning';
 import { createMarks } from './render/marks';
 import { applyHeightFog } from './render/heightFog';
-import { applySky, createSky, directionFromAngles } from './render/sky';
+import { applySky, createSky, directionFromAngles, updateSky } from './render/sky';
 
 // --- Renderer -------------------------------------------------------------
 const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -169,13 +169,14 @@ weaponFx.onReload.push((weapon, seconds, forged) => viewmodel.onReload(weapon, s
 weaponFx.onKick.push((tool) => viewmodel.onKick(tool));
 
 let atmosphereIndex = 0;
-// The Damned Smith's waves bring the night (render/nightfall.ts): `night` is
-// how far we are from the chosen preset (debug button) toward High Midnight.
-const nightfall = createNightfall();
-let night = 0;
-/** The atmosphere on screen right now: the chosen preset, darkened by the night. */
+// The Damned Smith's waves bring the Fire Eclipse (render/eclipse.ts):
+// `eclipseAmount` is how far we are from the chosen preset (debug button)
+// toward FIRE_ECLIPSE.
+const eclipse = createEclipse();
+let eclipseAmount = 0;
+/** The atmosphere on screen right now: the chosen preset, as far into the eclipse as we are. */
 function currentAtmosphere(): Atmosphere {
-  return mixAtmosphere(ATMOSPHERES[atmosphereIndex], HIGH_MIDNIGHT, night);
+  return mixAtmosphere(ATMOSPHERES[atmosphereIndex], FIRE_ECLIPSE, eclipseAmount);
 }
 applyAtmosphere(currentAtmosphere());
 
@@ -198,7 +199,7 @@ const debugPanel = createDebugPanel({
   // front" is where you were looking.
   tools: [
     {
-      label: 'Atmosfera: High Noon / High Midnight',
+      label: 'Atmosfera: High Noon / High Midnight / Fire Eclipse',
       run: () => {
         atmosphereIndex = (atmosphereIndex + 1) % ATMOSPHERES.length;
         applyAtmosphere(currentAtmosphere());
@@ -539,12 +540,13 @@ renderer.setAnimationLoop((now: number) => {
   // The map: only while Tab is held, never over the pause menu.
   mapOverlay.update(game, alpha, camera.position.x, camera.position.z, view.yaw, actionDown('map') && !paused, now / 1000);
 
-  // Day ↔ night: re-applied only while it's changing (a few seconds per wave).
-  const nightNow = nightfall.update(dt, game.wave);
-  if (nightNow !== null) {
-    night = nightNow;
+  // The eclipse: re-applied only while it's changing (a few seconds per wave).
+  const eclipseNow = eclipse.update(dt, game.wave);
+  if (eclipseNow !== null) {
+    eclipseAmount = eclipseNow;
     applyAtmosphere(currentAtmosphere());
   }
+  updateSky(sky, now / 1000);
   updateFireLights(now / 1000);
   props.update(now / 1000);
   updateParticles(dt, now / 1000, camera, post.sceneSize.y);
