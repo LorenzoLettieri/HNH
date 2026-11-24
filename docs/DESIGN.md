@@ -380,13 +380,13 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
   si compra all'armeria (600 vildenaro) e **prende il posto dello stivale sul tasto F**, come il
   coltello bowie di CoD Zombies, non è uno slot. Stesso attacco del calcio
   (cono davanti, niente attraverso i muri, spinta), numeri diversi: portata 2,2 m, arco ±60°,
-  **75 danni** (il triplo del calcio), spinta 15 m/s in avanti e 6 in alto, 0,2 s di carica, 0,6 s
+  **75 danni** (il triplo del calcio), spinta 15 m/s in avanti e 6 in alto, 0,24 s di carica, 0,6 s
   di ricarica. Uccisione = premio di Stile "DI BADILE". **Il badile vuole due mani** (deciso dopo il passo 187):
   come il melee di CoD l'arma **scende fuori dallo schermo**, poi parte uno **swing da golf** (il badile arriva
   da dietro la spalla destra, passa basso al centro dove colpisce e finisce in alto a sinistra), poi l'arma
   **torna su con l'estrazione del cambio arma** (anima e suono). Finché l'arma è via non si spara né si
   ricarica, e **una ricarica in corso si annulla** (il calcio invece no: calciare mentre ricarichi è il suo
-  senso). Si torna a sparare a `shovelGunBack` + `weaponSwitchTime` (0,32 + 0,25 s). Le mani non si vedono
+  senso). Si torna a sparare a `shovelGunBack` + `weaponSwitchTime` (0,36 + 0,25 s). La pala deve **restare a schermo** abbastanza da vedersi (~150 ms): curve d'animazione dolci e la lama che rallenta all'impatto. Le mani non si vedono
   (l'impugnatura resta sotto il bordo dello schermo). **Impatto**: BONK da padella col "doiiing" che vibra, scintille
   (e sangue sui nemici) nel punto colpito, botta della camera e **hit-stop** di 0,07 s (tutto si ferma un
   istante, il suono no: il peso del colpo). Se un giorno servirà, braccio vero in posa come quelli della carabina. Ha il **suo mazzo di carte** (§6c), pensato

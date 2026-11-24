@@ -491,14 +491,14 @@ export const tuning = {
    * swing comes round from behind you (the animation in shovelView.ts is
    * timed on this number).
    */
-  shovelWindup: 0.2,
+  shovelWindup: 0.24,
   /**
    * Seconds from the press to the gun coming back up. From then on it's drawn
    * like a weapon switch (weaponSwitchTime): you can shoot again at
    * shovelGunBack + weaponSwitchTime. Until then the gun is away: no shots,
    * no reload (a reload in progress is cancelled by the swing, like in CoD).
    */
-  shovelGunBack: 0.32,
+  shovelGunBack: 0.36,
   /** Seconds before the next swing (counted from the press). */
   shovelCooldown: 0.6,
   /** Reach, meters, edge to edge: the handle makes it longer than a leg. */

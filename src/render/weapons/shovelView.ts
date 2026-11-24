@@ -25,11 +25,12 @@
 //   come back beside your head at both ends.
 // Then only TIME → s is animated, like an "easing" in CSS: the backswing
 // creeps back (anticipation, off screen while the gun goes down), the
-// downswing accelerates (u³, fastest at the impact, which lands exactly when
-// the simulation hits: tuning.shovelWindup), the follow-through slows down
-// (ease-out). The two curves are joined at the SAME speed: the follow-through
-// is 1 - (1 - v)ⁿ, whose slope at the start is n / its duration; we pick n so
-// that it equals the downswing's speed at the impact. No jerk at the hit.
+// downswing accelerates (fastest at the impact, which lands exactly when the
+// simulation hits: tuning.shovelWindup), the follow-through slows down
+// (ease-out). Both curves are GENTLE on purpose: the blade is only on screen
+// for the stretch around the impact, so that stretch must not be the fastest
+// one by far. The speed drops at the impact (the downswing arrives faster than
+// the follow-through leaves): the blade meets resistance, and you see it.
 //
 // Two identical swings in a row give the trick away: each swing gets small
 // random variations (height, sweep, blade roll). Cosmetic only.
@@ -82,11 +83,21 @@ export const shovelSettings = {
   /** The face opens on the backswing and closes on the follow-through (radians per unit of s), like a golf club. */
   rollTwist: 0.35,
   /** How much further back the backswing creeps before the downswing (in units of s: the anticipation). */
-  windBack: 0.25,
+  windBack: 0.1,
   /** Fraction of the wind-up spent on the backswing (the gun goes down meanwhile; the rest is the downswing). */
-  backShare: 0.45,
-  /** Seconds of follow-through after the impact (until it's out of view on the left). */
-  throughTime: 0.2,
+  backShare: 0.3,
+  /**
+   * The two easings (exponents). Downswing: s grows like u^strikeEase (1 =
+   * constant speed, 3 = everything in the last instant). Follow-through:
+   * 1 - (1 - v)^throughEase (1 = constant speed, higher = it slows down sooner).
+   * LOW on purpose: the blade is only on screen near the impact, and with
+   * steep curves that's exactly where it's fastest (it was visible ~30 ms,
+   * two frames). These keep it on screen ~150 ms.
+   */
+  strikeEase: 1.5,
+  throughEase: 1.4,
+  /** Seconds of follow-through after the impact (until it's out of view on the left: ~half of it). */
+  throughTime: 0.3,
   /**
    * Blade quiver around the shaft after the impact: the kick it gets (rad/s),
    * stiffness (1/s²), damping (1/s). A damped spring, like elastic.ts.
@@ -170,16 +181,15 @@ export function createShovelView(): ShovelView {
         // Backswing: creeps from the top of the backswing a bit further back (ease-out: it hangs there).
         swing = -1 - s.windBack * smoothstep(time / back);
       } else if (time < impact) {
-        // Downswing: ease-in, u³. Slope 0 at the start, steepest at u = 1.
+        // Downswing: ease-in, u^strikeEase. Slow at the start, fastest at the impact.
         const u = (time - back) / (impact - back);
-        swing = top + (0 - top) * u * u * u;
+        swing = top + (0 - top) * Math.pow(u, s.strikeEase);
       } else {
-        // Follow-through: 1 - (1 - v)ⁿ, n chosen so the speed at v = 0 is the downswing's at the impact.
-        // Downswing speed: d/dt of top·(1 - u³)... = 3·(0 - top) / its duration (in s per second).
-        const strikeSpeed = (3 * -top) / Math.max(0.01, impact - back);
-        const n = Math.max(1, strikeSpeed * s.throughTime);
+        // Follow-through: ease-out, 1 - (1 - v)^throughEase. It starts SLOWER
+        // than the downswing arrived: the speed drops at the impact, the blade
+        // "meets the enemy" (a hitch, like hitting something heavy).
         const v = (time - impact) / s.throughTime;
-        swing = 1 - Math.pow(1 - v, n);
+        swing = 1 - Math.pow(1 - v, s.throughEase);
         // The impact shakes the blade (once), then the quiver rings down at fixed steps.
         if (!hit) {
           hit = true;

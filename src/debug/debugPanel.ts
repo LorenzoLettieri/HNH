@@ -398,7 +398,9 @@ export function createDebugPanel(options: {
   shovel.number(shovelSettings, 'rollTwist', -1.5, 1.5, 0.05);
   shovel.number(shovelSettings, 'windBack', 0, 1, 0.01);
   shovel.number(shovelSettings, 'backShare', 0.1, 0.9, 0.05);
-  shovel.number(shovelSettings, 'throughTime', 0.05, 0.5, 0.01);
+  shovel.number(shovelSettings, 'strikeEase', 1, 4, 0.1);
+  shovel.number(shovelSettings, 'throughEase', 1, 8, 0.1);
+  shovel.number(shovelSettings, 'throughTime', 0.05, 0.6, 0.01);
   shovel.number(shovelSettings, 'quiverKick', 0, 30, 0.5);
   shovel.number(shovelSettings, 'quiverStiffness', 100, 5000, 50);
   shovel.number(shovelSettings, 'quiverDamping', 1, 60, 0.5);
