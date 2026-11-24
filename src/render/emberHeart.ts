@@ -10,8 +10,9 @@
 //   ring of fire on the ground that turns, and a low curtain of fire along
 //   the edge, a wall you see from inside and outside (the ground ring alone
 //   hides behind every crate and porch). The circle is exactly
-//   tuning.emberHeartRadius: what you see is what counts.
-// - A kill in the circle: the enemy's SOUL flies from the corpse into the
+//   tuning.emberHeartRadius: what you see is what counts. Step out of it and
+//   the curtain flares and pulses: from out there your kills don't count.
+// - A kill while you're in the circle: the enemy's SOUL flies from the corpse into the
 //   crystal along an arc (a bright point with a trail of fire, faster at the
 //   end: it's being sucked in), the crystal GULPS (swells), a chime that
 //   climbs as it fills.
@@ -25,7 +26,7 @@
 import * as THREE from 'three';
 import type { SimEvent } from '../sim/events';
 import type { GameState } from '../sim/game';
-import { HEART_HOVER, type EmberHeartEvent } from '../sim/emberHeart';
+import { HEART_HOVER, inEmberCircle, type EmberHeartEvent } from '../sim/emberHeart';
 import { tuning } from '../sim/config';
 import { playEmberHeartBeat, playEmberHeartBurst, playEmberHeartDie, playEmberHeartFeed, playEmberHeartWake } from '../audio/sfx';
 import { beamTexture } from './bells';
@@ -105,6 +106,9 @@ const CURTAIN_HEIGHT = 5;
 const CURTAIN_COLOR = new THREE.Color(2.0, 0.55, 0.14);
 const CURTAIN_OPACITY = 0.32;
 const CURTAIN_SPIN = 0.03;
+/** You're outside the circle (your kills don't count): the curtain gets this × brighter, pulsing this many times a second. */
+const CURTAIN_OUTSIDE = 2.2;
+const CURTAIN_OUTSIDE_HZ = 2;
 /** Seconds the circle takes to unfold when it wakes up. */
 const UNFOLD_TIME = 0.8;
 /** The ring floats this much over the floor (the patches of road are at 1 cm, the pools at 2). */
@@ -487,7 +491,10 @@ export function createEmberHeartRenderer(scene: THREE.Scene): EmberHeartRenderer
       // The curtain stands only on the awake circle (and goes with it at the end).
       curtain.visible = (mode === 'awake' || mode === 'burst' || mode === 'dying') && circle > 0.5;
       curtain.scale.set(circle, CURTAIN_HEIGHT * (mode === 'awake' ? Math.min(1, unfoldTime / UNFOLD_TIME) : fade), circle);
-      curtainMaterial.opacity = CURTAIN_OPACITY * fade;
+      // You're outside: your kills feed nothing. The curtain flares and pulses to call you back in.
+      const outside = ev !== null && mode === 'awake' && !inEmberCircle(ev, game.player);
+      const callBack = outside ? CURTAIN_OUTSIDE * (0.75 + 0.25 * Math.sin(time * Math.PI * 2 * CURTAIN_OUTSIDE_HZ)) : 1;
+      curtainMaterial.opacity = CURTAIN_OPACITY * fade * callBack;
       curtainTexture.offset.x = time * CURTAIN_SPIN;
       light.position.copy(root.position).add(body.position);
     },

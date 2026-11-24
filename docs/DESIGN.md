@@ -672,8 +672,9 @@ evento (stile gli eventi di Diablo 4) **durante un'ondata**.
 
 **Elenco degli eventi** [DECISO l'elenco, da progettare uno per uno]. Verbi diversi, così non sono tutti "uccidi X":
 - **Il Cuore di Brace** (zona che si sposta) [FATTO, da tarare: passo 12]: un cristallo infernale cammina per la mappa sul grafo dei ghoul,
-  un po' più lento di te; bisogna uccidere N nemici **dentro il suo raggio** (15–20 m, anello a terra come
-  l'onda del Fabbro). Conta la posizione del **nemico**, non la tua (carabina e dinamite aiutano da fuori).
+  un po' più lento di te; bisogna uccidere N nemici **stando dentro il suo raggio** (15–20 m, anello a terra come
+  l'onda del Fabbro). **Conta la TUA posizione, non quella del nemico** [DECISO dall'utente dopo il passo 12, che
+  contava il nemico]: niente cecchinaggio da fuori, devi camminare col cuore in mezzo all'orda che si trascina dietro.
 - **Lo Sciacallo** (bersaglio in fuga) [FATTO, da tarare: passo 13]: un diavoletto veloce col sacco del vildenaro scappa per la mappa
   (salta, si arrampica, prende gli sfiatatoi: sfuggente col movimento, non con una hitbox minuscola); va ucciso
   prima che finisca l'ondata o che scappi. Perde monete a ogni colpo. IA: **mappa di fuga** (il flow field
@@ -763,10 +764,13 @@ Un cristallo di brace **dorme** su una strada a cielo aperto, con la colonna di 
 **cerchio di 16 m** si apre (anello di fuoco a trattini che gira a terra + una cortina di fiamme bassa lungo il bordo, che si
 vede anche dietro casse e portici), e il cristallo comincia a **vagare per le strade** a 4,5 m/s (tu corri a 6,5): sceglie una
 meta a 18–40 m, ci va (solo camminando sul grafo: niente salti né tetti, una zona che salta su un tetto ti lascerebbe indietro),
-si ferma 2 s, riparte. **Ogni nemico che muore nel cerchio gli dà le sue anime = il suo peso** nelle ondate (ghoul 1, toro 5):
-anime e non uccisioni, così un toro ucciso nel cerchio vale di più. Ne vuole **metà del peso dell'ondata** (`emberHeartShare`
-0,5: ~8 all'ondata 4, ~19 alla 10). Il cerchio è una **colonna** (conta solo la distanza a terra: un Malocchio sopra o un ghoul su
-un tetto dentro contano). **Niente orologio: l'ondata è l'orologio**, e ogni nemico ucciso fuori dal cerchio è un'anima persa.
+si ferma 2 s, riparte. **Ogni nemico che uccidi mentre TU sei nel cerchio gli dà le sue anime = il suo peso** nelle ondate
+(ghoul 1, toro 5; dove sta il nemico non conta: anche un tiratore su un tetto lontano, se gli spari da dentro): anime e non
+uccisioni, così un toro vale di più. Ne vuole **metà del peso dell'ondata** (`emberHeartShare` 0,5: ~8 all'ondata 4, ~19 alla 10).
+Il cerchio è una **colonna** (conta solo la distanza a terra: su un tetto dentro il cerchio sei dentro). **Niente orologio:
+l'ondata è l'orologio**, e ogni nemico ucciso stando fuori è un'anima persa. Quando esci dal cerchio la riga dell'HUD diventa
+rossa ("FUORI DAL CERCHIO: torna dentro!") e la cortina di fiamme pulsa più forte per richiamarti.
+(Prima versione: contava la posizione del nemico, così si poteva restare fuori e sparare dentro; cambiata su richiesta dell'utente.)
 A schermo: il cristallo **batte come un cuore** (più veloce man mano che si riempie), da ogni uccisione un'**anima di fuoco** vola
 nel cristallo su un arco e lui la ingoia con una nota che sale; pieno, **scoppia**; fallito, si spegne e sprofonda. Riga
 dell'HUD "ANIME 3 / 9", sulla mappa (Tab) il cerchio intero in scala.

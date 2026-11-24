@@ -14,6 +14,7 @@ import type { GameState } from '../sim/game';
 import { horizontalSpeed } from '../sim/player';
 import { isEnemy } from '../sim/entities';
 import { jackalOf } from '../sim/jackal';
+import { inEmberCircle } from '../sim/emberHeart';
 import { updateStyleMeter } from './styleMeter';
 import { updateStyleFeed } from './styleFeed';
 import { updateHighNoon } from './highNoon';
@@ -168,7 +169,7 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
     }
     // The Ember Heart (emberHeart.ts) woke up: its sound is at the crystal (render/emberHeart.ts).
     if (e.type === 'emberHeartWake') {
-      queueBanner('IL CUORE SI È RISVEGLIATO', 'uccidi i nemici dentro il suo cerchio di fuoco, e seguilo', 3, () => {});
+      queueBanner('IL CUORE SI È RISVEGLIATO', 'resta nel suo cerchio di fuoco e uccidi: le anime vanno a lui', 3, () => {});
     }
     // The banner says what the climax gives you; tint and sounds are in highNoon.ts.
     if (e.type === 'highNoon') showBanner('HIGH NOON', 'caricatore infinito', 2.5, 'hot');
@@ -256,10 +257,15 @@ function updateEventLine(game: GameState): void {
     eventGoal.classList.toggle('hurry', ev.phase === 'cursed');
     return;
   }
-  // The Ember Heart has no clock either (the wave is its clock): souls fed, out of how many.
+  // The Ember Heart has no clock either (the wave is its clock): souls fed,
+  // out of how many, and red when you've stepped out of its circle (your
+  // kills don't count there: that's the urgent thing to know).
   if (ev.kind === 'emberHeart') {
-    eventGoal.textContent = ev.awake ? `ANIME ${ev.souls} / ${ev.goal} · uccidi nel cerchio` : 'tocca il cristallo di brace per risvegliarlo';
-    eventGoal.classList.remove('hurry');
+    const outside = ev.awake && !inEmberCircle(ev, game.player);
+    eventGoal.textContent = !ev.awake
+      ? 'tocca il cristallo di brace per risvegliarlo'
+      : `ANIME ${ev.souls} / ${ev.goal} · ${outside ? 'FUORI DAL CERCHIO: torna dentro!' : 'uccidi da dentro il cerchio'}`;
+    eventGoal.classList.toggle('hurry', outside);
     return;
   }
   if (ev.ticksLeft < 0) {

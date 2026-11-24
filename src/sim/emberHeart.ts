@@ -1,18 +1,21 @@
 // "Il Cuore di Brace", the fourth map event (docs/DESIGN.md §5): a ZONE THAT MOVES.
 // A crystal of hellfire sleeps somewhere in the streets. Touch it and it
 // wakes up: it starts wandering around town, a bit slower than you, with a
-// circle of fire around it. Every enemy that dies INSIDE the circle feeds it
-// its soul; fill it before the wave ends and the event is won.
+// circle of fire around it. Every enemy you kill while YOU stand INSIDE the
+// circle feeds it its soul; fill it before the wave ends and the event is won.
 //
-// What counts is where the ENEMY dies, not where you are: you can stand
-// outside and snipe into the circle with the carbine, or lob dynamite into
-// it. The circle is a COLUMN (only the distance on the ground plane counts):
-// an eye-bat over it or a ghoul on a roof inside it count too.
+// What counts is where YOU are when the enemy dies, not where the enemy is
+// (the user's choice, after a first version that counted the enemy): you
+// can't camp outside and snipe in, you have to walk with the heart, in the
+// middle of the horde it drags along. Where the enemy is doesn't matter: a
+// sharpshooter on a far roof counts, if you shoot it from inside. The circle
+// is a COLUMN (only the distance on the ground plane counts): standing on a
+// roof inside it counts too.
 // Souls, not kills: an enemy feeds the heart as much as it weighs in the
 // waves (enemyCost: a ghoul 1, a bull 5). How many it wants depends on the
 // wave: a share of the wave's whole weight (waveBudget), so it's always
 // about half the horde, at wave 4 or at wave 24. No clock: the wave IS the
-// clock. Every enemy you kill outside the circle is a soul wasted.
+// clock. Every enemy you kill from outside the circle is a soul wasted.
 //
 // HOW IT MOVES: on the ghouls' navigation graph (nav.ts), like the enemies,
 // but only along the WALK links: it floats over the streets, it doesn't jump
@@ -27,7 +30,7 @@ import type { SimEvent } from './events';
 import type { GameState } from './game';
 import { isEnemy } from './entities';
 import { getFlowField, getNavGraph, nearestNode, type LinkFilter, type NavGraph } from './nav';
-import { currentHeight } from './player';
+import { currentHeight, type PlayerState } from './player';
 import { randomInt, type RandomState } from './random';
 import { enemyCost, waveBudget } from './waves';
 import type { World } from './world';
@@ -132,14 +135,15 @@ export function stepEmberHeart(
 
   wander(ev, game, world);
 
-  // The souls of this tick's kills inside the circle. Copy the end: we push while reading.
+  // Out of the circle (or dead): this tick's kills feed nothing.
+  if (p.health <= 0 || !inEmberCircle(ev, p)) return 'running';
+  // The souls of this tick's kills. Copy the end: we push while reading.
   const end = events.length;
   for (let i = firstEvent; i < end; i++) {
     const e = events[i];
     if (e.type !== 'hit' || !e.killed || e.target === 'target') continue;
     const enemy = game.entities.find((en) => en.id === e.entityId);
     if (!enemy || !isEnemy(enemy)) continue;
-    if (Math.hypot(enemy.x - ev.x, enemy.z - ev.z) > tuning.emberHeartRadius) continue;
     const souls = enemyCost(enemy);
     ev.souls = Math.min(ev.goal, ev.souls + souls);
     events.push({
@@ -154,6 +158,15 @@ export function stepEmberHeart(
     if (ev.souls >= ev.goal) return 'success';
   }
   return 'running';
+}
+
+/**
+ * Are you inside the awake heart's circle? Distance on the ground plane only
+ * (it's a column). Used here to count the kills and by the HUD to warn you
+ * when you've stepped out.
+ */
+export function inEmberCircle(ev: EmberHeartEvent, p: PlayerState): boolean {
+  return ev.awake && Math.hypot(p.x - ev.x, p.z - ev.z) <= tuning.emberHeartRadius;
 }
 
 /**

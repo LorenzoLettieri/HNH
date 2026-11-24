@@ -129,7 +129,7 @@ export type SimEvent =
   /** You touched the Ember Heart (emberHeart.ts): it wakes up and starts wandering. Where its middle is. */
   | { type: 'emberHeartWake'; x: number; y: number; z: number }
   /**
-   * An enemy died inside the heart's circle: its `souls` (its weight) fed the
+   * You killed an enemy while standing inside the heart's circle: its `souls` (its weight) fed the
    * heart, now at `total` of `goal`. From where the enemy died (the soul flies from there).
    */
   | { type: 'emberHeartFed'; fromX: number; fromY: number; fromZ: number; souls: number; total: number; goal: number }

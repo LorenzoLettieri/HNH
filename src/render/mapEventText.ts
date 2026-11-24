@@ -8,7 +8,7 @@ export const MAP_EVENT_TEXT: Record<MapEventKind, { title: string; goal: string 
   bells: { title: 'LE CAMPANE DEL GIUDIZIO', goal: 'suona le campane sui tetti prima che finisca l’ondata' },
   ponyExpress: { title: 'PONY EXPRESS DELL’INFERNO', goal: 'attraversa gli anelli di fuoco: ognuno ti dà qualche secondo' },
   wager: { title: 'LA SCOMMESSA DEL DIAVOLO', goal: 'un tavolo da gioco nella piazza del pozzo: scommetti sulla prossima ondata' },
-  emberHeart: { title: 'IL CUORE DI BRACE', goal: 'risveglia il cristallo e uccidi i nemici dentro il suo cerchio' },
+  emberHeart: { title: 'IL CUORE DI BRACE', goal: 'risveglia il cristallo, resta nel suo cerchio e uccidi' },
   jackal: { title: 'LO SCIACALLO', goal: 'un diavoletto scappa col sacco del vildenaro: prendilo prima che fugga' },
 };
 
