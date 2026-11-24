@@ -19,6 +19,7 @@
 // the answer comes back as an event ('purchase' / 'purchaseFailed', see onEvents).
 // Opening and closing (E, Esc, walking away) are wired in main.ts.
 // Markup and CSS in index.html (#shop, #shop-upgrades, #shop-prompt, #grab-hint).
+import { mainKeyName, onKeybindsChange } from '../keybinds';
 import { playPurchase, playPurchaseDenied } from '../audio/sfx';
 import { queueBuy } from '../controls';
 import { tuning } from '../sim/config';
@@ -236,6 +237,13 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
   const walletLabel = document.getElementById('shop-wallet-label')!;
   const promptWord = document.getElementById('shop-prompt-word')!;
   closeButton.addEventListener('click', options.onCloseClick);
+  // The key on the labels ("E · COMMERCIA", "E Chiudi") is the one bound to
+  // the shop (keybinds.ts): written again whenever the keys change.
+  const showKey = (): void => {
+    for (const kbd of [prompt, closeButton].map((el) => el.querySelector('kbd')!)) kbd.textContent = mainKeyName('interact');
+  };
+  onKeybindsChange(showKey);
+  showKey();
   noFocus(closeButton);
   // At a Forge the same panel shows the Forge's rows instead of the weapons (forgeMenu.ts).
   const forge = createForgeRows(noFocus);

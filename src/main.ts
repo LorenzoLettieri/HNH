@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { initInput, isPointerLocked, isTypingInField, requestLock } from './input';
-import { actionDown, isBound, loadKeybinds } from './keybinds';
+import { actionDown, isBound, loadKeyNames, loadKeybinds } from './keybinds';
 import { loadSettings, settings } from './settings';
 import { submitScore } from './leaderboard';
 import { markPractice, practiceGame, startGame } from './fairPlay';
@@ -234,12 +234,13 @@ debugPanel.showAtmosphere(ATMOSPHERES[atmosphereIndex]);
 // The debug actions are buttons in the panel ("Debug tools" above), not hotkeys.
 // Backquote (the key below Esc: ` or \ depending on the keyboard) opens the debug panel and frees the mouse to use it.
 window.addEventListener('keydown', (e) => {
-  // Tab = the map (held down: read in the loop below). In a browser Tab moves
-  // the keyboard focus to the next button: stop that while playing, or a
+  // The map's key (default Tab, held down: read in the loop below). Tab
+  // itself is always stopped while playing, even with the map on another
+  // key: in a browser Tab moves the keyboard focus to the next button, and a
   // focused button would get "clicked" by the next Space (jump). Before the
   // e.repeat check: holding the key sends a keydown every few ms, and each
   // one would move the focus again.
-  if (isBound('map', e.code) && !paused && !isTypingInField(e)) e.preventDefault();
+  if ((e.code === 'Tab' || isBound('map', e.code)) && !paused && !isTypingInField(e)) e.preventDefault();
   if (e.repeat || isTypingInField(e)) return;
   // End screen: Space/Enter = play again, Esc = menu (after a moment: you were
   // probably pressing Space when you died). Nothing else while it's open.
@@ -304,6 +305,7 @@ camera.rotation.order = 'YXZ';
 // Saved settings first, so the menu shows (and the game uses) the right values.
 loadSettings();
 loadKeybinds();
+void loadKeyNames(); // the real letters of this keyboard (Chrome/Edge), for the menu and the shop's label
 startGame(); // the first game: does it count for the leaderboard? (fairPlay.ts)
 const menu = createMenu({ onPlay: () => requestLock(renderer.domElement) });
 const shopMenu = createShopMenu({ onCloseClick: () => closeShop() });

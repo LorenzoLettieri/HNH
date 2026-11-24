@@ -73,6 +73,21 @@
         border: 1px solid #5a3a20; border-bottom-width: 3px; font: bold 13px monospace; color: #fff0c0;
       }
 
+      /* Rebindable keys (menu.ts): every key is a button, two per action. */
+      .keys td:first-child { white-space: nowrap; }
+      .keys .action-note { display: block; font-size: 11px; opacity: 0.6; }
+      #menu .keys button.bind {
+        display: inline-block; width: 124px; margin: 1px 2px; padding: 2px 6px;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        background: #2a1810; border: 1px solid #5a3a20; border-bottom-width: 3px;
+        font: bold 13px monospace; color: #fff0c0;
+      }
+      #menu .keys button.bind.empty { color: #7a5a40; }
+      #menu .keys button.bind.listening { background: #d02010; color: #fff; animation: bind-blink 0.6s steps(2) infinite; }
+      #menu .keys button.bind.flash { background: #7a4a24; }
+      @keyframes bind-blink { 50% { background: #6a1008; } }
+      #keys-note { min-height: 1.2em; color: #f0a060; }
+
       /* --- Debug panel --- */
       #debug-panel {
         position: fixed; top: 0; right: 0; width: 340px; max-height: 100vh; overflow-y: auto;
@@ -616,25 +631,16 @@
 
         <div class="menu-page" data-page="controls" hidden>
           <h2>Comandi</h2>
+          <p class="hint">Clicca un tasto e premi quello nuovo (anche un tasto del mouse o la rotellina; Esc annulla). Click destro su un tasto per toglierlo. Un tasto fa una cosa sola: se lo usava un’altra azione, lo perde. Attenzione a Ctrl: Ctrl+W chiude la scheda.</p>
+          <!-- Filled by menu.ts from ACTIONS in src/keybinds.ts. -->
+          <table class="keys" id="keys-table"></table>
+          <p class="hint" id="keys-note" aria-live="polite"></p>
           <table class="keys">
-            <tr><th colspan="2">Movimento</th></tr>
-            <tr><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></td><td>Muoviti</td></tr>
-            <tr><td><kbd>Spazio</kbd></td><td>Salta · in aria vicino a un muro: wall jump</td></tr>
-            <tr><td><kbd>Shift</kbd> / <kbd>C</kbd></td><td>Accovacciati · in corsa: slide</td></tr>
-            <tr><th colspan="2">Combattimento</th></tr>
-            <tr><td><kbd>Click sinistro</kbd></td><td>Spara</td></tr>
-            <tr><td><kbd>R</kbd></td><td>Ricarica</td></tr>
-            <tr><td><kbd>1</kbd> / <kbd>2</kbd> / <kbd>3</kbd> / <kbd>4</kbd></td><td>Revolver / doppietta / carabina a leva / lancia-dinamite</td></tr>
-            <tr><td><kbd>Q</kbd> / <kbd>Rotellina</kbd></td><td>Cambia arma</td></tr>
-            <tr><td><kbd>Click destro</kbd> (tieni premuto)</td><td>Fuoco alternativo · revolver: fanning (svuota il tamburo) · carabina: mira con il mirino</td></tr>
-            <tr><td><kbd>F</kbd></td><td>Calcio (col badile, se l’hai comprato)</td></tr>
-            <tr><th colspan="2">Gioco</th></tr>
-            <tr><td><kbd>E</kbd></td><td>Vicino a un venditore: apri/chiudi lo shop (il gioco non si ferma; anche Esc lo chiude)</td></tr>
-            <tr><td><kbd>Tab</kbd> (tieni premuto)</td><td>Mappa: dove sei, i nemici, gli shop</td></tr>
+            <tr><th colspan="2">Fissi</th></tr>
             <tr><td><kbd>Esc</kbd></td><td>Pausa · a schermo intero (Chrome/Edge) anche per riprendere</td></tr>
-            <tr><th colspan="2">Debug</th></tr>
             <tr><td><kbd>\</kbd> / <kbd>`</kbd></td><td>Pannello di debug (tasto sotto Esc): valori, ondate, nemici da far apparire, viste di debug, respawn</td></tr>
           </table>
+          <button id="keys-reset">Ripristina i comandi di default</button>
           <button class="back" data-goto="main">Indietro</button>
         </div>
       </div>

@@ -1,12 +1,14 @@
 // The pause / start menu shown over the game (the "overlay" in index.html).
 // Pure DOM: the markup lives in index.html, here we only wire the buttons.
 //
-// Pages: "main" (Gioca, Classifica, Impostazioni, Comandi, Schermo intero), "leaderboard", "settings", "controls".
+// Pages: "main" (Gioca, Classifica, Impostazioni, Comandi, Schermo intero), "leaderboard", "settings", "controls"
+// (the rebindable keys: keysMenu.ts).
 // Every page is a <div class="menu-page" data-page="..."> and every button
 // with data-goto="..." switches to that page: like a tiny client-side router.
 import { SENSITIVITY_MAX, SENSITIVITY_MIN, set, settings, type Settings } from './settings';
 import { NAME_MAX_LENGTH } from './leaderboard';
 import { fillScoreTable } from './render/scoreTable';
+import { createKeysPage } from './keysMenu';
 import { canLockEscape, isFullscreen, toggleFullscreen, watchFullscreen } from './fullscreen';
 
 export interface Menu {
@@ -25,7 +27,11 @@ export function createMenu(options: { onPlay: () => void }): Menu {
   const playButton = document.getElementById('menu-play')!;
   const pages = overlay.querySelectorAll<HTMLElement>('.menu-page');
 
+  // The "Comandi" page: rebindable keys (keysMenu.ts).
+  const keysPage = createKeysPage();
+
   function showPage(name: string): void {
+    keysPage.cancel(); // leaving the page while it waits for a key
     currentPage = name;
     for (const page of pages) page.hidden = page.dataset.page !== name;
     if (name === 'leaderboard') void refreshLeaderboard();
@@ -134,6 +140,7 @@ export function createMenu(options: { onPlay: () => void }): Menu {
   return {
     setOpen(open) {
       overlay.style.display = open ? 'flex' : 'none';
+      keysPage.cancel();
       if (open) {
         showPage('main');
         refreshAll();
