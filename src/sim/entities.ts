@@ -35,6 +35,9 @@ interface EntityBase {
   shield?: number;
   shieldMax?: number;
   shieldTicks?: number;
+  /** Bounty "explosive" ("Polveriera", bounty.ts): ticks before it can light another stick, and ticks left of the lit stick in its hand (the warning). */
+  throwCooldown?: number;
+  throwWindup?: number;
   /** Bounty "swift": AI time owed, in ticks (game.ts pays it with extra steps, like the wager's curse). */
   timeDebt?: number;
 }

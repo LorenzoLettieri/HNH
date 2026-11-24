@@ -767,8 +767,11 @@ western): un nemico già comparso in quell'ondata (mai il Fabbro), con **5× la 
 - **Lesto**: il suo **tempo** corre 1,6 volte più veloce (lo stesso trucco della maledizione della Scommessa, per lui solo);
 - **Corazzato**: uno **scudo** grande quanto la sua salute para i colpi prima della carne (fanno "tink" e non danno
   punti) e **ricresce** se smetti di colpirlo per 2,5 s: bisogna tenere la pressione;
-- **Polveriera**: quando muore la miccia brucia 1,5 s e poi **esplode**: 60 danni a te al centro (raggio 7 m, niente
-  attraverso i muri), 250 ai nemici intorno, che contano come uccisioni tue. Da lontano, o in mezzo all'orda.
+- **Polveriera**: **ti lancia la dinamite**. Ogni 3 s, se ti vede (3–28 m), accende un candelotto (0,7 s di preavviso:
+  bagliore nella mano, fiammifero, miccia che sfrigola, freccia se è fuori schermo) e te lo lancia ad arco **dove
+  stai per andare**; il candelotto rimbalza, la miccia brucia 0,6 s dopo l'atterraggio e scoppia (o subito se ti
+  tocca): 35 danni al centro, raggio 3,5 m, **solo a te**. Prima versione [SCARTATA, decisione dell'utente]: esplodeva
+  da morta, ferendo anche i nemici intorno; era un regalo al giocatore, non un rafforzamento del nemico.
 Sopra la testa una **stella da sceriffo** sempre visibile, anche attraverso i muri, con la gemma del colore del
 modificatore; sulla mappa (Tab) una stella d'oro (anche col buio); nell'HUD nome, modificatore e **distanza**.
 **Il ricercato non tiene aperta l'ondata** [DECISO]: se la tenesse, l'ondata non finirebbe mai prima di ucciderlo e la

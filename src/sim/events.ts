@@ -128,8 +128,9 @@ export type SimEvent =
   | { type: 'bountySpawned'; entityId: number; modifier: BountyModifier; x: number; y: number; z: number }
   /** The shielded outlaw's shield broke (up = false) or is full again (up = true). Where its body is. */
   | { type: 'bountyShield'; entityId: number; up: boolean; x: number; y: number; z: number }
-  /** The explosive outlaw is dead: its fuse is lit, here (bountyFuse seconds to the blast). */
-  | { type: 'bountyFuse'; entityId: number; x: number; y: number; z: number }
+  /** The "Polveriera" outlaw lit a stick (the warning: bountyThrowWindup s), and threw it. Where its hand is. */
+  | { type: 'bountyWindup'; entityId: number; x: number; y: number; z: number }
+  | { type: 'bountyThrow'; entityId: number; x: number; y: number; z: number }
   /** The wave ended with the outlaw alive: it got away from here. */
   | { type: 'bountyEscaped'; entityId: number; x: number; y: number; z: number }
   | { type: 'bellRung'; index: number; count: number; x: number; y: number; z: number; last: boolean }

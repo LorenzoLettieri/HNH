@@ -1917,3 +1917,19 @@ export function playOutlawEscaped(): void {
   whistle(0.3, 0.25, 1320, 1175, 0.14);
   whistle(0.6, 0.8, 1175, 523, 0.16);
 }
+
+/** "Polveriera" lights a stick: a match struck on a boot (a short scrape of noise) and the flare catching ("fwoomp"). */
+export function playMatchStrike(where: Where): void {
+  const out = placeSound({ volume: Math.max(0.3, where.volume), pan: where.pan });
+  if (!out) return;
+  noiseBurst({ out, duration: 0.12, volume: 0.5, filter: 'bandpass', frequency: 3000, frequencyEnd: 5000, q: 2 });
+  noiseBurst({ out, start: 0.1, duration: 0.3, volume: 0.35, filter: 'lowpass', frequency: 1500, frequencyEnd: 400 });
+}
+
+/** "Polveriera" throws: a whoosh of the arm (noise sweeping down) and a grunt (a low thump). */
+export function playStickThrow(where: Where): void {
+  const out = placeSound({ volume: Math.max(0.3, where.volume), pan: where.pan });
+  if (!out) return;
+  noiseBurst({ out, duration: 0.25, volume: 0.45, filter: 'bandpass', frequency: 2000, frequencyEnd: 500, q: 1.5 });
+  thump({ out, duration: 0.12, volume: 0.35, from: 140, to: 80 });
+}

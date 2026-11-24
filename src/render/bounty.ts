@@ -8,9 +8,11 @@
 //   additive, plus its wireframe), as bright as the shield is full; it
 //   flashes and tinks when a bullet bounces off it, and shatters;
 // - "Lesto": a trail of embers behind it when it runs;
-// - "Polveriera": a red glow that blinks on its body; once dead, the corpse's
-//   fuse: the glow blinks faster and faster, sparks and the hiss of a fuse,
-//   until the blast (drawn by explosions.ts: kind 'bounty');
+// - "Polveriera": a red glow that breathes on its body; when it lights a
+//   stick (the warning) the glow moves to its hand, swells and blinks faster
+//   and faster, sparks and the hiss of the fuse, then the throw (the stick in
+//   flight is drawn by dynamite.ts like yours, its blast by explosions.ts:
+//   kind 'bounty');
 // - the escape: a puff of smoke where it was, the gallop and the whistle.
 //
 // It only READS the simulation (game.mapEvent, the entity, the events).
@@ -26,11 +28,13 @@ import {
   playBountyShieldHit,
   playBountyShieldUp,
   playFuseHiss,
+  playMatchStrike,
+  playStickThrow,
   playOutlawArrived,
   playOutlawEscaped,
   type LoopingSound,
 } from '../audio/sfx';
-import { spawnBlastFire, spawnSmoke, spawnSnort, spawnSparks } from './particles';
+import { spawnSmoke, spawnSnort, spawnSparks } from './particles';
 import { soundAt } from './soundPosition';
 
 // --- The star ---
@@ -62,14 +66,14 @@ const TRAIL_EVERY = 0.04;
 const TRAIL_MIN_SPEED = 2;
 
 // --- "Polveriera" ---
-/** The glow on the body: size (m), blinks per second while alive, and from → to during the fuse. */
+/** The glow on the body: size (m), breaths per second; while it lights a stick: blinks per second from → to. */
 const GLOW_SIZE = 1.1;
 const GLOW_HZ = 1.5;
-const FUSE_HZ_FROM = 3;
-const FUSE_HZ_TO = 14;
-/** During the fuse the glow swells up to × this, and sparks fly every this many seconds. */
-const FUSE_SWELL = 2.2;
-const FUSE_SPARK_EVERY = 0.05;
+const LIT_HZ_FROM = 4;
+const LIT_HZ_TO = 14;
+/** While it lights a stick the glow swells up to × this, and sparks fly every this many seconds. */
+const LIT_SWELL = 1.8;
+const LIT_SPARK_EVERY = 0.04;
 
 /** A 15×15 sheriff's star: five points, a gold body with a dark rim, the modifier's color in the middle. */
 function starTexture(center: string): THREE.CanvasTexture {
@@ -154,7 +158,7 @@ export function createBountyRenderer(scene: THREE.Scene): BountyRenderer {
   let shieldFlash = 0;
   let trailClock = 0;
   let sparkClock = 0;
-  let fuseTime = 0;
+  let litTime = 0;
   let hiss: LoopingSound | null = null;
   const point = new THREE.Vector3();
   const dir = new THREE.Vector3();
@@ -193,10 +197,17 @@ export function createBountyRenderer(scene: THREE.Scene): BountyRenderer {
           bodyAt(outlaw, 1, point);
           playBountyShieldHit(soundAt(camera, point.x, point.y, point.z));
           spawnSparks(point, dir.set(Math.random() - 0.5, 0.6, Math.random() - 0.5).normalize(), 6);
-        } else if (e.type === 'bountyFuse') {
-          fuseTime = 0;
+        } else if (e.type === 'bountyWindup') {
+          // The stick lit: a match struck, then the fuse hissing in its hand.
+          litTime = 0;
+          playMatchStrike(soundAt(camera, e.x, e.y, e.z));
           hiss?.stop();
           hiss = playFuseHiss(soundAt(camera, e.x, e.y, e.z));
+        } else if (e.type === 'bountyThrow') {
+          // From here the stick hisses on its own (render/dynamite.ts).
+          hiss?.stop();
+          hiss = null;
+          playStickThrow(soundAt(camera, e.x, e.y, e.z));
         } else if (e.type === 'bountyEscaped') {
           point.set(e.x, e.y, e.z);
           spawnSmoke(point, up, 30);
@@ -206,9 +217,6 @@ export function createBountyRenderer(scene: THREE.Scene): BountyRenderer {
           hiss = null;
           // The coins burst out of the body on their own (pickups); here the sound of the prize.
           if (e.success) playBountyClaimed({ volume: 0.7, pan: 0 });
-        } else if (e.type === 'explosion' && e.kind === 'bounty') {
-          point.set(e.x, e.y, e.z);
-          spawnBlastFire(point, up, 30); // on top of the dynamite's blast (explosions.ts): it's bigger
         }
       }
 
@@ -249,25 +257,28 @@ export function createBountyRenderer(scene: THREE.Scene): BountyRenderer {
         }
       }
 
-      // --- "Polveriera": the glow, alive and then on the corpse ---
-      const fuse = ev?.phase === 'fuse' ? ev : null;
-      if (fuse) {
-        fuseTime += dt;
-        const t = Math.min(1, fuseTime / tuning.bountyFuse);
-        // The blinking speeds up: the phase is the integral of the frequency (from→to in a straight line).
-        const phase = FUSE_HZ_FROM * fuseTime + ((FUSE_HZ_TO - FUSE_HZ_FROM) * fuseTime * t) / 2;
+      // --- "Polveriera": the glow on its body, in its hand while a stick is lit ---
+      const lit = alive && (alive.throwWindup ?? 0) > 0 ? alive : null;
+      if (lit) {
+        litTime += dt;
+        const t = Math.min(1, litTime / Math.max(0.05, tuning.bountyThrowWindup));
+        // The blinking speeds up: the phase is the INTEGRAL of the frequency
+        // (from → to in a straight line: the area of a trapezoid). Using
+        // frequency × time directly would make the blinks jump around.
+        const phase = LIT_HZ_FROM * litTime + ((LIT_HZ_TO - LIT_HZ_FROM) * litTime * t) / 2;
         const on = 0.5 + 0.5 * Math.cos(phase * Math.PI * 2);
+        const { box } = bodyAt(lit, alpha, point);
+        point.y = Math.max(point.y, box.maxY - 0.3); // the raised hand, like the simulation's throwPoint
         glow.visible = true;
-        glow.position.set(fuse.x, fuse.y, fuse.z);
-        glow.scale.setScalar(GLOW_SIZE * (1 + (FUSE_SWELL - 1) * t) * (0.7 + 0.3 * on));
-        glow.material.opacity = 0.35 + 0.65 * on;
+        glow.position.copy(point);
+        glow.scale.setScalar(GLOW_SIZE * (1 + (LIT_SWELL - 1) * t) * (0.7 + 0.3 * on));
+        glow.material.opacity = 0.4 + 0.6 * on;
         sparkClock += dt;
-        if (sparkClock >= FUSE_SPARK_EVERY) {
+        if (sparkClock >= LIT_SPARK_EVERY) {
           sparkClock = 0;
-          point.set(fuse.x, fuse.y + 0.3, fuse.z);
           spawnSparks(point, up, 3);
         }
-        hiss?.move(soundAt(camera, fuse.x, fuse.y, fuse.z));
+        hiss?.move(soundAt(camera, point.x, point.y, point.z));
       } else if (alive && ev?.modifier === 'explosive') {
         bodyAt(alive, alpha, point);
         const on = 0.5 + 0.5 * Math.cos(time * GLOW_HZ * Math.PI * 2);
@@ -277,10 +288,11 @@ export function createBountyRenderer(scene: THREE.Scene): BountyRenderer {
         glow.material.opacity = 0.25 + 0.5 * on;
       } else {
         glow.visible = false;
-        if (hiss && !fuse) {
-          hiss.stop();
-          hiss = null;
-        }
+      }
+      // Killed (or gone) with a stick lit in its hand: the hiss stops with it.
+      if (!lit && hiss) {
+        hiss.stop();
+        hiss = null;
       }
     },
   };

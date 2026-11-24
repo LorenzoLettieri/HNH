@@ -1143,14 +1143,20 @@ export const tuning = {
   /** ...that starts growing back after this many seconds without a hit, and refills in this many. */
   bountyShieldRegenDelay: 2.5,
   bountyShieldRegenTime: 1.5,
-  /** "Polveriera": seconds from its death to the blast... */
-  bountyFuse: 1.5,
-  /** ...how big (meters), the damage to you at the center (fading to 40% at the edge) and how hard it throws you (m/s)... */
-  bountyBlastRadius: 7,
-  bountyBlastDamage: 60,
+  /** "Polveriera": it throws a stick every this many seconds, after lighting it for this many (the warning)... */
+  bountyThrowInterval: 3,
+  bountyThrowWindup: 0.7,
+  /** ...only if it sees you, between these distances (meters)... */
+  bountyThrowMinRange: 3,
+  bountyThrowMaxRange: 28,
+  /** ...aimed where you'll be: this share of your velocity × the flight time (1 = a perfect interception)... */
+  bountyThrowLead: 0.6,
+  /** ...and the fuse burns this many seconds more than the flight (the moment you have to run once it lands). */
+  bountyStickFuse: 0.6,
+  /** Its sticks' blast: how big (meters), the damage to you at the center (fading to 40% at the edge), how hard it throws you (m/s). Never the enemies. */
+  bountyBlastRadius: 3.5,
+  bountyBlastDamage: 35,
   bountyBlastPush: 9,
-  /** ...and the damage to the enemies around (your kills: score, drops, style). */
-  bountyBlastEnemyDamage: 250,
 
   // "Le Campane del Giudizio" (src/sim/bells.ts)
   /** How many bells to ring, in order. */

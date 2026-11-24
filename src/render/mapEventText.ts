@@ -20,7 +20,7 @@ export const MAP_EVENT_TEXT: Record<MapEventKind, { title: string; goal: string 
 export const BOUNTY_MODIFIER_TEXT: Record<BountyModifier, { name: string; rule: string }> = {
   swift: { name: 'LESTO', rule: 'è più veloce di tutti: corre, salta e attacca prima' },
   shielded: { name: 'CORAZZATO', rule: 'uno scudo para i colpi e ricresce se smetti di colpirlo' },
-  explosive: { name: 'POLVERIERA', rule: 'quando muore esplode: abbattilo da lontano' },
+  explosive: { name: 'POLVERIERA', rule: 'ti lancia candelotti di dinamite dove stai per andare: non stare fermo' },
 };
 
 /** What kind of enemy the outlaw is, as the poster says it. */

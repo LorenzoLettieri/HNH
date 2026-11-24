@@ -85,11 +85,15 @@ export function createDebugPanel(options: {
   waves.number(tuning, 'bountyShieldScale', 0, 5, 0.1);
   waves.number(tuning, 'bountyShieldRegenDelay', 0, 10, 0.1);
   waves.number(tuning, 'bountyShieldRegenTime', 0.1, 10, 0.1);
-  waves.number(tuning, 'bountyFuse', 0.2, 5, 0.1);
-  waves.number(tuning, 'bountyBlastRadius', 1, 15, 0.5);
+  waves.number(tuning, 'bountyThrowInterval', 0.5, 10, 0.1);
+  waves.number(tuning, 'bountyThrowWindup', 0, 3, 0.05);
+  waves.number(tuning, 'bountyThrowMinRange', 0, 15, 0.5);
+  waves.number(tuning, 'bountyThrowMaxRange', 5, 60, 1);
+  waves.number(tuning, 'bountyThrowLead', 0, 1.5, 0.05);
+  waves.number(tuning, 'bountyStickFuse', 0, 3, 0.05);
+  waves.number(tuning, 'bountyBlastRadius', 1, 10, 0.5);
   waves.number(tuning, 'bountyBlastDamage', 0, 150, 5);
   waves.number(tuning, 'bountyBlastPush', 0, 25, 1);
-  waves.number(tuning, 'bountyBlastEnemyDamage', 0, 1000, 10);
   waves.number(tuning, 'bellsCount', 1, 6, 1);
   waves.number(tuning, 'bellsTime', 10, 180, 5);
   waves.number(tuning, 'bellsMinSpacing', 0, 50, 1);

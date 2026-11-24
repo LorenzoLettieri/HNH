@@ -256,14 +256,11 @@ function updateEventLine(game: GameState): void {
     return;
   }
   // The bounty has no clock either: who, what kind, and how far. Red when
-  // the wave is about to end (it gets away), and while the fuse burns.
+  // the wave is about to end (it gets away).
   if (ev.kind === 'bounty') {
     const name = outlawName(ev.nameSeed).toUpperCase();
     const outlaw = bountyEntity(ev, game);
-    if (ev.phase === 'fuse') {
-      eventGoal.textContent = 'LA MICCIA BRUCIA · allontanati!';
-      eventGoal.classList.add('hurry');
-    } else if (ev.phase === 'posted' || !outlaw) {
+    if (ev.phase === 'posted' || !outlaw) {
       eventGoal.textContent = `${name} · sta arrivando in città`;
       eventGoal.classList.remove('hurry');
     } else {

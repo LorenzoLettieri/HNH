@@ -10,32 +10,33 @@
 // - shielded: a shield that soaks up damage before the health (damage() in
 //   entities.ts) and grows back if you stop hitting it for a moment:
 //   you have to keep the pressure on;
-// - explosive: when it dies, a short fuse and then it BLOWS UP, hurting you
-//   (and the enemies around it, as your kills): kill it from afar, or kill
-//   it in the middle of the horde.
+// - explosive ("Polveriera"): it THROWS DYNAMITE at you. When it sees you,
+//   it lights a stick (the warning: bountyThrowWindup) and lobs it in an arc
+//   to where you'll be; the stick bounces, its fuse burns, and it blows up
+//   on you (only on you: an enemy's blast never hurts the enemies). You have
+//   to keep moving, and get it out of sight.
 //
 // It's a small state machine inside the skeleton's one (mapEvents.ts):
 //
 //   posted ──(bountyDelay: the poster's moment)──▶ hunting ──(killed)──▶ success
-//                                                    │   └──(explosive: killed)──▶ fuse ──(boom)──▶ success
 //                                                    └──(the wave ends first)──▶ escaped: failure
 //
 // The outlaw does NOT count for the end of the wave (waves.ts skips it):
 // otherwise the wave could never end before you killed it, and the bounty
 // could never be missed. So the race is "kill it before the last of the
-// others". Like the wager, it reads the wave events itself: a wave ending
-// during the fuse must not fail an event that's already won.
+// others". Like the wager, it reads the wave events itself (it checks the
+// kill first: killed in the same tick as the last of the others still counts).
 //
 // The modifier is stored on the ENTITY (entity.bounty), not only on the
 // event: damage() (shield) and game.ts (time) read it there, and they don't
 // need to know map events exist (the same idea as player.curse).
 import { secondsToTicks, tuning } from './config';
-import { createBull, createEyebat, createGhoul, createHound, createSharpshooter, isEnemy, type Enemy } from './entities';
+import { createBull, createEyebat, createGhoul, createHound, createSharpshooter, hitBox, isEnemy, type Enemy } from './entities';
 import type { SimEvent } from './events';
-import { explode, type Blast } from './explosion';
+import { DYNAMITE_RADIUS, enemyStick } from './dynamite';
 import type { GameState } from './game';
 import { hitCenter, lineFree } from './gunDamage';
-import { currentHeight, hurtPlayer } from './player';
+import { currentHeight } from './player';
 import { randomInt, type RandomState } from './random';
 import { healthForWave, pickSpawn } from './waves';
 import type { World } from './world';
@@ -59,7 +60,7 @@ const TARGETS: { type: BountyTarget; fromWave: () => number }[] = [
 export interface BountyEvent {
   kind: 'bounty';
   wave: number;
-  phase: 'posted' | 'hunting' | 'fuse';
+  phase: 'posted' | 'hunting';
   modifier: BountyModifier;
   target: BountyTarget;
   /**
@@ -70,12 +71,8 @@ export interface BountyEvent {
   nameSeed: number;
   /** The outlaw's entity id once it's in town (-1 while the poster is going up). */
   entityId: number;
-  /** posted: ticks until it shows up; fuse: ticks until it blows up. */
+  /** posted: ticks until it shows up. */
   ticks: number;
-  /** Where it died (the fuse burns there: the corpse may be removed, the blast stays put). */
-  x: number;
-  y: number;
-  z: number;
   /** Shielded: the shield was up at the last tick (to report it breaking and coming back). */
   shieldUp: boolean;
 }
@@ -93,9 +90,6 @@ export function createBountyEvent(world: World, rng: RandomState, wave: number):
     nameSeed: randomInt(rng, 0x7fffffff),
     entityId: -1,
     ticks: secondsToTicks(tuning.bountyDelay),
-    x: 0,
-    y: 0,
-    z: 0,
     shieldUp: false,
   };
 }
@@ -122,27 +116,17 @@ export function stepBounty(
     if (!e) return 'failure'; // gone without dying (a debug clear): nobody to claim
     // The kill first: killed in the same tick the wave ends (one stick for
     // the last ghoul and the outlaw) still counts.
-    if (e.state === 'dead') {
-      // The coins burst out of the body on their own (pickups.ts reads entity.bounty).
-      if (ev.modifier !== 'explosive') return 'success';
-      const c = hitCenter(e);
-      ev.x = c.x;
-      ev.y = c.y;
-      ev.z = c.z;
-      ev.phase = 'fuse';
-      ev.ticks = secondsToTicks(tuning.bountyFuse);
-      events.push({ type: 'bountyFuse', entityId: e.id, x: c.x, y: c.y, z: c.z });
-      return 'running';
-    }
+    // (The coins burst out of the body on their own: pickups.ts reads entity.bounty.)
+    if (e.state === 'dead') return 'success';
     if (ev.modifier === 'shielded') stepShield(ev, e, events);
+    if (ev.modifier === 'explosive') stepThrower(e, game, world, events);
   }
 
-  // A wave that ends while the poster is up or the outlaw is alive = it got
-  // away. During the fuse it's already won: the wave can end in peace.
+  // A wave that ends while the poster is up or the outlaw is alive = it got away.
   const end = events.length;
   for (let i = firstEvent; i < end; i++) {
     const e = events[i];
-    if ((e.type === 'waveEnd' || e.type === 'waveStart') && ev.phase !== 'fuse') {
+    if (e.type === 'waveEnd' || e.type === 'waveStart') {
       escape(ev, game, events);
       return 'failure';
     }
@@ -162,12 +146,7 @@ export function stepBounty(
     events.push({ type: 'bountySpawned', entityId: outlaw.id, modifier: ev.modifier, x: at.x, y: at.y, z: at.z });
     return 'running';
   }
-  if (ev.phase === 'hunting') return 'running';
-
-  // fuse
-  if (--ev.ticks > 0) return 'running';
-  blowUp(ev, game, world, events);
-  return 'success';
+  return 'running';
 }
 
 /** The outlaw: the same enemy as in the waves, tougher, with the modifier written on it. */
@@ -187,6 +166,11 @@ function createOutlaw(ev: BountyEvent, game: GameState, x: number, y: number, z:
     e.shieldTicks = 0;
   }
   if (ev.modifier === 'swift') e.timeDebt = 0;
+  // The first stick a moment after it shows up (it has to find you first anyway).
+  if (ev.modifier === 'explosive') {
+    e.throwCooldown = secondsToTicks(tuning.bountyThrowInterval * 0.5);
+    e.throwWindup = 0;
+  }
   return e;
 }
 
@@ -223,36 +207,75 @@ function escape(ev: BountyEvent, game: GameState, events: SimEvent[]): void {
 }
 
 /**
- * The explosive outlaw's last word. The enemies in the radius take the
- * damage as YOUR kills (explode() from explosion.ts: score, drops, style);
- * you take bountyBlastDamage at the center, fading to the edge, unless a
- * wall is in between. No dynamite jump: this one is meant to hurt.
+ * "Polveriera": the outlaw throws dynamite at you. A tiny state machine of
+ * its own, on top of whatever its kind's AI is doing (a ghoul keeps running
+ * at you, a hound keeps stalking: the throw is an EXTRA), with two counters
+ * on the entity:
+ *
+ *   cooldown ──(over, and it sees you, in range)──▶ windup (the stick lit: the warning) ──▶ throw ──▶ cooldown
+ *
+ * Seeing you = a free line from its chest to yours, between
+ * bountyThrowMinRange and bountyThrowMaxRange meters. Lost sight during the
+ * windup: it keeps the stick lit and throws as soon as it sees you again.
  */
-function blowUp(ev: BountyEvent, game: GameState, world: World, events: SimEvent[]): void {
-  const blast: Blast = {
-    kind: 'bounty',
-    radius: tuning.bountyBlastRadius,
-    damage: tuning.bountyBlastEnemyDamage,
-    edge: 0.4,
-    source: 'dynamite',
-    knockback: tuning.dynamiteKnockback,
-    lift: tuning.dynamiteKnockbackLift,
-    selfPush: 0,
-    smithScale: tuning.dynamiteSmithScale,
-  };
-  const at = { x: ev.x, y: ev.y, z: ev.z };
-  explode(game.player, at, blast, world, game.entities, events);
-
+function stepThrower(e: Enemy, game: GameState, world: World, events: SimEvent[]): void {
+  if ((e.stunTicks ?? 0) > 0) return; // stunned: hands busy (drink "Zoccolo duro")
   const p = game.player;
-  if (p.health <= 0) return;
-  // From the blast to your nearest point (like the enemies: a hitbox, not a center).
-  const top = p.y + currentHeight(p);
-  const ny = Math.max(p.y, Math.min(at.y, top));
-  const d = Math.hypot(p.x - at.x, ny - at.y, p.z - at.z);
-  if (d > blast.radius) return;
-  if (!lineFree(world, at.x, at.y, at.z, p.x, (p.y + top) / 2, p.z)) return;
-  const amount = Math.round(tuning.bountyBlastDamage * (1 - 0.6 * (d / blast.radius)));
-  hurtPlayer(p, amount, at.x, at.z, tuning.bountyBlastPush);
-  events.push({ type: 'playerHurt', damage: amount, fromX: at.x, fromZ: at.z });
+  const from = throwPoint(e);
+  const chest = p.y + currentHeight(p) * 0.6;
+  const range = Math.hypot(p.x - from.x, p.z - from.z);
+  const sees = p.health > 0 && range >= tuning.bountyThrowMinRange && range <= tuning.bountyThrowMaxRange
+    && lineFree(world, from.x, from.y, from.z, p.x, chest, p.z);
+  if ((e.throwWindup ?? 0) > 0) {
+    e.throwWindup = (e.throwWindup ?? 0) - 1;
+    if (e.throwWindup > 0) return;
+    if (!sees) {
+      e.throwWindup = 1; // ready, waiting for a clear line
+      return;
+    }
+    throwAt(e, game, from, events);
+    e.throwCooldown = secondsToTicks(tuning.bountyThrowInterval);
+    return;
+  }
+  if ((e.throwCooldown ?? 0) > 0) {
+    e.throwCooldown = (e.throwCooldown ?? 0) - 1;
+    return;
+  }
+  if (!sees) return;
+  e.throwWindup = secondsToTicks(tuning.bountyThrowWindup);
+  events.push({ type: 'bountyWindup', entityId: e.id, x: from.x, y: from.y, z: from.z });
 }
 
+/** Where the stick leaves its hand: the top of its hitbox, a bit lower (a raised arm). */
+function throwPoint(e: Enemy): { x: number; y: number; z: number } {
+  const c = hitCenter(e);
+  const top = hitBox(e).maxY;
+  return { x: c.x, y: Math.max(c.y, top - 0.3), z: c.z };
+}
+
+/**
+ * The throw: a BALLISTIC arc that lands where you'll be. Pick the flight
+ * time T first (longer for farther throws: a lob, not a fastball), then the
+ * velocity that covers the distance in T against gravity:
+ *   horizontal: v = d / T (no forces sideways);
+ *   vertical: y(T) = vy·T − ½·g·T² = dy → vy = (dy + ½·g·T²) / T.
+ * The target is your position + your velocity × T × bountyThrowLead: an
+ * INTERCEPTION (like the eye-bat's fireballs), only partial, so running in
+ * a straight line doesn't save you but a change of direction does. The fuse
+ * = the flight + bountyStickFuse: it lands, you see it, you have a moment to run.
+ */
+function throwAt(e: Enemy, game: GameState, from: { x: number; y: number; z: number }, events: SimEvent[]): void {
+  const p = game.player;
+  const range = Math.hypot(p.x - from.x, p.z - from.z);
+  const T = Math.min(1.6, 0.5 + range * 0.04);
+  const lead = tuning.bountyThrowLead * T;
+  const tx = p.x + p.vx * lead;
+  const tz = p.z + p.vz * lead;
+  const ty = p.y; // your feet: it lands on the floor next to you
+  const vx = (tx - from.x) / T;
+  const vz = (tz - from.z) / T;
+  const vy = (ty - from.y + 0.5 * tuning.gravity * T * T) / T;
+  const fuse = secondsToTicks(T + tuning.bountyStickFuse);
+  game.dynamite.push(enemyStick(game.nextEntityId++, from.x, from.y - DYNAMITE_RADIUS, from.z, vx, vy, vz, fuse));
+  events.push({ type: 'bountyThrow', entityId: e.id, x: from.x, y: from.y, z: from.z });
+}

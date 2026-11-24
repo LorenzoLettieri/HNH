@@ -31,6 +31,8 @@ const FADE_SPEED = 8;
 
 /** Is this enemy winding up (or running) an attack at the player right now? */
 function isThreat(e: Entity): boolean {
+  // La Taglia's "Polveriera" with a lit stick in its hand (src/sim/bounty.ts).
+  if ((e.throwWindup ?? 0) > 0) return true;
   switch (e.type) {
     case 'ghoul':
       return e.state === 'lunge';

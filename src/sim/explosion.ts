@@ -14,7 +14,7 @@ import type { ExplosionKind, HitSource, SimEvent } from './events';
 import { hitBox, isAlive, isEnemy, type Entity } from './entities';
 import { applyGunDamage, hitCenter, lineFree } from './gunDamage';
 import { knockBack } from './kick';
-import { currentHeight, type PlayerState } from './player';
+import { currentHeight, hurtPlayer, type PlayerState } from './player';
 import type { Box, World } from './world';
 
 export interface Blast {
@@ -163,4 +163,32 @@ function pushPlayer(p: PlayerState, at: { x: number; y: number; z: number }, bla
   } else {
     p.vy += up;
   }
+}
+
+/**
+ * An ENEMY's dynamite (La Taglia's "Polveriera", bounty.ts): it hurts only
+ * YOU, never the enemies (a blast that cleared the horde for you would be a
+ * gift, not a threat). bountyBlastDamage at the center, fading to 40% at the
+ * edge of bountyBlastRadius, measured to your nearest point; a wall in
+ * between saves you. It throws you away (bountyBlastPush), no dynamite jump.
+ */
+export function hostileBlast(p: PlayerState, at: { x: number; y: number; z: number }, world: World, events: SimEvent[]): void {
+  const radius = tuning.bountyBlastRadius;
+  events.push({ type: 'explosion', kind: 'bounty', x: at.x, y: at.y, z: at.z, radius });
+  if (p.health <= 0) return;
+  const height = currentHeight(p);
+  const body: Box = {
+    minX: p.x - tuning.playerRadius,
+    maxX: p.x + tuning.playerRadius,
+    minY: p.y,
+    maxY: p.y + height,
+    minZ: p.z - tuning.playerRadius,
+    maxZ: p.z + tuning.playerRadius,
+  };
+  const d = distanceToBox(at, body);
+  if (d > radius) return;
+  if (!lineFree(world, at.x, at.y, at.z, p.x, p.y + height / 2, p.z)) return;
+  const amount = Math.round(tuning.bountyBlastDamage * (1 - 0.6 * (d / radius)));
+  hurtPlayer(p, amount, at.x, at.z, tuning.bountyBlastPush * (1 - 0.5 * (d / radius)));
+  events.push({ type: 'playerHurt', damage: amount, fromX: at.x, fromZ: at.z });
 }
