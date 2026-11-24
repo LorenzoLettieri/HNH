@@ -51,6 +51,7 @@ import { updateAmmoHud } from './render/ammoHud';
 import { updateWeaponBar } from './render/weaponBar';
 import { updateMoneyHud } from './render/moneyHud';
 import { updateIronHud } from './render/ironHud';
+import { updateFichesHud } from './render/fichesHud';
 import { updateThreats } from './render/threatIndicator';
 import { createNavDebug } from './render/navDebug';
 import { createHitboxDebug } from './render/hitboxDebug';
@@ -541,6 +542,7 @@ renderer.setAnimationLoop((now: number) => {
   updateWeaponBar(player);
   updateMoneyHud(game.player.money, dt);
   updateIronHud(game.player.damnedIron, dt);
+  updateFichesHud(game.player.fiches, dt);
   // The map: only while Tab is held, never over the pause menu.
   mapOverlay.update(game, alpha, camera.position.x, camera.position.z, view.yaw, actionDown('map') && !paused, now / 1000);
 

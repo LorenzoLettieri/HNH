@@ -695,6 +695,10 @@ eventi `mapEventStart`/`mapEventEnd`; senza obiettivi (si prova coi bottoni del 
 **Passo 2** [FATTO]: l'annuncio. Scritta in alto come il Fabbro (titolo dell'evento + obiettivo), **dopo** "ONDATA N"
 (una coda di scritte: arrivano nello stesso tick), e a fine evento "EVENTO COMPLETATO" / "EVENTO FALLITO".
 Suono suo: un **triangolo da saloon** battuto veloce (le ondate hanno la campana grave, il Fabbro l'incudine).
+**Passo 3** [FATTO, da tarare]: le **fiches**. Un evento riuscito ne dà **1** (`mapEventFiches`: per ora una fiche = un
+drink), dritte in tasca (niente raccoglibile: l'evento ti ha già fatto correre); si perdono alla morte. Contatore
+sotto il Ferro Dannato (una pila di gettoni d'osso con le strisce rosse), nascosto a zero; la scritta di fine evento
+dice "+1 fiche · spendile al saloon".
 
 **Ordine proposto**: prima lo **scheletro comune** con l'evento più semplice (Campane o Scommessa): comparsa e
 annuncio, timer, successo/fallimento, valuta nuova nell'HUD; poi il barista e i drink; poi gli eventi con un'IA

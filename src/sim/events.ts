@@ -97,8 +97,8 @@ export type SimEvent =
   | { type: 'waveEnd'; wave: number }
   /** A map event shows up at the start of this wave (mapEvents.ts): the announcement. */
   | { type: 'mapEventStart'; kind: MapEventKind; wave: number }
-  /** The map event is over: objective done (success) or the wave ended first. */
-  | { type: 'mapEventEnd'; kind: MapEventKind; success: boolean }
+  /** The map event is over: objective done (success) or the wave ended first; the fiches it gave (0 if it failed). */
+  | { type: 'mapEventEnd'; kind: MapEventKind; success: boolean; fiches: number }
   | { type: 'ghoulAttack'; entityId: number }
   | { type: 'ghoulLunge'; entityId: number } // starts crouching for a pounce (the warning)
   /** A hound starts its ambush: the howl (the warning). */

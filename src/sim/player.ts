@@ -91,6 +91,11 @@ export interface PlayerState {
    */
   damnedIron: number;
   /**
+   * Fiches: earned by completing a map event (mapEvents.ts), spent at the
+   * saloon on the barman's drinks, the pacts (docs/DESIGN.md §5). Lost when you die.
+   */
+  fiches: number;
+  /**
    * Forge level of each gun: 0 = plain, 1 = reinforced (more damage, and
    * one day a new look: akimbo revolvers, a pump-action, a scope). Lost when you die.
    */
@@ -171,6 +176,7 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     cards: noCards(),
     cardSeed: 0,
     damnedIron: 0,
+    fiches: 0,
     forged: noForge(),
     fireCooldownTicks: 0,
     fireBufferTicks: 0,
@@ -519,6 +525,7 @@ export function respawn(p: PlayerState, world: World): void {
   p.money = 0; // dead = the game starts over: empty pockets
   p.cards = noCards(); // ...and plain weapons
   p.damnedIron = 0;
+  p.fiches = 0;
   p.forged = noForge();
   p.reloadTicks = 0;
   p.fanShotsLeft = 0;

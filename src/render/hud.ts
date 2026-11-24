@@ -140,8 +140,9 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
       queueBanner(text.title, text.goal, 4, playMapEventStart);
     }
     if (e.type === 'mapEventEnd') {
-      const title = e.success ? 'EVENTO COMPLETATO' : 'EVENTO FALLITO';
-      queueBanner(title, MAP_EVENT_TEXT[e.kind].title.toLowerCase(), 3, () => playMapEventEnd(e.success));
+      const name = MAP_EVENT_TEXT[e.kind].title.toLowerCase();
+      if (e.success) queueBanner('EVENTO COMPLETATO', `+${e.fiches} ${e.fiches === 1 ? 'fiche' : 'fiches'} · spendile al saloon`, 3, () => playMapEventEnd(true));
+      else queueBanner('EVENTO FALLITO', name, 3, () => playMapEventEnd(false));
     }
     // The banner says what the climax gives you; tint and sounds are in highNoon.ts.
     if (e.type === 'highNoon') showBanner('HIGH NOON', 'caricatore infinito', 2.5, 'hot');

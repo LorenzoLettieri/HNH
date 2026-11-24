@@ -1053,6 +1053,8 @@ export const tuning = {
    */
   mapEventGapMin: 4,
   mapEventGapMax: 5,
+  /** Fiches for a completed event (one fiche = one drink at the saloon, for now). */
+  mapEventFiches: 1,
 
   // --- Enemy projectiles (src/sim/projectiles.ts) ---
   /** Radius of an enemy projectile, meters (for hitting the player). */

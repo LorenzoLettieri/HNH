@@ -300,9 +300,19 @@
       /* Damned Iron (src/render/ironHud.ts): the ingot and "×N", under the vildenaro
          (leaving room for the "+N"). Hidden while you have none: [hidden] must win
          over display: flex, or the attribute would do nothing. */
-      #iron-box { margin-top: 26px; display: flex; justify-content: flex-end; align-items: center; gap: 6px; transform-origin: right center; }
+      /* Iron and fiches stack in #loot-box, which leaves room for the "+N" under the vildenaro. */
+      #loot-box { margin-top: 26px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+      #iron-box { display: flex; justify-content: flex-end; align-items: center; gap: 6px; transform-origin: right center; }
       #iron-box[hidden] { display: none; }
       #iron-icon { width: 32px; height: 32px; image-rendering: pixelated; filter: drop-shadow(2px 2px 0 #000) drop-shadow(0 0 6px rgba(255, 80, 30, 0.45)); }
+      /* Fiches (src/render/fichesHud.ts): a little stack of bone chips, same layout as the iron. */
+      #fiches-box { display: flex; justify-content: flex-end; align-items: center; gap: 6px; transform-origin: right center; }
+      #fiches-box[hidden] { display: none; }
+      #fiches-icon { width: 32px; height: 32px; image-rendering: pixelated; filter: drop-shadow(2px 2px 0 #000) drop-shadow(0 0 6px rgba(220, 40, 30, 0.4)); }
+      #fiches {
+        font-size: 22px; line-height: 1; color: #e4d8c0;
+        text-shadow: 0 0 2px #000, 2px 2px 0 #000, 0 0 10px rgba(200, 30, 20, 0.45);
+      }
       #iron {
         font-size: 22px; line-height: 1; color: #b8b4c0;
         text-shadow: 0 0 2px #000, 2px 2px 0 #000, 0 0 10px rgba(255, 70, 20, 0.4);
@@ -710,7 +720,10 @@
     </div>
     <div id="score-box"><div class="hud-label">PUNTI</div><div id="score"></div><div id="kills" class="hud-label"></div>
       <div id="money-box"><span id="money">0</span><div id="money-gain"></div></div>
-      <div id="iron-box" hidden><span id="iron">×0</span></div></div>
+      <div id="loot-box">
+        <div id="iron-box" hidden><span id="iron">×0</span></div>
+        <div id="fiches-box" hidden><span id="fiches">×0</span></div>
+      </div></div>
     <div id="banner"><div id="banner-title"></div><div id="banner-sub"></div></div>
     <div id="style-meter">
       <div id="style-letter"></div>

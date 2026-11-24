@@ -198,7 +198,7 @@ export function stepGame(
   const beforeWaves = events.length;
   stepWaves(game, world, events);
   // Right after the waves: it listens to their waveStart/waveEnd (mapEvents.ts).
-  stepMapEvents(game.mapEvent, game, events, beforeWaves);
+  stepMapEvents(game.mapEvent, game.player, game, events, beforeWaves);
   stepPickups(game, world, dt, events);
   // Last: it needs the whole tick (your hits come first, the enemies' hits on you later).
   stepStyle(game.style, game.player, events, tickEvents);
