@@ -1070,8 +1070,8 @@ export const tuning = {
   drinkMaxLevel: 3,
   /** Whiskey del Becchino: + max health per level. */
   whiskeyHealth: 25,
-  /** Gin del Serpente a Sonagli: health back for each kill, per level. */
-  ginHealPerKill: 3,
+  /** Bloody Mary: health back for each kill, per level. */
+  bloodyMaryHeal: 1,
   /** Acquavite Fulmine: + ground speed per level, m/s. */
   shineSpeed: 0.75,
   /** Rum del Morto: + seconds of style chain per level. */
@@ -1082,6 +1082,18 @@ export const tuning = {
   /** Bourbon Infernale: + style multiplier on score and vildenaro per level, and + damage taken per level (0.25 = +25%). */
   bourbonMultiplier: 0.5,
   bourbonHurt: 0.25,
+  /** Corazza di vapore: at this ground speed or more (m/s), enemy projectiles do this × their damage. */
+  steamArmorSpeed: 12,
+  steamArmorScale: 0.5,
+  /** Mano del morto: the last round of every magazine does this × the damage (every gun, the launcher too). */
+  deadHandMultiplier: 3,
+  /** Cambio lampo: after a weapon switch (once the gun is up), the first shot is a critical for this many seconds. */
+  quickDrawWindow: 1,
+  /** Ferro di cavallo storto: coins worth × this, and they fly out × this far. */
+  horseshoeCoinScale: 2,
+  horseshoeBurstScale: 2,
+  /** Avidità: coins never vanish, but they're worth × this. */
+  greedCoinScale: 0.5,
 
   // "Le Campane del Giudizio" (src/sim/bells.ts)
   /** How many bells to ring, in order. */

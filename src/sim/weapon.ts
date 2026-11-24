@@ -30,7 +30,7 @@
 //
 // BOTTOMLESS (the HIGH NOON climax, see style.ts): the gun in your hands is
 // always full and firing doesn't use rounds. No reloading: you just shoot.
-import { drinkDamageMultiplier } from './drinks';
+import { drinkDamageMultiplier, hasDrink } from './drinks';
 import type { InputCommand } from './command';
 import { secondsToTicks, tuning } from './config';
 import type { SimEvent } from './events';
@@ -85,6 +85,14 @@ function revolverHand(p: PlayerState, full: number, ammo: number): number {
  */
 export function forgeMultiplier(p: PlayerState, weapon: WeaponId): number {
   return p.forged[weapon] > 0 ? tuning.forgeDamageMultiplier : 1;
+}
+
+/**
+ * Everything that multiplies a gun's own bullet: the Forge, the barman's
+ * Latte del Diavolo, and this shot's power (Mano del morto on the last round).
+ */
+function gunPower(p: PlayerState, weapon: WeaponId): number {
+  return forgeMultiplier(p, weapon) * drinkDamageMultiplier(p) * p.shotPower;
 }
 
 /**
@@ -201,6 +209,7 @@ export function stepWeapon(
   if (p.fireCooldownTicks > 0) p.fireCooldownTicks--;
   if (p.fireBufferTicks > 0) p.fireBufferTicks--;
   if (p.switchTicks > 0) p.switchTicks--;
+  if (p.quickDrawTicks > 0) p.quickDrawTicks--;
 
   // Bottomless: the gun in your hands is topped up for free (also when the
   // climax starts with an empty cylinder, or you switch to an empty gun), and
@@ -313,6 +322,9 @@ export function stepWeapon(
     // The last round in the cylinder (card "Ultimo colpo"). Not during
     // HIGH NOON: the cylinder never empties, there's no last round.
     const lastRound = ammo === 1 && !bottomless;
+    // Drink "Mano del morto": that last round hits ×3, with every gun. The
+    // damage sites read p.shotPower (gunPower), the dynamite stick keeps it.
+    p.shotPower = lastRound && hasDrink(p, 'deadMansHand') ? tuning.deadHandMultiplier : 1;
     const eventsBefore = events.length;
     /** Rounds this shot takes out of the gun (the shotgun's cards can make it 2, or 0). */
     let shells = 1;
@@ -353,6 +365,7 @@ export function stepWeapon(
     if (!bottomless) setCurrentAmmo(p, Math.min(full, ammo - shells));
     p.quietTicks = 0; // "Duellante": the wait starts over
     p.wallJumpShot = false; // the wall jump's shot is fired (hit or miss)
+    p.quickDrawTicks = 0; // "Cambio lampo": the quick-draw shot is gone (hit or miss)
     p.fireCooldownTicks = secondsToTicks(fireInterval(p, p.weapon));
     p.fireBufferTicks = 0;
     p.fanQueued = false;
@@ -421,6 +434,9 @@ export function switchWeapon(p: PlayerState, w: WeaponId, events: SimEvent[]): v
   p.adsTicks = 0;
   p.fanShotsLeft = 0; // a fanning burst stops: the revolver is put away
   p.fanQueued = false;
+  // Drink "Cambio lampo": the first shot after the switch is a critical, if
+  // it comes within quickDrawWindow of the gun being up.
+  if (hasDrink(p, 'quickDraw')) p.quickDrawTicks = p.switchTicks + secondsToTicks(tuning.quickDrawWindow);
   events.push({ type: 'weaponSwitch', weapon: w, forged: p.forged[w] > 0 });
 }
 
@@ -570,8 +586,8 @@ function revolverBullet(
   const end = newEnd();
   const hit = trace(ox, oy, oz, dx, dy, dz, tuning.weaponRange, world, entities.filter(isAlive), false, events, end);
   if (hit) {
-    const critical = hit.headshot || (p.wallJumpShot && hasCard(p, 'riderShot'));
-    const amount = tuning.revolverDamage * forgeMultiplier(p, 'revolver') * drinkDamageMultiplier(p) * (critical ? tuning.headshotMultiplier : 1);
+    const critical = hit.headshot || (p.wallJumpShot && hasCard(p, 'riderShot')) || p.quickDrawTicks > 0;
+    const amount = tuning.revolverDamage * gunPower(p, 'revolver') * (critical ? tuning.headshotMultiplier : 1);
     applyGunDamage(hit.target, amount, critical, 'revolver', hit.distance, events);
     if (critical && hasCard(p, 'ricochet')) ricochet(p, end, hit.target, world, entities, events);
   }
@@ -687,8 +703,8 @@ function fireRifle(p: PlayerState, world: World, entities: Entity[], events: Sim
   for (let i = 0; i < 16; i++) {
     const hit = trace(a.ox, a.oy, a.oz, dx, dy, dz, tuning.weaponRange, world, living, false, events);
     if (!hit) break;
-    const critical = hit.headshot || quickscope;
-    let amount = tuning.rifleDamage * forgeMultiplier(p, 'rifle') * drinkDamageMultiplier(p) * (critical ? critMultiplier : 1) * duel;
+    const critical = hit.headshot || quickscope || p.quickDrawTicks > 0;
+    let amount = tuning.rifleDamage * gunPower(p, 'rifle') * (critical ? critMultiplier : 1) * duel;
     // "Marchio": a marked enemy takes double and loses the mark; an unmarked one gets it.
     const wasMarked = marks && hit.target.marked === true;
     if (wasMarked) {
@@ -755,9 +771,9 @@ function fireShotgun(p: PlayerState, world: World, entities: Entity[], events: S
     if (!hit) return;
     const amount =
       tuning.shotgunPelletDamage *
-      forgeMultiplier(p, 'shotgun') * drinkDamageMultiplier(p) *
+      gunPower(p, 'shotgun') *
       falloff(p, travelled + hit.distance) *
-      (hit.headshot ? tuning.shotgunHeadshotMultiplier : 1);
+      (hit.headshot || p.quickDrawTicks > 0 ? tuning.shotgunHeadshotMultiplier : 1);
     const t = totals.get(hit.target) ?? { amount: 0, headshot: false, pellets: 0, distance: Infinity };
     t.amount += amount;
     t.headshot ||= hit.headshot;

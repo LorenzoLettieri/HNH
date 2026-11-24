@@ -6,6 +6,7 @@
 //
 // They are not entities: you can't shoot them and they have no health. They
 // live in their own list in the GameState, as plain data (serializable).
+import { projectileDamageScale } from './drinks';
 import { tuning } from './config';
 import type { SimEvent } from './events';
 import { currentHeight, hurtPlayer, type PlayerState } from './player';
@@ -100,8 +101,10 @@ export function stepProjectiles(
 
     if (hitsPlayer) {
       // Pushed along the flight: "from" is a point behind it.
-      hurtPlayer(player, p.damage, p.x - dx, p.z - dz, p.knockback);
-      events.push({ type: 'playerHurt', damage: p.damage, fromX: p.x - dx * 5, fromZ: p.z - dz * 5 });
+      // Drink "Corazza di vapore": fast enough, and the hit is halved.
+      const damage = Math.round(p.damage * projectileDamageScale(player));
+      hurtPlayer(player, damage, p.x - dx, p.z - dz, p.knockback);
+      events.push({ type: 'playerHurt', damage, fromX: p.x - dx * 5, fromZ: p.z - dz * 5 });
       events.push({ type: 'projectileHit', kind: p.kind, x: p.x, y: p.y, z: p.z, nx: -dx, ny: -dy, nz: -dz, player: true });
       continue;
     }

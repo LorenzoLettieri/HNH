@@ -10,7 +10,7 @@
 import { playDrink, playPurchaseDenied } from '../audio/sfx';
 import { queueDrink } from '../controls';
 import { tuning } from '../sim/config';
-import { barOffer, DRINKS, drinkLevel, type DrinkId } from '../sim/drinks';
+import { barOffer, DRINKS, drinkLevel, drinkMaxLevel, type DrinkId } from '../sim/drinks';
 import type { SimEvent } from '../sim/events';
 import type { PlayerState } from '../sim/player';
 
@@ -21,7 +21,10 @@ import type { PlayerState } from '../sim/player';
  */
 const DRINK_TEXT: Record<DrinkId, { name: string; gift: string; cost?: string }> = {
   undertakerWhiskey: { name: 'Whiskey del Becchino', gift: `+${tuning.whiskeyHealth} salute massima.` },
-  rattlesnakeGin: { name: 'Gin del Serpente a Sonagli', gift: `Ogni uccisione ti ridà ${tuning.ginHealPerKill} di salute.` },
+  bloodyMary: { name: 'Bloody Mary', gift: `Ogni uccisione ti cura di ${tuning.bloodyMaryHeal}.` },
+  steamArmor: { name: 'Corazza di vapore', gift: `Sopra i ${tuning.steamArmorSpeed} m/s i proiettili ti fanno metà danno.` },
+  deadMansHand: { name: 'Mano del morto', gift: `L'ultimo colpo di ogni caricatore fa danno ×${tuning.deadHandMultiplier}. Tutte le armi.` },
+  quickDraw: { name: 'Cambio lampo', gift: `Per ${tuning.quickDrawWindow} s dopo un cambio arma, il primo colpo è un critico.` },
   lightningShine: { name: 'Acquavite Fulmine', gift: `Corri più veloce: +${tuning.shineSpeed} m/s.` },
   deadMansRum: { name: 'Rum del Morto', gift: `La catena dello Stile dura ${tuning.rumChainSeconds} s in più.` },
   devilsMilk: {
@@ -34,10 +37,22 @@ const DRINK_TEXT: Record<DrinkId, { name: string; gift: string; cost?: string }>
     gift: `+${tuning.bourbonMultiplier} al moltiplicatore di punti e vildenaro.`,
     cost: `Prendi il ${tuning.bourbonHurt * 100}% di danno in più.`,
   },
+  crookedHorseshoe: {
+    name: 'Ferro di cavallo storto',
+    gift: `Le monete valgono il doppio.`,
+    cost: 'Schizzano il doppio più lontano: corrigli dietro.',
+  },
+  greed: { name: 'Avidità', gift: 'Le monete non spariscono più.', cost: 'Ogni moneta vale la metà.' },
 };
 
 /** Roman numerals for the levels: I, II, III (it's a saloon, not a spreadsheet). */
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V'];
+
+/** "Whiskey del Becchino II"; no numeral for a drink with one level only (it has no II). */
+function levelName(drink: DrinkId, level: number): string {
+  const name = DRINK_TEXT[drink].name;
+  return drinkMaxLevel(drink) > 1 ? `${name} ${ROMAN[level] ?? level}` : name;
+}
 
 /** The barman's lines. */
 export const BAR_GREETING = '“Siediti, straniero. Qui non si paga in vildenaro: si paga in fiches. E qualcos’altro.”';
@@ -105,7 +120,7 @@ export function createBarRows(noFocus: (el: HTMLElement) => void): BarRows {
         <span class="shop-confirm-word">CONFERMA</span>
         <span class="shop-confirm-price"></span>
       </span>`;
-    el.querySelector('.shop-item-name')!.textContent = `${text.name} ${ROMAN[next] ?? next}`;
+    el.querySelector('.shop-item-name')!.textContent = levelName(drink, next);
     el.querySelector('.shop-item-desc')!.textContent = text.gift;
     el.querySelector('.drink-cost')!.textContent = text.cost ? `Il prezzo: ${text.cost}` : '';
     el.querySelector('.shop-price')!.textContent = `${tuning.drinkPrice} FICHE`;
@@ -119,7 +134,7 @@ export function createBarRows(noFocus: (el: HTMLElement) => void): BarRows {
 
   /** What you've had: "Whiskey del Becchino II · Latte del Diavolo I". */
   function summary(list: HTMLElement, player: PlayerState): void {
-    const had = DRINKS.filter((d) => drinkLevel(player, d) > 0).map((d) => `${DRINK_TEXT[d].name} ${ROMAN[drinkLevel(player, d)]}`);
+    const had = DRINKS.filter((d) => drinkLevel(player, d) > 0).map((d) => levelName(d, drinkLevel(player, d)));
     if (had.length === 0) return;
     const note = document.createElement('div');
     note.className = 'shop-maxed';

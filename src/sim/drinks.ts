@@ -20,25 +20,45 @@ import { randomInt, seedFrom } from './random';
 import { shopInReach } from './shop';
 import type { World } from './world';
 
-export type DrinkId =
+/**
+ * Every drink, and how many levels it has: 'levels' = up to
+ * tuning.drinkMaxLevel (an effect that grows in whole steps: +25 health,
+ * +25 more...); 1 = an effect that's either there or not (a double jump
+ * doesn't get "more double"). The list of pacts the player wrote is in
+ * docs/PATTI.md.
+ */
+export const DRINK_INFO = {
   // Pure buffs
-  | 'undertakerWhiskey'
-  | 'rattlesnakeGin'
-  | 'lightningShine'
-  | 'deadMansRum'
+  undertakerWhiskey: { levels: 'levels' },
+  bloodyMary: { levels: 'levels' },
+  lightningShine: { levels: 'levels' },
+  deadMansRum: { levels: 'levels' },
+  steamArmor: { levels: 1 },
+  deadMansHand: { levels: 1 },
+  quickDraw: { levels: 1 },
   // Pacts with a price
-  | 'devilsMilk'
-  | 'hellfireBourbon';
+  devilsMilk: { levels: 'levels' },
+  hellfireBourbon: { levels: 'levels' },
+  crookedHorseshoe: { levels: 1 },
+  greed: { levels: 1 },
+} as const satisfies Record<string, { levels: 'levels' | 1 }>;
+
+/** A drink's id: the keys of DRINK_INFO (one place to add a drink). */
+export type DrinkId = keyof typeof DRINK_INFO;
 
 /** Every drink, in a fixed order (it matters: the offer shuffles THIS list). */
-export const DRINKS: readonly DrinkId[] = [
-  'undertakerWhiskey',
-  'rattlesnakeGin',
-  'lightningShine',
-  'deadMansRum',
-  'devilsMilk',
-  'hellfireBourbon',
-];
+export const DRINKS = Object.keys(DRINK_INFO) as DrinkId[];
+
+/** The highest level of a drink. */
+export function drinkMaxLevel(id: DrinkId): number {
+  const levels = DRINK_INFO[id].levels;
+  return levels === 'levels' ? tuning.drinkMaxLevel : levels;
+}
+
+/** Do you have it? (For the drinks with one level: their effect is on or off.) */
+export function hasDrink(p: PlayerState, id: DrinkId): boolean {
+  return p.drinks[id] > 0;
+}
 
 /** No drinks: every level at 0 (a new game, or after dying). */
 export function noDrinks(): Record<DrinkId, number> {
@@ -87,9 +107,25 @@ export function chainBonus(p: PlayerState): number {
   return tuning.rumChainSeconds * p.drinks.deadMansRum;
 }
 
-/** Health back for each kill: Gin del Serpente a Sonagli. */
+/** Health back for each kill: Bloody Mary. */
 export function healPerKill(p: PlayerState): number {
-  return tuning.ginHealPerKill * p.drinks.rattlesnakeGin;
+  return tuning.bloodyMaryHeal * p.drinks.bloodyMary;
+}
+
+/** Corazza di vapore: an enemy projectile hits half as hard while you're this fast. */
+export function projectileDamageScale(p: PlayerState): number {
+  const fast = Math.hypot(p.vx, p.vz) >= tuning.steamArmorSpeed;
+  return hasDrink(p, 'steamArmor') && fast ? tuning.steamArmorScale : 1;
+}
+
+/** What a coin is worth, × these: Ferro di cavallo storto doubles it, Avidità halves it. */
+export function coinValueScale(p: PlayerState): number {
+  return (hasDrink(p, 'crookedHorseshoe') ? tuning.horseshoeCoinScale : 1) * (hasDrink(p, 'greed') ? tuning.greedCoinScale : 1);
+}
+
+/** How far the coins fly out of a body: Ferro di cavallo storto (the price: you run after them). */
+export function coinBurstScale(p: PlayerState): number {
+  return hasDrink(p, 'crookedHorseshoe') ? tuning.horseshoeBurstScale : 1;
 }
 
 // --- The counter ------------------------------------------------------------
@@ -106,7 +142,7 @@ function drinksTaken(p: PlayerState): number {
  * like the cards' upgradeOffer.
  */
 export function barOffer(p: PlayerState): DrinkId[] {
-  const left = DRINKS.filter((d) => p.drinks[d] < tuning.drinkMaxLevel);
+  const left = DRINKS.filter((d) => p.drinks[d] < drinkMaxLevel(d));
   const rng = { rng: seedFrom(p.cardSeed, 0xba7, drinksTaken(p)) };
   const count = Math.min(tuning.drinkOfferSize, left.length);
   for (let i = 0; i < count; i++) {

@@ -106,7 +106,14 @@ export function createDebugPanel(options: {
   shop.number(tuning, 'drinkOfferSize', 1, 6, 1);
   shop.number(tuning, 'drinkMaxLevel', 1, 5, 1);
   shop.number(tuning, 'whiskeyHealth', 0, 100, 5);
-  shop.number(tuning, 'ginHealPerKill', 0, 20, 1);
+  shop.number(tuning, 'bloodyMaryHeal', 0, 20, 1);
+  shop.number(tuning, 'steamArmorSpeed', 5, 20, 0.5);
+  shop.number(tuning, 'steamArmorScale', 0, 1, 0.05);
+  shop.number(tuning, 'deadHandMultiplier', 1, 6, 0.5);
+  shop.number(tuning, 'quickDrawWindow', 0, 3, 0.1);
+  shop.number(tuning, 'horseshoeCoinScale', 1, 4, 0.5);
+  shop.number(tuning, 'horseshoeBurstScale', 1, 4, 0.5);
+  shop.number(tuning, 'greedCoinScale', 0, 1, 0.05);
   shop.number(tuning, 'shineSpeed', 0, 3, 0.25);
   shop.number(tuning, 'rumChainSeconds', 0, 5, 0.5);
   shop.number(tuning, 'devilsMilkDamage', 0, 2, 0.25);

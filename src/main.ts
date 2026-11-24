@@ -1,3 +1,4 @@
+import { DRINK_INFO, DRINKS, drinkMaxLevel, maxHealth, type DrinkId } from './sim/drinks';
 import * as THREE from 'three';
 import { initInput, isPointerLocked, isTypingInField, requestLock } from './input';
 import { actionDown, isBound, loadKeyNames, loadKeybinds } from './keybinds';
@@ -412,6 +413,15 @@ if (params.get('forged') === 'all') {
     game.player.forged[w] = 1;
     game.player.loaded[w] = magazineSize(game.player, w);
   }
+}
+// ?drinks=all (or ?drinks=greed,quickDraw: ids from DRINK_INFO in src/sim/drinks.ts):
+// start with the barman's drinks at their top level, to try the pacts without
+// completing events. Lost at the first death, like the real ones.
+const drinksParam = params.get('drinks');
+if (drinksParam) {
+  const wanted = drinksParam === 'all' ? DRINKS : drinksParam.split(',').filter((d): d is DrinkId => d in DRINK_INFO);
+  for (const d of wanted) game.player.drinks[d] = drinkMaxLevel(d);
+  game.player.health = maxHealth(game.player);
 }
 const startPos = params.get('pos')?.split(',').map(Number);
 const startLook = params.get('look')?.split(',').map(Number);

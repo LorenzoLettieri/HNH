@@ -22,7 +22,7 @@
 // same spot (coins and ammo would hide each other).
 //
 // Pure simulation, like everything in src/sim: the renderer reads the list.
-import { maxHealth, rewardBonus } from './drinks';
+import { coinBurstScale, coinValueScale, hasDrink, maxHealth, rewardBonus } from './drinks';
 import { secondsToTicks, tuning } from './config';
 import type { SimEvent } from './events';
 import type { Enemy } from './entities';
@@ -107,8 +107,8 @@ interface Loot {
 function whatDrops(game: GameState, enemy: Enemy): Loot[] {
   const loot: Loot[] = [];
   const coins = Math.round(enemyCost(enemy) * tuning.coinsPerWeight);
-  // The style's multiplier, plus Bourbon Infernale's (drinks.ts).
-  const coinValue = Math.round(tuning.coinValue * (styleMultiplier(game.style) + rewardBonus(game.player)));
+  // The style's multiplier, plus Bourbon Infernale's; × Ferro di cavallo storto and Avidità (drinks.ts).
+  const coinValue = Math.max(1, Math.round(tuning.coinValue * (styleMultiplier(game.style) + rewardBonus(game.player)) * coinValueScale(game.player)));
   for (let i = 0; i < coins; i++) loot.push({ kind: 'coin', value: coinValue });
   // The Damned Smith ALWAYS leaves its Damned Iron (the reason to kill it).
   if (enemy.type === 'smith') loot.push({ kind: 'iron', value: 0 });
@@ -137,7 +137,8 @@ function burst(game: GameState, enemy: Enemy, loot: Loot[]): void {
   loot.forEach((item, i) => {
     const jitter = (random(game) - 0.5) * (Math.PI / n) * 0.6;
     const angle = fan + (i / n) * Math.PI * 2 + jitter;
-    const speed = tuning.dropBurstSpeedMin + random(game) * (tuning.dropBurstSpeedMax - tuning.dropBurstSpeedMin);
+    let speed = tuning.dropBurstSpeedMin + random(game) * (tuning.dropBurstSpeedMax - tuning.dropBurstSpeedMin);
+    if (item.kind === 'coin') speed *= coinBurstScale(game.player); // Ferro di cavallo storto: they fly farther
     // From the middle of the body (not the feet: a body sinking in the floor
     // must not launch things from under it).
     const d = createPickup(game, item.kind, enemy.x, enemy.y + 0.5, enemy.z, item.value);
@@ -221,7 +222,8 @@ function fly(d: Pickup, world: World, dt: number): void {
 export function stepPickups(game: GameState, world: World, dt: number, events: SimEvent[]): void {
   const p = game.player;
   game.pickups = game.pickups.filter((d) => {
-    if (--d.ticksLeft <= 0) return false;
+    // Avidità: coins never vanish (their clock doesn't run).
+    if (!(d.kind === 'coin' && hasDrink(p, 'greed')) && --d.ticksLeft <= 0) return false;
     d.px = d.x;
     d.py = d.y;
     d.pz = d.z;

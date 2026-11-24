@@ -126,6 +126,14 @@ export interface PlayerState {
    */
   wallJumpShot: boolean;
   /**
+   * The damage factor of the shot being fired right now (set by stepWeapon
+   * just before it fires): "Mano del morto" makes the last round ×3. The
+   * dynamite stick takes it with it (game.ts), its blast comes later.
+   */
+  shotPower: number;
+  /** "Cambio lampo": ticks left in which the next shot is a critical (0 = none). */
+  quickDrawTicks: number;
+  /**
    * Card "Volo di piombo": shells spent on shotgun jumps since you left the
    * ground. A kill before landing gives them back (refundLeadFlight in weapon.ts).
    */
@@ -191,6 +199,8 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     fanShotsLeft: 0,
     slideReloadTicks: 0,
     wallJumpShot: false,
+    shotPower: 1,
+    quickDrawTicks: 0,
     leadFlightShells: 0,
     quietTicks: 0,
     aimHeldTicks: 0,

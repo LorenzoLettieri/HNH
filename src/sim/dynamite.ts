@@ -63,6 +63,8 @@ export interface Dynamite {
   fuseTotal: number;
   /** Soaked in holy water (thrown by the launcher reinforced at the Forge): it leaves a pool of holy fire. */
   holy: boolean;
+  /** The shot's power when it was fired (player.shotPower: Mano del morto), × its blast's damage. */
+  power: number;
   /**
    * The blast's radius, meters: decided at the throw, like everything the
    * cards change (card "Botte di polvere"). The stick carries the rules it
@@ -133,6 +135,7 @@ export function throwDynamite(p: PlayerState, world: World, nextId: number): Dyn
     fuseTicks: fuse,
     fuseTotal: fuse,
     holy: p.forged.dynamite > 0,
+    power: p.shotPower, // "Mano del morto": the last stick of the drum hits ×3
     radius: tuning.dynamiteRadius * (hasCard(p, 'powderKeg') ? tuning.powderKegRadiusScale : 1),
     hellBounce: hasCard(p, 'hellBounce'),
     bounces: 0,
@@ -214,7 +217,7 @@ export function stepDynamite(
       const bonus = d.hellBounce ? 1 + tuning.hellBounceBonus * Math.min(d.bounces, tuning.hellBounceMax) : 1;
       // The center of the box, not its bottom: that's where the powder is.
       const push = d.rocket ? tuning.rocketSelfPushScale : d.mini ? tuning.clusterDamageScale : 1; // "Razzo": a stronger dynamite jump
-      const damage = bonus * (d.mini ? tuning.clusterDamageScale : 1) * drinkDamageMultiplier(player); // × Latte del Diavolo
+      const damage = bonus * (d.mini ? tuning.clusterDamageScale : 1) * drinkDamageMultiplier(player) * d.power; // × Latte del Diavolo, × Mano del morto
       explode(player, { x: d.x, y: d.y + r, z: d.z }, dynamiteBlast(d.holy, d.radius, damage, push), world, entities, events);
       // "A grappolo": the mini sticks fly out of the blast.
       if (d.cluster) for (const m of clusterOf(d, nextId)) alive.push(m);
@@ -252,6 +255,7 @@ function clusterOf(d: Dynamite, nextId: () => number): Dynamite[] {
       fuseTicks: fuse,
       fuseTotal: fuse,
       holy: false, // (no pools of holy fire from the minis: one per stick is plenty)
+      power: d.power,
       radius: tuning.clusterRadius,
       hellBounce: false,
       bounces: 0,
