@@ -398,8 +398,14 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
   }
   if (!landed) p.sliding = false; // slid off a ledge: now we're just falling
 
-  // 7. Fell off the world (or asked to): back to the spawn point.
-  if (p.y < tuning.killY || cmd.respawn) respawn(p, world);
+  // 7. Fell off the world: you're dead. Only the health goes to zero here:
+  // the death itself (game over, score, back to wave 1) is stepGame's, the
+  // same as for any other death. It used to be a plain respawn: full health
+  // and the wave going on, a free heal for anyone who jumped off the map.
+  // Not through hurtPlayer: "Ultimo respiro" can't save you from the void.
+  if (p.y < tuning.killY) p.health = 0;
+  // The debug panel's "Respawn" (a practice game, fairPlay.ts): back to the spawn, alive.
+  else if (cmd.respawn) respawn(p, world);
 }
 
 /**

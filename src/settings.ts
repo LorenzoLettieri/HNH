@@ -1,6 +1,6 @@
 // Player settings (the "Impostazioni" menu): values the player chooses,
 // saved in the browser's localStorage so they survive a page reload.
-// Mouse: sensitivity. Audio: volume, ear ringing, muffled world when hit.
+// Mouse: sensitivity. Graphics: pixel-art look. Audio: volume, ear ringing, muffled world when hit.
 // Leaderboard: the name your scores are saved under.
 //
 // Every change goes through set(), which applies it to the system that uses
@@ -8,6 +8,7 @@
 // `settings` back.
 import { controlSettings } from './controls';
 import { setVolume, sfxSettings } from './audio/sfx';
+import { postSettings } from './render/postprocess';
 import { cleanName } from './leaderboard';
 import { randomName } from './randomName';
 
@@ -26,6 +27,8 @@ export const SENSITIVITY_MAX = 20;
 export const settings = {
   /** Mouse sensitivity, Quake/CS scale. 5.2 ≈ the old fixed value (0.002 rad/px). */
   sensitivity: 5.2,
+  /** The pixel-art look (low resolution, color bands, dithering). Off = sharp full-resolution image. */
+  pixelArt: true,
   /** Master volume, 0..100 as shown in the menu (see volumeToGain). */
   volume: 70,
   /** Ringing in the ears after hard hits. */
@@ -51,6 +54,7 @@ function volumeToGain(volume: number): number {
 function apply(): void {
   const degreesPerCount = settings.sensitivity * DEGREES_PER_COUNT;
   controlSettings.mouseSensitivity = degreesPerCount * (Math.PI / 180); // the view math works in radians
+  postSettings.pixelArt = settings.pixelArt;
   setVolume(volumeToGain(settings.volume));
   sfxSettings.earRinging = settings.earRinging;
   sfxSettings.hitMuffle = settings.hitMuffle;

@@ -2,9 +2,9 @@ import { DRINK_INFO, DRINKS, drinkMaxLevel, maxHealth, type DrinkId } from './si
 import * as THREE from 'three';
 import { initInput, isPointerLocked, isTypingInField, requestLock } from './input';
 import { actionDown, isBound, loadKeyNames, loadKeybinds } from './keybinds';
-import { loadSettings, settings } from './settings';
+import { loadSettings, set, settings } from './settings';
 import { submitScore } from './leaderboard';
-import { markPractice, practiceGame, startGame } from './fairPlay';
+import { debugParam, markPractice, practiceGame, startGame } from './fairPlay';
 import { createMenu } from './menu';
 import { createDebugPanel, debugTime, type DebugTool } from './debug/debugPanel';
 import { hitStopScale } from './render/hitStop';
@@ -125,12 +125,11 @@ function applyAtmosphere(a: Atmosphere): void {
 // --- Level ----------------------------------------------------------------
 // The level is pure data (src/levels/). Here we turn its boxes into textured meshes.
 // ?level=arena in the URL picks another level (see src/levels/index.ts).
-const params = new URLSearchParams(location.search);
-const world = LEVELS[params.get('level') ?? DEFAULT_LEVEL] ?? LEVELS[DEFAULT_LEVEL];
+const world = LEVELS[debugParam('level') ?? DEFAULT_LEVEL] ?? LEVELS[DEFAULT_LEVEL];
 // The whole game state (player + entities), created from the level.
 // The seed makes every game different (which enemies, where). ?seed=123 in
 // the URL replays the same sequence: handy to test a specific situation.
-const seed = Number(params.get('seed') ?? Math.floor(Math.random() * 2 ** 32));
+const seed = Number(debugParam('seed') ?? Math.floor(Math.random() * 2 ** 32));
 console.log(`seed: ${seed}`);
 const game = createGame(world, seed);
 
@@ -212,7 +211,8 @@ const debugPanel = createDebugPanel({
         debugPanel.showAtmosphere(ATMOSPHERES[atmosphereIndex]);
       },
     },
-    { label: 'Pixel art on/off', run: () => post.togglePixelArt() },
+    // The same setting as the menu's checkbox (Impostazioni → Grafica): saved, and the checkbox follows.
+    { label: 'Pixel art on/off', run: () => set('pixelArt', !settings.pixelArt) },
     {
       label: 'Grafo IA: off → ghoul → tori',
       run: () => {
@@ -402,14 +402,14 @@ const prevPlayer = createPlayer();
 // Debug: start from a given spot with ?pos=x,y,z&look=yaw,pitch (degrees)
 // in the URL. Handy to jump straight to the thing you're working on.
 // ?slow=0.2: slow motion from the start (see debugTime).
-if (params.get('slow')) debugTime.timeScale = Number(params.get('slow'));
+if (debugParam('slow')) debugTime.timeScale = Number(debugParam('slow'));
 // ?guns=all: start with every weapon (to try them without going to the shop).
-if (params.get('guns') === 'all') {
+if (debugParam('guns') === 'all') {
   for (const w of GEAR) game.player.owned[w] = true; // the shovel too
   game.player.reserve.sticks = tuning.dynamiteReserveStart; // the launcher's spare sticks (bought, they come with it)
 }
 // ?forged=all: every gun already reinforced at the Forge, and loaded (akimbo, pump-action, scope).
-if (params.get('forged') === 'all') {
+if (debugParam('forged') === 'all') {
   for (const w of FORGEABLE) {
     game.player.forged[w] = 1;
     game.player.loaded[w] = magazineSize(game.player, w);
@@ -418,14 +418,14 @@ if (params.get('forged') === 'all') {
 // ?drinks=all (or ?drinks=greed,quickDraw: ids from DRINK_INFO in src/sim/drinks.ts):
 // start with the barman's drinks at their top level, to try the pacts without
 // completing events. Lost at the first death, like the real ones.
-const drinksParam = params.get('drinks');
+const drinksParam = debugParam('drinks');
 if (drinksParam) {
   const wanted = drinksParam === 'all' ? DRINKS : drinksParam.split(',').filter((d): d is DrinkId => d in DRINK_INFO);
   for (const d of wanted) game.player.drinks[d] = drinkMaxLevel(d);
   game.player.health = maxHealth(game.player);
 }
-const startPos = params.get('pos')?.split(',').map(Number);
-const startLook = params.get('look')?.split(',').map(Number);
+const startPos = debugParam('pos')?.split(',').map(Number);
+const startLook = debugParam('look')?.split(',').map(Number);
 if (startPos?.length === 3) [player.x, player.y, player.z] = startPos;
 if (startLook?.length === 2) {
   view.yaw = THREE.MathUtils.degToRad(startLook[0]);

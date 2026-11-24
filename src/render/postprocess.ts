@@ -9,6 +9,12 @@ import * as THREE from 'three';
 
 /** Post-processing settings. A mutable object so the debug panel can change them live. */
 export const postSettings = {
+  /**
+   * The pixel-art look on/off (off = full resolution, no color banding).
+   * A player setting (settings.ts, the menu's Impostazioni page): it's
+   * written there, render() notices the change and resizes the targets.
+   */
+  pixelArt: true,
   /** Vertical resolution of the low-res image. Lower = bigger pixels. */
   pixelHeight: 270,
   /** Shades per color channel (red, green, blue). Lower = more "retro" banding. */
@@ -191,8 +197,6 @@ export interface PostProcess {
   /** Where the sun is (unit direction) and how strong its rays are. */
   setSun(direction: THREE.Vector3, godRays: number): void;
   setSize(width: number, height: number): void;
-  /** Switches between the pixel-art look and full resolution (for comparison). */
-  togglePixelArt(): void;
   /** Re-applies size-related settings (e.g. after changing pixelHeight). */
   refresh(): void;
   /** Size in pixels of the image the scene is rendered into. */
@@ -264,7 +268,8 @@ export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
     renderer.render(postScene, postCamera);
   }
 
-  let pixelArt = true;
+  /** The look the targets are sized for: compared with postSettings.pixelArt every frame. */
+  let pixelArt = postSettings.pixelArt;
   let screenW = 1;
   let screenH = 1;
   const sceneSize = new THREE.Vector2();
@@ -298,6 +303,11 @@ export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
       godRays = strength;
     },
     render(scene, camera, overlay) {
+      // Pixel art switched on/off (menu or debug panel): the low-res image changes size.
+      if (pixelArt !== postSettings.pixelArt) {
+        pixelArt = postSettings.pixelArt;
+        resizeTargets();
+      }
       // Settings may have changed (debug panel): copy them into the uniforms.
       brightMaterial.uniforms.threshold.value = postSettings.bloomThreshold;
       finalMaterial.uniforms.bloomStrength.value = postSettings.bloomStrength;
@@ -352,10 +362,6 @@ export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
     setSize(width, height) {
       screenW = width;
       screenH = height;
-      resizeTargets();
-    },
-    togglePixelArt() {
-      pixelArt = !pixelArt;
       resizeTargets();
     },
     refresh() {

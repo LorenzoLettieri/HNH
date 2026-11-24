@@ -133,6 +133,7 @@ export function createMenu(options: { onPlay: () => void }): Menu {
   sensBox.max = String(SENSITIVITY_MAX);
   bindNumber('set-sens', 'set-sens-num', 'sensitivity');
   bindNumber('set-volume', 'set-volume-num', 'volume');
+  bindToggle('set-pixel-art', 'pixelArt');
   bindToggle('set-ear-ringing', 'earRinging');
   bindToggle('set-hit-muffle', 'hitMuffle');
   refreshAll();

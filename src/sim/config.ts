@@ -18,7 +18,7 @@ export const tuning = {
   playerRadius: 0.4,
   /** Height of the player's box, meters. */
   playerHeight: 1.8,
-  /** Falling below this height means you left the level: respawn. */
+  /** Falling below this height means you left the level: you die (game over). */
   killY: -30,
 
   // --- Ground movement (Quake-style) ---
