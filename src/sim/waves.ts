@@ -27,8 +27,8 @@ export interface WaveState {
   /** Active: weight points of this wave not spawned yet (see waveBudget). */
   budgetLeft: number;
   spawnCooldownTicks: number;
-  /** A Damned Smith still has to show up in this wave (waves 9, 19, 29...: see isSmithWave). */
-  smithPending: boolean;
+  /** Damned Smiths that still have to show up in this wave (waves 9, 19, 29...: see smithsForWave). */
+  smithsPending: number;
 }
 
 
@@ -39,7 +39,7 @@ export function createWaveState(): WaveState {
     breakTicks: secondsToTicks(tuning.waveFirstBreak),
     budgetLeft: 0,
     spawnCooldownTicks: 0,
-    smithPending: false,
+    smithsPending: 0,
   };
 }
 
@@ -51,6 +51,16 @@ export function createWaveState(): WaveState {
  */
 export function isSmithWave(n: number): boolean {
   return n >= tuning.smithFromWave && (n - tuning.smithFromWave) % tuning.smithEveryWaves === 0;
+}
+
+/**
+ * How many Smiths wave n brings: 0 outside the Smith waves, then 1 at the
+ * first, and smithExtraPerWave more at each one after (1, 2, 3... at 9, 19, 29).
+ * (n − first) / every = how many Smith waves came before this one.
+ */
+export function smithsForWave(n: number): number {
+  if (!isSmithWave(n)) return 0;
+  return 1 + tuning.smithExtraPerWave * ((n - tuning.smithFromWave) / tuning.smithEveryWaves);
 }
 
 // --- The difficulty curve: everything that changes from wave to wave --------
@@ -213,14 +223,14 @@ export function stepWaves(game: GameState, world: World, events: SimEvent[]): vo
       w.phase = 'active';
       w.budgetLeft = waveBudget(w.number);
       w.spawnCooldownTicks = 0;
-      w.smithPending = isSmithWave(w.number);
+      w.smithsPending = smithsForWave(w.number);
       events.push({ type: 'waveStart', wave: w.number });
     }
     return;
   }
 
-  // Active: wave cleared when everything has spawned AND died (the Smith too).
-  if (w.budgetLeft === 0 && alive === 0 && !w.smithPending) {
+  // Active: wave cleared when everything has spawned AND died (the Smiths too).
+  if (w.budgetLeft === 0 && alive === 0 && w.smithsPending === 0) {
     events.push({ type: 'waveEnd', wave: w.number });
     w.phase = 'break';
     w.breakTicks = secondsToTicks(tuning.waveBreak);
@@ -231,16 +241,19 @@ export function stepWaves(game: GameState, world: World, events: SimEvent[]): vo
     w.spawnCooldownTicks--;
     return;
   }
-  // The Damned Smith: once smithSpawnAt of the budget has spawned (halfway
+  // The Damned Smiths: once smithSpawnAt of the budget has spawned (halfway
   // through the wave), on top of the budget and of the alive limit: it's an
-  // event, it doesn't wait for a free spot.
-  if (w.smithPending && w.budgetLeft <= waveBudget(w.number) * (1 - tuning.smithSpawnAt)) {
+  // event, it doesn't wait for a free spot. More than one (wave 19 on): one
+  // per spawn, a spawn interval apart, so each picks its own spawn point.
+  if (w.smithsPending > 0 && w.budgetLeft <= waveBudget(w.number) * (1 - tuning.smithSpawnAt)) {
     const at = pickSpawn(game, world);
     if (at) {
       const smith = createSmith(game.nextEntityId++, at.x, at.y, at.z, healthForWave(tuning.smithHealth, w.number));
       game.entities.push(smith);
-      w.smithPending = false;
-      events.push({ type: 'smithArrived', entityId: smith.id });
+      // first = the one that opens the group (the banner), total = how many in the wave.
+      const total = smithsForWave(w.number);
+      events.push({ type: 'smithArrived', entityId: smith.id, first: w.smithsPending === total, total });
+      w.smithsPending--;
       w.spawnCooldownTicks = secondsToTicks(spawnInterval(w.number));
       return;
     }
@@ -347,7 +360,7 @@ export function jumpToWave(game: GameState, n: number): void {
   game.entities = game.entities.filter((e) => !isEnemy(e));
   game.projectiles = [];
   game.player.health = maxHealth(game.player);
-  game.wave = { number: n - 1, phase: 'break', breakTicks: secondsToTicks(2), budgetLeft: 0, spawnCooldownTicks: 0, smithPending: false };
+  game.wave = { number: n - 1, phase: 'break', breakTicks: secondsToTicks(2), budgetLeft: 0, spawnCooldownTicks: 0, smithsPending: 0 };
 }
 
 /**

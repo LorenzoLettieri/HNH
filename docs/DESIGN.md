@@ -910,6 +910,11 @@ al braccio. Tre viste come toro e cane. Lento (2,8 m/s), un martello enorme. **P
 Non si fa spingere da calcio, doppietta e cariche dei tori. Compare **a metà** delle ondate 9, 19, 29
 (quando metà del budget è uscita), **fuori dal budget**, annunciato da una scritta e da tre colpi d'incudine.
 Lascia **sempre** il Ferro Dannato (un lingotto incandescente a terra, dura 90 s) più 10 monete.
+**Un Fabbro in più a ogni ondata del Fabbro** [DECISO e FATTO, novembre 2026]: 1 alla 9, 2 alla 19, 3 alla 29…
+(`smithExtraPerWave`), a un intervallo di spawn l'uno dall'altro, ognuno dal suo punto di spawn; una sola scritta
+("2 FABBRI DANNATI"), l'incudine per ognuno. **E ogni rinforzo alla Forgia costa un Ferro in più** (1, 2, 3, 4:
+`forgeIronCost` + `forgeIronCostStep` × armi già rinforzate, su qualsiasi arma): il Ferro arriva come 1, 2, 3, 4,
+quindi chi uccide tutti i Fabbri rinforza **un'arma per ogni ondata del Fabbro** (totali 1, 3, 6, 10).
 **Le ondate del Fabbro hanno l'Eclisse di fuoco** [FATTO, novembre 2026]: all'inizio dell'ondata una luna nera
 scivola davanti al sole in 6 s, resta una corona di fiamme, il cielo si fa scuro con l'orizzonte che brucia e
 cadono braci; a ondata finita la luna se ne va (`src/render/eclipse.ts`, preset `FIRE_ECLIPSE`). Annuncia l'ondata

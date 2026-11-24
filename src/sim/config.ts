@@ -433,8 +433,14 @@ export const tuning = {
    * (revolver 100 = one body shot up to wave 19, carbine 200 up to 29).
    */
   forgeDamageMultiplier: 2,
-  /** Damned Iron it takes to reinforce a gun. */
+  /**
+   * Damned Iron it takes to reinforce a gun: forgeIronCost for the first one,
+   * then forgeIronCostStep more for every gun already reinforced (1, 2, 3, 4).
+   * With one more Smith at every Smith wave (smithExtraPerWave) the iron comes
+   * in as 1, 2, 3, 4 too: one gun per Smith wave, if you kill them all.
+   */
   forgeIronCost: 1,
+  forgeIronCostStep: 1,
   /** Highest forge level (for now only 1: the next levels are still to design). */
   forgeMaxLevel: 1,
   /**
@@ -1039,6 +1045,8 @@ export const tuning = {
   /** First wave with a Smith, and every how many waves after it (9, 19, 29...: just before each health step). */
   smithFromWave: 9,
   smithEveryWaves: 10,
+  /** Smiths added at every Smith wave after the first: 1 at wave 9, 2 at 19, 3 at 29... (0 = always one). */
+  smithExtraPerWave: 1,
   /** It shows up when this share of the wave's budget has spawned (0.5 = halfway through). */
   smithSpawnAt: 0.5,
   /** Seconds the Damned Iron it drops stays on the ground (much longer than the other drops: it's rare). */

@@ -31,6 +31,18 @@ function isForgeable(w: WeaponId): w is ForgeableWeapon {
 }
 
 /**
+ * How much iron the NEXT reinforcement costs: one more for every one already
+ * done, on any gun (1, 2, 3, 4 with the defaults). Counted from the forge
+ * levels themselves, so there's no extra counter to keep in sync (and to
+ * save, one day, on the server): the state already knows it.
+ */
+export function forgeCost(p: PlayerState): number {
+  let done = 0;
+  for (const w of FORGEABLE) done += p.forged[w];
+  return tuning.forgeIronCost + tuning.forgeIronCostStep * done;
+}
+
+/**
  * Can this gun be reinforced? One function for both sides: the simulation
  * uses it to say yes or no, the panel to show why not ("non ce l'hai",
  * "rinforzata", "serve Ferro") before you even click.
@@ -40,7 +52,7 @@ export function forgeRefusal(p: PlayerState, weapon: WeaponId): ForgeRefusal | n
   if (!isForgeable(weapon)) return 'notForgeable';
   if (!p.owned[weapon]) return 'notOwned';
   if (p.forged[weapon] >= tuning.forgeMaxLevel) return 'maxed';
-  if (p.damnedIron < tuning.forgeIronCost) return 'noIron';
+  if (p.damnedIron < forgeCost(p)) return 'noIron';
   return null;
 }
 
@@ -52,7 +64,7 @@ export function stepForge(p: PlayerState, cmd: InputCommand, world: World, event
   // the distance is checked here, where one day the server will check it.
   const refusal = shopInReach(p, world)?.kind === 'forge' ? forgeRefusal(p, weapon) : 'far';
   if (refusal) return void events.push({ type: 'forgeFailed', weapon, reason: refusal });
-  p.damnedIron -= tuning.forgeIronCost;
+  p.damnedIron -= forgeCost(p); // before forged++: the price of THIS one
   p.forged[weapon]++;
   // It comes out of the fire loaded (akimbo: both cylinders full).
   p.loaded[weapon] = magazineSize(p, weapon);

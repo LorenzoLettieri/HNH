@@ -126,8 +126,8 @@ export type SimEvent =
   | { type: 'smithHookHit'; entityId: number }
   /** The hook missed (a wall, out of range) or the chain snapped: it comes back. */
   | { type: 'smithHookEnd'; entityId: number }
-  /** A Damned Smith joined the wave (the announcement). */
-  | { type: 'smithArrived'; entityId: number }
+  /** A Damned Smith joined the wave (the announcement). first = the first of the wave's `total`. */
+  | { type: 'smithArrived'; entityId: number; first: boolean; total: number }
   /** An eye-bat starts charging a shot (the warning: glow + whine). */
   | { type: 'eyebatCharge'; entityId: number }
   /** An eye-bat fires: a projectile leaves its eye. */

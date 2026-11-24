@@ -9,9 +9,8 @@
 // the answer comes back as an event ('forged' / 'forgeFailed').
 import { playForge, playPurchaseDenied } from '../audio/sfx';
 import { queueForge } from '../controls';
-import { tuning } from '../sim/config';
 import type { SimEvent } from '../sim/events';
-import { FORGEABLE, forgeRefusal, type ForgeableWeapon } from '../sim/forge';
+import { FORGEABLE, forgeCost, forgeRefusal, type ForgeableWeapon } from '../sim/forge';
 import type { PlayerState } from '../sim/player';
 import type { WeaponId } from '../sim/weapon';
 
@@ -35,6 +34,8 @@ interface ForgeRow {
   weapon: WeaponId;
   el: HTMLButtonElement;
   label: HTMLElement;
+  /** "consuma N Ferro Dannato" under CONFERMA: N changes, so it's rewritten every refresh. */
+  confirmPrice: HTMLElement;
   confirmTimer: number;
 }
 
@@ -95,8 +96,13 @@ export function createForgeRows(noFocus: (el: HTMLElement) => void): ForgeRows {
           </span>`;
         el.querySelector('.shop-item-name')!.textContent = FORGE_TEXT[weapon].name;
         el.querySelector('.shop-item-desc')!.textContent = FORGE_TEXT[weapon].desc;
-        el.querySelector('.shop-confirm-price')!.textContent = `consuma ${tuning.forgeIronCost} Ferro Dannato`;
-        const r: ForgeRow = { weapon, el, label: el.querySelector<HTMLElement>('.shop-price')!, confirmTimer: 0 };
+        const r: ForgeRow = {
+          weapon,
+          el,
+          label: el.querySelector<HTMLElement>('.shop-price')!,
+          confirmPrice: el.querySelector<HTMLElement>('.shop-confirm-price')!,
+          confirmTimer: 0,
+        };
         el.addEventListener('click', () => onClick(r));
         noFocus(el);
         list.append(el);
@@ -106,13 +112,16 @@ export function createForgeRows(noFocus: (el: HTMLElement) => void): ForgeRows {
     refresh(player) {
       for (const r of rows) {
         const refusal = forgeRefusal(player, r.weapon);
+        // The price grows with every gun reinforced (forgeCost in src/sim/forge.ts).
+        const cost = forgeCost(player);
+        r.confirmPrice.textContent = `consuma ${cost} Ferro Dannato`;
         // Not yours, or already reinforced: nothing to click.
         r.el.disabled = refusal === 'notOwned' || refusal === 'maxed';
         r.el.classList.toggle('poor', refusal === 'noIron');
         r.el.classList.toggle('owned', refusal === 'maxed' || refusal === 'notOwned');
         if (r.el.disabled && r.confirmTimer) cancelConfirm(r);
         r.label.textContent =
-          refusal === 'notOwned' ? 'NON È TUA' : refusal === 'maxed' ? 'RINFORZATA' : `${tuning.forgeIronCost} FERRO`;
+          refusal === 'notOwned' ? 'NON È TUA' : refusal === 'maxed' ? 'RINFORZATA' : `${cost} FERRO`;
       }
     },
     onEvents(events) {

@@ -132,8 +132,12 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
       playBell(2); // the church bell tolls: here they come
     }
     if (e.type === 'smithArrived') {
-      // The special enemy: announced like a wave (docs/DESIGN.md §6d).
-      showBanner('IL FABBRO DANNATO', 'porta il Ferro Dannato: mira alla testa, salta l’onda', 4);
+      // The special enemy: announced like a wave (docs/DESIGN.md §6d). With more
+      // than one: the banner once (with how many), the anvil for each of them.
+      if (e.first) {
+        if (e.total === 1) showBanner('IL FABBRO DANNATO', 'porta il Ferro Dannato: mira alla testa, salta l’onda', 4);
+        else showBanner(`${e.total} FABBRI DANNATI`, 'ognuno porta il Ferro Dannato: mira alla testa, salta l’onda', 4);
+      }
       playSmithArrived();
     }
     if (e.type === 'waveEnd') {

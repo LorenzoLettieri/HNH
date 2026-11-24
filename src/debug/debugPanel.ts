@@ -114,6 +114,8 @@ export function createDebugPanel(options: {
   shop.number(tuning, 'bourbonMultiplier', 0, 2, 0.25);
   shop.number(tuning, 'bourbonHurt', 0, 1, 0.05);
   shop.number(tuning, 'forgeDamageMultiplier', 1, 5, 0.5);
+  shop.number(tuning, 'forgeIronCost', 0, 5, 1);
+  shop.number(tuning, 'forgeIronCostStep', 0, 5, 1);
   shop.number(tuning, 'upgradeBasePrice', 0, 3000, 50);
   shop.number(tuning, 'upgradePriceGrowth', 1, 4, 0.1);
   shop.number(tuning, 'upgradeMaxLevel', 0, 6, 1);
@@ -588,6 +590,7 @@ export function createDebugPanel(options: {
   smith.number(tuning, 'smithSpeed', 0.5, 8, 0.1);
   smith.number(tuning, 'smithFromWave', 1, 40, 1);
   smith.number(tuning, 'smithEveryWaves', 1, 20, 1);
+  smith.number(tuning, 'smithExtraPerWave', 0, 3, 1);
   smith.number(tuning, 'smithSpawnAt', 0, 1, 0.05);
   smith.number(tuning, 'smithSlamRange', 2, 20, 0.5);
   smith.number(tuning, 'smithSlamWindup', 0.2, 3, 0.05);
