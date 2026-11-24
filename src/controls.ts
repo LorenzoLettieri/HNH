@@ -3,7 +3,8 @@
 // - an InputCommand, built once per simulation tick.
 import type { PurchaseId } from './sim/shop';
 import type { WeaponId } from './sim/weapon';
-import { consumeMouseDelta, isKeyDown, isPointerLocked, wasPressed } from './input';
+import { consumeMouseDelta, isPointerLocked } from './input';
+import { actionActive, actionDown, actionPressed } from './keybinds';
 import type { InputCommand } from './sim/command';
 
 /** Client settings, mutable so the debug panel can change them. */
@@ -51,31 +52,34 @@ export function queueRespawn(): void {
 }
 
 export function buildCommand(tick: number): InputCommand {
+  // Actions, not keys: which keys do what is in keybinds.ts (rebindable).
   let forward = 0;
   let strafe = 0;
-  if (isKeyDown('KeyW')) forward += 1;
-  if (isKeyDown('KeyS')) forward -= 1;
-  if (isKeyDown('KeyD')) strafe += 1;
-  if (isKeyDown('KeyA')) strafe -= 1;
-  // "held OR pressed since the last tick": a quick tap between two frames still counts.
-  const jump = isKeyDown('Space') || wasPressed('Space');
-  // Shift or C. Not Ctrl: Ctrl+W would close the browser tab!
-  const crouch = isKeyDown('ShiftLeft') || isKeyDown('KeyC');
-  const fire = isKeyDown('Mouse0') || wasPressed('Mouse0');
-  // Right mouse button: the weapon's alternate fire (the carbine aims down the sights).
-  const altFire = isKeyDown('Mouse2');
-  const reload = isKeyDown('KeyR') || wasPressed('KeyR');
-  // F: the boot.
-  const kick = isKeyDown('KeyF') || wasPressed('KeyF');
-  // Weapons: 1/2/3/4 pick a slot; Q or the wheel cycle. (wasPressed for all of
-  // them: holding Q must not switch back and forth every tick.)
+  if (actionDown('forward')) forward += 1;
+  if (actionDown('back')) forward -= 1;
+  if (actionDown('right')) strafe += 1;
+  if (actionDown('left')) strafe -= 1;
+  // actionActive = "held OR pressed since the last tick": a quick tap between two frames still counts.
+  const jump = actionActive('jump');
+  // Default Shift or C. Not Ctrl: Ctrl+W would close the browser tab!
+  const crouch = actionDown('crouch');
+  const fire = actionActive('fire');
+  // Alternate fire (default right button): the revolver fans, the carbine aims down the sights.
+  const altFire = actionDown('altFire');
+  const reload = actionActive('reload');
+  const kick = actionActive('kick');
+  // Weapons: a slot each, or cycle. (Pressed only: holding Q must not
+  // switch back and forth every tick.) Every action is asked, even after a
+  // "yes": asking also consumes the press (keybinds.ts).
   let weaponSelect = 0;
-  if (wasPressed('Digit1')) weaponSelect = 1;
-  if (wasPressed('Digit2')) weaponSelect = 2;
-  if (wasPressed('Digit3')) weaponSelect = 3;
-  if (wasPressed('Digit4')) weaponSelect = 4;
-  if (wasPressed('KeyQ') || wasPressed('WheelDown')) weaponSelect = -1;
-  if (wasPressed('WheelUp')) weaponSelect = -2;
+  const slots = [actionPressed('weapon1'), actionPressed('weapon2'), actionPressed('weapon3'), actionPressed('weapon4')];
+  slots.forEach((pressed, i) => {
+    if (pressed) weaponSelect = i + 1;
+  });
+  const next = actionPressed('nextWeapon');
+  const prev = actionPressed('prevWeapon');
+  if (next) weaponSelect = -1;
+  if (prev) weaponSelect = -2;
   const buy = pendingBuy;
   pendingBuy = null; // delivered: one click = one purchase attempt
   const forge = pendingForge;

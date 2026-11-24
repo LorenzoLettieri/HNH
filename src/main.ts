@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { initInput, isKeyDown, isPointerLocked, isTypingInField, requestLock } from './input';
+import { initInput, isPointerLocked, isTypingInField, requestLock } from './input';
+import { actionDown, isBound, loadKeybinds } from './keybinds';
 import { loadSettings, settings } from './settings';
 import { submitScore } from './leaderboard';
 import { markPractice, practiceGame, startGame } from './fairPlay';
@@ -238,7 +239,7 @@ window.addEventListener('keydown', (e) => {
   // focused button would get "clicked" by the next Space (jump). Before the
   // e.repeat check: holding the key sends a keydown every few ms, and each
   // one would move the focus again.
-  if (e.code === 'Tab' && !paused && !isTypingInField(e)) e.preventDefault();
+  if (isBound('map', e.code) && !paused && !isTypingInField(e)) e.preventDefault();
   if (e.repeat || isTypingInField(e)) return;
   // End screen: Space/Enter = play again, Esc = menu (after a moment: you were
   // probably pressing Space when you died). Nothing else while it's open.
@@ -257,9 +258,9 @@ window.addEventListener('keydown', (e) => {
     }
     return;
   }
-  // E: open/close the shop, if a vendor is within reach (src/sim/shop.ts).
+  // E (or the key bound to 'interact', keybinds.ts): open/close the shop, if a vendor is within reach (src/sim/shop.ts).
   // Opening frees the mouse (to click in the panel); closing grabs it back.
-  if (e.code === 'KeyE') {
+  if (isBound('interact', e.code)) {
     if (shopMenu.isOpen) {
       closeShop();
     } else {
@@ -302,6 +303,7 @@ camera.rotation.order = 'YXZ';
 // --- Menu & settings --------------------------------------------------------
 // Saved settings first, so the menu shows (and the game uses) the right values.
 loadSettings();
+loadKeybinds();
 startGame(); // the first game: does it count for the leaderboard? (fairPlay.ts)
 const menu = createMenu({ onPlay: () => requestLock(renderer.domElement) });
 const shopMenu = createShopMenu({ onCloseClick: () => closeShop() });
@@ -520,7 +522,7 @@ renderer.setAnimationLoop((now: number) => {
   updateMoneyHud(game.player.money, dt);
   updateIronHud(game.player.damnedIron, dt);
   // The map: only while Tab is held, never over the pause menu.
-  mapOverlay.update(game, alpha, camera.position.x, camera.position.z, view.yaw, isKeyDown('Tab') && !paused, now / 1000);
+  mapOverlay.update(game, alpha, camera.position.x, camera.position.z, view.yaw, actionDown('map') && !paused, now / 1000);
 
   updateFireLights(now / 1000);
   props.update(now / 1000);
