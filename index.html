@@ -372,6 +372,17 @@
       .round.dynamite { position: relative; width: 11px; height: 30px; margin-top: 7px; background: linear-gradient(to right, rgba(255, 255, 255, 0.16) 0 3px, transparent 3px), linear-gradient(#5a100c 0 3px, #b3261e 3px calc(100% - 3px), #5a100c calc(100% - 3px)); }
       .round.dynamite::before { content: ''; position: absolute; left: 4px; top: -7px; width: 2px; height: 7px; background: #cdb27a; box-shadow: 0 0 0 1px #000; }
       .round.dynamite.spent::before { background: transparent; box-shadow: none; }
+      /* The Forge's holy-water sticks: ivory paper, blue ribbons at the ends, a blue cross (two thin gradients
+         crossing in the middle), a fuse that glows pale blue. */
+      .round.dynamite.holy { background:
+        linear-gradient(to right, transparent 4px, #2f63d8 4px 6px, transparent 6px) center / 100% 12px no-repeat,
+        linear-gradient(transparent 11px, #2f63d8 11px 13px, transparent 13px) center / 100% 100% no-repeat,
+        linear-gradient(to right, rgba(255, 255, 255, 0.3) 0 3px, transparent 3px),
+        linear-gradient(#2a4f9e 0 3px, #e4d6b4 3px calc(100% - 3px), #2a4f9e calc(100% - 3px)); }
+      .round.dynamite.holy::before { background: #9cc4ff; box-shadow: 0 0 0 1px #000, 0 0 4px #4a8cff; }
+      /* (Three classes beat .round.spent's two: the spent holy stick needs its own rule to go hollow.) */
+      .round.dynamite.holy.spent { background: transparent; }
+      .round.dynamite.holy.spent::before { background: transparent; box-shadow: none; }
       /* Akimbo revolvers: a gap between the two cylinders (ammoHud.ts adds the class to the first round of the second). */
       .round.cylinder-gap { margin-left: 9px; }
       /* Spent: only a dim outline is left. */

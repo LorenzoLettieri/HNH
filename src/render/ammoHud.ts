@@ -21,7 +21,7 @@ const reserveEl = document.getElementById('ammo-reserve')!;
 let builtFor = ''; // "weapon:size" of the elements in roundsEl
 let rounds: HTMLElement[] = [];
 
-function build(weapon: WeaponId, size: number, akimbo: boolean): void {
+function build(weapon: WeaponId, size: number, akimbo: boolean, holy: boolean): void {
   roundsEl.replaceChildren(); // remove the old ones
   rounds = [];
   for (let i = 0; i < size; i++) {
@@ -30,16 +30,19 @@ function build(weapon: WeaponId, size: number, akimbo: boolean): void {
     r.className = `round ${weapon}`;
     // Akimbo: two cylinders, so a gap in the middle ("6 + 6").
     if (akimbo && i === size / 2) r.classList.add('cylinder-gap');
+    // The Forge's dynamite: holy-water sticks, ivory with a blue cross.
+    if (holy) r.classList.add('holy');
     roundsEl.append(r);
     rounds.push(r);
   }
-  builtFor = `${weapon}:${size}:${akimbo}`;
+  builtFor = `${weapon}:${size}:${akimbo}:${holy}`;
 }
 
 export function updateAmmoHud(player: PlayerState): void {
   const size = magazineSize(player, player.weapon);
   const akimbo = player.weapon === 'revolver' && isAkimbo(player);
-  if (builtFor !== `${player.weapon}:${size}:${akimbo}`) build(player.weapon, size, akimbo);
+  const holy = player.weapon === 'dynamite' && player.forged.dynamite > 0;
+  if (builtFor !== `${player.weapon}:${size}:${akimbo}:${holy}`) build(player.weapon, size, akimbo, holy);
 
   // Full rounds on the left, spent ones on the right (they're fired from the right).
   const ammo = currentAmmo(player);

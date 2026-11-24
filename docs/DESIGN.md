@@ -878,13 +878,14 @@ scegli un'arma, e l'arma si **trasforma**:
   gioco dove ci si muove sempre, un bersaglio esce dalla lente in due passi. Tornati alla vista nera.
 Oltre al cambio di modello, un **aumento di danno netto** che segue i gradini (regola dei breakpoint, §3).
 
-- **Lancia-dinamite → Acqua santa** [IN CORSO: passi 1 e 2, simulazione e fuoco blu a schermo, novembre 2026] Il doppio del danno, e i
+- **Lancia-dinamite → Acqua santa** [FATTO, da provare, novembre 2026] Il doppio del danno, e i
   candelotti **bagnati nell'acqua santa**: dove scoppiano l'acqua cade sul pavimento e resta una **pozza di fuoco
   blu** (5 s, 2,6 m di raggio). Ogni nemico che ci passa **prende fuoco** (15 danni ogni 0,5 s, finché ci sta e
   1,5 s dopo); **il giocatore no**: è santo, brucia solo i dannati. Il Malocchio vola sopra le pozze. Nega lo spazio:
   un vicolo in fiamme è un muro per l'orda. A schermo [FATTO]: pozza blu col bordo frastagliato, lingue di fuoco
   azzurre, luce blu, suono continuo; nemici che bruciano di blu con un sibilo; esplosione col nucleo azzurro.
-  Prossimo passo: i candelotti benedetti in mano, in volo e nell'HUD.
+  I candelotti benedetti [FATTO]: carta avorio con nastri blu e croce blu, miccia che brucia azzurra, in volo, nel
+  tamburo dell'arma (con un leggero bagliore) e nell'HUD munizioni.
 **Livelli successivi** [DA DECIDERE]: come il doppio Pack-a-Punch di CoD, forse **proiettili con abilità
 speciali** (fuoco, rimbalzo, esplosivi…).
 

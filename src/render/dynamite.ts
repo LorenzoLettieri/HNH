@@ -12,7 +12,7 @@ import type { Dynamite } from '../sim/dynamite';
 import { DYNAMITE_RADIUS } from '../sim/dynamite';
 import type { SimEvent } from '../sim/events';
 import { playDynamiteBounce, playFuseHiss, type LoopingSound } from '../audio/sfx';
-import { spawnSparks } from './particles';
+import { spawnHolyFlame, spawnSparks } from './particles';
 import { soundAt } from './soundPosition';
 
 /** Size of the stick, meters (a bit bigger than a real one: it must be readable in flight). */
@@ -44,6 +44,22 @@ const C = {
   ink: '#2a1a10',
   cap: '#3a2a20',
 };
+/**
+ * The HOLY stick (the launcher reinforced at the Forge): ivory paper soaked
+ * in holy water, bound with blue ribbons at both ends, a blue cross on it,
+ * a few wet spots that catch the light; its fuse burns blue.
+ */
+const H = {
+  light: '#fff6e0',
+  paper: '#e4d6b4',
+  shadow: '#a8946c',
+  ribbon: '#2a4f9e',
+  ribbonDark: '#1a3470',
+  cross: '#2f63d8',
+  wet: '#bcd8ff',
+};
+/** The holy fuse's ember: pale blue. */
+const HOLY_EMBER = 0x80b4ff;
 
 export interface DynamiteRenderer {
   update(sticks: Dynamite[], events: SimEvent[], camera: THREE.Camera, alpha: number, dt: number): void;
@@ -94,6 +110,45 @@ function paperTexture(): THREE.CanvasTexture {
   return texture;
 }
 
+/**
+ * The holy stick's wrapper, same layout as paperTexture (U around, V along).
+ * Exported: the launcher in your hand wears it too (weapons/dynamiteView.ts).
+ * Symmetric along V on purpose: a texture from a .glb is not flipped like a
+ * canvas one (flipY), so a design that reads the same both ways can't come
+ * out upside down.
+ */
+export function holyPaperTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = TEX_AROUND;
+  canvas.height = TEX_ALONG;
+  const g = canvas.getContext('2d')!;
+  const px = (x: number, y: number, color: string) => {
+    g.fillStyle = color;
+    g.fillRect(x, y, 1, 1);
+  };
+  for (let y = 0; y < TEX_ALONG; y++) {
+    for (let x = 0; x < TEX_AROUND; x++) {
+      let color = H.paper;
+      if (x === 1 || x === 2) color = H.light;
+      if (x === 6 || x === 7) color = H.shadow;
+      // Blue ribbons tied round both ends.
+      if (y < 3 || y >= TEX_ALONG - 3) color = x < 4 ? H.ribbon : H.ribbonDark;
+      px(x, y, color);
+    }
+  }
+  // The cross, in the middle: a long bar along the stick and a short one across it.
+  for (let y = 8; y < 16; y++) px(2, y, H.cross);
+  for (let x = 1; x < 4; x++) px(x, 10, H.cross);
+  for (let x = 1; x < 4; x++) px(x, TEX_ALONG - 1 - 10, H.cross); // (the mirror, so it reads both ways)
+  // A few wet spots.
+  for (const [x, y] of [[5, 5], [0, 7], [4, 18], [6, 13], [1, 19]]) px(x, y, H.wet);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.NearestFilter;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
 export function createDynamiteRenderer(scene: THREE.Scene): DynamiteRenderer {
   // Shared by every stick: one geometry and one material each, not one per stick.
   const body = new THREE.CylinderGeometry(STICK_RADIUS, STICK_RADIUS, STICK_LENGTH, 8);
@@ -105,6 +160,9 @@ export function createDynamiteRenderer(scene: THREE.Scene): DynamiteRenderer {
   const paper = new THREE.MeshLambertMaterial({ map: wrapper, emissive: 0xffffff, emissiveMap: wrapper, emissiveIntensity: PAPER_SELF_LIGHT });
   const cap = new THREE.MeshLambertMaterial({ color: C.cap });
   const materials = [paper, cap, cap];
+  const holyWrapper = holyPaperTexture();
+  const holyPaper = new THREE.MeshLambertMaterial({ map: holyWrapper, emissive: 0xffffff, emissiveMap: holyWrapper, emissiveIntensity: PAPER_SELF_LIGHT * 1.4 });
+  const holyMaterials = [holyPaper, cap, cap];
   // The fuse: a cylinder 1 m long with its base at the origin, scaled to the
   // length left (scale.x): shrinking it, the burnt end comes toward the stick.
   const fuseGeometry = new THREE.CylinderGeometry(0.007, 0.007, 1, 4);
@@ -112,6 +170,7 @@ export function createDynamiteRenderer(scene: THREE.Scene): DynamiteRenderer {
   fuseGeometry.rotateZ(-Math.PI / 2); // along +X
   const fuseMaterial = new THREE.MeshLambertMaterial({ color: 0xcdb27a });
   const emberMaterial = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffc050).multiplyScalar(EMBER_GLOW), fog: false });
+  const holyEmberMaterial = new THREE.MeshBasicMaterial({ color: new THREE.Color(HOLY_EMBER).multiplyScalar(EMBER_GLOW), fog: false });
   const emberGeometry = new THREE.IcosahedronGeometry(0.022, 0);
 
   const views = new Map<number, StickView>();
@@ -122,11 +181,11 @@ export function createDynamiteRenderer(scene: THREE.Scene): DynamiteRenderer {
 
   function createView(d: Dynamite, camera: THREE.Camera): StickView {
     const mesh = new THREE.Group();
-    mesh.add(new THREE.Mesh(body, materials));
+    mesh.add(new THREE.Mesh(body, d.holy ? holyMaterials : materials));
     const fuse = new THREE.Mesh(fuseGeometry, fuseMaterial);
     fuse.position.x = STICK_LENGTH / 2;
     mesh.add(fuse);
-    const ember = new THREE.Mesh(emberGeometry, emberMaterial);
+    const ember = new THREE.Mesh(emberGeometry, d.holy ? holyEmberMaterial : emberMaterial);
     mesh.add(ember);
     // Start at a random angle, so two sticks don't look identical.
     mesh.rotation.set(Math.random() * 6, Math.random() * 6, 0);
@@ -173,7 +232,8 @@ export function createDynamiteRenderer(scene: THREE.Scene): DynamiteRenderer {
         v.ember.scale.setScalar(0.7 + Math.random() * 0.7);
         if (Math.random() < dt / SPARK_EVERY) {
           v.ember.getWorldPosition(point);
-          spawnSparks(point, up, 1);
+          if (d.holy) spawnHolyFlame(point, up, 1); // the holy fuse spits blue
+          else spawnSparks(point, up, 1);
         }
         v.hiss.move(soundAt(camera, x, y, z));
       }

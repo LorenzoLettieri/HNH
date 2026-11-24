@@ -50,6 +50,7 @@ import { playDrumOpen, playDrumShut, playDrumTick, playStickIn } from '../../aud
 import { loadGunModel } from './gunModel';
 import { createRifleHands } from './hands';
 import { viewmodelSettings } from './viewmodel';
+import { holyPaperTexture } from '../dynamite';
 
 /**
  * Where the muzzle is, in the model's coordinates: the same numbers as the
@@ -67,6 +68,10 @@ const MUZZLE = new THREE.Vector3(0, 0.081, -0.65);
  * Blender script has the same number: RIGHT_FIST).
  */
 const FIST = new THREE.Vector3(0.003, 0.072, 0);
+
+/** The holy sticks glow a little blue in the drum (the Forge's launcher): color and strength. */
+const HOLY_GLOW = 0x2a5ad0;
+const HOLY_GLOW_STRENGTH = 0.35;
 
 // --- The drum ------------------------------------------------------------------------
 /** Chambers in the drum (the Blender script's STICKS). */
@@ -189,6 +194,11 @@ export function createDynamiteView(): DynamiteView {
   let crane = new THREE.Object3D();
   let sticks: THREE.Object3D[] = [];
   let stickRest: number[] = []; // each stick's z at rest, in the drum's coordinates
+  // The sticks' paper: plain, or holy when the launcher is reinforced at the Forge.
+  let plainPaper: THREE.Material | null = null;
+  let holyPaper: THREE.MeshStandardMaterial | null = null;
+  const papers: THREE.Mesh[] = [];
+  let shownHoly = false;
   const root = loadGunModel('dynamiteLauncher.glb', (model) => {
     const m = model.getObjectByName('muzzle');
     if (m) muzzle.copy(m.position);
@@ -200,6 +210,27 @@ export function createDynamiteView(): DynamiteView {
       if (s) sticks.push(s);
     }
     stickRest = sticks.map((s) => s.position.z);
+    // The sticks' paper (the Blender material 'paper'): remember it, and make
+    // its HOLY twin (the Forge's launcher): the ivory wrapper with the blue
+    // cross, glowing a little blue. Swapped in update() when the gun changes.
+    for (const s of sticks) {
+      s.traverse((o) => {
+        if (!(o instanceof THREE.Mesh)) return;
+        const m = o.material as THREE.MeshStandardMaterial;
+        if (m.name !== 'paper') return;
+        if (!holyPaper) {
+          plainPaper = m;
+          holyPaper = m.clone();
+          const map = holyPaperTexture();
+          map.flipY = false; // a .glb's textures aren't flipped (a canvas one is, by default)
+          holyPaper.map = map;
+          holyPaper.emissive = new THREE.Color(HOLY_GLOW);
+          holyPaper.emissiveIntensity = HOLY_GLOW_STRENGTH;
+        }
+        papers.push(o);
+      });
+    }
+    shownHoly = false;
   });
   // The carbine's arms: the launcher was built around their hands.
   // The RIGHT arm, though, is posed to grab the carbine's lever from below:
@@ -372,6 +403,12 @@ export function createDynamiteView(): DynamiteView {
       // The sticks: the chambers from `top` onward hold the rounds the gun
       // still has (the simulation counts them); the others are empty. During
       // a reload the new ones appear one at a time, slid in from behind.
+      // The Forge's holy-water sticks: swap the paper when it changes.
+      const holy = player.forged.dynamite > 0;
+      if (holy !== shownHoly && plainPaper && holyPaper) {
+        shownHoly = holy;
+        for (const m of papers) m.material = holy ? holyPaper : plainPaper;
+      }
       sticks.forEach((stick, c) => {
         const slot = (c - top + CHAMBERS) % CHAMBERS; // 0 = in front of the barrel
         let shown = slot < loaded;
