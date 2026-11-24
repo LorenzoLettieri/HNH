@@ -22,7 +22,7 @@ import * as THREE from 'three';
 import type { SimEvent } from '../sim/events';
 import { playDynamiteBlast } from '../audio/sfx';
 import { blastShake } from './cameraFeel';
-import { spawnBlastFire, spawnDirt, spawnSmoke, spawnSparks } from './particles';
+import { spawnHolyFlame, spawnBlastFire, spawnDirt, spawnSmoke, spawnSparks } from './particles';
 import { soundAt } from './soundPosition';
 
 /** How long the fireball lasts, seconds, and how big it gets (× the blast radius): the shell and the core. */
@@ -35,6 +35,9 @@ const FIREBALL_GLOW = 2.5;
 const FIREBALL_OPACITY = 0.45;
 const CORE_COLOR = 0xffe0a0;
 const CORE_GLOW = 6;
+/** A holy-water stick (the Forge's): the core burns pale blue, and a crown of blue flames splashes out. */
+const HOLY_CORE_COLOR = 0x9cc8ff;
+const HOLY_FLAMES = 60;
 /** The light: peak intensity, how far it reaches (× the radius), how long it lasts, seconds. */
 const LIGHT_INTENSITY = 400;
 const LIGHT_REACH = 4;
@@ -94,11 +97,12 @@ export function createExplosionRenderer(scene: THREE.Scene): ExplosionRenderer {
     fireballs.push({ mesh, material, age: 0, size, opacity });
   }
 
-  function blast(x: number, y: number, z: number, radius: number, camera: THREE.Camera): void {
+  function blast(x: number, y: number, z: number, radius: number, camera: THREE.Camera, holy: boolean): void {
     point.set(x, y, z);
 
     addFireball(FIREBALL_COLOR, FIREBALL_GLOW, FIREBALL_OPACITY, radius * FIREBALL_SIZE);
-    addFireball(CORE_COLOR, CORE_GLOW, 1, radius * CORE_SIZE);
+    addFireball(holy ? HOLY_CORE_COLOR : CORE_COLOR, CORE_GLOW, 1, radius * CORE_SIZE);
+    if (holy) spawnHolyFlame(point, up, HOLY_FLAMES);
 
     // The oldest light of the pool moves here (two blasts at once: both lit).
     const slot = lights[nextLight];
@@ -121,7 +125,7 @@ export function createExplosionRenderer(scene: THREE.Scene): ExplosionRenderer {
   return {
     update(events, camera, dt) {
       for (const e of events) {
-        if (e.type === 'explosion' && (e.kind === 'dynamite' || e.kind === 'holyDynamite')) blast(e.x, e.y, e.z, e.radius, camera);
+        if (e.type === 'explosion' && (e.kind === 'dynamite' || e.kind === 'holyDynamite')) blast(e.x, e.y, e.z, e.radius, camera, e.kind === 'holyDynamite');
       }
       for (let i = fireballs.length - 1; i >= 0; i--) {
         const f = fireballs[i];

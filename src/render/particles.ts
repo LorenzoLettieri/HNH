@@ -333,6 +333,28 @@ const smoke = new Burst({
   spread: 2.2,
 });
 
+/**
+ * HOLY FIRE (the Forge's dynamite): tongues of pale blue flame, licking up
+ * from the pools on the floor and from the enemies burning in them. Additive
+ * and bright (they bloom), thinner and quicker than the orange fire balls:
+ * a cold, clean fire.
+ */
+const holyFlame = new Burst({
+  max: 900,
+  life: 0.5,
+  size: 0.16,
+  speed: 1.6,
+  gravity: -5, // it rises fast
+  color: 0x4a8cff,
+  brightness: 5,
+  additive: true,
+  spread: 0.7,
+});
+
+export function spawnHolyFlame(point: THREE.Vector3, direction: THREE.Vector3, count: number): void {
+  holyFlame.spawn(point, direction, count);
+}
+
 export function spawnBlastFire(point: THREE.Vector3, direction: THREE.Vector3, count: number): void {
   blastFire.spawn(point, direction, count);
 }
@@ -347,7 +369,7 @@ export function createParticles(
   levelVents: THREE.Vector3[] = [],
 ): void {
   vents = levelVents;
-  scene.add(steam.points, sparks.layer.points, blood.layer.points, dirt.layer.points, snort.layer.points, blastFire.layer.points, smoke.layer.points);
+  scene.add(steam.points, sparks.layer.points, blood.layer.points, dirt.layer.points, snort.layer.points, blastFire.layer.points, smoke.layer.points, holyFlame.layer.points);
   steam.material.uniforms.color.value.set(0xe8dccc);
   fires = levelFires;
   totalEmberRate = fires.reduce((sum, f) => sum + f.emberRate, 0);
@@ -395,7 +417,7 @@ export function updateParticles(
   steam.material.uniforms.pixelsPerMeterAt1m.value = ppm;
   sparks.layer.material.uniforms.pixelsPerMeterAt1m.value = ppm;
   blood.layer.material.uniforms.pixelsPerMeterAt1m.value = ppm;
-  for (const b of [dirt, snort, blastFire, smoke]) b.layer.material.uniforms.pixelsPerMeterAt1m.value = ppm;
+  for (const b of [dirt, snort, blastFire, smoke, holyFlame]) b.layer.material.uniforms.pixelsPerMeterAt1m.value = ppm;
 
   updateDust(dt, time, camera.position);
   updateEmbers(dt, time);
@@ -406,6 +428,7 @@ export function updateParticles(
   snort.update(dt);
   blastFire.update(dt);
   smoke.update(dt);
+  holyFlame.update(dt);
 }
 
 function updateDust(dt: number, time: number, cam: THREE.Vector3): void {

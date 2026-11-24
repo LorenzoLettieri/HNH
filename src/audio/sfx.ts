@@ -1443,3 +1443,87 @@ export function playDrumTick(volume: number): void {
   if (!ctx) return;
   noiseBurst({ duration: 0.018, volume: 0.05 + 0.2 * Math.max(0, volume), filter: 'bandpass', frequency: 3200, q: 8 });
 }
+
+/**
+ * An enemy catches the HOLY fire: a bright hiss, like water thrown on a hot
+ * stove (high noise falling), and a pure high "ting", the holy touch.
+ */
+export function playHolyIgnite(where: Where): void {
+  const out = placeSound(where);
+  if (!out) return;
+  noiseBurst({ out, duration: 0.35, volume: 0.45, filter: 'bandpass', frequency: 6000, frequencyEnd: 1800, q: 1.2 });
+  ring(1320, 0.4, 0.05);
+}
+
+/**
+ * A pool of holy fire burning: a soft, steady roar (low noise) under a
+ * glassy shimmer (high noise, band-passed, shaken by two fast wobbles: the
+ * crackle) and a faint pure hum, a choir-like fifth (two sines, 330 and 495
+ * Hz): it burns, but it's holy. A LoopingSound, like the fuse's hiss:
+ * `move` follows it (volume and panning), `stop` fades it out.
+ */
+export function playHolyFireLoop(where: Where): LoopingSound {
+  if (!ctx) return { move: () => {}, stop: () => {} };
+  const audio = ctx;
+  const t0 = audio.currentTime;
+  const volume = audio.createGain();
+  volume.gain.setValueAtTime(0, t0);
+  volume.gain.setTargetAtTime(where.volume, t0, 0.15); // it swells in
+  const panner = audio.createStereoPanner();
+  panner.pan.value = Math.max(-1, Math.min(1, where.pan));
+  volume.connect(panner).connect(world);
+  const stops: (AudioScheduledSourceNode)[] = [];
+
+  const noise = (type: BiquadFilterType, frequency: number, q: number, gain: number) => {
+    const src = audio.createBufferSource();
+    src.buffer = noiseBuffer;
+    src.loop = true;
+    const filter = audio.createBiquadFilter();
+    filter.type = type;
+    filter.frequency.value = frequency;
+    filter.Q.value = q;
+    const g = audio.createGain();
+    g.gain.value = gain;
+    src.connect(filter).connect(g).connect(volume);
+    src.start(t0, Math.random() * 0.5);
+    stops.push(src);
+    return g;
+  };
+  noise('lowpass', 500, 0.7, 0.18); // the roar
+  const shimmer = noise('bandpass', 5200, 1.5, 0.05); // the glassy crackle...
+  for (const [rate, depth] of [[11, 0.03], [27, 0.02]]) {
+    const lfo = audio.createOscillator(); // ...shaken
+    lfo.type = 'square';
+    lfo.frequency.value = rate;
+    const amount = audio.createGain();
+    amount.gain.value = depth;
+    lfo.connect(amount).connect(shimmer.gain);
+    lfo.start(t0);
+    stops.push(lfo);
+  }
+  for (const f of [330, 495]) {
+    const hum = audio.createOscillator();
+    hum.frequency.value = f;
+    const g = audio.createGain();
+    g.gain.value = 0.012;
+    hum.connect(g).connect(volume);
+    hum.start(t0);
+    stops.push(hum);
+  }
+  let stopped = false;
+  return {
+    move(w) {
+      if (stopped) return;
+      const now = audio.currentTime;
+      volume.gain.setTargetAtTime(w.volume, now, 0.05);
+      panner.pan.setTargetAtTime(Math.max(-1, Math.min(1, w.pan)), now, 0.05);
+    },
+    stop() {
+      if (stopped) return;
+      stopped = true;
+      const now = audio.currentTime;
+      volume.gain.setTargetAtTime(0, now, 0.2); // it dies down
+      for (const s of stops) s.stop(now + 1);
+    },
+  };
+}

@@ -10,7 +10,7 @@ import { hitStopScale } from './render/hitStop';
 import { buildCommand, controlSettings, queueRespawn, updateLook, view } from './controls';
 import { TICK_DT, tuning } from './sim/config';
 import { copyPlayer, createPlayer } from './sim/player';
-import { createGame, spawnBullInFront, spawnSharpshooterInFront, spawnEyebatInFront, spawnHoundInFront, spawnSmithInFront, dropPickupsInFront, stepGame } from './sim/game';
+import { createGame, spawnBullInFront, spawnSharpshooterInFront, spawnEyebatInFront, spawnHoundInFront, spawnSmithInFront, dropPickupsInFront, spawnHolyFireInFront, stepGame } from './sim/game';
 import { jumpToWave } from './sim/waves';
 import { DEFAULT_LEVEL, LEVELS } from './levels';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
@@ -212,6 +212,7 @@ const debugPanel = createDebugPanel({
     spawnTool('Fai apparire: Fabbro Dannato', spawnSmithInFront),
     spawnTool('Fai apparire: tiratore scelto (a 20 m)', spawnSharpshooterInFront),
     spawnTool('Fai cadere un raccoglibile di ogni tipo', dropPickupsInFront),
+    spawnTool('Fai apparire: pozza di fuoco santo', (g) => spawnHolyFireInFront(g, world)),
     // Respawn goes through the InputCommand like a key would (controls.ts):
     // the simulation only changes from commands.
     { label: 'Respawn', run: () => queueRespawn() },
@@ -486,13 +487,13 @@ renderer.setAnimationLoop((now: number) => {
   bulls.update(game.entities, events, camera, alpha, dt);
   smiths.update(game.entities, events, camera, alpha, dt);
   sharpshooters.update(game.entities, events, camera, alpha, dt);
-  updateBurning(game.entities, dt); // "Fiato di drago": burning enemies
+  updateBurning(game.entities, dt, camera); // burning enemies: "Fiato di drago" and the holy fire
   marks.update(game.entities, alpha, dt);
   projectiles.update(game.projectiles, events, camera, alpha, dt);
   pickups.update(game.pickups, camera, alpha, now / 1000);
   dynamite.update(game.dynamite, events, camera, alpha, dt);
   explosions.update(events, camera, dt);
-  holyFires.update(game.holyFires, now / 1000);
+  holyFires.update(game.holyFires, camera, dt, now / 1000);
   vendors.update(camera, now / 1000);
   // Walked away from the vendor (or died, and woke up at the spawn): the shop closes.
   const shopNearby = shopInReach(player, world);

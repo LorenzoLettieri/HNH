@@ -225,6 +225,14 @@ export function spawnEyebatInFront(game: GameState): void {
   game.entities.push(createEyebat(game.nextEntityId++, x, p.y + 4, z));
 }
 
+/** Debug: a pool of holy fire 5 m in front of the player (to look at it without the Forge). */
+export function spawnHolyFireInFront(game: GameState, world: World): void {
+  const p = game.player;
+  const x = p.x - Math.sin(p.yaw) * 5;
+  const z = p.z - Math.cos(p.yaw) * 5;
+  spawnHolyFire(game.holyFires, game.nextEntityId++, x, p.y + 1, z, world, []);
+}
+
 /** Debug: spawns a hellhound 8 m in front of the player (G key). */
 export function spawnHoundInFront(game: GameState): void {
   const p = game.player;
