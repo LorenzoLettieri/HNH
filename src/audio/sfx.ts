@@ -913,6 +913,44 @@ export function playMapEventEnd(success: boolean): void {
   }
 }
 
+/**
+ * Drink "Ali del corvo": the jump in mid-air. A heavy wingbeat (a low
+ * "whump" of filtered noise, twice, the second softer: the wing going down
+ * and back) and a far-off caw (a short sawtooth that drops, through a band-pass).
+ */
+export function playAirJump(): void {
+  noiseBurst({ duration: 0.16, volume: 0.55, filter: 'lowpass', frequency: 700, frequencyEnd: 200 });
+  noiseBurst({ start: 0.12, duration: 0.12, volume: 0.3, filter: 'lowpass', frequency: 600, frequencyEnd: 200 });
+  if (!ctx) return;
+  const t0 = ctx.currentTime + 0.05;
+  const osc = ctx.createOscillator();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(950, t0);
+  osc.frequency.exponentialRampToValueAtTime(520, t0 + 0.22);
+  const band = ctx.createBiquadFilter();
+  band.type = 'bandpass';
+  band.frequency.value = 1300;
+  band.Q.value = 3;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.exponentialRampToValueAtTime(0.09, t0 + 0.03);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.25);
+  osc.connect(band).connect(gain).connect(world);
+  osc.start(t0);
+  osc.stop(t0 + 0.26);
+}
+
+/**
+ * Drink "Zoccolo del diavolo": a hard landing that shakes the ground. A huge
+ * hoof on stone: a deep thump, a sharp crack, and a rumble that rolls away.
+ */
+export function playHoofSlam(): void {
+  thump({ duration: 0.5, volume: 1.3, from: 110, to: 30 });
+  noiseBurst({ duration: 0.08, volume: 0.8, filter: 'highpass', frequency: 1800 });
+  ring(180, 0.6, 0.12); // the iron shoe
+  noiseBurst({ start: 0.04, duration: 0.8, volume: 0.6, filter: 'lowpass', frequency: 500, frequencyEnd: 70 });
+}
+
 /** The Damned Smith falls: a huge clatter of armor and a last low groan. */
 export function playSmithDeath(where: Where): void {
   const out = placeSound(where);

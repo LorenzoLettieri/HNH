@@ -1094,6 +1094,19 @@ export const tuning = {
   horseshoeBurstScale: 2,
   /** Avidità: coins never vanish, but they're worth × this. */
   greedCoinScale: 0.5,
+  /** Ali del corvo: jumps in mid-air (refilled on landing), and how fast each one launches you up (m/s). */
+  crowJumps: 1,
+  crowJumpSpeed: 7,
+  /** Zoccolo del diavolo: landing after falling at least this many meters sends out a shockwave... */
+  hoofMinDrop: 4,
+  /** ...that throws the enemies within this radius (meters) away at this speed, with this lift (m/s). */
+  hoofRadius: 6,
+  hoofPush: 12,
+  hoofLift: 5,
+  /** Scia di brace: while sliding, a patch of fire every this many meters, this big, burning this long (s). */
+  emberTrailSpacing: 0.8,
+  emberTrailRadius: 0.9,
+  emberTrailTime: 2,
 
   // "Le Campane del Giudizio" (src/sim/bells.ts)
   /** How many bells to ring, in order. */

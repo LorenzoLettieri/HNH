@@ -114,6 +114,15 @@ export function createDebugPanel(options: {
   shop.number(tuning, 'horseshoeCoinScale', 1, 4, 0.5);
   shop.number(tuning, 'horseshoeBurstScale', 1, 4, 0.5);
   shop.number(tuning, 'greedCoinScale', 0, 1, 0.05);
+  shop.number(tuning, 'crowJumps', 0, 3, 1);
+  shop.number(tuning, 'crowJumpSpeed', 3, 12, 0.5);
+  shop.number(tuning, 'hoofMinDrop', 1, 15, 0.5);
+  shop.number(tuning, 'hoofRadius', 1, 12, 0.5);
+  shop.number(tuning, 'hoofPush', 0, 25, 1);
+  shop.number(tuning, 'hoofLift', 0, 12, 0.5);
+  shop.number(tuning, 'emberTrailSpacing', 0.3, 3, 0.1);
+  shop.number(tuning, 'emberTrailRadius', 0.3, 2, 0.1);
+  shop.number(tuning, 'emberTrailTime', 0.5, 6, 0.5);
   shop.number(tuning, 'shineSpeed', 0, 3, 0.25);
   shop.number(tuning, 'rumChainSeconds', 0, 5, 0.5);
   shop.number(tuning, 'devilsMilkDamage', 0, 2, 0.25);

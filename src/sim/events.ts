@@ -74,6 +74,10 @@ export type SimEvent =
   | { type: 'dynamiteBounce'; x: number; y: number; z: number; speed: number }
   /** A pool of holy fire lit on the floor (the Forge's dynamite, holyFire.ts). */
   | { type: 'holyFire'; x: number; y: number; z: number; radius: number }
+  /** Drink "Ali del corvo": a jump in mid-air, from where your feet are. */
+  | { type: 'airJump'; x: number; y: number; z: number }
+  /** Drink "Zoccolo del diavolo": a hard landing's shockwave, and how many enemies it threw. */
+  | { type: 'hoofSlam'; x: number; y: number; z: number; radius: number; hits: number }
   /** You jumped off the ground. `hop` = right after landing (bunny hop), `slide` = out of a slide. */
   | { type: 'jump'; hop: boolean; slide: boolean }
   /** You kicked off a wall. `left` = wall jumps still available before touching the ground. */
@@ -81,7 +85,7 @@ export type SimEvent =
   /** A steam vent launched you. */
   | { type: 'ventLaunch' }
   /** You touched the ground after `airTicks` ticks in the air. */
-  | { type: 'land'; airTicks: number }
+  | { type: 'land'; airTicks: number; drop: number }
   /** An enemy projectile flew past you, close, without hitting you. */
   | { type: 'nearMiss'; kind: 'fireball' | 'bullet' }
   /** A charging bull missed you: it ran past (it skids). `side` = how far to its side you were, meters. */

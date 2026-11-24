@@ -31,6 +31,11 @@ export interface HolyFire {
   /** Ticks before it goes out, and how many it had (the renderer fades it at the end). */
   ticksLeft: number;
   ticksTotal: number;
+  /**
+   * Holy (the Forge's dynamite: blue, the holy burn) or plain (the drink
+   * "Scia di brace": orange patches left by a slide, the ordinary burn).
+   */
+  holy: boolean;
 }
 
 /**
@@ -60,9 +65,18 @@ export function spawnHolyFire(
   const floor = raycastBoxes(x, y + 0.05, z, 0, -1, 0, FALL_REACH, world.boxes);
   if (!floor) return;
   const ticks = secondsToTicks(tuning.holyFireTime);
-  const fire: HolyFire = { id, x, y: floor.y, z, radius: tuning.holyFireRadius, ticksLeft: ticks, ticksTotal: ticks };
+  const fire: HolyFire = { id, x, y: floor.y, z, radius: tuning.holyFireRadius, ticksLeft: ticks, ticksTotal: ticks, holy: true };
   fires.push(fire);
   events.push({ type: 'holyFire', x, y: floor.y, z, radius: fire.radius });
+}
+
+/**
+ * Drink "Scia di brace": a patch of ordinary fire where you slide, on the
+ * floor under your feet (you're on the ground: no ray needed).
+ */
+export function spawnEmberPatch(fires: HolyFire[], id: number, x: number, y: number, z: number): void {
+  const ticks = secondsToTicks(tuning.emberTrailTime);
+  fires.push({ id, x, y, z, radius: tuning.emberTrailRadius, ticksLeft: ticks, ticksTotal: ticks, holy: false });
 }
 
 /** One tick: every pool burns the enemies standing in it, and burns out. Returns the pools still burning. */
@@ -75,7 +89,7 @@ export function stepHolyFire(fires: HolyFire[], entities: Entity[]): HolyFire[] 
       if (Math.hypot(e.x - f.x, e.z - f.z) > f.radius + 0.3) continue;
       // Relit every tick it stands there: it burns as long as it stays,
       // and holyBurnTime more after it leaves.
-      ignite(e, true);
+      ignite(e, f.holy);
     }
     f.ticksLeft--;
   }

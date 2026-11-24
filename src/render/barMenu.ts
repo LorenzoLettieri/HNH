@@ -25,6 +25,10 @@ const DRINK_TEXT: Record<DrinkId, { name: string; gift: string; cost?: string }>
   steamArmor: { name: 'Corazza di vapore', gift: `Sopra i ${tuning.steamArmorSpeed} m/s i proiettili ti fanno metà danno.` },
   deadMansHand: { name: 'Mano del morto', gift: `L'ultimo colpo di ogni caricatore fa danno ×${tuning.deadHandMultiplier}. Tutte le armi.` },
   quickDraw: { name: 'Cambio lampo', gift: `Per ${tuning.quickDrawWindow} s dopo un cambio arma, il primo colpo è un critico.` },
+  crowWings: { name: 'Ali del corvo', gift: 'Doppio salto: puoi saltare una volta in aria.' },
+  devilsHoof: { name: 'Zoccolo del diavolo', gift: `Atterrando da più di ${tuning.hoofMinDrop} m fai un'onda d'urto che scaraventa via i nemici.` },
+  emberTrail: { name: 'Scia di brace', gift: `La scivolata lascia una striscia di fuoco per ${tuning.emberTrailTime} s.` },
+  ghost: { name: 'Fantasma', gift: "In scivolata passi attraverso i nemici." },
   lightningShine: { name: 'Acquavite Fulmine', gift: `Corri più veloce: +${tuning.shineSpeed} m/s.` },
   deadMansRum: { name: 'Rum del Morto', gift: `La catena dello Stile dura ${tuning.rumChainSeconds} s in più.` },
   devilsMilk: {

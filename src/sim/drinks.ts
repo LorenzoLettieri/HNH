@@ -36,6 +36,10 @@ export const DRINK_INFO = {
   steamArmor: { levels: 1 },
   deadMansHand: { levels: 1 },
   quickDraw: { levels: 1 },
+  crowWings: { levels: 1 },
+  devilsHoof: { levels: 1 },
+  emberTrail: { levels: 1 },
+  ghost: { levels: 1 },
   // Pacts with a price
   devilsMilk: { levels: 'levels' },
   hellfireBourbon: { levels: 'levels' },

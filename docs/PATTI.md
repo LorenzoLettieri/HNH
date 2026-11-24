@@ -3,10 +3,10 @@
 Idee dell'utente. Stato: **[FATTO]** = nel gioco (`src/sim/drinks.ts`, testi in `src/render/barMenu.ts`).
 Si provano con `?drinks=all` (o `?drinks=id1,id2`) nell'URL.
 
-- Ali del corvo: doppio salto.
-- Zoccolo del diavolo: atterrando da una grande altezza fai un'onda d'urto che spinge via i nemici.
-- Scia di brace: la scivolata lascia una striscia di fuoco per 2 s.
-- Fantasma: in scivolata passi attraverso i nemici (niente body block).
+- Ali del corvo: doppio salto. **[FATTO]** (`crowWings`)
+- Zoccolo del diavolo: atterrando da una grande altezza fai un'onda d'urto che spinge via i nemici. **[FATTO]** (`devilsHoof`)
+- Scia di brace: la scivolata lascia una striscia di fuoco per 2 s. **[FATTO]** (`emberTrail`)
+- Fantasma: in scivolata passi attraverso i nemici (niente body block). **[FATTO]** (`ghost`)
 - Corazza di vapore: sopra i 12 m/s i proiettili ti fanno metà danno. **[FATTO]** (`steamArmor`)
 - Zoccolo duro: i colpi corpo a corpo stordiscono i nemici colpiti
 - Ferro di cavallo storto: le monete schizzano il doppio più lontano e valgono il doppio. **[FATTO]** (`crookedHorseshoe`)

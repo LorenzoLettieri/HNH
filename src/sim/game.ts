@@ -1,12 +1,13 @@
 // The whole game state in one object, and the one function that advances it
 // by one tick. Main loop (and one day the server) only talk to this.
-import { healPerKill, maxHealth, rewardBonus, stepBar } from './drinks';
+import { knockBack } from './kick';
+import { hasDrink, healPerKill, maxHealth, rewardBonus, stepBar } from './drinks';
 import type { InputCommand } from './command';
 import { createBull, createEntities, createEyebat, createHound, createSharpshooter, createSmith, isEnemy, stepTarget, type Entity } from './entities';
 import { stepEyebat } from './eyebat';
 import { stepProjectiles, type Projectile } from './projectiles';
 import { stepDynamite, throwDynamite, type Dynamite } from './dynamite';
-import { spawnHolyFire, stepHolyFire, type HolyFire } from './holyFire';
+import { spawnEmberPatch, spawnHolyFire, stepHolyFire, type HolyFire } from './holyFire';
 import { stepGhoul } from './ghoul';
 import { stepHound } from './hound';
 import { stepBull } from './bull';
@@ -121,7 +122,9 @@ export function stepGame(
     e.py = e.y;
     e.pz = e.z;
   }
+  const beforePlayer = events.length;
   stepPlayer(game.player, cmd, world, dt, events);
+  stepPactMoves(game, events, beforePlayer, dt);
   // Shopping first: a weapon bought this tick is in your hands for the rest of it.
   stepShop(game.player, cmd, world, events);
   stepForge(game.player, cmd, world, events);
@@ -229,6 +232,44 @@ export function stepGame(
     game.mapEvent = createMapEventState(game);
   }
   game.tick++;
+}
+
+/**
+ * The movement pacts that touch the world (drinks.ts): "Zoccolo del
+ * diavolo" (a hard landing throws the enemies around you away) and "Scia di
+ * brace" (sliding leaves patches of fire). Here and not in player.ts: the
+ * player's step doesn't know the enemies or the fires, the game does (the
+ * same split as the dynamite: player.ts only reports the landing).
+ */
+function stepPactMoves(game: GameState, events: SimEvent[], from: number, dt: number): void {
+  const p = game.player;
+  const end = events.length;
+  for (let i = from; i < end; i++) {
+    const e = events[i];
+    if (e.type !== 'land' || e.drop < tuning.hoofMinDrop || !hasDrink(p, 'devilsHoof')) continue;
+    let hits = 0;
+    for (const en of game.entities) {
+      if (!isEnemy(en) || en.state === 'dead') continue;
+      const dx = en.x - p.x;
+      const dz = en.z - p.z;
+      const d = Math.hypot(dx, dz);
+      if (d > tuning.hoofRadius || Math.abs(en.y - p.y) > 2) continue;
+      // Thrown straight away from where you landed (anywhere, if right under you).
+      knockBack(en, d > 0.01 ? dx / d : 1, d > 0.01 ? dz / d : 0, tuning.hoofPush, tuning.hoofLift);
+      hits++;
+    }
+    events.push({ type: 'hoofSlam', x: p.x, y: p.y, z: p.z, radius: tuning.hoofRadius, hits });
+  }
+  // A patch of fire every emberTrailSpacing meters of slide (speed × time = meters this tick).
+  if (p.sliding && p.onGround && hasDrink(p, 'emberTrail')) {
+    p.emberTrailMeters += Math.hypot(p.vx, p.vz) * dt;
+    if (p.emberTrailMeters >= tuning.emberTrailSpacing) {
+      p.emberTrailMeters = 0;
+      spawnEmberPatch(game.holyFires, game.nextEntityId++, p.x, p.y, p.z);
+    }
+  } else {
+    p.emberTrailMeters = tuning.emberTrailSpacing; // the first patch comes as soon as you start sliding
+  }
 }
 
 /**

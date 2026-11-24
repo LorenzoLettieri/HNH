@@ -1,4 +1,5 @@
-import { damageTakenMultiplier, maxHealth, noDrinks, runSpeed, type DrinkId } from './drinks';
+import { raycastBoxes } from './raycast';
+import { damageTakenMultiplier, hasDrink, maxHealth, noDrinks, runSpeed, type DrinkId } from './drinks';
 import type { InputCommand } from './command';
 import { findWall, moveAndCollide, overlapsAny } from './collision';
 import type { World } from './world';
@@ -133,6 +134,12 @@ export interface PlayerState {
   shotPower: number;
   /** "Cambio lampo": ticks left in which the next shot is a critical (0 = none). */
   quickDrawTicks: number;
+  /** "Ali del corvo": jumps left in mid-air (refilled on landing). */
+  airJumpsLeft: number;
+  /** The highest point of the current flight (= your feet when on the ground): how far you fell, for "Zoccolo del diavolo". */
+  peakY: number;
+  /** "Scia di brace": meters slid since the last patch of fire. */
+  emberTrailMeters: number;
   /**
    * Card "Volo di piombo": shells spent on shotgun jumps since you left the
    * ground. A kill before landing gives them back (refundLeadFlight in weapon.ts).
@@ -201,6 +208,9 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     wallJumpShot: false,
     shotPower: 1,
     quickDrawTicks: 0,
+    airJumpsLeft: 0,
+    peakY: y,
+    emberTrailMeters: 0,
     leadFlightShells: 0,
     quietTicks: 0,
     aimHeldTicks: 0,
@@ -306,15 +316,24 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
     // Note: we skip ground friction on the jump tick. If you jump the instant
     // you land, friction never touches you and you keep all your speed:
     // that's what makes bunny hopping (and slide-hopping) work.
-  } else if (
-    p.jumpBufferTicks > 0 &&
-    !p.onGround &&
-    p.wallJumpsLeft > 0 &&
-    p.wallJumpCooldownTicks === 0
-  ) {
-    if (tryWallJump(p, world)) {
+  } else if (p.jumpBufferTicks > 0 && !p.onGround) {
+    // In the air: a wall jump if there's a wall, otherwise (drink "Ali del
+    // corvo") a jump off nothing. The wall comes first: it's free, the
+    // crow's jump is kept for when there's no wall.
+    const wall = p.wallJumpsLeft > 0 && p.wallJumpCooldownTicks === 0 && tryWallJump(p, world);
+    if (wall) {
       events.push({ type: 'wallJump', left: p.wallJumpsLeft });
       p.wallJumpShot = true;
+    } else if (p.airJumpsLeft > 0 && jumpPressed && !landingSoon(p, world)) {
+      // Only a NEW press, and not just before landing: that's the bunny
+      // hopper's early press, the buffer turns it into a hop on landing.
+      // Spending the crow's jump on it would kill the hop.
+      p.airJumpsLeft--;
+      // A fresh jump: the fall so far is forgotten (max, not +=: jumping
+      // while going up fast, like off a vent, must not slow you down).
+      p.vy = Math.max(p.vy, tuning.crowJumpSpeed);
+      p.jumpBufferTicks = 0;
+      events.push({ type: 'airJump', x: p.x, y: p.y, z: p.z });
     }
   }
 
@@ -359,9 +378,12 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
   // Count ticks on the ground: 0 on the landing tick, then 1, 2, ...
   p.groundTicks = landed ? (wasOnGround ? p.groundTicks + 1 : 0) : 0;
   // Landing after a flight: say how long it was (the style rewards long ones).
-  if (landed && !wasOnGround && p.airTicks > 0) events.push({ type: 'land', airTicks: p.airTicks });
+  if (landed && !wasOnGround && p.airTicks > 0) events.push({ type: 'land', airTicks: p.airTicks, drop: p.peakY - p.y });
   p.airTicks = landed ? 0 : p.airTicks + 1;
+  // The flight's highest point: on the ground it follows your feet.
+  p.peakY = landed ? p.y : Math.max(p.peakY, p.y);
   if (landed) {
+    p.airJumpsLeft = hasDrink(p, 'crowWings') ? tuning.crowJumps : 0; // drink: Ali del corvo
     p.wallJumpsLeft = tuning.wallJumpsMax; // touching ground recharges wall jumps
     p.wallJumpShot = false; // ...and the wall jump's shot was missed
     p.leadFlightShells = 0; // ...and the shotgun jump's shells are spent for good
@@ -598,6 +620,17 @@ function accelerate(
   const accelSpeed = Math.min(accel * wishSpeed * dt, addSpeed);
   p.vx += accelSpeed * wishX;
   p.vz += accelSpeed * wishZ;
+}
+
+/**
+ * "Ali del corvo": is the floor about to come (within the jump buffer's
+ * time, at this falling speed)? A ray straight down from your feet, as long
+ * as the fall during the buffer plus a little.
+ */
+function landingSoon(p: PlayerState, world: World): boolean {
+  if (p.vy > 0) return false; // still going up
+  const reach = -p.vy * tuning.jumpBufferTime + 0.15;
+  return raycastBoxes(p.x, p.y + 0.01, p.z, 0, -1, 0, reach, world.boxes) !== null;
 }
 
 /** Damages the player and pushes them away from (fromX, fromZ). */

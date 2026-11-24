@@ -1,6 +1,7 @@
 // Body blocking: enemies are solid for the player, CoD Zombies style.
 // You can't sprint through the horde: to get out of a bad spot you go
 // AROUND (strafe), OVER (jump, wall jump) or make a hole (kick, shotgun).
+import { hasDrink } from './drinks';
 import { moveAndCollide } from './collision';
 import { tuning } from './config';
 import type { Entity } from './entities';
@@ -45,6 +46,8 @@ function bodyOf(e: Entity): { radius: number; height: number } | null {
  */
 export function blockPlayerWithBodies(player: PlayerState, entities: Entity[], world: World, dt: number): void {
   if (!tuning.enemyBodyBlock) return;
+  // Drink "Fantasma": while sliding you go through the horde.
+  if (player.sliding && hasDrink(player, 'ghost')) return;
   const playerHeight = player.crouched ? tuning.crouchHeight : tuning.playerHeight;
 
   // Sum all the corrections first, then apply them once: with several

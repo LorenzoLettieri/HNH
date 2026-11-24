@@ -1,4 +1,6 @@
 // Draws the pools of holy fire (sim/holyFire.ts): the Forge's dynamite.
+// The same pools, orange and without the choir, are the drink "Scia di brace"
+// (holy: false): the patches of fire a slide leaves behind.
 // In layers, like the explosions:
 // 1. a GLOW on the floor: a soft disc, brighter at its ragged rim (where the
 //    holy water burns hottest), painted once on a tiny canvas in pixel art,
@@ -13,12 +15,15 @@
 import * as THREE from 'three';
 import type { HolyFire } from '../sim/holyFire';
 import { playHolyFireLoop, type LoopingSound } from '../audio/sfx';
-import { spawnHolyFlame } from './particles';
+import { spawnHolyFlame, spawnSnort } from './particles';
 import { soundAt } from './soundPosition';
 
 /** Lifted over the floor: two surfaces on the same plane flicker (z-fighting; see materials.ts). */
 const LIFT = 0.03;
 const COLOR = 0x3a7dff;
+/** The plain fire of the drink "Scia di brace" (holy: false): orange, smaller tongues, no choir. */
+const EMBER_COLOR = 0xff6a1a;
+const EMBER_LIGHT_COLOR = 0xff7a30;
 /** HDR glow of the floor (above 1 it blooms) and how much it flickers. */
 const GLOW = 2.4;
 const FLICKER = 0.25;
@@ -112,7 +117,7 @@ export function createHolyFireRenderer(scene: THREE.Scene): HolyFireRenderer {
         if (!v) {
           const material = new THREE.MeshBasicMaterial({
             map,
-            color: new THREE.Color(COLOR).multiplyScalar(GLOW),
+            color: new THREE.Color(f.holy ? COLOR : EMBER_COLOR).multiplyScalar(GLOW),
             transparent: true,
             blending: THREE.AdditiveBlending,
             depthWrite: false,
@@ -139,7 +144,8 @@ export function createHolyFireRenderer(scene: THREE.Scene): HolyFireRenderer {
           const a = Math.random() * Math.PI * 2;
           const r = Math.sqrt(Math.random()) * f.radius * 0.95;
           point.set(f.x + Math.cos(a) * r, f.y + 0.05, f.z + Math.sin(a) * r);
-          spawnHolyFlame(point, up, PARTICLES_PER_FLAME);
+          if (f.holy) spawnHolyFlame(point, up, PARTICLES_PER_FLAME);
+          else spawnSnort(point, up, PARTICLES_PER_FLAME); // the bull's fiery breath: orange tongues that rise
         }
       }
 
@@ -157,11 +163,13 @@ export function createHolyFireRenderer(scene: THREE.Scene): HolyFireRenderer {
           return;
         }
         light.position.set(f.x, f.y + 0.6, f.z);
+        light.color.set(f.holy ? LIGHT_COLOR : EMBER_LIGHT_COLOR);
         light.distance = f.radius * LIGHT_REACH;
         light.intensity = LIGHT_INTENSITY * strength(f, v) * (0.85 + 0.15 * Math.sin(time * 17 + i));
       });
       for (const [id, v] of views) {
         const f = nearest.find((n) => n.id === id);
+        if (f && !f.holy) continue; // the ember trail crackles quietly: no choir for it
         if (f && !v.sound) v.sound = playHolyFireLoop(soundAt(camera, f.x, f.y + 0.5, f.z));
         else if (f && v.sound) v.sound.move(soundAt(camera, f.x, f.y + 0.5, f.z));
         else if (!f && v.sound) {
