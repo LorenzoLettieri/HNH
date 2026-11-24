@@ -195,10 +195,10 @@ export function stepGame(
   // Enemies are solid: push the player out of their bodies (after they moved, see bodyBlock.ts).
   blockPlayerWithBodies(game.player, game.entities, world, dt);
   game.projectiles = stepProjectiles(game.projectiles, game.player, world, dt, events);
-  const beforeWaves = events.length;
   stepWaves(game, world, events);
-  // Right after the waves: it listens to their waveStart/waveEnd (mapEvents.ts).
-  stepMapEvents(game.mapEvent, game.player, game, events, beforeWaves);
+  // Right after the waves: it listens to their waveStart/waveEnd, and to
+  // this tick's shots and blasts for the objectives (mapEvents.ts).
+  stepMapEvents(game, world, events, tickEvents);
   stepPickups(game, world, dt, events);
   // Last: it needs the whole tick (your hits come first, the enemies' hits on you later).
   stepStyle(game.style, game.player, events, tickEvents);

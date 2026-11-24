@@ -551,6 +551,25 @@ export const town: World = {
   // Where the enemies crawl out from. Spread over the WHOLE town, not just
   // the edges: the waves pick one ahead of you and out of sight (see
   // pickSpawn in src/sim/waves.ts), so running laps leads you into a horde.
+  // The "Campane del Giudizio" map event (src/sim/bells.ts) picks a few of
+  // these, far apart, and you ring them in order: rooftops of every height,
+  // all over the town (each reachable: routes at the top of the file).
+  bellSpots: [
+    { x: -15, y: 7.3, z: -12 }, // saloon
+    { x: 17, y: 9.3, z: -12 }, // church
+    { x: 15, y: 8.3, z: 15 }, // bank
+    { x: -14, y: 5.3, z: 14 }, // sheriff
+    { x: -14, y: 5.3, z: -33 }, // hotel
+    { x: 9, y: 14, z: 24 }, // east twin tower
+    { x: -9, y: 14, z: 24 }, // west twin tower
+    { x: 25, y: 6.3, z: 35 }, // warehouse
+    { x: -26.3, y: 8, z: -13 }, // water tower
+    { x: 8, y: 6.3, z: -35 }, // stable
+    { x: 38.5, y: 5.3, z: -30 }, // depot
+    { x: 38.5, y: 4.3, z: 5 }, // telegraph office
+    { x: -38.5, y: 5.3, z: 1 }, // bathhouse
+    { x: 18, y: 8, z: 26 }, // gunsmith
+  ],
   enemySpawns: [
     // Corners and sides of the canyon.
     { x: -36, y: 0, z: -36 },

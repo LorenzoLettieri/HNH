@@ -3,10 +3,10 @@
 // Complete it and you earn fiches (player.fiches), to spend on the barman's drinks (the pacts).
 //
 // This file is the SKELETON shared by every event: WHEN one appears, its
-// lifecycle (active → success or failure) and the events it reports. What
-// each event asks you to do (ring the bells, kill the jackal...) will plug in
-// here later; for now an event just lasts until the end of its wave and fails
-// (or a debug button completes it).
+// lifecycle (active → success or failure), the prize and the events it
+// reports. What each event asks you to do lives in its own file (bells.ts):
+// a create function and a step function that says "running / success /
+// failure". If the wave ends first, the event fails.
 //
 // It's a small STATE MACHINE, the same idea as the enemies' AI:
 //
@@ -21,22 +21,26 @@
 // map events exist.
 import { tuning } from './config';
 import type { SimEvent } from './events';
-import type { PlayerState } from './player';
+import type { GameState } from './game';
 import { randomInt, type RandomState } from './random';
 import { isSmithWave } from './waves';
+import type { World } from './world';
+import { createBellsEvent, stepBells, type BellsEvent } from './bells';
 
 /**
- * Which event. One for now (the first one we'll build, docs/DESIGN.md);
- * adding one = a new id here, plus its objective.
+ * Which event. One for now (the first one we built, docs/DESIGN.md); adding
+ * one = its file (like bells.ts), its type in ActiveMapEvent, its id here.
  */
-export type MapEventKind = 'bells';
+export type MapEventKind = ActiveMapEvent['kind'];
 
-/** The event being played right now. */
-export interface ActiveMapEvent {
-  kind: MapEventKind;
-  /** The wave it showed up in (it ends with it). */
-  wave: number;
-}
+/**
+ * The event being played right now. A DISCRIMINATED UNION (one type per
+ * kind, told apart by `kind`), like the SimEvents: each event has its own
+ * fields (the bells' list, the jackal's position...) and TypeScript knows
+ * which ones after a check on `kind`. Every kind has `kind` and `wave` (the
+ * wave it showed up in: it ends with it).
+ */
+export type ActiveMapEvent = BellsEvent;
 
 export interface MapEventState {
   /** First wave the next event may show up in (a Smith wave pushes it one later). */
@@ -64,25 +68,30 @@ export function createMapEventState(rng: RandomState): MapEventState {
   return { nextWave: rollGap(rng), active: null, forceSuccess: false };
 }
 
-/** Which event to play. Only one exists for now; then a weighted pick, like the waves' roster. */
-function pickKind(_rng: RandomState): MapEventKind {
-  return 'bells';
+/**
+ * A new event of some kind, or null if this level can't host it (no bell
+ * spots...). Only one kind exists for now; with more, a weighted pick like
+ * the waves' roster, trying another kind when one can't be built.
+ */
+function createEvent(world: World, rng: RandomState, wave: number): ActiveMapEvent | null {
+  return createBellsEvent(world, rng, wave);
 }
 
 /**
  * One tick of the map events. Reads this tick's events (from `firstEvent`
  * on: `events` may hold earlier ticks of the same frame) and pushes its own.
- * Called by stepGame after stepWaves, so it sees this tick's waveStart/waveEnd.
+ * Called by stepGame after stepWaves, so it sees this tick's waveStart/waveEnd
+ * (and the shots and blasts of the tick, for the objectives).
  */
-export function stepMapEvents(
-  state: MapEventState,
-  player: PlayerState,
-  rng: RandomState,
-  events: SimEvent[],
-  firstEvent: number,
-): void {
-  // Success first: an objective completed in the last instant of the wave counts.
-  if (state.active && state.forceSuccess) finish(state, player, rng, events, true);
+export function stepMapEvents(game: GameState, world: World, events: SimEvent[], firstEvent: number): void {
+  const state = game.mapEvent;
+  // The objective first: completed in the last instant of the wave, it counts.
+  const active = state.active;
+  if (active) {
+    // Each kind has its own step; it says whether it's done.
+    const result = state.forceSuccess ? 'success' : stepBells(active, world, game.player, events, firstEvent);
+    if (result !== 'running') finish(game, events, result === 'success');
+  }
   state.forceSuccess = false;
 
   // Copy the end: we push while reading, and our own events don't concern us.
@@ -91,36 +100,42 @@ export function stepMapEvents(
     const e = events[i];
     if (e.type === 'waveEnd' && state.active) {
       // The wave is over and the objective isn't done: failed.
-      finish(state, player, rng, events, false);
+      finish(game, events, false);
     } else if (e.type === 'waveStart') {
       // Never two at once (a debug jump to another wave skips the waveEnd).
-      if (state.active) finish(state, player, rng, events, false);
+      if (state.active) finish(game, events, false);
       // ">=" and not "===": a Smith wave just leaves it pending, so it shows
       // up in the next one (and a debug jump past it doesn't lose it).
-      if (e.wave >= state.nextWave && !isSmithWave(e.wave)) start(state, rng, events, e.wave);
+      if (e.wave >= state.nextWave && !isSmithWave(e.wave)) start(game, world, events, e.wave);
     }
   }
 }
 
-function start(state: MapEventState, rng: RandomState, events: SimEvent[], wave: number): void {
-  const kind = pickKind(rng);
-  state.active = { kind, wave };
-  events.push({ type: 'mapEventStart', kind, wave });
+function start(game: GameState, world: World, events: SimEvent[], wave: number): void {
+  const ev = createEvent(world, game, wave);
+  // This level can't host it: try again after another gap.
+  if (!ev) {
+    game.mapEvent.nextWave = wave + rollGap(game);
+    return;
+  }
+  game.mapEvent.active = ev;
+  events.push({ type: 'mapEventStart', kind: ev.kind, wave });
 }
 
 /**
  * The event is over, either way. The next one is scheduled from the wave this
  * one was in: in wave 5 → the next in wave 9 or 10.
  */
-function finish(state: MapEventState, player: PlayerState, rng: RandomState, events: SimEvent[], success: boolean): void {
+function finish(game: GameState, events: SimEvent[], success: boolean): void {
+  const state = game.mapEvent;
   const ended = state.active!;
   state.active = null;
-  state.nextWave = ended.wave + rollGap(rng);
+  state.nextWave = ended.wave + rollGap(game);
   // The prize: fiches straight into your pocket (no pickup to run to: the
   // event already made you run). Failing gives nothing here; an event that
   // leaves something anyway (the jackal's coins) does it on its own.
   const fiches = success ? tuning.mapEventFiches : 0;
-  player.fiches += fiches;
+  game.player.fiches += fiches;
   events.push({ type: 'mapEventEnd', kind: ended.kind, success, fiches });
 }
 

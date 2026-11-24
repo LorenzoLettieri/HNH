@@ -74,6 +74,12 @@ export function createDebugPanel(options: {
   waves.button('Go to this wave', () => options.onJumpToWave(jump.wave));
   waves.number(tuning, 'mapEventGapMin', 1, 10, 1);
   waves.number(tuning, 'mapEventGapMax', 1, 10, 1);
+  waves.number(tuning, 'mapEventFiches', 0, 5, 1);
+  waves.number(tuning, 'bellsCount', 1, 6, 1);
+  waves.number(tuning, 'bellsTime', 10, 180, 5);
+  waves.number(tuning, 'bellsMinSpacing', 0, 50, 1);
+  waves.number(tuning, 'bellRadius', 0.2, 3, 0.1);
+  waves.number(tuning, 'bellTouchReach', 0.5, 4, 0.1);
   waves.number(tuning, 'ghoulSpawnWeight', 0, 30, 1);
   waves.number(tuning, 'eyebatSpawnWeight', 0, 30, 1);
   waves.number(tuning, 'houndSpawnWeight', 0, 30, 1);

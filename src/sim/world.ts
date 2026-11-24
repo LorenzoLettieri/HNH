@@ -182,6 +182,12 @@ export interface World {
   enemySpawns?: SpawnPoint[];
   /** The shops' vendors. Optional: the test arena has none. */
   shops?: ShopSpawn[];
+  /**
+   * Where the bells of the "Campane del Giudizio" map event can hang (bells.ts):
+   * points on the roofs, at the surface (the bell hangs from a little frame
+   * standing there). Optional: without them that event never shows up.
+   */
+  bellSpots?: { x: number; y: number; z: number }[];
   /** Where the player (re)appears, feet position. */
   spawn: { x: number; y: number; z: number };
 }

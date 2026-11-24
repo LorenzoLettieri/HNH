@@ -99,6 +99,8 @@ export type SimEvent =
   | { type: 'mapEventStart'; kind: MapEventKind; wave: number }
   /** The map event is over: objective done (success) or the wave ended first; the fiches it gave (0 if it failed). */
   | { type: 'mapEventEnd'; kind: MapEventKind; success: boolean; fiches: number }
+  /** A bell of the bells event rang (bells.ts): the `index`-th of `count`, where it hangs, and whether it was the last one. */
+  | { type: 'bellRung'; index: number; count: number; x: number; y: number; z: number; last: boolean }
   | { type: 'ghoulAttack'; entityId: number }
   | { type: 'ghoulLunge'; entityId: number } // starts crouching for a pounce (the warning)
   /** A hound starts its ambush: the howl (the warning). */

@@ -1055,6 +1055,17 @@ export const tuning = {
   mapEventGapMax: 5,
   /** Fiches for a completed event (one fiche = one drink at the saloon, for now). */
   mapEventFiches: 1,
+  // "Le Campane del Giudizio" (src/sim/bells.ts)
+  /** How many bells to ring, in order. */
+  bellsCount: 3,
+  /** Seconds to ring the others once the first one has rung. */
+  bellsTime: 60,
+  /** Each bell at least this far (meters, on the ground plane) from the one before it. */
+  bellsMinSpacing: 20,
+  /** A bullet or a blast this close to the bell's middle rings it (meters). */
+  bellRadius: 0.8,
+  /** Your chest this close to the bell's middle rings it: run into it, kick it (meters). */
+  bellTouchReach: 1.6,
 
   // --- Enemy projectiles (src/sim/projectiles.ts) ---
   /** Radius of an enemy projectile, meters (for hitting the player). */

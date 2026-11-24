@@ -699,6 +699,10 @@ Suono suo: un **triangolo da saloon** battuto veloce (le ondate hanno la campana
 drink), dritte in tasca (niente raccoglibile: l'evento ti ha già fatto correre); si perdono alla morte. Contatore
 sotto il Ferro Dannato (una pila di gettoni d'osso con le strisce rosse), nascosto a zero; la scritta di fine evento
 dice "+1 fiche · spendile al saloon".
+**Passo 4** [FATTO, da tarare]: **le Campane nella simulazione** (`src/sim/bells.ts`). 3 campane tra 14 punti sui tetti
+(saloon, chiesa, banca, torri gemelle, serbatoio...), ognuna ad almeno 20 m dalla precedente; la prima avvia il timer
+di 60 s, le altre vanno suonate in ordine. Si suonano **sparando** (un proiettile che passa entro 0,8 m), con
+un'**esplosione** o **toccandole** (correndoci contro, calciandole): sparare da lontano va bene, ma prima devi trovarle.
 
 **Ordine proposto**: prima lo **scheletro comune** con l'evento più semplice (Campane o Scommessa): comparsa e
 annuncio, timer, successo/fallimento, valuta nuova nell'HUD; poi il barista e i drink; poi gli eventi con un'IA
