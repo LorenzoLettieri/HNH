@@ -1,6 +1,7 @@
 // Turns raw input (input.ts) into what the game understands:
 // - view angles, updated every rendered frame for the most responsive aim;
 // - an InputCommand, built once per simulation tick.
+import type { DrinkId } from './sim/drinks';
 import type { PurchaseId } from './sim/shop';
 import type { WeaponId } from './sim/weapon';
 import { consumeMouseDelta, isPointerLocked } from './input';
@@ -39,6 +40,12 @@ let pendingBuy: PurchaseId | null = null;
 export function queueBuy(id: PurchaseId): void {
   pendingBuy = id;
 }
+/** Same for the saloon: the click on a drink becomes the next command's `drink`. */
+let pendingDrink: DrinkId | null = null;
+export function queueDrink(drink: DrinkId): void {
+  pendingDrink = drink;
+}
+
 /** Same for the Forge: the click in its panel becomes the next command's `forge`. */
 let pendingForge: WeaponId | null = null;
 export function queueForge(weapon: WeaponId): void {
@@ -84,9 +91,11 @@ export function buildCommand(tick: number): InputCommand {
   pendingBuy = null; // delivered: one click = one purchase attempt
   const forge = pendingForge;
   pendingForge = null;
+  const drink = pendingDrink;
+  pendingDrink = null;
   const respawn = pendingRespawn;
   pendingRespawn = false;
   return {
-    tick, forward, strafe, jump, crouch, fire, altFire, kick, reload, weaponSelect, respawn, buy, forge, yaw: view.yaw, pitch: view.pitch,
+    tick, forward, strafe, jump, crouch, fire, altFire, kick, reload, weaponSelect, respawn, buy, forge, drink, yaw: view.yaw, pitch: view.pitch,
   };
 }

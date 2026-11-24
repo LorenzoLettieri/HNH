@@ -10,6 +10,7 @@
 //
 // Written generic on purpose: the Dynamiter (the enemy in docs/DESIGN.md)
 // will throw the same sticks.
+import { drinkDamageMultiplier } from './drinks';
 import { tuning, TICK_RATE } from './config';
 import { moveAndCollide } from './collision';
 import type { SimEvent } from './events';
@@ -213,7 +214,7 @@ export function stepDynamite(
       const bonus = d.hellBounce ? 1 + tuning.hellBounceBonus * Math.min(d.bounces, tuning.hellBounceMax) : 1;
       // The center of the box, not its bottom: that's where the powder is.
       const push = d.rocket ? tuning.rocketSelfPushScale : d.mini ? tuning.clusterDamageScale : 1; // "Razzo": a stronger dynamite jump
-      const damage = bonus * (d.mini ? tuning.clusterDamageScale : 1);
+      const damage = bonus * (d.mini ? tuning.clusterDamageScale : 1) * drinkDamageMultiplier(player); // × Latte del Diavolo
       explode(player, { x: d.x, y: d.y + r, z: d.z }, dynamiteBlast(d.holy, d.radius, damage, push), world, entities, events);
       // "A grappolo": the mini sticks fly out of the blast.
       if (d.cluster) for (const m of clusterOf(d, nextId)) alive.push(m);

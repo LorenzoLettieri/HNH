@@ -1,5 +1,6 @@
 // The whole game state in one object, and the one function that advances it
 // by one tick. Main loop (and one day the server) only talk to this.
+import { healPerKill, maxHealth, rewardBonus, stepBar } from './drinks';
 import type { InputCommand } from './command';
 import { createBull, createEntities, createEyebat, createHound, createSharpshooter, createSmith, isEnemy, stepTarget, type Entity } from './entities';
 import { stepEyebat } from './eyebat';
@@ -124,6 +125,7 @@ export function stepGame(
   // Shopping first: a weapon bought this tick is in your hands for the rest of it.
   stepShop(game.player, cmd, world, events);
   stepForge(game.player, cmd, world, events);
+  stepBar(game.player, cmd, world, events);
   const firstNewEvent = events.length;
   // During HIGH NOON the guns are bottomless (the weapon doesn't know why: it only gets the flag).
   stepWeapon(game.player, cmd, world, game.entities, events, isHighNoon(game.style), game);
@@ -153,8 +155,14 @@ export function stepGame(
   // The style multiplies what you earn. Read BEFORE stepStyle (end of the
   // tick): a kill counts with the rank you had when you pulled the trigger,
   // not with the rank that same kill is about to give you.
-  scoreHits(game.stats, playerHits, styleMultiplier(game.style));
+  scoreHits(game.stats, playerHits, styleMultiplier(game.style) + rewardBonus(game.player));
   dropFromKills(game, playerHits);
+  // Gin del Serpente a Sonagli (drinks.ts): every kill of yours gives some health back.
+  const heal = healPerKill(game.player);
+  if (heal > 0 && game.player.health > 0) {
+    const kills = playerHits.filter((e) => e.type === 'hit' && e.killed && e.target !== 'target').length;
+    game.player.health = Math.min(maxHealth(game.player), game.player.health + kills * heal);
+  }
 
   // Navigation: where's the player on the graph? (Only while standing:
   // in mid-jump we keep the last known node.) Checked 4 times a second;

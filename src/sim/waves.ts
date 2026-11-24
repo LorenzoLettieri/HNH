@@ -6,6 +6,7 @@
 // trouble it is), every wave has a budget, and each spawn picks a RANDOM type
 // among those the remaining budget can afford. Same budget, different mix in
 // every game. A future tough enemy (a brute worth 5) just gets a higher cost.
+import { maxHealth } from './drinks';
 import { secondsToTicks, tuning } from './config';
 import { createBull, createEyebat, createGhoul, createHound, createSharpshooter, createSmith, isEnemy, type Enemy, type GhoulEntity } from './entities';
 import { random, randomInt } from './random';
@@ -345,7 +346,7 @@ function visibleFromPlayer(game: GameState, s: SpawnPoint, world: World): boolea
 export function jumpToWave(game: GameState, n: number): void {
   game.entities = game.entities.filter((e) => !isEnemy(e));
   game.projectiles = [];
-  game.player.health = tuning.playerMaxHealth;
+  game.player.health = maxHealth(game.player);
   game.wave = { number: n - 1, phase: 'break', breakTicks: secondsToTicks(2), budgetLeft: 0, spawnCooldownTicks: 0, smithPending: false };
 }
 

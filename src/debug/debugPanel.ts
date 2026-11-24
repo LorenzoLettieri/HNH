@@ -55,6 +55,7 @@ export function createDebugPanel(options: {
   onGiveMoney: (amount: number) => void;
   /** Debug: one Damned Iron for free, to try the Forge. */
   onGiveIron: () => void;
+  onGiveFiche: () => void;
 }): DebugPanel {
   const panel = createPanel();
   // Any control moved in the panel: check whether the tuning still matches
@@ -99,6 +100,19 @@ export function createDebugPanel(options: {
   shop.number(tuning, 'shovelPrice', 0, 3000, 50);
   shop.button('+500 vildenaro', () => options.onGiveMoney(500));
   shop.button('+1 Ferro Dannato', () => options.onGiveIron());
+  shop.button('+1 fiche', () => options.onGiveFiche());
+  // The barman's drinks (src/sim/drinks.ts).
+  shop.number(tuning, 'drinkPrice', 0, 5, 1);
+  shop.number(tuning, 'drinkOfferSize', 1, 6, 1);
+  shop.number(tuning, 'drinkMaxLevel', 1, 5, 1);
+  shop.number(tuning, 'whiskeyHealth', 0, 100, 5);
+  shop.number(tuning, 'ginHealPerKill', 0, 20, 1);
+  shop.number(tuning, 'shineSpeed', 0, 3, 0.25);
+  shop.number(tuning, 'rumChainSeconds', 0, 5, 0.5);
+  shop.number(tuning, 'devilsMilkDamage', 0, 2, 0.25);
+  shop.number(tuning, 'devilsMilkHealthCost', 0, 75, 5);
+  shop.number(tuning, 'bourbonMultiplier', 0, 2, 0.25);
+  shop.number(tuning, 'bourbonHurt', 0, 1, 0.05);
   shop.number(tuning, 'forgeDamageMultiplier', 1, 5, 0.5);
   shop.number(tuning, 'upgradeBasePrice', 0, 3000, 50);
   shop.number(tuning, 'upgradePriceGrowth', 1, 4, 0.1);

@@ -854,6 +854,22 @@ export function playSmithArrived(): void {
 }
 
 /**
+ * A drink poured at the saloon (drinks.ts): the glass set down on the
+ * counter (a dull knock), the whiskey glugging in (a few bubbles: short
+ * band-passed noise bursts rising in pitch), a clink, and a low "hah" of the
+ * burn going down (filtered noise falling). A pact should sound like one.
+ */
+export function playDrink(): void {
+  thump({ duration: 0.08, volume: 0.5, from: 220, to: 120 });
+  for (let i = 0; i < 6; i++) {
+    noiseBurst({ start: 0.12 + i * 0.07, duration: 0.05, volume: 0.25, filter: 'bandpass', frequency: 500 + i * 90, q: 6 });
+  }
+  setTimeout(() => ring(2600, 0.5, 0.08), 600);
+  noiseBurst({ start: 0.9, duration: 0.5, volume: 0.22, filter: 'lowpass', frequency: 1400, frequencyEnd: 300 });
+  thump({ start: 0.9, duration: 0.4, volume: 0.25, from: 70, to: 40 });
+}
+
+/**
  * A map event shows up (mapEvents.ts): a dinner triangle beaten fast, the
  * saloon calling you, over a low drum of the devil's game. High and quick on
  * purpose: the church bell (waves) is low and slow, the anvil (Smith) is

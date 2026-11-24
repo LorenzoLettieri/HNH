@@ -244,6 +244,10 @@ const debugPanel = createDebugPanel({
     markPractice('vildenaro regalato dal pannello di debug');
     game.player.money += amount;
   },
+  onGiveFiche: () => {
+    markPractice('fiches regalate dal pannello di debug');
+    game.player.fiches++;
+  },
   onGiveIron: () => {
     markPractice('Ferro Dannato regalato dal pannello di debug');
     game.player.damnedIron++;

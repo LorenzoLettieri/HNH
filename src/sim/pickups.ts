@@ -22,6 +22,7 @@
 // same spot (coins and ammo would hide each other).
 //
 // Pure simulation, like everything in src/sim: the renderer reads the list.
+import { maxHealth, rewardBonus } from './drinks';
 import { secondsToTicks, tuning } from './config';
 import type { SimEvent } from './events';
 import type { Enemy } from './entities';
@@ -106,7 +107,8 @@ interface Loot {
 function whatDrops(game: GameState, enemy: Enemy): Loot[] {
   const loot: Loot[] = [];
   const coins = Math.round(enemyCost(enemy) * tuning.coinsPerWeight);
-  const coinValue = Math.round(tuning.coinValue * styleMultiplier(game.style));
+  // The style's multiplier, plus Bourbon Infernale's (drinks.ts).
+  const coinValue = Math.round(tuning.coinValue * (styleMultiplier(game.style) + rewardBonus(game.player)));
   for (let i = 0; i < coins; i++) loot.push({ kind: 'coin', value: coinValue });
   // The Damned Smith ALWAYS leaves its Damned Iron (the reason to kill it).
   if (enemy.type === 'smith') loot.push({ kind: 'iron', value: 0 });
@@ -258,8 +260,8 @@ function collect(game: GameState, d: Pickup): boolean {
     return true;
   }
   if (kind === 'medkit') {
-    if (p.health >= tuning.playerMaxHealth) return false;
-    p.health = Math.min(tuning.playerMaxHealth, p.health + tuning.medkitHeal);
+    if (p.health >= maxHealth(p)) return false;
+    p.health = Math.min(maxHealth(p), p.health + tuning.medkitHeal);
     return true;
   }
   // Ammo: rounds for one pocket, up to what it holds.

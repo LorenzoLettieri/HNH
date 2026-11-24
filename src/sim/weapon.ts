@@ -30,6 +30,7 @@
 //
 // BOTTOMLESS (the HIGH NOON climax, see style.ts): the gun in your hands is
 // always full and firing doesn't use rounds. No reloading: you just shoot.
+import { drinkDamageMultiplier } from './drinks';
 import type { InputCommand } from './command';
 import { secondsToTicks, tuning } from './config';
 import type { SimEvent } from './events';
@@ -570,7 +571,7 @@ function revolverBullet(
   const hit = trace(ox, oy, oz, dx, dy, dz, tuning.weaponRange, world, entities.filter(isAlive), false, events, end);
   if (hit) {
     const critical = hit.headshot || (p.wallJumpShot && hasCard(p, 'riderShot'));
-    const amount = tuning.revolverDamage * forgeMultiplier(p, 'revolver') * (critical ? tuning.headshotMultiplier : 1);
+    const amount = tuning.revolverDamage * forgeMultiplier(p, 'revolver') * drinkDamageMultiplier(p) * (critical ? tuning.headshotMultiplier : 1);
     applyGunDamage(hit.target, amount, critical, 'revolver', hit.distance, events);
     if (critical && hasCard(p, 'ricochet')) ricochet(p, end, hit.target, world, entities, events);
   }
@@ -687,7 +688,7 @@ function fireRifle(p: PlayerState, world: World, entities: Entity[], events: Sim
     const hit = trace(a.ox, a.oy, a.oz, dx, dy, dz, tuning.weaponRange, world, living, false, events);
     if (!hit) break;
     const critical = hit.headshot || quickscope;
-    let amount = tuning.rifleDamage * forgeMultiplier(p, 'rifle') * (critical ? critMultiplier : 1) * duel;
+    let amount = tuning.rifleDamage * forgeMultiplier(p, 'rifle') * drinkDamageMultiplier(p) * (critical ? critMultiplier : 1) * duel;
     // "Marchio": a marked enemy takes double and loses the mark; an unmarked one gets it.
     const wasMarked = marks && hit.target.marked === true;
     if (wasMarked) {
@@ -754,7 +755,7 @@ function fireShotgun(p: PlayerState, world: World, entities: Entity[], events: S
     if (!hit) return;
     const amount =
       tuning.shotgunPelletDamage *
-      forgeMultiplier(p, 'shotgun') *
+      forgeMultiplier(p, 'shotgun') * drinkDamageMultiplier(p) *
       falloff(p, travelled + hit.distance) *
       (hit.headshot ? tuning.shotgunHeadshotMultiplier : 1);
     const t = totals.get(hit.target) ?? { amount: 0, headshot: false, pellets: 0, distance: Infinity };

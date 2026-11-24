@@ -663,7 +663,7 @@ evento (stile gli eventi di Diablo 4) **durante un'ondata**.
   ne scegli uno; prendere di nuovo lo stesso drink = il livello successivo del patto).
   Un drink dura **tutta la partita** (come le carte). **Due tipi di patti**: **buff puri** e **buff con un
   lato negativo** (il patto col diavolo: più forte, ma costa qualcosa, es. "+1 colpo nel tamburo, −20 di
-  salute massima"). [DA DECIDERE: l'elenco dei drink]
+  salute massima"). Il primo elenco (scelto da Claude, novembre 2026; da tarare col playtest) è sotto, al passo 7.
 - Gli obiettivi devono **far muovere**, non tenere fermi in un cerchio (sarebbe camping per regolamento).
   "Resta qui" solo se la zona si sposta.
 - Fallire non deve voler dire solo tempo buttato: dove si può, qualcosa resta (il goblin perde monete a ogni colpo).
@@ -711,6 +711,19 @@ acuta: senti a che punto sei). Riga dell'evento sotto l'ondata ("suona la campan
 retro, una finestra a sud; bancone, scaffali, tavoli; dentro i nemici ti seguono come nell'emporio). Dietro il bancone il
 **barista**: un oste infernale con i cornetti tra i capelli impomatati e i baffi a manubrio, che lucida un bicchiere.
 "E · ORDINA" apre il pannello del saloon (le fiches al posto del vildenaro); i drink nel passo dopo.
+**Passo 7** [FATTO, da tarare]: **i drink** (`src/sim/drinks.ts`). Sul bancone 3 drink pescati a caso (sempre gli
+stessi finché non ne bevi uno: niente reroll gratis), **1 fiche** l'uno; bere di nuovo lo stesso = **livello dopo**
+(fino al III); tutto perso alla morte. Il primo mazzo:
+| Drink | Dà (per livello) | Il prezzo |
+|---|---|---|
+| **Whiskey del Becchino** | +25 salute massima | — |
+| **Gin del Serpente a Sonagli** | ogni uccisione ridà 3 di salute | — |
+| **Acquavite Fulmine** | +0,75 m/s di corsa | — |
+| **Rum del Morto** | catena dello Stile +1 s | — |
+| **Latte del Diavolo** | +50% di danno con tutto | −25 salute massima |
+| **Bourbon Infernale** | +0,5 al moltiplicatore di punti e vildenaro | +25% di danno subito |
+Idee per dopo: movimento (doppio salto, un wall jump in più) come patti; un drink "maledetto" che il barista ti
+offre solo dopo un evento fallito.
 
 **Ordine proposto**: prima lo **scheletro comune** con l'evento più semplice (Campane o Scommessa): comparsa e
 annuncio, timer, successo/fallimento, valuta nuova nell'HUD; poi il barista e i drink; poi gli eventi con un'IA

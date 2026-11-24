@@ -1,3 +1,4 @@
+import { damageTakenMultiplier, maxHealth, noDrinks, runSpeed, type DrinkId } from './drinks';
 import type { InputCommand } from './command';
 import { findWall, moveAndCollide, overlapsAny } from './collision';
 import type { World } from './world';
@@ -95,6 +96,8 @@ export interface PlayerState {
    * saloon on the barman's drinks, the pacts (docs/DESIGN.md §5). Lost when you die.
    */
   fiches: number;
+  /** The barman's drinks you've had: a level per drink, 0 = never (drinks.ts). Lost when you die. */
+  drinks: Record<DrinkId, number>;
   /**
    * Forge level of each gun: 0 = plain, 1 = reinforced (more damage, and
    * one day a new look: akimbo revolvers, a pump-action, a scope). Lost when you die.
@@ -177,6 +180,7 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     cardSeed: 0,
     damnedIron: 0,
     fiches: 0,
+    drinks: noDrinks(),
     forged: noForge(),
     fireCooldownTicks: 0,
     fireBufferTicks: 0,
@@ -314,12 +318,12 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
   if (p.sliding) {
     // Sliding: very little friction, and only a bit of steering (like in the air).
     applyFriction(p, tuning.slideFriction, dt);
-    accelerate(p, wishX, wishZ, tuning.maxGroundSpeed, tuning.airSpeedCap, tuning.slideSteer, dt);
+    accelerate(p, wishX, wishZ, runSpeed(p), tuning.airSpeedCap, tuning.slideSteer, dt);
   } else if (p.onGround) {
     // On foot (standing or crouch-walking): friction + ground acceleration.
     // Right after landing there's a grace window with no friction: a hop
     // within it keeps all your speed (forgiving bunny hopping).
-    const maxSpeed = p.crouched ? tuning.crouchSpeed : tuning.maxGroundSpeed;
+    const maxSpeed = p.crouched ? tuning.crouchSpeed : runSpeed(p);
     if (p.groundTicks >= secondsToTicks(tuning.bhopGraceTime)) {
       applyFriction(p, tuning.groundFriction, dt);
     }
@@ -328,7 +332,7 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
     // In the air: Quake air acceleration (air-strafing) + air control.
     // (No extra "air brake" needed: Quake's acceleration already slows you
     // down hard when you hold the opposite direction.)
-    accelerate(p, wishX, wishZ, tuning.maxGroundSpeed, tuning.airSpeedCap, tuning.airAccel, dt);
+    accelerate(p, wishX, wishZ, runSpeed(p), tuning.airSpeedCap, tuning.airAccel, dt);
     airSteer(p, wishX, wishZ, dt);
   }
 
@@ -516,7 +520,8 @@ export function respawn(p: PlayerState, world: World): void {
   p.vx = p.vy = p.vz = 0;
   p.crouched = false;
   p.sliding = false;
-  p.health = tuning.playerMaxHealth;
+  p.drinks = noDrinks(); // before the health: dead = no more drinks, back to the plain max
+  p.health = maxHealth(p);
   p.loaded = fullWeapons();
   p.reserve = startingReserve();
   p.adsTicks = 0;
@@ -587,7 +592,8 @@ function accelerate(
 
 /** Damages the player and pushes them away from (fromX, fromZ). */
 export function hurtPlayer(p: PlayerState, amount: number, fromX: number, fromZ: number, push: number): void {
-  p.health = Math.max(0, p.health - amount);
+  // Bourbon Infernale's price: every hit is heavier (rounded: health stays a whole number).
+  p.health = Math.max(0, p.health - Math.round(amount * damageTakenMultiplier(p)));
   const dx = p.x - fromX;
   const dz = p.z - fromZ;
   const d = Math.hypot(dx, dz) || 1;

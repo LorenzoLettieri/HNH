@@ -8,6 +8,7 @@ import type { SimEvent } from '../sim/events';
 import type { PlayerState } from '../sim/player';
 import { playBell, playMapEventEnd, playMapEventStart, playPickup, playPlayerHurt, playSmithArrived } from '../audio/sfx';
 import { MAP_EVENT_TEXT } from './mapEventText';
+import { maxHealth } from '../sim/drinks';
 import type { GameState } from '../sim/game';
 import { horizontalSpeed } from '../sim/player';
 import { isEnemy } from '../sim/entities';
@@ -195,9 +196,10 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
   updateStyleFeed(events, dt);
   updateHighNoon(game.style, events, dt);
 
-  const health = player.health / tuning.playerMaxHealth;
-  updateLowHealth(health, player.health <= 0, dt); // first: it moves the heartbeat
-  updateHealthPlate(player.health, dt);
+  // The max is the player's: the barman's drinks change it (drinks.ts).
+  const max = maxHealth(player);
+  updateLowHealth(player.health / max, player.health <= 0, dt); // first: it moves the heartbeat
+  updateHealthPlate(player.health, max, dt);
 
   // Red vignette: a flash on each hit (low health has its own effect, lowHealth.ts).
   flash = Math.max(0, flash - dt * FLASH_FADE);

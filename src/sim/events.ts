@@ -12,6 +12,7 @@ import type { ForgeRefusal } from './forge';
 import type { StyleAward } from './style';
 import type { Stats } from './stats';
 import type { MapEventKind } from './mapEvents';
+import type { DrinkId, DrinkRefusal } from './drinks';
 
 /** What hit an enemy ('hit' events). */
 export type HitSource = WeaponId | MeleeTool | 'dynamite';
@@ -173,5 +174,8 @@ export type SimEvent =
   | { type: 'forged'; weapon: WeaponId; level: number }
   /** The Forge said no (forge.ts, ForgeRefusal). */
   | { type: 'forgeFailed'; weapon: WeaponId; reason: ForgeRefusal }
+  /** A drink poured at the saloon (drinks.ts): which one and its new level. */
+  | { type: 'drinkBought'; drink: DrinkId; level: number }
+  | { type: 'drinkFailed'; drink: DrinkId; reason: DrinkRefusal }
   /** You collected a pickup (sound, flash on the HUD). */
   | { type: 'pickup'; kind: PickupKind; x: number; y: number; z: number };

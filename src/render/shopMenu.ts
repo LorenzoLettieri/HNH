@@ -30,6 +30,7 @@ import { upgradeLevel, upgradeOffer, upgradePrice, type CardId } from '../sim/up
 import type { GearId } from '../sim/weapon';
 import type { ShopSpawn } from '../sim/world';
 import { createForgeRows, FORGE_GREETING } from './forgeMenu';
+import { BAR_GREETING, createBarRows } from './barMenu';
 import './fonts';
 
 /** Name and one line of description for each item: the UI's words, not the simulation's. */
@@ -196,9 +197,6 @@ const NOTHING_LEFT = 'Per quest’arma non ho niente, per ora.';
 /** Seconds the "CONFERMA" stays up waiting for the second click, then the box goes back to normal. */
 const CONFIRM_TIME = 3;
 
-/** What the barman says when you walk up to his counter. */
-const BAR_GREETING = '“Siediti, straniero. Qui non si paga in vildenaro: si paga in fiches. E qualcos’altro.”';
-
 /** What the vendor says when you open the shop (one at random). */
 const GREETINGS = [
   '“Benvenuto, straniero. Qui si paga in vildenaro, niente credito.”',
@@ -275,6 +273,8 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
   // At a Forge the same panel shows the Forge's rows instead of the weapons (forgeMenu.ts).
   const forge = createForgeRows(noFocus);
   let forgeBuilt = false;
+  // At the saloon: the barman's drinks (barMenu.ts).
+  const bar = createBarRows(noFocus);
 
   let isOpen = false;
   let kind: ShopSpawn['kind'] = 'weapons';
@@ -451,6 +451,7 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
         : GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
       weaponsBuiltFor = cardsBuiltFor = ''; // built by the next update(), which has the player
       forgeBuilt = false;
+      bar.reset();
       list.replaceChildren();
       panel.hidden = false;
     },
@@ -461,6 +462,7 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
       upPanel.hidden = true;
       cancelAllConfirms(); // reopening never shows a stale "CONFERMA"
       forge.reset();
+      bar.reset();
     },
     update(player, inReach, paused) {
       // The prompt: next to a vendor, shop closed, game running.
@@ -468,13 +470,7 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
       promptWord.textContent = inReach?.kind === 'forge' ? 'FORGIA' : inReach?.kind === 'saloon' ? 'ORDINA' : 'COMMERCIA';
       if (!isOpen) return;
       if (kind === 'saloon') {
-        // The barman's drinks come next (the pacts): for now, an empty counter.
-        if (list.childElementCount === 0) {
-          const note = document.createElement('div');
-          note.className = 'shop-maxed';
-          note.textContent = 'Il barista sta ancora preparando i suoi drink.';
-          list.append(note);
-        }
+        bar.refresh(list, player);
         upPanel.hidden = true;
         moneyEl.textContent = String(player.fiches);
         return;
@@ -498,6 +494,8 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
     onEvents(events) {
       const forgeLine = forge.onEvents(events);
       if (forgeLine) greeting.textContent = forgeLine;
+      const barLine = bar.onEvents(events);
+      if (barLine) greeting.textContent = barLine;
       for (const e of events) {
         if (e.type === 'purchase') {
           playPurchase();

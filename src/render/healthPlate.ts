@@ -36,8 +36,7 @@ let ghostWait = 0; // seconds before the ghost starts draining
 let lastHealth = tuning.playerMaxHealth;
 let hitTime = 0; // seconds left of the number's jolt
 
-export function updateHealthPlate(health: number, dt: number): void {
-  const max = tuning.playerMaxHealth;
+export function updateHealthPlate(health: number, max: number, dt: number): void {
   const frac = Math.max(0, Math.min(1, health / max));
 
   if (health < lastHealth) {
