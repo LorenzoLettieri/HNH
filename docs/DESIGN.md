@@ -707,6 +707,10 @@ un'**esplosione** o **toccandole** (correndoci contro, calciandole): sparare da 
 e ha una **colonna di luce** fino al cielo (la vedi da tutta la città); suonata, oscilla e rintocca (ogni campana più
 acuta: senti a che punto sei). Riga dell'evento sotto l'ondata ("suona la campana che brilla", poi
 "CAMPANA 2 / 3 · 0:42", rossa negli ultimi 10 s) e le campane sulla mappa (Tab).
+**Passo 6** [FATTO]: **il saloon e il barista**. Nel saloon ora si entra (piano terra: porta su Main Street, porta sul
+retro, una finestra a sud; bancone, scaffali, tavoli; dentro i nemici ti seguono come nell'emporio). Dietro il bancone il
+**barista**: un oste infernale con i cornetti tra i capelli impomatati e i baffi a manubrio, che lucida un bicchiere.
+"E · ORDINA" apre il pannello del saloon (le fiches al posto del vildenaro); i drink nel passo dopo.
 
 **Ordine proposto**: prima lo **scheletro comune** con l'evento più semplice (Campane o Scommessa): comparsa e
 annuncio, timer, successo/fallimento, valuta nuova nell'HUD; poi il barista e i drink; poi gli eventi con un'IA

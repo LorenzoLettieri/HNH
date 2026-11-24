@@ -50,6 +50,8 @@
 //   the deck between the rail wagons (middle crossing), under the covered
 //   wagon on Cross Street.
 // - GENERAL STORE: you can go inside (doors east/west, windows north/south).
+// - SALOON: you can go inside the ground floor (front door on Main Street, back door
+//   west, a window south): the BARMAN is behind the counter.
 //
 // Close-quarters pass (docs/DESIGN.md, "La mappa"): the quarters that were
 // empty ground are now filled with smaller buildings, so the town is a
@@ -346,10 +348,18 @@ function frame(x: number, y: number, z: number, facing: Facing, holeW: number, h
 const decals: Decal[] = [
   // SALOON: the front on Main Street, an open door on the dark room and tall
   // windows on both floors (the upper row above the balcony).
-  ...windows(SALOON, 'east', TALL, { rows: [0.4, 3.5], spacing: 3.3, door: 'doorway' }),
+  // The ground floor has REAL openings (you go in for the barman): frames around them,
+  // and painted windows only where the wall is solid.
+  ...windows(SALOON, 'east', TALL, { rows: [3.5], spacing: 3.3 }),
+  ...[-3.33, 3.33].map((along) => windowAt(SALOON, 'east', along, 0.4, TALL)),
+  frame(-8, 1.4, -14, 'east', 2.4, 2.8, 'doorFrame'),
   ...windows(SALOON, 'north', SQUARE),
-  ...windows(SALOON, 'south', SQUARE),
-  ...windows(SALOON, 'west', SQUARE, { door: 'doorPlain' }),
+  ...windows(SALOON, 'south', SQUARE, { rows: [3.4, 5.9] }),
+  ...[-5.25, -1.75, 5.25].map((along) => windowAt(SALOON, 'south', along, 0.9, SQUARE)),
+  frame(-13.25, 1.9, -9, 'south', 2, 2.2, 'windowFrame'),
+  ...windows(SALOON, 'west', SQUARE, { rows: [3.4, 5.9] }),
+  ...[-3.33, 3.33].map((along) => windowAt(SALOON, 'west', along, 0.9, SQUARE)),
+  frame(-22, 1.3, -14, 'west', 2.2, 2.6, 'doorFrame'),
   // HOTEL: the door with the lit pane faces the saloon.
   ...windows(HOTEL, 'south', SQUARE, { door: 'doorLit' }),
   ...windows(HOTEL, 'north', SQUARE),
@@ -452,6 +462,7 @@ const ground: GroundPatch[] = [
   patch(35.5, 28, 37.5, 37, 'railway'),
   // Floors: inside the general store (up to the inner face of its walls), under the sheds.
   patch(-30.35, 11.15, -23.15, 18.85, 'planks'),
+  patch(-21.7, -18.7, -8.3, -9.3, 'planks'), // the saloon
   patch(-40, -18, -33, -12, 'paving'), // the forge
   patch(35, -20, 42, -14, 'planks'), // the sawmill
 ];
@@ -500,6 +511,9 @@ const props: Prop[] = [
   { type: 'lantern', mount: 'ground', x: 0, y: 14, z: 24, rotation: 45 }, // middle of the bridge
   { type: 'lantern', mount: 'ground', x: -25.5, y: 1, z: 17.3, rotation: 0 }, // on the general store's counter
   { type: 'lantern', mount: 'ground', x: 19.6, y: 5.3, z: 23.3, rotation: 0 }, // on the armory's counter, next to the vendor
+  { type: 'lantern', mount: 'ground', x: -12.8, y: 1.1, z: -16.6, rotation: 0 }, // on the saloon's counter, both sides of the barman
+  { type: 'lantern', mount: 'ground', x: -17.2, y: 1.1, z: -16.6, rotation: 0 },
+  { type: 'lantern', mount: 'ground', x: -12, y: 0.8, z: -12, rotation: 30 }, // on a saloon table
 
   // Signs on the sidewalks (board hangs toward +X, or -X with rotation 180).
   { type: 'sign', x: -5.6, y: 0, z: -21, rotation: 0, text: 'SALOON' },
@@ -544,6 +558,8 @@ export const town: World = {
     // The FORGE (docs/DESIGN.md §6d): the blacksmith's shed in the west, on
     // the anvil. No vendor: you work the iron yourself.
     { x: -34.5, y: 0, z: -14, kind: 'forge' },
+    // The SALOON: the barman behind the counter (his drinks cost fiches, the prize of the map events).
+    { x: -15, y: 0, z: -17.6, kind: 'saloon' },
   ],
   // Steel practice targets. `rotation` = where the plate faces (same as ?look=):
   // 0 = north, 90 = west, 180 = south, -90 = east. Some are on the rooftops,
@@ -619,8 +635,25 @@ export const town: World = {
     box(0, -1, 0, 92, 1, 92, 'dirt'),
     ...cliffs(),
 
-    // --- SALOON (NW): roof 7.3 m, balcony on the street side at 3 m ---
-    ...buildingOf(SALOON, 'clapboardRed'),
+    // --- SALOON (NW): roof 7.3 m, balcony on the street side at 3 m. You can go INSIDE
+    //     the ground floor (3.5 m high): the BARMAN is behind the counter along the
+    //     north wall (shops, above; his drinks are the pacts, docs/DESIGN.md §5).
+    //     Swinging doors on Main Street (east), a back door (west), a window to jump
+    //     through on the south side. The upper floor is solid. Walls 0.3 m thick: the
+    //     line given to wallZ/wallX is 0.15 m inside the building's outline. ---
+    ...wallZ(-8.15, -19, -9, 3.8, [[-15.2, -12.8, 0, 2.8]], 'clapboardRed'), // east: the front door
+    ...wallZ(-21.85, -19, -9, 3.8, [[-15.1, -12.9, 0, 2.6]], 'clapboardRed'), // west: the back door
+    ...wallX(-18.85, -22, -8, 3.8, [], 'clapboardRed'), // north: behind the bar, solid
+    ...wallX(-9.15, -22, -8, 3.8, [[-14.25, -12.25, 0.8, 3]], 'clapboardRed'), // south: a window
+    box(-15, 3.5, -14, 13.4, 0.3, 9.4, 'planks'), // the ceiling, between the walls
+    box(-15, 3.8, -14, 14, 3.2, 10, 'clapboardRed'), // the upper floor, solid
+    box(-15, 7, -14, 14.6, 0.3, 10.6, 'roof'), // roof, top 7.3
+    // Inside: the bar along the north wall, the bottles' shelves behind the barman,
+    // two tables (low cover: hop on them, slide around them).
+    box(-15, 0, -16.6, 6, 1.1, 0.7, 'planks'), // the counter, x -18..-12, z -16.95..-16.25
+    box(-15, 0, -18.45, 6, 2.4, 0.5, 'planks'), // shelves against the north wall
+    box(-18.5, 0, -11.6, 1.4, 0.8, 1.4, 'planks'), // tables
+    box(-12, 0, -12, 1.4, 0.8, 1.4, 'planks'),
     box(-7.25, 2.75, -14, 1.5, 0.25, 10, 'planks'), // balcony floor
     box(-6.75, 0, -18.7, 0.3, 2.75, 0.3, 'timber'), // balcony posts
     box(-6.75, 0, -9.3, 0.3, 2.75, 0.3, 'timber'),

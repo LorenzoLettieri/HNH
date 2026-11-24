@@ -48,7 +48,7 @@ const PING_BELOW = 3;
 const PING_TIME = 1.2;
 const PING_RADIUS = 26;
 /** Shop names on the map, by kind. */
-const SHOP_NAMES: Record<ShopSpawn['kind'], string> = { weapons: 'ARMERIA', forge: 'FORGIA' };
+const SHOP_NAMES: Record<ShopSpawn['kind'], string> = { weapons: 'ARMERIA', forge: 'FORGIA', saloon: 'SALOON' };
 
 const root = document.getElementById('map')!;
 const canvas = document.getElementById('map-canvas') as HTMLCanvasElement;

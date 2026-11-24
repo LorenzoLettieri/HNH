@@ -49,6 +49,8 @@ export function shopCatalog(kind: ShopSpawn['kind']): ShopItem[] {
       ];
     case 'forge':
       return []; // nothing for vildenaro: the Forge takes Damned Iron (forge.ts)
+    case 'saloon':
+      return []; // nothing for vildenaro: the barman takes fiches
   }
 }
 

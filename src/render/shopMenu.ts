@@ -196,6 +196,9 @@ const NOTHING_LEFT = 'Per quest’arma non ho niente, per ora.';
 /** Seconds the "CONFERMA" stays up waiting for the second click, then the box goes back to normal. */
 const CONFIRM_TIME = 3;
 
+/** What the barman says when you walk up to his counter. */
+const BAR_GREETING = '“Siediti, straniero. Qui non si paga in vildenaro: si paga in fiches. E qualcos’altro.”';
+
 /** What the vendor says when you open the shop (one at random). */
 const GREETINGS = [
   '“Benvenuto, straniero. Qui si paga in vildenaro, niente credito.”',
@@ -440,12 +443,15 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
       kind = k;
       isOpen = true;
       selected = null;
-      const atForge = k === 'forge';
-      title.textContent = atForge ? 'FORGIA' : 'ARMERIA';
-      walletLabel.textContent = atForge ? 'Il tuo Ferro Dannato' : 'Il tuo vildenaro';
-      greeting.textContent = atForge ? FORGE_GREETING : GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
+      title.textContent = { weapons: 'ARMERIA', forge: 'FORGIA', saloon: 'SALOON' }[k];
+      walletLabel.textContent = { weapons: 'Il tuo vildenaro', forge: 'Il tuo Ferro Dannato', saloon: 'Le tue fiches' }[k];
+      greeting.textContent =
+        k === 'forge' ? FORGE_GREETING
+        : k === 'saloon' ? BAR_GREETING
+        : GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
       weaponsBuiltFor = cardsBuiltFor = ''; // built by the next update(), which has the player
       forgeBuilt = false;
+      list.replaceChildren();
       panel.hidden = false;
     },
     close() {
@@ -459,8 +465,20 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
     update(player, inReach, paused) {
       // The prompt: next to a vendor, shop closed, game running.
       prompt.hidden = isOpen || paused || inReach === null;
-      promptWord.textContent = inReach?.kind === 'forge' ? 'FORGIA' : 'COMMERCIA';
+      promptWord.textContent = inReach?.kind === 'forge' ? 'FORGIA' : inReach?.kind === 'saloon' ? 'ORDINA' : 'COMMERCIA';
       if (!isOpen) return;
+      if (kind === 'saloon') {
+        // The barman's drinks come next (the pacts): for now, an empty counter.
+        if (list.childElementCount === 0) {
+          const note = document.createElement('div');
+          note.className = 'shop-maxed';
+          note.textContent = 'Il barista sta ancora preparando i suoi drink.';
+          list.append(note);
+        }
+        upPanel.hidden = true;
+        moneyEl.textContent = String(player.fiches);
+        return;
+      }
       if (kind === 'forge') {
         if (!forgeBuilt) forge.build(list);
         forgeBuilt = true;
