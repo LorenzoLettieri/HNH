@@ -5,6 +5,7 @@ import { createBull, createEntities, createEyebat, createHound, createSharpshoot
 import { stepEyebat } from './eyebat';
 import { stepProjectiles, type Projectile } from './projectiles';
 import { stepDynamite, throwDynamite, type Dynamite } from './dynamite';
+import { spawnHolyFire, stepHolyFire, type HolyFire } from './holyFire';
 import { stepGhoul } from './ghoul';
 import { stepHound } from './hound';
 import { stepBull } from './bull';
@@ -48,6 +49,8 @@ export interface GameState {
   projectiles: Projectile[];
   /** The player's dynamite sticks in flight or rolling on the floor (dynamite.ts). */
   dynamite: Dynamite[];
+  /** Pools of holy fire on the floor (the Forge's dynamite, holyFire.ts). */
+  holyFires: HolyFire[];
   /** Things on the ground to collect (enemy drops), see pickups.ts. */
   pickups: Pickup[];
   /** State of the seeded random generator (see random.ts): what the waves spawn. */
@@ -73,6 +76,7 @@ export function createGame(world: World, seed = 1): GameState {
     airGoal: -1,
     projectiles: [],
     dynamite: [],
+    holyFires: [],
     pickups: [],
     rng: seed,
   };
@@ -127,7 +131,18 @@ export function stepGame(
     if (e.type === 'fire' && e.weapon === 'dynamite') game.dynamite.push(throwDynamite(game.player, world, game.nextEntityId++));
   }
   // Your dynamite: its explosions are your hits too (score, drops, style).
+  const beforeSticks = events.length;
   game.dynamite = stepDynamite(game.dynamite, game.player, world, game.entities, dt, events);
+  // A holy-water stick blew up: the water splashes down and burns (same idea
+  // as the sticks: the explosion only reports, the game creates the pool).
+  for (let i = beforeSticks; i < events.length; i++) {
+    const e = events[i];
+    if (e.type === 'explosion' && e.kind === 'holyDynamite') {
+      spawnHolyFire(game.holyFires, game.nextEntityId++, e.x, e.y, e.z, world, events);
+    }
+  }
+  // The pools burn the enemies in them; their kills are yours too.
+  game.holyFires = stepHolyFire(game.holyFires, game.entities);
   const playerHits = events.slice(firstNewEvent);
   refundLeadFlight(game.player, playerHits);
   // The style multiplies what you earn. Read BEFORE stepStyle (end of the
@@ -189,6 +204,7 @@ export function stepGame(
     game.entities = game.entities.filter((e) => !isEnemy(e));
     game.projectiles = [];
     game.dynamite = [];
+    game.holyFires = [];
     game.pickups = [];
     game.wave = createWaveState();
     game.stats = createStats(); // a new object: the event keeps the old one

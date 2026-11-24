@@ -52,12 +52,16 @@ export function lastShotBlast(): Blast {
   };
 }
 
-/** A dynamite stick. */
-export function dynamiteBlast(): Blast {
+/**
+ * A dynamite stick. `holy`: a stick of the launcher reinforced at the Forge
+ * (holy water): the Forge's extra damage (like every reinforced gun), and
+ * its own kind (stepGame lights a pool of holy fire under it).
+ */
+export function dynamiteBlast(holy = false): Blast {
   return {
-    kind: 'dynamite',
+    kind: holy ? 'holyDynamite' : 'dynamite',
     radius: tuning.dynamiteRadius,
-    damage: tuning.dynamiteDamage,
+    damage: tuning.dynamiteDamage * (holy ? tuning.forgeDamageMultiplier : 1),
     edge: tuning.dynamiteEdgeDamage,
     source: 'dynamite',
     knockback: tuning.dynamiteKnockback,

@@ -19,6 +19,7 @@ import type { WeaponId } from '../sim/weapon';
 const FORGE_TEXT: Record<ForgeableWeapon, { name: string; desc: string }> = {
   revolver: { name: 'Revolver → Akimbo', desc: 'Il doppio del danno. (Presto: un secondo revolver nell’altra mano.)' },
   shotgun: { name: 'Doppietta → Fucile a pompa', desc: 'Il doppio del danno. (Presto: il fucile a pompa.)' },
+  dynamite: { name: 'Lancia-dinamite → Acqua santa', desc: 'Il doppio del danno, e i candelotti bagnati nell’acqua santa: dove scoppiano resta un fuoco blu che brucia i dannati. Non te.' },
   rifle: { name: 'Carabina → Ottica', desc: 'Il doppio del danno e un cannocchiale: mirando, uno zoom tre volte più forte.' },
 };
 

@@ -15,8 +15,12 @@ interface EntityBase {
   py: number;
   pz: number;
   health: number;
-  /** Card "Fiato di drago": ticks of fire left (status.ts). Optional: most entities never burn. */
+  /** On fire (status.ts): ticks of fire left. Optional: most entities never burn. */
   burnTicks?: number;
+  /** Ticks since the last chunk of fire damage (the rhythm, apart from how long it lasts). */
+  burnClock?: number;
+  /** The fire is the holy blue one (the Forge's dynamite) instead of the card "Fiato di drago"'s. */
+  burnHoly?: boolean;
   /** Card "Calcio di piombo": ticks left in which hitting a wall hurts (status.ts), and its speed last tick. */
   slamTicks?: number;
   slamSpeed?: number;

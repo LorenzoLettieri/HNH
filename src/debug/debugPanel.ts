@@ -295,6 +295,12 @@ export function createDebugPanel(options: {
   dyn.number(tuning, 'dynamiteKnockbackLift', 0, 20, 0.5);
   dyn.number(tuning, 'dynamiteSelfPush', 0, 30, 0.5);
   dyn.number(tuning, 'dynamiteSmithScale', 0, 1, 0.05);
+  // The Forge's holy-water sticks (sim/holyFire.ts).
+  dyn.number(tuning, 'holyFireRadius', 0.5, 6, 0.1);
+  dyn.number(tuning, 'holyFireTime', 0.5, 15, 0.5);
+  dyn.number(tuning, 'holyBurnTime', 0, 5, 0.1);
+  dyn.number(tuning, 'holyBurnInterval', 0.1, 2, 0.05);
+  dyn.number(tuning, 'holyBurnDamage', 0, 100, 1);
   dyn.number(cameraFeelSettings, 'blastShake', 0, 8, 0.1);
   // The launcher in your hand (render/weapons/dynamiteView.ts): its rest pose.
   dyn.number(viewmodelSettings, 'dynamiteX', -0.3, 0.3, 0.005);

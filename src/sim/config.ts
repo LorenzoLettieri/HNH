@@ -312,6 +312,20 @@ export const tuning = {
   dynamiteSelfPush: 11,
   /** The Damned Smith's armor: explosions do this × the damage to it. */
   dynamiteSmithScale: 0.5,
+  /**
+   * HOLY FIRE (the dynamite launcher reinforced at the Forge, holyFire.ts):
+   * where a holy-water stick blows up, a pool of blue fire stays on the floor
+   * for holyFireTime seconds, holyFireRadius meters wide. Every enemy that
+   * steps in burns (holy burn): holyBurnDamage every holyBurnInterval
+   * seconds, for as long as it stands there and holyBurnTime more. The player
+   * never burns. 15 every 0.5 s = 30 a second: a basic ghoul of wave 10 (100)
+   * dies in about 3 s of fire.
+   */
+  holyFireRadius: 2.6,
+  holyFireTime: 5,
+  holyBurnTime: 1.5,
+  holyBurnInterval: 0.5,
+  holyBurnDamage: 15,
 
   // --- Drops and pickups (see pickups.ts) ---
   /** Drop chance per point of enemy weight (ghoulCost 1 → 30%, eyebatCost 2 → 60%, houndCost 3 → 80% (the cap), bull too). */

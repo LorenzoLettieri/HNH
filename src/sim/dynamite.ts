@@ -59,6 +59,8 @@ export interface Dynamite {
   fuseTicks: number;
   /** The fuse's whole length in ticks (the renderer shows how much is left: fuseTicks / fuseTotal). */
   fuseTotal: number;
+  /** Soaked in holy water (thrown by the launcher reinforced at the Forge): it leaves a pool of holy fire. */
+  holy: boolean;
   /** Resting on the floor (it rolls instead of bouncing). */
   rolling: boolean;
 }
@@ -96,6 +98,7 @@ export function throwDynamite(p: PlayerState, world: World, nextId: number): Dyn
     vz: dz * s + p.vz * k,
     fuseTicks: Math.round(tuning.dynamiteFuse * TICK_RATE),
     fuseTotal: Math.round(tuning.dynamiteFuse * TICK_RATE),
+    holy: p.forged.dynamite > 0,
     rolling: false,
   };
 }
@@ -149,7 +152,7 @@ export function stepDynamite(
     }
     if (boom) {
       // The center of the box, not its bottom: that's where the powder is.
-      explode(player, { x: d.x, y: d.y + r, z: d.z }, dynamiteBlast(), world, entities, events);
+      explode(player, { x: d.x, y: d.y + r, z: d.z }, dynamiteBlast(d.holy), world, entities, events);
       continue;
     }
     if (d.y < tuning.killY) continue; // fell off the map

@@ -344,7 +344,7 @@ export function stepWeapon(
       // stick itself (a projectile with its own physics) is created by
       // stepGame when it reads this event, because the list of sticks lives
       // in the GameState and the weapon doesn't know about it.
-      events.push({ type: 'fire', weapon: 'dynamite', barrel: 0, seconds: fireInterval(p, 'dynamite'), forged: false });
+      events.push({ type: 'fire', weapon: 'dynamite', barrel: 0, seconds: fireInterval(p, 'dynamite'), forged: p.forged.dynamite > 0 });
     } else {
       events.push({ type: 'fire', weapon: 'revolver', barrel: revolverHand(p, full, ammo), seconds: fireInterval(p, 'revolver'), forged: p.forged.revolver > 0 });
       fireRevolver(p, world, entities, events, lastRound);

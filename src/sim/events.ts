@@ -16,7 +16,7 @@ import type { Stats } from './stats';
 export type HitSource = WeaponId | MeleeTool | 'dynamite';
 
 /** Which explosion (explosion.ts): the card Ultimo colpo or a dynamite stick. */
-export type ExplosionKind = 'lastShot' | 'dynamite';
+export type ExplosionKind = 'lastShot' | 'dynamite' | 'holyDynamite';
 
 export type SimEvent =
   /** A weapon fired (sound, flash, recoil). For the shotgun, `barrel` is 0 = right, 1 = left. */
@@ -69,6 +69,8 @@ export type SimEvent =
   | { type: 'explosion'; kind: ExplosionKind; x: number; y: number; z: number; radius: number }
   /** A dynamite stick hit the floor or a wall hard enough to be heard (speed into the surface, m/s). */
   | { type: 'dynamiteBounce'; x: number; y: number; z: number; speed: number }
+  /** A pool of holy fire lit on the floor (the Forge's dynamite, holyFire.ts). */
+  | { type: 'holyFire'; x: number; y: number; z: number; radius: number }
   /** You jumped off the ground. `hop` = right after landing (bunny hop), `slide` = out of a slide. */
   | { type: 'jump'; hop: boolean; slide: boolean }
   /** You kicked off a wall. `left` = wall jumps still available before touching the ground. */

@@ -18,12 +18,13 @@ import type { World } from './world';
 export type ForgeRefusal = 'far' | 'notOwned' | 'maxed' | 'noIron' | 'notForgeable';
 
 /**
- * The guns the Forge knows how to reinforce. The dynamite launcher isn't
- * one of them (yet: docs/DESIGN.md, "Dopo: carte e Forgia"). A type of its
- * own, so the Forge's texts (forgeMenu.ts) must exist for exactly these.
+ * The guns the Forge knows how to reinforce: all of them, now (the dynamite
+ * launcher's holy-water sticks: holyFire.ts). A type of its own, so a gun
+ * left out of the Forge one day is a deliberate choice, and the Forge's
+ * texts (forgeMenu.ts) must exist for exactly these.
  */
-export type ForgeableWeapon = Exclude<WeaponId, 'dynamite'>;
-export const FORGEABLE: readonly ForgeableWeapon[] = ['revolver', 'shotgun', 'rifle'];
+export type ForgeableWeapon = WeaponId;
+export const FORGEABLE: readonly ForgeableWeapon[] = ['revolver', 'shotgun', 'rifle', 'dynamite'];
 
 function isForgeable(w: WeaponId): w is ForgeableWeapon {
   return (FORGEABLE as readonly WeaponId[]).includes(w);
