@@ -6,7 +6,8 @@
 import { tuning } from '../sim/config';
 import type { SimEvent } from '../sim/events';
 import type { PlayerState } from '../sim/player';
-import { playBell, playPickup, playPlayerHurt, playSmithArrived } from '../audio/sfx';
+import { playBell, playMapEventEnd, playMapEventStart, playPickup, playPlayerHurt, playSmithArrived } from '../audio/sfx';
+import { MAP_EVENT_TEXT } from './mapEventText';
 import type { GameState } from '../sim/game';
 import { horizontalSpeed } from '../sim/player';
 import { isEnemy } from '../sim/entities';
@@ -33,6 +34,13 @@ const bannerTitle = document.getElementById('banner-title')!;
 const bannerSub = document.getElementById('banner-sub')!;
 let bannerTime = 0; // seconds left of the current message
 let countdownShown = -1; // the countdown digit on screen (-1 = none)
+/**
+ * Messages waiting for the banner to be free: a FIFO queue (first in, first
+ * out, like a job queue). The map event shows up in the same tick as
+ * "ONDATA 5": shown together one would erase the other, so it waits its
+ * turn. `sound` plays when the message is SHOWN, not when it's queued.
+ */
+const bannerQueue: { title: string; sub: string; seconds: number; sound: () => void }[] = [];
 
 
 /**
@@ -60,6 +68,11 @@ function showBanner(title: string, sub: string, seconds: number, kind: '' | 'hot
   setBanner(title, sub, kind);
   bannerTime = seconds;
   countdownShown = -1;
+}
+
+/** Shows the message now if the banner is free, otherwise after the ones before it. */
+function queueBanner(title: string, sub: string, seconds: number, sound: () => void): void {
+  bannerQueue.push({ title, sub, seconds, sound });
 }
 
 let flash = 0; // 0..1, the red flash after a hit
@@ -102,7 +115,10 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
       if (!soundsPlayed.has(e.kind)) playPickup(e.kind);
       soundsPlayed.add(e.kind);
     }
-    if (e.type === 'playerDied') bannerTime = 0; // no wave message left over for the next game
+    if (e.type === 'playerDied') {
+      bannerTime = 0; // no wave message left over for the next game
+      bannerQueue.length = 0;
+    }
     if (e.type === 'waveStart') {
       // Every waveHealthStep waves the ghouls get tougher: tell the player.
       const tougher = e.wave % tuning.waveHealthStep === 0;
@@ -117,6 +133,15 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
     if (e.type === 'waveEnd') {
       showBanner('ONDATA SUPERATA', '', 2.5);
       playBell(1, 240);
+    }
+    // Map events (mapEvents.ts): queued, they usually come with a wave message.
+    if (e.type === 'mapEventStart') {
+      const text = MAP_EVENT_TEXT[e.kind];
+      queueBanner(text.title, text.goal, 4, playMapEventStart);
+    }
+    if (e.type === 'mapEventEnd') {
+      const title = e.success ? 'EVENTO COMPLETATO' : 'EVENTO FALLITO';
+      queueBanner(title, MAP_EVENT_TEXT[e.kind].title.toLowerCase(), 3, () => playMapEventEnd(e.success));
     }
     // The banner says what the climax gives you; tint and sounds are in highNoon.ts.
     if (e.type === 'highNoon') showBanner('HIGH NOON', 'caricatore infinito', 2.5, 'hot');
@@ -139,6 +164,12 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
   fpsHud.textContent = `${Math.round(fps)} FPS`;
   // Speed on the ground (m/s), the number to watch when bunny hopping.
   speedHud.textContent = `${horizontalSpeed(player).toFixed(1)} m/s`;
+  // The banner is free: the next queued message, if any (before the countdown: it doesn't queue).
+  if (bannerTime <= 0 && bannerQueue.length > 0) {
+    const next = bannerQueue.shift()!;
+    showBanner(next.title, next.sub, next.seconds);
+    next.sound();
+  }
   if (w.phase === 'break' && w.number > 0 && w.breakTicks < 60 * 5 && bannerTime <= 0) {
     // A new stamp only when the digit changes, not every frame.
     const n = Math.ceil(w.breakTicks / 60);

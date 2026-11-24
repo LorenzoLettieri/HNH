@@ -853,6 +853,36 @@ export function playSmithArrived(): void {
   }
 }
 
+/**
+ * A map event shows up (mapEvents.ts): a dinner triangle beaten fast, the
+ * saloon calling you, over a low drum of the devil's game. High and quick on
+ * purpose: the church bell (waves) is low and slow, the anvil (Smith) is
+ * metallic and heavy; three announcements, three sounds you can't confuse.
+ */
+export function playMapEventStart(): void {
+  // The triangle: ring() is the same inharmonic metal of the bells, just high and short.
+  for (let i = 0; i < 6; i++) setTimeout(() => ring(1250 + (i % 2) * 40, 0.9, 0.12), i * 110);
+  // Two low drum hits under it, and a third one after the triangle stops.
+  for (const at of [0, 0.22, 0.75]) thump({ start: at, duration: 0.3, volume: 0.45, from: 90, to: 45 });
+}
+
+/**
+ * The event is over. Success: three rising rings (a major arpeggio: 1, 5/4,
+ * 3/2 of the base) and a rattle of chips on the counter (short clicks of
+ * high noise). Failure: one low ring that drops a semitone, and nothing else.
+ */
+export function playMapEventEnd(success: boolean): void {
+  if (success) {
+    [1, 1.25, 1.5].forEach((ratio, i) => setTimeout(() => ring(520 * ratio, 1.4, 0.16), i * 140));
+    for (let i = 0; i < 7; i++) {
+      noiseBurst({ start: 0.45 + i * 0.045 + Math.random() * 0.02, duration: 0.03, volume: 0.3, filter: 'bandpass', frequency: 3500, q: 4 });
+    }
+  } else {
+    ring(196, 2.2, 0.2);
+    setTimeout(() => ring(185, 2.5, 0.16), 450); // a semitone down (×0.944): it "sags"
+  }
+}
+
 /** The Damned Smith falls: a huge clatter of armor and a last low groan. */
 export function playSmithDeath(where: Where): void {
   const out = placeSound(where);

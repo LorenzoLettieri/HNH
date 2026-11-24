@@ -515,11 +515,6 @@ renderer.setAnimationLoop((now: number) => {
   shopMenu.onEvents(events);
   shopMenu.update(player, shopNearby, paused);
   updateHud(game, events, dt);
-  // Map events: only in the console for now (step 1); the banner comes next.
-  for (const e of events) {
-    if (e.type === 'mapEventStart') console.log(`map event: ${e.kind} in wave ${e.wave}`);
-    if (e.type === 'mapEventEnd') console.log(`map event: ${e.kind} ${e.success ? 'completed' : 'failed'}, next from wave ${game.mapEvent.nextWave}`);
-  }
   // Game over: send the score (unless it was a practice game, fairPlay.ts)
   // and show the end screen. The simulation has already reset everything for
   // the next game: it waits, frozen, behind the screen. The submit isn't
