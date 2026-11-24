@@ -648,16 +648,47 @@ Punteggio e moneta sono **separati**:
   carte dell'emporio o patti?
 - Si comprano anche le munizioni?
 
-**Eventi sulla mappa** [DECISO l'idea, da progettare]: ogni tot ondate compare un evento (stile gli
-eventi di Diablo 4) **durante un'ondata**, annunciato e facoltativo. Avviarlo **costa vildenaro**
-(tensione voluta: potenziamento sicuro allo shop o scommessa?); completarlo dà la scelta di un **patto**
-a caso o il **livello successivo di un patto che hai già**.
-- Gli obiettivi devono **far muovere**, non tenere fermi in un cerchio (sarebbe camping per regolamento):
-  uccisioni dentro un raggio largo (15–20 m), più punti in sequenza (tre campane sui tetti in 60 s),
-  trasportare qualcosa (un teschio fino all'altare), un bersaglio marcato da uccidere prima che scappi,
-  raggiungere un rank di Stile vicino all'altare. "Resta qui" solo se la zona si sposta.
-- Fallire non deve voler dire solo soldi buttati: rimborso parziale o un patto "scarso" (1 su 2).
+**Eventi sulla mappa** [DECISO, da progettare nei dettagli; novembre 2026]: ogni tot ondate compare un
+evento (stile gli eventi di Diablo 4) **durante un'ondata**.
+- **Quando**: compare **a inizio ondata**, annunciato in alto con una scritta come il Fabbro (`showBanner`).
+  [DA DECIDERE: ogni quante ondate, e se mai nelle ondate del Fabbro]
+- **Avvio** [DA DECIDERE]: a pagamento (vildenaro: tensione con l'armeria) oppure gratis. Proposta: **gratis**,
+  il costo è il rischio (tempo e attenzione tolti all'orda); dove l'evento ha un oggetto fisico (cristallo,
+  prima campana, pozzo) si avvia **andandoci** (scelta volontaria), il goblin e la taglia partono da soli.
+- **Ricompensa**: una **valuta nuova** nell'inventario [DA DECIDERE il nome: proposta **fiches** da poker],
+  accanto a vildenaro e Ferro Dannato. Si spende al **saloon**: dentro c'è un NPC, **il barista**, e i
+  **patti sono i drink** che ti propone (stesso schema delle carte dell'armeria: qualche drink sul bancone,
+  ne scegli uno; prendere di nuovo lo stesso drink = il livello successivo del patto).
+  [DA DECIDERE: il drink dura tutta la partita o qualche ondata? Ha un lato negativo ("patto" col diavolo) o è un buff puro?]
+- Gli obiettivi devono **far muovere**, non tenere fermi in un cerchio (sarebbe camping per regolamento).
+  "Resta qui" solo se la zona si sposta.
+- Fallire non deve voler dire solo tempo buttato: dove si può, qualcosa resta (il goblin perde monete a ogni colpo).
 - I livelli dei patti salgono **a salti interi** ("rimette 1 colpo" → "2 colpi"), mai +10%.
+
+**Elenco degli eventi** [DECISO l'elenco, da progettare uno per uno]. Verbi diversi, così non sono tutti "uccidi X":
+- **Il Cuore di Brace** (zona che si sposta): un cristallo infernale cammina per la mappa sul grafo dei ghoul,
+  un po' più lento di te; bisogna uccidere N nemici **dentro il suo raggio** (15–20 m, anello a terra come
+  l'onda del Fabbro). Proposta: conta la posizione del **nemico**, non la tua (carabina e dinamite aiutano da fuori).
+- **Lo Sciacallo** (bersaglio in fuga): un diavoletto veloce col sacco del vildenaro scappa per la mappa
+  (salta, si arrampica, prende gli sfiatatoi: sfuggente col movimento, non con una hitbox minuscola); va ucciso
+  prima che finisca l'ondata o che scappi. Perde monete a ogni colpo. IA: **mappa di fuga** (il flow field
+  verso di te moltiplicato per ~−1,2 e ricalcolato: scappa verso le vie aperte invece che negli angoli).
+- **Le Campane del Giudizio** (sequenza): 3–4 campane sui tetti da suonare in ordine entro 60 s (sparo o calcio).
+- **Pony Express dell'Inferno** (percorso): anelli/checkpoint da attraversare in tempo, ognuno aggiunge secondi.
+- **La Taglia** (élite): un manifesto WANTED; un nemico con un modificatore (più veloce, scudo, esplode)
+  da uccidere entro l'ondata, segnato sulla mappa (Tab). I "miniboss come eventi" di §3.
+- **La Testa del Ricercato** (trasporto): un teschio da portare all'altare o all'ufficio dello sceriffo;
+  mentre lo porti solo revolver e i nemici puntano te; un colpo forte te lo fa cadere. Non rallenta.
+- **Il Pozzo delle Anime** (raccolta): i nemici uccisi lasciano un'anima che si spegne in 8 s; portane N al pozzo.
+- **Il Sermone di Sangue** (Stile): un predicatore vuole spettacolo: rank S, o catena viva per 45 s, nel suo raggio.
+- **La Scommessa del Diavolo** (rischio): sopravvivi alla prossima ondata con una maledizione (niente medikit,
+  nemici più veloci, una sola arma, buio). Riusa tutto: cambia solo dei numeri.
+- Scartati per ora (troppo pesanti): **treno fantasma** sui binari (servono piattaforme mobili), **carro
+  della polvere** da scortare.
+
+**Ordine proposto**: prima lo **scheletro comune** con l'evento più semplice (Campane o Scommessa): comparsa e
+annuncio, timer, successo/fallimento, valuta nuova nell'HUD; poi il barista e i drink; poi gli eventi con un'IA
+loro (Cuore di Brace, Sciacallo).
 
 ---
 
@@ -958,7 +989,7 @@ speciali** (fuoco, rimbalzo, esplosivi…).
 - Struttura definitiva della partita (ondate vs run a tempo) e cosa succede tra le ondate.
 - Nomi definitivi dei rank di stile.
 - Morte: si ricomincia da capo (niente progressione persistente per la v1, vedi §5).
-- Elenco dei patti e degli eventi.
+- Elenco dei patti (i drink del barista). Gli eventi: vedi §5, "Elenco degli eventi".
 - Multiplayer co-op alle orde (in futuro): come si condivide lo stile?
 
 ---
