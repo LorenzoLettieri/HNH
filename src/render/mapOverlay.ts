@@ -202,6 +202,46 @@ export function createMapOverlay(world: World): MapOverlay {
         });
       }
 
+      // The Pony Express (src/sim/ponyExpress.ts): the next ring an orange dot
+      // with a pulsing ring, a line to the one after it (where you'll turn),
+      // and that one small. The rest of the trail stays hidden, like on screen.
+      if (ev?.kind === 'ponyExpress' && ev.passed < ev.rings.length) {
+        const r = ev.rings[ev.passed];
+        const after = ev.rings[ev.passed + 1];
+        const rx = mapX(r.x);
+        const ry = mapY(r.z);
+        if (after) {
+          ctx.setLineDash([3 * unit, 3 * unit]);
+          ctx.lineWidth = 1.5 * unit;
+          ctx.strokeStyle = '#a05020';
+          ctx.beginPath();
+          ctx.moveTo(rx, ry);
+          ctx.lineTo(mapX(after.x), mapY(after.z));
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.beginPath();
+          ctx.arc(mapX(after.x), mapY(after.z), BELL_RADIUS * 0.6 * unit, 0, Math.PI * 2);
+          ctx.fillStyle = '#a05020';
+          ctx.fill();
+        }
+        const phase = (time % PING_TIME) / PING_TIME;
+        ctx.globalAlpha = 1 - phase;
+        ctx.lineWidth = 2 * unit;
+        ctx.strokeStyle = '#ff7a30';
+        ctx.beginPath();
+        ctx.arc(rx, ry, (BELL_RADIUS + phase * PING_RADIUS * 1.5) * unit, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.arc(rx, ry, BELL_RADIUS * unit, 0, Math.PI * 2);
+        ctx.fillStyle = '#ff8a30';
+        ctx.fill();
+        ctx.lineWidth = unit;
+        ctx.strokeStyle = '#000';
+        ctx.stroke();
+        label(`ANELLO ${ev.passed + 1}`, rx, ry + BELL_RADIUS * unit, '#ff8a30');
+      }
+
       // Enemies: red dots, at the same in-between position the renderer
       // draws them (between the last two ticks, see `alpha` in main.ts).
       const enemies = game.entities.filter((e) => isEnemy(e) && e.state !== 'dead');

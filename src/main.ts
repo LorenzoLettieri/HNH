@@ -40,6 +40,7 @@ import { createExplosionRenderer } from './render/explosions';
 import { createHolyFireRenderer } from './render/holyFire';
 import { createVendorRenderer } from './render/vendors';
 import { createBellRenderer } from './render/bells';
+import { createPonyRingRenderer } from './render/ponyRings';
 import { handlePactEvents } from './render/pactFx';
 import { createShopMenu } from './render/shopMenu';
 import { createMapOverlay } from './render/mapOverlay';
@@ -161,6 +162,7 @@ const explosions = createExplosionRenderer(scene);
 const holyFires = createHolyFireRenderer(scene);
 const vendors = createVendorRenderer(scene, world);
 const bells = createBellRenderer(scene, world);
+const ponyRings = createPonyRingRenderer(scene);
 const mapOverlay = createMapOverlay(world);
 const navDebug = createNavDebug(scene, getNavGraph(world));
 const navDebugBig = createNavDebug(scene, getNavGraph(world, BIG_BODY));
@@ -529,6 +531,7 @@ renderer.setAnimationLoop((now: number) => {
   holyFires.update(game.holyFires, camera, dt, now / 1000);
   vendors.update(camera, now / 1000);
   bells.update(game, events, camera, dt, now / 1000);
+  ponyRings.update(game, events, camera, dt, now / 1000);
   handlePactEvents(events, game.entities, camera, dt); // the drinks that make something happen (pactFx.ts)
   // Walked away from the vendor (or died, and woke up at the spawn): the shop closes.
   const shopNearby = shopInReach(player, world);

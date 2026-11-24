@@ -728,6 +728,13 @@ niente anelli in cima alle pareti del canyon; il campanile sì, c'è lo sfiatato
 percorso dal petto nel tick passa entro 1,5 m dal centro (come i proiettili: a velocità alte non si salta un anello).
 Lo scheletro ora **sceglie il tipo** a caso tra quelli che il livello può ospitare, **mai lo stesso due volte di
 fila**. A schermo per ora solo la riga dell'HUD ("ANELLO 3 / 8 · 0:12"); gli anelli 3D e la mappa nel passo dopo.
+**Passo 9** [FATTO]: **il Pony Express a schermo**. Anelli di fuoco (un toro che gira, orientato lungo la scia: lo
+attraversi nel verso della corsa), centro a 1,6 m dal pavimento perché il bordo non affondi. **Solo due alla volta**:
+il prossimo acceso, con la colonna di luce delle Campane e senza nebbia (lo vedi da tutta la città), e quello dopo in
+trasparenza, così sai già dove girare (la "traiettoria" dei giochi di corse). Passato, l'anello esplode in una
+fiammata con un "whoosh" e una nota che sale di un gradino della scala pentatonica a ogni anello (all'ultimo una
+fanfara). Negli ultimi 3 s l'anello sfarfalla veloce e la riga dell'HUD diventa rossa. Sulla mappa (Tab) il prossimo
+anello e una linea tratteggiata verso quello dopo.
 
 **Ordine proposto**: prima lo **scheletro comune** con l'evento più semplice (Campane o Scommessa): comparsa e
 annuncio, timer, successo/fallimento, valuta nuova nell'HUD; poi il barista e i drink; poi gli eventi con un'IA

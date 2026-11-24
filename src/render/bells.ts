@@ -186,11 +186,11 @@ export function createBellRenderer(scene: THREE.Scene, world: World): BellRender
 }
 
 /**
- * The column's texture: a vertical gradient, bright at the foot and fading to
+ * The column's texture (also the Pony Express rings' column, ponyRings.ts): a vertical gradient, bright at the foot and fading to
  * nothing up high, with a few brighter streaks. 4 × 64 px; on the cylinder V
  * goes up (0 at the foot), U around.
  */
-function beamTexture(): THREE.Texture {
+export function beamTexture(): THREE.Texture {
   const canvas = document.createElement('canvas');
   canvas.width = 4;
   canvas.height = 64;

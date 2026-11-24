@@ -8,6 +8,7 @@ import type { SimEvent } from '../sim/events';
 import type { PlayerState } from '../sim/player';
 import { playBell, playMapEventEnd, playMapEventStart, playPickup, playPlayerHurt, playSmithArrived } from '../audio/sfx';
 import { MAP_EVENT_TEXT } from './mapEventText';
+import { PONY_HURRY } from './ponyRings';
 import { maxHealth } from '../sim/drinks';
 import type { GameState } from '../sim/game';
 import { horizontalSpeed } from '../sim/player';
@@ -239,5 +240,6 @@ function updateEventLine(game: GameState): void {
     ev.kind === 'bells'
       ? `CAMPANA ${ev.rung + 1} / ${ev.bells.length} · ${clock}`
       : `ANELLO ${ev.passed + 1} / ${ev.rings.length} · ${clock}`;
-  eventGoal.classList.toggle('hurry', seconds <= EVENT_HURRY);
+  // The Pony Express clock never goes over 15 s: red only at the very end (like its ring's flicker).
+  eventGoal.classList.toggle('hurry', seconds <= (ev.kind === 'ponyExpress' ? PONY_HURRY : EVENT_HURRY));
 }

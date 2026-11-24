@@ -897,6 +897,27 @@ export function playEventBell(where: Where, index: number, last: boolean): void 
 }
 
 /**
+ * Pony Express: you ran through a ring of fire. A WHOOSH (noise through a
+ * band-pass whose frequency sweeps up: the fire rushing past your ears) and a
+ * short chime that climbs a step of the pentatonic scale at each ring
+ * (semitones 0, 2, 4, 7, 9, then the next octave): you hear the race
+ * progress. The last ring: the chime plus two more notes on top, a fanfare.
+ */
+export function playRingPassed(where: Where, index: number, last: boolean): void {
+  const out = placeSound({ volume: Math.max(0.5, where.volume), pan: where.pan });
+  if (!out) return;
+  noiseBurst({ out, duration: 0.28, volume: 0.6, filter: 'bandpass', frequency: 350, frequencyEnd: 2600, q: 1.5 });
+  const steps = [0, 2, 4, 7, 9];
+  const semitones = steps[index % steps.length] + 12 * Math.floor(index / steps.length);
+  const base = 392 * 2 ** (semitones / 12);
+  ring(base, 0.7, 0.22, out);
+  if (last) {
+    setTimeout(() => ring(base * 1.25, 0.9, 0.2, out), 110);
+    setTimeout(() => ring(base * 1.5, 1.6, 0.22, out), 220);
+  }
+}
+
+/**
  * The event is over. Success: three rising rings (a major arpeggio: 1, 5/4,
  * 3/2 of the base) and a rattle of chips on the counter (short clicks of
  * high noise). Failure: one low ring that drops a semitone, and nothing else.

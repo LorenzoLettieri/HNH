@@ -57,8 +57,12 @@ const TELEPORT = 3;
  */
 const PLAYER_CLIMB = 3.3;
 
-/** How high above the graph node (the floor) the ring's middle floats: about your chest when you run. */
-export const RING_HEIGHT = 1.2;
+/**
+ * How high above the graph node (the floor) the ring's middle floats: just
+ * over the ring's radius (1.5 m), so its rim doesn't sink into the floor;
+ * your chest (≈ 1.1 m) passes half a meter under the middle, well inside.
+ */
+export const RING_HEIGHT = 1.6;
 
 /**
  * Picks the trail for a new event: `tuning.ponyRings` points on the nav
