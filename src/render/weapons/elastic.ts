@@ -198,21 +198,32 @@ export class Stroke {
   }
 
   step(open: boolean, dt: number): void {
-    this.vel += (open ? this.pushOpen : -this.pushShut) * dt;
+    // Resting against the stop the hand pushes it into: that's CONTACT, not a
+    // collision. Without this check the push would give it a little speed
+    // every step, the stop would bounce it back, and so on forever: a buzz of
+    // tiny "slams" (the pump's fore-end counted each one as a hit and kept
+    // punching the view down: shots landed above the crosshair).
+    const atPushedStop = open ? this.pos >= this.travel : this.pos <= 0;
+    if (atPushedStop && this.vel === 0) return;
+    const push = open ? this.pushOpen : this.pushShut;
+    this.vel += (open ? push : -push) * dt;
     this.pos += this.vel * dt;
+    // A rebound slower than what one step of push takes away can't even leave
+    // the stop: it rests there.
+    const settle = Math.max(this.restSpeed, push * dt);
     if (this.pos >= this.travel && this.vel > 0) {
       this.pos = this.travel;
-      this.hit(this.bounceOpen);
+      this.hit(this.bounceOpen, settle);
     } else if (this.pos <= 0 && this.vel < 0) {
       this.pos = 0;
-      this.hit(this.bounceShut);
+      this.hit(this.bounceShut, settle);
     }
   }
 
-  private hit(bounce: number): void {
+  private hit(bounce: number, settle: number): void {
     if (Math.abs(this.vel) > this.restSpeed * 4) this.impact = this.vel; // a real slam, not a resting nudge
     this.vel = -this.vel * bounce;
-    if (Math.abs(this.vel) < this.restSpeed) this.vel = 0;
+    if (Math.abs(this.vel) < settle) this.vel = 0;
   }
 }
 
