@@ -578,6 +578,7 @@ function trace(
       (target.type === 'smith' && hit!.y - target.y > tuning.smithHeadHeight) ||
       (target.type === 'hound' && hit!.y - target.y > tuning.houndHeadHeight) ||
       (target.type === 'sharpshooter' && hit!.y - target.y > tuning.sharpshooterHeadHeight) ||
+      (target.type === 'jackal' && hit!.y - target.y > tuning.jackalHeadHeight) || // head and big ears (the sack is body)
       (target.type === 'bull' && target.state === 'stunned') ||
       (target.type === 'eyebat' && pupilHit(target, ox, oy, oz, dx, dy, dz)));
 

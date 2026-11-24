@@ -35,6 +35,7 @@ import { createHoundRenderer } from './render/enemies/hounds';
 import { createBullRenderer } from './render/enemies/bulls';
 import { createSmithRenderer } from './render/enemies/smiths';
 import { createSharpshooterRenderer } from './render/enemies/sharpshooters';
+import { createJackalRenderer } from './render/enemies/jackals';
 import { createProjectileRenderer } from './render/projectiles';
 import { createPickupRenderer } from './render/pickups';
 import { createDynamiteRenderer } from './render/dynamite';
@@ -159,6 +160,7 @@ const hounds = createHoundRenderer(scene);
 const bulls = createBullRenderer(scene);
 const smiths = createSmithRenderer(scene);
 const sharpshooters = createSharpshooterRenderer(scene, world);
+const jackals = createJackalRenderer(scene);
 const projectiles = createProjectileRenderer(scene);
 const pickups = createPickupRenderer(scene);
 const dynamite = createDynamiteRenderer(scene);
@@ -244,6 +246,7 @@ const debugPanel = createDebugPanel({
     spawnTool('Evento Pony Express alla prossima ondata', (g) => forceMapEventNextWave(g.mapEvent, g.wave.number, 'ponyExpress')),
     spawnTool('Evento Scommessa del Diavolo alla prossima ondata', (g) => forceMapEventNextWave(g.mapEvent, g.wave.number, 'wager')),
     spawnTool('Evento Cuore di Brace alla prossima ondata', (g) => forceMapEventNextWave(g.mapEvent, g.wave.number, 'emberHeart')),
+    spawnTool('Evento Sciacallo alla prossima ondata', (g) => forceMapEventNextWave(g.mapEvent, g.wave.number, 'jackal')),
     // Like the respawn below, it should go through the InputCommand one day: it's only a flag the next tick reads.
     spawnTool("Completa l'evento in corso", (g) => { g.mapEvent.forceSuccess = true; }),
     // Respawn goes through the InputCommand like a key would (controls.ts):
@@ -536,6 +539,7 @@ renderer.setAnimationLoop((now: number) => {
   bulls.update(game.entities, events, camera, alpha, dt);
   smiths.update(game.entities, events, camera, alpha, dt);
   sharpshooters.update(game.entities, events, camera, alpha, dt);
+  jackals.update(game.entities, events, camera, alpha, dt);
   updateBurning(game.entities, dt, camera); // burning enemies: "Fiato di drago" and the holy fire
   marks.update(game.entities, alpha, dt);
   projectiles.update(game.projectiles, events, camera, alpha, dt);

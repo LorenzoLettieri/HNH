@@ -54,6 +54,7 @@ function stunBody(e: Entity): { radius: number; height: number } | null {
     case 'bull': return { radius: tuning.bullRadius, height: tuning.bullHeight };
     case 'smith': return { radius: tuning.smithRadius, height: tuning.smithHeight };
     case 'sharpshooter': return { radius: tuning.sharpshooterRadius, height: tuning.sharpshooterHeight };
+    case 'jackal': return { radius: tuning.jackalRadius, height: tuning.jackalHeight };
     default: return null;
   }
 }
@@ -85,7 +86,7 @@ export function stepStunned(e: Entity, world: World, dt: number): boolean {
 export function markSlam(e: Entity): void {
   // Only the bodies a blast really throws (the bull doesn't budge, the
   // eye-bat flies: its own steering changes its speed all the time).
-  if (e.type !== 'ghoul' && e.type !== 'hound' && e.type !== 'sharpshooter') return;
+  if (e.type !== 'ghoul' && e.type !== 'hound' && e.type !== 'sharpshooter' && e.type !== 'jackal') return;
   e.slamTicks = secondsToTicks(tuning.leadStockSlamTime);
   e.slamSpeed = Math.hypot(e.vx, e.vz);
 }

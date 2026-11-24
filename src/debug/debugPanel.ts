@@ -97,6 +97,21 @@ export function createDebugPanel(options: {
   waves.number(tuning, 'emberHeartLegMax', 5, 100, 1);
   waves.number(tuning, 'emberHeartRest', 0, 10, 0.5);
   waves.number(tuning, 'emberHeartWakeReach', 0.5, 5, 0.1);
+  // Lo Sciacallo (src/sim/jackal.ts)
+  waves.number(tuning, 'jackalTime', 10, 180, 5);
+  waves.number(tuning, 'jackalHealth', 50, 2000, 50);
+  waves.number(tuning, 'jackalSpeed', 1, 12, 0.5);
+  waves.number(tuning, 'jackalPanicSpeed', 1, 15, 0.5);
+  waves.number(tuning, 'jackalPanicTime', 0, 4, 0.1);
+  waves.number(tuning, 'jackalClimbSpeed', 0.5, 8, 0.1);
+  waves.number(tuning, 'jackalFleeRange', 5, 60, 1);
+  waves.number(tuning, 'jackalCalmRange', 5, 80, 1);
+  waves.number(tuning, 'jackalFleeScale', 0.5, 3, 0.05);
+  waves.number(tuning, 'jackalHeightBonus', 0, 10, 0.5);
+  waves.number(tuning, 'jackalSpawnMin', 5, 100, 1);
+  waves.number(tuning, 'jackalSpawnMax', 10, 150, 1);
+  waves.number(tuning, 'jackalCoinsPerHit', 0, 20, 1);
+  waves.number(tuning, 'jackalBagCoins', 0, 100, 1);
   waves.number(tuning, 'ghoulSpawnWeight', 0, 30, 1);
   waves.number(tuning, 'eyebatSpawnWeight', 0, 30, 1);
   waves.number(tuning, 'houndSpawnWeight', 0, 30, 1);

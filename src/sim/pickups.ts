@@ -91,6 +91,22 @@ export function dropFromKills(game: GameState, events: SimEvent[]): void {
   }
 }
 
+/**
+ * `count` coins burst out of a point, each worth what a kill's coin would
+ * be worth right now (style multiplier included). The jackal (jackal.ts)
+ * loses them at every hit: failing its event still leaves you something.
+ */
+export function dropCoins(game: GameState, x: number, y: number, z: number, count: number): void {
+  const loot: Loot[] = [];
+  for (let i = 0; i < count; i++) loot.push({ kind: 'coin', value: coinValueNow(game) });
+  burst(game, { x, y, z }, loot);
+}
+
+/** What a coin dropped now is worth: coinValue × the style's multiplier × Ferro di cavallo storto and Avidità (drinks.ts). */
+function coinValueNow(game: GameState): number {
+  return Math.max(1, Math.round(tuning.coinValue * styleMultiplier(game.style) * coinValueScale(game.player)));
+}
+
 /** One thing to drop: its kind and (coins only) what it's worth. */
 interface Loot {
   kind: PickupKind;
@@ -108,9 +124,9 @@ interface Loot {
  */
 function whatDrops(game: GameState, enemy: Enemy): Loot[] {
   const loot: Loot[] = [];
-  const coins = Math.round(enemyCost(enemy) * tuning.coinsPerWeight);
-  // The style's multiplier, × Ferro di cavallo storto and Avidità (drinks.ts).
-  const coinValue = Math.max(1, Math.round(tuning.coinValue * styleMultiplier(game.style) * coinValueScale(game.player)));
+  // The jackal (jackal.ts) carries a whole sack of them: it all bursts out.
+  const coins = enemy.type === 'jackal' ? tuning.jackalBagCoins : Math.round(enemyCost(enemy) * tuning.coinsPerWeight);
+  const coinValue = coinValueNow(game);
   for (let i = 0; i < coins; i++) loot.push({ kind: 'coin', value: coinValue });
   // The Damned Smith ALWAYS leaves its Damned Iron (the reason to kill it).
   if (enemy.type === 'smith') loot.push({ kind: 'iron', value: 0 });
@@ -134,7 +150,7 @@ function whatDrops(game: GameState, enemy: Enemy): Loot[] {
  * 1–2 m from the body. Everything comes from the seeded generator: same
  * seed, same burst.
  */
-function burst(game: GameState, enemy: Enemy, loot: Loot[]): void {
+function burst(game: GameState, enemy: { x: number; y: number; z: number }, loot: Loot[]): void {
   const n = loot.length;
   const fan = random(game) * Math.PI * 2;
   loot.forEach((item, i) => {

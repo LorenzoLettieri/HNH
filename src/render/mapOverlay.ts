@@ -17,6 +17,7 @@
 // Markup and CSS in index.html (#map, #map-legend).
 import type { GameState } from '../sim/game';
 import { isEnemy } from '../sim/entities';
+import { jackalOf } from '../sim/jackal';
 import { tuning } from '../sim/config';
 import type { ShopSpawn, World } from '../sim/world';
 import { coinIcon } from './pickupSprites';
@@ -307,11 +308,37 @@ export function createMapOverlay(world: World): MapOverlay {
         label(ev.awake ? `CUORE ${ev.souls}/${ev.goal}` : 'CUORE', hx, hy + r, '#ffa040');
       }
 
+      // The jackal (src/sim/jackal.ts): a gold coin with a pulsing ring, where
+      // it is right now (it moves: the map is how you find it again).
+      const jackal = ev?.kind === 'jackal' ? jackalOf(ev, game) : null;
+      if (jackal) {
+        const jx = mapX(jackal.px + (jackal.x - jackal.px) * alpha);
+        const jy = mapY(jackal.pz + (jackal.z - jackal.pz) * alpha);
+        const phase = (time % (PING_TIME * 0.6)) / (PING_TIME * 0.6); // faster than the others: it's on the run
+        ctx.globalAlpha = 1 - phase;
+        ctx.lineWidth = 2 * unit;
+        ctx.strokeStyle = '#ffd040';
+        ctx.beginPath();
+        ctx.arc(jx, jy, (BELL_RADIUS + phase * PING_RADIUS * 1.5) * unit, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.arc(jx, jy, BELL_RADIUS * unit, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffc830';
+        ctx.fill();
+        ctx.lineWidth = unit;
+        ctx.strokeStyle = '#000';
+        ctx.stroke();
+        ctx.fillStyle = '#6a4010';
+        ctx.fillRect(jx - 0.5 * unit, jy - BELL_RADIUS * 0.6 * unit, unit, BELL_RADIUS * 1.2 * unit); // the "$" stroke, roughly
+        label('SCIACALLO', jx, jy + BELL_RADIUS * unit, '#ffd040');
+      }
+
       // Enemies: red dots, at the same in-between position the renderer
       // draws them (between the last two ticks, see `alpha` in main.ts).
       // (Not with the wager's darkness curse, src/sim/wager.ts: in the dark you don't know where they are.)
       const blind = game.player.curse === 'darkness';
-      const enemies = blind ? [] : game.entities.filter((e) => isEnemy(e) && e.state !== 'dead');
+      const enemies = blind ? [] : game.entities.filter((e) => isEnemy(e) && e.state !== 'dead' && e.type !== 'jackal'); // the jackal: its own coin, above
       const ping = enemies.length <= PING_BELOW;
       for (const e of enemies) {
         const ex = mapX(e.px + (e.x - e.px) * alpha);

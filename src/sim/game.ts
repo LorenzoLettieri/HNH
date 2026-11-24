@@ -14,6 +14,7 @@ import { stepHound } from './hound';
 import { stepBull } from './bull';
 import { stepSmith } from './smith';
 import { stepSharpshooter } from './sharpshooter';
+import { stepJackal } from './jackal';
 import { createWaveState, scoreHits, stepWaves, wavePressure, type WaveState } from './waves';
 import { countStats, createStats, type Stats } from './stats';
 import { createMapEventState, stepMapEvents, type MapEventState } from './mapEvents';
@@ -221,6 +222,8 @@ export function stepGame(
         // vents (too heavy to fly: it waits below and pulls you down with the hook).
         stepSmith(e, game.player, game.entities, world, bigGraph, getFlowField(bigGraph, game.navGoalBig, NO_VENT), dt, events);
       }
+      // The jackal (a map event): the ghouls' graph, but it runs AWAY from you (its own escape map, jackal.ts).
+      else if (e.type === 'jackal') stepJackal(e, game, world, graph, dt);
       else if (e.state !== 'dead') stepGhoul(e, game.player, game.entities, world, graph, flow, dt, events, pressure);
     }
   };

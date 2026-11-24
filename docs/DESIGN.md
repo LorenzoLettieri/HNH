@@ -674,7 +674,7 @@ evento (stile gli eventi di Diablo 4) **durante un'ondata**.
 - **Il Cuore di Brace** (zona che si sposta) [FATTO, da tarare: passo 12]: un cristallo infernale cammina per la mappa sul grafo dei ghoul,
   un po' più lento di te; bisogna uccidere N nemici **dentro il suo raggio** (15–20 m, anello a terra come
   l'onda del Fabbro). Conta la posizione del **nemico**, non la tua (carabina e dinamite aiutano da fuori).
-- **Lo Sciacallo** (bersaglio in fuga): un diavoletto veloce col sacco del vildenaro scappa per la mappa
+- **Lo Sciacallo** (bersaglio in fuga) [FATTO, da tarare: passo 13]: un diavoletto veloce col sacco del vildenaro scappa per la mappa
   (salta, si arrampica, prende gli sfiatatoi: sfuggente col movimento, non con una hitbox minuscola); va ucciso
   prima che finisca l'ondata o che scappi. Perde monete a ogni colpo. IA: **mappa di fuga** (il flow field
   verso di te moltiplicato per ~−1,2 e ricalcolato: scappa verso le vie aperte invece che negli angoli).
@@ -770,6 +770,23 @@ un tetto dentro contano). **Niente orologio: l'ondata è l'orologio**, e ogni ne
 A schermo: il cristallo **batte come un cuore** (più veloce man mano che si riempie), da ogni uccisione un'**anima di fuoco** vola
 nel cristallo su un arco e lui la ingoia con una nota che sale; pieno, **scoppia**; fallito, si spegne e sprofonda. Riga
 dell'HUD "ANIME 3 / 9", sulla mappa (Tab) il cerchio intero in scala.
+**Passo 13** [FATTO, da tarare]: **lo Sciacallo**, il quinto evento (`src/sim/jackal.ts`, `src/render/enemies/jackals.ts`).
+Parte da solo: a inizio ondata un diavoletto rosso con le orecchie da sciacallo e un **sacco di vildenaro** col "$" compare
+a 30–55 m da te, su un punto che raggiungi anche tu. Da lontano **ti aspetta e ti prende in giro** (scuote il sacco, ride);
+quando arrivi a 22 m **scappa**, e si ferma di nuovo a ridere se ti allontani oltre 32 m. Hai **75 s** (o fino alla fine
+dell'ondata, che non lo aspetta: non conta tra i nemici). Più lento di te in strada (6 m/s contro 6,5), ma **colpito
+scatta** a 9 m/s per 1,2 s; si arrampica sui muri che scali anche tu (fino a 3,3 m), salta e **prende gli sfiatatoi**: lo
+prendi quando si arrampica. **Ogni colpo gli fa perdere 3 monete**, ucciso **scoppia il sacco** (20 monete) e vinci la
+fiche; se scappa sparisce in una fiammata col resto del sacco, ma le monete che gli hai fatto cadere restano.
+**IA: la mappa di fuga** (il "safety map" di Brogue, `computeFleeField` in `nav.ts`): le distanze del flow field verso di
+te × −1,2, più un **premio per l'altezza** (3 m di distanza per ogni metro sopra il suolo: gli piacciono i tetti), poi di
+nuovo Dijkstra da tutti i nodi insieme. Così corre verso le vie aperte e i tetti invece che negli angoli, anche passandoti
+accanto. Il premio è sull'altezza **dal suolo** e non **sopra di te**: con "sopra di te" quando salivi sul tetto la strada
+tornava "lontana" e lui faceva su e giù dallo stesso sfiatatoio. Senza strade migliori resta fermo a guardarti, e se gli
+arrivi a 10 m scappa dritto via. Per trovarlo: una **colonna di luce dorata** che svanisce da vicino, la risata e il
+tintinnio del sacco a ogni passo (posizionali), la moneta "SCIACALLO" sulla mappa (Tab), la riga dell'HUD ("TI ASPETTA" /
+"IN FUGA" e l'orologio). Provato con una simulazione: un inseguitore che segue il grafo a 6,2 m/s lo tiene in media a
+14–16 m; in 60 s lui corre ~250 m, si arrampica, prende 3 sfiatatoi e salta 6–8 volte.
 
 **Ordine proposto**: prima lo **scheletro comune** con l'evento più semplice (Campane o Scommessa): comparsa e
 annuncio, timer, successo/fallimento, valuta nuova nell'HUD; poi il barista e i drink; poi gli eventi con un'IA

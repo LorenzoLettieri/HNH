@@ -55,7 +55,7 @@ const TELEPORT = 3;
  * The tallest climb link YOU can follow (meters up): a jump plus a couple of
  * wall jumps (≈ 1.2 + 2 × 1.05). Taller ones are the ghouls' business.
  */
-const PLAYER_CLIMB = 3.3;
+export const PLAYER_CLIMB = 3.3;
 
 /**
  * How high above the graph node (the floor) the ring's middle floats: just
@@ -122,7 +122,7 @@ const reachCache = new WeakMap<World, number[]>();
  * and vents are all yours too. No costs: here we only ask "can I get there?",
  * not "how fast?" (that's computeReach's Dijkstra in nav.ts).
  */
-function playerReachable(world: World, graph: NavGraph): number[] {
+export function playerReachable(world: World, graph: NavGraph): number[] {
   const cached = reachCache.get(world);
   if (cached) return cached;
   const start = nearestNode(graph, world.spawn.x, world.spawn.y, world.spawn.z);

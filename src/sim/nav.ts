@@ -280,7 +280,7 @@ export interface FlowField {
  * vent a few meters away. It needs its OWN flow field, computed as if the
  * climbing links didn't exist: then the shortest way is the vent.
  */
-export type LinkFilter = (link: NavLink) => boolean;
+export type LinkFilter = (link: NavLink, from: number, graph: NavGraph) => boolean;
 /** Everything but climbing (hounds). */
 export const NO_CLIMB: LinkFilter = (link) => link.kind !== 'climb';
 /** Everything but vents (the Damned Smith: too heavy to fly, it waits below and throws the hook). */
@@ -307,11 +307,72 @@ export function computeFlowField(g: NavGraph, goal: number, allowed?: LinkFilter
     const [node, d] = heap.pop();
     if (d > dist[node]) continue; // an outdated entry: we already found a better way
     for (const { from, link } of incoming[node]) {
-      if (allowed && !allowed(link)) continue;
+      if (allowed && !allowed(link, from, g)) continue;
       const nd = d + link.cost;
       if (nd < dist[from]) {
         dist[from] = nd;
         next[from] = link; // from "from", take this link (it leads to `node`)
+        heap.push(from, nd);
+      }
+    }
+  }
+  return { next, dist };
+}
+
+/**
+ * The ESCAPE MAP (a "safety map", the trick of the roguelike Brogue): where
+ * to run to get AWAY from the goal (the player), for the jackal (jackal.ts).
+ *
+ * The naive way: take the flow field toward you and walk it backward, always
+ * to the neighbor FARTHER from you. It runs into corners: the farthest spot
+ * nearby is often a dead end, and there it stops, trapped.
+ *
+ * Brogue's way: start from the flow field's distances (how far every node is
+ * from you) multiplied by −scale (here −1.2): far from you = very NEGATIVE =
+ * "good". Then run Dijkstra again, with those values as starting points
+ * instead of a single goal at 0 (a MULTI-SOURCE Dijkstra: every node is a
+ * source, each with its own starting cost). Result: for every node, "the
+ * best place to run to, minus what it costs to get there". A dead end 5 m
+ * farther but 20 m of path away isn't worth it; a big open area beyond you
+ * is, even if the way passes close to you (that's what the 1.2 buys: more
+ * than 1 means "running past him toward something much better is OK").
+ * The links to follow come out of it exactly as in the flow field: from each
+ * node, the step downhill. A node with no step (next = null) is a local best:
+ * it's cornered, it stays (until you move and the map changes).
+ *
+ * Dijkstra works with any starting values, negative ones too: what it needs
+ * is non-negative link COSTS, and those don't change.
+ *
+ * `heightBonus`: every meter a node is above the lowest ground of the level
+ * makes it that much better: up on the roofs is safer than in the street,
+ * so the runner climbs and rides the vents instead of only running down the
+ * streets. Above the GROUND, not above you: "above you" flips when you get up
+ * there too (then the street would be "far" again), and it ran up and down
+ * the same vent forever; with the ground it stays on the roofs and the chase
+ * goes on up there. 0 = a flat escape.
+ */
+export function computeFleeField(g: NavGraph, toGoal: FlowField, scale: number, allowed?: LinkFilter, heightBonus = 0): FlowField {
+  const n = g.nodes.length;
+  const dist = new Float64Array(n).fill(Infinity);
+  const next: (NavLink | null)[] = new Array(n).fill(null);
+  const heap = new MinHeap();
+  let ground = Infinity;
+  for (const node of g.nodes) ground = Math.min(ground, node.y);
+  for (let i = 0; i < n; i++) {
+    if (toGoal.dist[i] === Infinity) continue; // you can't get there from him: no use running there
+    dist[i] = -scale * toGoal.dist[i] - heightBonus * (g.nodes[i].y - ground);
+    heap.push(i, dist[i]);
+  }
+  const incoming = reversedLinks(g);
+  while (heap.size > 0) {
+    const [node, d] = heap.pop();
+    if (d > dist[node]) continue;
+    for (const { from, link } of incoming[node]) {
+      if (allowed && !allowed(link, from, g)) continue;
+      const nd = d + link.cost;
+      if (nd < dist[from]) {
+        dist[from] = nd;
+        next[from] = link;
         heap.push(from, nd);
       }
     }
@@ -432,6 +493,30 @@ export function getFlowField(g: NavGraph, goal: number, allowed?: LinkFilter): F
   if (cached && cached.goal === goal) return cached.field;
   const field = computeFlowField(g, goal, allowed);
   perFilter.set(allowed, { goal, field });
+  return field;
+}
+
+// The escape map, cached the same way: it changes only when the goal (or the scale, from the debug panel) does.
+const lastFlee = new WeakMap<NavGraph, Map<LinkFilter | undefined, { goal: number; scale: number; heightBonus: number; field: FlowField }>>();
+
+/**
+ * The escape map away from `goal` (see computeFleeField), recomputed only if
+ * the goal or the scale changed. `allowed` filters only the RUNNER's own
+ * steps: how far each node is from the goal is measured on the whole graph
+ * (as the ghouls go). With the filter on that too, a player standing where
+ * the filtered links don't reach (a roof only a tall climb leads to) would be
+ * "infinitely far" from everywhere, and the map would come out empty.
+ */
+export function getFleeField(g: NavGraph, goal: number, scale: number, allowed?: LinkFilter, heightBonus = 0): FlowField {
+  let perFilter = lastFlee.get(g);
+  if (!perFilter) {
+    perFilter = new Map();
+    lastFlee.set(g, perFilter);
+  }
+  const cached = perFilter.get(allowed);
+  if (cached && cached.goal === goal && cached.scale === scale && cached.heightBonus === heightBonus) return cached.field;
+  const field = computeFleeField(g, getFlowField(g, goal), scale, allowed, heightBonus);
+  perFilter.set(allowed, { goal, scale, heightBonus, field });
   return field;
 }
 

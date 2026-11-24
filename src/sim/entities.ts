@@ -253,9 +253,39 @@ export interface SmithEntity extends EntityBase {
   navNode: number;
 }
 
-export type Entity = TargetEntity | GhoulEntity | EyebatEntity | HoundEntity | BullEntity | SharpshooterEntity | SmithEntity;
-/** Everything that fights you (not the practice targets). */
-export type Enemy = GhoulEntity | EyebatEntity | HoundEntity | BullEntity | SharpshooterEntity | SmithEntity;
+/**
+ * The Jackal ("Lo Sciacallo", a map event: jackal.ts): a little devil with a
+ * sack of vildenaro that RUNS AWAY from you. It never attacks; it isn't part
+ * of the wave (the wave doesn't wait for it). Position = feet.
+ */
+export interface JackalEntity extends EntityBase {
+  type: 'jackal';
+  vx: number;
+  vy: number;
+  vz: number;
+  onGround: boolean;
+  /** You're far: it stops and taunts you (shakes the sack, cackles). You're close: it flees. Dead. */
+  state: 'taunt' | 'flee' | 'dead';
+  stateTicks: number;
+  /** Where it faces (unit vector on the ground): where it runs, or toward you while taunting. */
+  dirX: number;
+  dirZ: number;
+  /** Hit: ticks left of its panic sprint (jackalPanicSpeed). */
+  panicTicks: number;
+  /** Its health at the last tick: lower now = it was hit (it bolts). */
+  lastHealth: number;
+  /** Ticks in a row you've been far away while it fled: enough, and it stops to taunt you. */
+  calmTicks: number;
+  navNode: number;
+  /** Climbing a wall: from the node at its foot to the one on top (-1 = not climbing). */
+  climbFrom: number;
+  climbTo: number;
+  climbTicks: number;
+}
+
+export type Entity = TargetEntity | GhoulEntity | EyebatEntity | HoundEntity | BullEntity | SharpshooterEntity | SmithEntity | JackalEntity;
+/** Everything that fights you (not the practice targets). The jackal doesn't fight, but it's shot like the rest. */
+export type Enemy = GhoulEntity | EyebatEntity | HoundEntity | BullEntity | SharpshooterEntity | SmithEntity | JackalEntity;
 
 export function isEnemy(e: Entity): e is Enemy {
   return e.type !== 'target';
@@ -484,6 +514,35 @@ export function createSmith(id: number, x: number, y: number, z: number, health 
   };
 }
 
+export function createJackal(id: number, x: number, y: number, z: number, health = tuning.jackalHealth): JackalEntity {
+  return {
+    id,
+    type: 'jackal',
+    x,
+    y,
+    z,
+    px: x,
+    py: y,
+    pz: z,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    health,
+    onGround: false,
+    state: 'taunt', // it shows up far from you: the first thing it does is laugh at you
+    stateTicks: 0,
+    dirX: 0,
+    dirZ: 1,
+    panicTicks: 0,
+    lastHealth: health,
+    calmTicks: 0,
+    navNode: -1,
+    climbFrom: -1,
+    climbTo: -1,
+    climbTicks: 0,
+  };
+}
+
 export function isAlive(e: Entity): boolean {
   return e.health > 0;
 }
@@ -516,6 +575,10 @@ export function hitBox(e: Entity): Box {
   }
   if (e.type === 'smith') {
     return box(e.x, e.y, e.z, tuning.smithHitWidth, tuning.smithHitHeight, tuning.smithHitWidth);
+  }
+  if (e.type === 'jackal') {
+    // The sack included: as wide as the sprite. Hard to catch, not hard to hit.
+    return box(e.x, e.y, e.z, tuning.jackalHitWidth, tuning.jackalHitHeight, tuning.jackalHitWidth);
   }
   if (e.type === 'eyebat') {
     // A cube around the eye, a bit bigger than the eye itself (it includes

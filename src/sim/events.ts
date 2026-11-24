@@ -133,6 +133,10 @@ export type SimEvent =
    * heart, now at `total` of `goal`. From where the enemy died (the soul flies from there).
    */
   | { type: 'emberHeartFed'; fromX: number; fromY: number; fromZ: number; souls: number; total: number; goal: number }
+  /** The jackal (jackal.ts) lost coins: you hit it. Where its sack is. */
+  | { type: 'jackalCoins'; x: number; y: number; z: number; coins: number }
+  /** The jackal got away (its time ran out, or the wave ended): it vanished in a puff of fire, here (its feet). */
+  | { type: 'jackalEscaped'; x: number; y: number; z: number }
   | { type: 'ghoulAttack'; entityId: number }
   | { type: 'ghoulLunge'; entityId: number } // starts crouching for a pounce (the warning)
   /** A hound starts its ambush: the howl (the warning). */

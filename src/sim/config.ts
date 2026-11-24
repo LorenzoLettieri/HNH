@@ -1170,6 +1170,48 @@ export const tuning = {
   /** Your chest this close to the crystal's middle wakes it up (meters). */
   emberHeartWakeReach: 2.2,
 
+  // "Lo Sciacallo" (src/sim/jackal.ts)
+  /** Seconds you have from when it shows up: then it escapes in a puff of fire (if the wave doesn't end first). */
+  jackalTime: 75,
+  /** Health (× the wave's health step, healthForWave): a revolver body shot does 50, a headshot 150. */
+  jackalHealth: 400,
+  /** How fast it runs away, m/s: a bit slower than you (6.5), so you can catch up... */
+  jackalSpeed: 6,
+  /** ...but hit, it bolts: this fast (m/s) for this long (seconds). */
+  jackalPanicSpeed: 9,
+  jackalPanicTime: 1.2,
+  /** Climbing speed, m/s (it climbs only the walls you can get up too). Climbing is where you catch it. */
+  jackalClimbSpeed: 3.2,
+  /** It starts running when you're this close (meters, on the ground plane)... */
+  jackalFleeRange: 22,
+  /** ...and stops to taunt you once you're this far, for a second or so. */
+  jackalCalmRange: 32,
+  /**
+   * The escape map: the flow field toward you × −this (nav.ts, computeFleeField).
+   * More than 1: it would rather run past you toward open ground than into a corner.
+   */
+  jackalFleeScale: 1.2,
+  /** ...and every meter above you is worth this many meters of distance: it likes roofs (it climbs, rides the vents). */
+  jackalHeightBonus: 3,
+  /** It shows up this far from you (meters, on the ground plane). */
+  jackalSpawnMin: 30,
+  jackalSpawnMax: 55,
+  /** Coins it loses at every hit, and the ones left in its sack (they all burst out when it dies). */
+  jackalCoinsPerHit: 3,
+  jackalBagCoins: 20,
+  /** Its weight: only for the chance of an item drop (dropChancePerWeight). It isn't part of the wave. */
+  jackalCost: 3,
+  /** Collider (a small body: it fits everywhere a ghoul does). */
+  jackalRadius: 0.3,
+  jackalHeight: 1.3,
+  /** Hitbox: not tiny on purpose (it's slippery because it moves, not because it's a pixel). */
+  jackalHitWidth: 1.0,
+  jackalHitHeight: 1.4,
+  /** Hits above this height (from its feet) are on the head: critical. Matches the sprite. */
+  jackalHeadHeight: 0.95,
+  /** Seconds its body lies on the ground. */
+  jackalCorpseTime: 4,
+
   // --- Enemy projectiles (src/sim/projectiles.ts) ---
   /** Radius of an enemy projectile, meters (for hitting the player). */
   projectileRadius: 0.25,

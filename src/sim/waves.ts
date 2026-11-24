@@ -186,6 +186,7 @@ export function enemyCost(e: Enemy): number {
   if (e.type === 'hound') return tuning.houndCost;
   if (e.type === 'sharpshooter') return tuning.sharpshooterCost;
   if (e.type === 'smith') return tuning.smithCost;
+  if (e.type === 'jackal') return tuning.jackalCost;
   return tuning.bullCost;
 }
 
@@ -200,6 +201,7 @@ export function stepWaves(game: GameState, world: World, events: SimEvent[], ski
     bull: secondsToTicks(tuning.bullCorpseTime),
     sharpshooter: secondsToTicks(tuning.sharpshooterCorpseTime),
     smith: secondsToTicks(tuning.smithCorpseTime),
+    jackal: secondsToTicks(tuning.jackalCorpseTime),
   };
   game.entities = game.entities.filter(
     (e) => !(isEnemy(e) && e.state === 'dead' && e.stateTicks > corpseTicks[e.type]),
@@ -210,9 +212,10 @@ export function stepWaves(game: GameState, world: World, events: SimEvent[], ski
   const w = game.wave;
   // Weight alive right now (with every enemy weighing 1: how many are alive).
   let alive = 0;
-  const aliveByType: Record<Enemy['type'], number> = { ghoul: 0, eyebat: 0, hound: 0, bull: 0, sharpshooter: 0, smith: 0 };
+  const aliveByType: Record<Enemy['type'], number> = { ghoul: 0, eyebat: 0, hound: 0, bull: 0, sharpshooter: 0, smith: 0, jackal: 0 };
   for (const e of game.entities) {
-    if (!isEnemy(e) || e.state === 'dead') continue;
+    // The jackal (a map event, jackal.ts) isn't part of the wave: the wave doesn't wait for it.
+    if (!isEnemy(e) || e.state === 'dead' || e.type === 'jackal') continue;
     alive += enemyCost(e);
     aliveByType[e.type]++;
   }

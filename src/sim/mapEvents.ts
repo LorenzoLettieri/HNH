@@ -4,7 +4,7 @@
 //
 // This file is the SKELETON shared by every event: WHEN one appears, its
 // lifecycle (active → success or failure), the prize and the events it
-// reports. What each event asks you to do lives in its own file (bells.ts, ponyExpress.ts, wager.ts, emberHeart.ts):
+// reports. What each event asks you to do lives in its own file (bells.ts, ponyExpress.ts, wager.ts, emberHeart.ts, jackal.ts):
 // a create function and a step function that says "running / success /
 // failure". If the wave ends first, the event fails. One exception: the
 // devil's wager (wager.ts) spans two waves (the bet, then the cursed wave),
@@ -32,6 +32,7 @@ import { createBellsEvent, stepBells, type BellsEvent } from './bells';
 import { createPonyExpressEvent, stepPonyExpress, type PonyExpressEvent } from './ponyExpress';
 import { createWagerEvent, stepWager, type WagerEvent } from './wager';
 import { createEmberHeartEvent, stepEmberHeart, type EmberHeartEvent } from './emberHeart';
+import { createJackalEvent, jackalEscapes, stepJackalEvent, type JackalEvent } from './jackal';
 import type { InputCommand } from './command';
 
 /**
@@ -47,18 +48,22 @@ export type MapEventKind = ActiveMapEvent['kind'];
  * which ones after a check on `kind`. Every kind has `kind` and `wave` (the
  * wave it showed up in: it ends with it).
  */
-export type ActiveMapEvent = BellsEvent | PonyExpressEvent | WagerEvent | EmberHeartEvent;
+export type ActiveMapEvent = BellsEvent | PonyExpressEvent | WagerEvent | EmberHeartEvent | JackalEvent;
 
 /**
  * How to build each kind. A Record over every MapEventKind: a kind with no
  * creator is a compile error. The order is also the order the picker tries
- * them in (after shuffling).
+ * them in (after shuffling). They get the whole GameState: most only need its
+ * random generator (the GameState IS one: it has the rng field), the jackal
+ * also puts itself in the world. A creator that takes a RandomState fits
+ * here anyway: a GameState is a RandomState and more.
  */
-const CREATORS: Record<MapEventKind, (world: World, rng: RandomState, wave: number) => ActiveMapEvent | null> = {
+const CREATORS: Record<MapEventKind, (world: World, game: GameState, wave: number) => ActiveMapEvent | null> = {
   bells: createBellsEvent,
   ponyExpress: createPonyExpressEvent,
   wager: createWagerEvent,
   emberHeart: createEmberHeartEvent,
+  jackal: createJackalEvent,
 };
 const KINDS = Object.keys(CREATORS) as MapEventKind[];
 
@@ -100,17 +105,17 @@ export function createMapEventState(rng: RandomState): MapEventState {
  * last one moved to the end, and the first one that can be built wins: a
  * level with no bell spots just never gets the bells, without a special case.
  */
-function createEvent(state: MapEventState, world: World, rng: RandomState, wave: number): ActiveMapEvent | null {
+function createEvent(state: MapEventState, world: World, game: GameState, wave: number): ActiveMapEvent | null {
   const order = [...KINDS];
   for (let i = order.length - 1; i > 0; i--) {
-    const j = randomInt(rng, i + 1);
+    const j = randomInt(game, i + 1);
     [order[i], order[j]] = [order[j], order[i]];
   }
   order.sort((a, b) => Number(a === state.lastKind) - Number(b === state.lastKind)); // stable: only the last kind moves
   if (state.forceKind) order.unshift(state.forceKind);
   state.forceKind = null;
   for (const kind of order) {
-    const ev = CREATORS[kind](world, rng, wave);
+    const ev = CREATORS[kind](world, game, wave);
     if (ev) return ev;
   }
   return null;
@@ -135,6 +140,8 @@ function stepEvent(ev: ActiveMapEvent, game: GameState, world: World, cmd: Input
       return stepWager(ev, game.player, cmd, events, firstEvent);
     case 'emberHeart':
       return stepEmberHeart(ev, game, world, events, firstEvent);
+    case 'jackal':
+      return stepJackalEvent(ev, game, events, firstEvent);
   }
 }
 
@@ -195,6 +202,7 @@ function finish(game: GameState, events: SimEvent[], result: Exclude<EventResult
   state.active = null;
   state.nextWave = ended.wave + rollGap(game);
   game.player.curse = null; // the wager's curse never outlives its event (the debug "complete" button too)
+  if (ended.kind === 'jackal') jackalEscapes(ended, game, events); // not dead: it gets away with the rest of its sack
   const success = result === 'success';
   const declined = result === 'declined';
   // The prize: fiches straight into your pocket (no pickup to run to: the

@@ -13,6 +13,7 @@ import { maxHealth } from '../sim/drinks';
 import type { GameState } from '../sim/game';
 import { horizontalSpeed } from '../sim/player';
 import { isEnemy } from '../sim/entities';
+import { jackalOf } from '../sim/jackal';
 import { updateStyleMeter } from './styleMeter';
 import { updateStyleFeed } from './styleFeed';
 import { updateHighNoon } from './highNoon';
@@ -155,6 +156,7 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
       const name = MAP_EVENT_TEXT[e.kind].title.toLowerCase();
       if (e.declined) queueBanner('IL DIAVOLO SI ALZA DAL TAVOLO', 'scommessa rifiutata: niente vinto, niente perso', 3, () => playMapEventEnd(false));
       else if (e.success) queueBanner('EVENTO COMPLETATO', `+${e.fiches} ${e.fiches === 1 ? 'fiche' : 'fiches'} · spendile al saloon`, 3, () => playMapEventEnd(true));
+      else if (e.kind === 'jackal') queueBanner('LO SCIACALLO È SCAPPATO', 'col resto del sacco', 3, () => playMapEventEnd(false));
       else queueBanner('EVENTO FALLITO', name, 3, () => playMapEventEnd(false));
     }
     // The devil's wager (wager.ts): the bet is taken, then the cursed wave starts.
@@ -181,7 +183,8 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
   // Enemies alive right now (corpses still on the ground don't count). A "+"
   // while the wave is still spawning: more are coming than you can see here.
   let alive = 0;
-  for (const e of game.entities) if (isEnemy(e) && e.state !== 'dead') alive++;
+  // (The jackal isn't part of the wave: it has its own line, see updateEventLine.)
+  for (const e of game.entities) if (isEnemy(e) && e.state !== 'dead' && e.type !== 'jackal') alive++;
   enemiesHud.textContent = `${alive}${w.phase === 'active' && w.budgetLeft > 0 ? '+' : ''} NEMICI`;
   // Frames per second, averaged (exponential average: each frame moves it 5%
   // of the way), otherwise the number jitters too fast to read. dt = 0 while paused.
@@ -266,6 +269,13 @@ function updateEventLine(game: GameState): void {
   }
   const seconds = Math.ceil(ev.ticksLeft / 60);
   const clock = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+  // The jackal: what it's doing (laughing at you far away, or running), and the clock to its escape.
+  if (ev.kind === 'jackal') {
+    const j = jackalOf(ev, game);
+    eventGoal.textContent = `${j?.state === 'taunt' ? 'TI ASPETTA · trovalo (Tab)' : 'IN FUGA · colpiscilo'} · ${clock}`;
+    eventGoal.classList.toggle('hurry', seconds <= EVENT_HURRY);
+    return;
+  }
   eventGoal.textContent =
     ev.kind === 'bells'
       ? `CAMPANA ${ev.rung + 1} / ${ev.bells.length} · ${clock}`

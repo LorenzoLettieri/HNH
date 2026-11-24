@@ -1886,3 +1886,135 @@ export function playHolyFireLoop(where: Where): LoopingSound {
     },
   };
 }
+
+// --- Lo Sciacallo (src/sim/jackal.ts, src/render/enemies/jackals.ts) ---------------------
+
+/**
+ * The jackal's cackle: "hee-hee-hee-hee", the devil's laugh (devilLaugh)
+ * turned into a little imp. Same recipe, a buzz through a throat, but HIGH
+ * (pitch ~400 Hz instead of 90), quick (five syllables in half a second),
+ * and the formant up at 1600 Hz: an "ee" instead of an "a". Each "hee"
+ * slides up a bit at the start, and the whole laugh drifts down: mocking.
+ */
+function jackalCackle(out: AudioNode, start = 0): void {
+  if (!ctx) return;
+  const syllables = 4 + Math.floor(Math.random() * 3);
+  const base = 380 + Math.random() * 70;
+  for (let i = 0; i < syllables; i++) {
+    const at = start + i * 0.105;
+    const t0 = ctx.currentTime + at;
+    const pitch = base * (1 - i * 0.035);
+    const osc = ctx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(pitch * 0.85, t0);
+    osc.frequency.exponentialRampToValueAtTime(pitch * 1.08, t0 + 0.05);
+    const formant = ctx.createBiquadFilter();
+    formant.type = 'bandpass';
+    formant.frequency.value = 1600;
+    formant.Q.value = 3;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.4, t0 + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.085);
+    osc.connect(formant).connect(gain).connect(out);
+    osc.start(t0);
+    osc.stop(t0 + 0.1);
+    noiseBurst({ out, start: at, duration: 0.04, volume: 0.08, filter: 'highpass', frequency: 3000 }); // the "h"
+  }
+}
+
+/** The jackal laughs at you (taunting from afar, or now and then on the run). Positional: you follow it by ear. */
+export function playJackalCackle(where: Where): void {
+  const out = placeSound(where);
+  if (out) jackalCackle(out);
+}
+
+/**
+ * The sack jingling while it runs: two or three tiny coin ticks (very short
+ * bursts of high noise through a narrow band-pass: metal on metal). Played
+ * at every stride: a moving "ching-ching" you can track around a corner,
+ * like the treasure goblins of Diablo.
+ */
+export function playJackalJingle(where: Where): void {
+  const out = placeSound({ volume: where.volume * 0.6, pan: where.pan });
+  if (!out) return;
+  const ticks = 2 + Math.floor(Math.random() * 2);
+  for (let i = 0; i < ticks; i++) {
+    noiseBurst({ out, start: i * 0.03 + Math.random() * 0.015, duration: 0.018, volume: 0.3, filter: 'bandpass', frequency: 5200 + Math.random() * 2000, q: 12 });
+  }
+}
+
+/**
+ * Hit: a yelp (one high "YIP", a pitch that jumps up and falls) and the
+ * coins spilling out (a quick rattle and a couple of bright rings).
+ */
+export function playJackalHit(where: Where): void {
+  const out = placeSound({ volume: Math.max(0.3, where.volume), pan: where.pan });
+  if (!out || !ctx) return;
+  const t0 = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(600, t0);
+  osc.frequency.exponentialRampToValueAtTime(1100, t0 + 0.04);
+  osc.frequency.exponentialRampToValueAtTime(450, t0 + 0.16);
+  const formant = ctx.createBiquadFilter();
+  formant.type = 'bandpass';
+  formant.frequency.value = 1800;
+  formant.Q.value = 2;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.exponentialRampToValueAtTime(0.45, t0 + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
+  osc.connect(formant).connect(gain).connect(out);
+  osc.start(t0);
+  osc.stop(t0 + 0.2);
+  for (let i = 0; i < 6; i++) {
+    noiseBurst({ out, start: 0.05 + i * 0.03 + Math.random() * 0.02, duration: 0.02, volume: 0.3, filter: 'bandpass', frequency: 4500 + Math.random() * 3000, q: 10 });
+  }
+  setTimeout(() => ring(2200, 0.25, 0.06, out), 80);
+  setTimeout(() => ring(2900, 0.3, 0.05, out), 150);
+}
+
+/**
+ * Killed: a long falling squeal, and the WHOLE sack bursting: a shower of
+ * coins (many ticks over half a second) and a cash-register "ka-ching" on
+ * top (the prize). Loud wherever you are: you got it.
+ */
+export function playJackalDeath(where: Where): void {
+  const out = placeSound({ volume: Math.max(0.6, where.volume), pan: where.pan });
+  if (!out || !ctx) return;
+  const t0 = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(900, t0);
+  osc.frequency.exponentialRampToValueAtTime(180, t0 + 0.6);
+  const formant = ctx.createBiquadFilter();
+  formant.type = 'bandpass';
+  formant.frequency.value = 1400;
+  formant.Q.value = 2;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.exponentialRampToValueAtTime(0.4, t0 + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.6);
+  osc.connect(formant).connect(gain).connect(out);
+  osc.start(t0);
+  osc.stop(t0 + 0.65);
+  thump({ out, duration: 0.3, volume: 0.6, from: 140, to: 50 }); // the sack bursts
+  for (let i = 0; i < 26; i++) {
+    noiseBurst({ out, start: 0.05 + Math.random() * 0.6, duration: 0.02, volume: 0.28, filter: 'bandpass', frequency: 4000 + Math.random() * 4000, q: 10 });
+  }
+  setTimeout(() => ring(1760, 0.4, 0.1, out), 350);
+  setTimeout(() => ring(2640, 0.8, 0.12, out), 420);
+}
+
+/**
+ * It got away: a WHOOMPH of fire (noise through a band-pass sweeping up), a
+ * last cackle, and a low thump as the ground closes over it.
+ */
+export function playJackalEscape(where: Where): void {
+  const out = placeSound({ volume: Math.max(0.5, where.volume), pan: where.pan });
+  if (!out) return;
+  noiseBurst({ out, duration: 0.6, volume: 0.6, filter: 'bandpass', frequency: 200, frequencyEnd: 2400, q: 1.2 });
+  thump({ out, start: 0.1, duration: 0.6, volume: 0.6, from: 90, to: 30 });
+  jackalCackle(out, 0.15);
+}

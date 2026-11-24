@@ -230,6 +230,13 @@ export function knockBack(e: Entity, dirX: number, dirZ: number, speed: number, 
     e.vy = lift;
     e.onGround = false;
     e.climbTo = -1;
+  } else if (e.type === 'jackal' && e.state !== 'dead') {
+    // Light as a cat: it flies, lands and runs on (kicked off a wall, it falls).
+    e.vx = dirX * speed;
+    e.vz = dirZ * speed;
+    e.vy = lift;
+    e.onGround = false;
+    e.climbTo = -1;
   } else if (e.type === 'bull' || e.type === 'smith') {
     // Too heavy: it takes the damage, but doesn't budge.
   } else if (e.type === 'eyebat') {
