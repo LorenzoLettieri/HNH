@@ -7,7 +7,7 @@ import { markPractice, practiceGame, startGame } from './fairPlay';
 import { createMenu } from './menu';
 import { createDebugPanel, debugTime, type DebugTool } from './debug/debugPanel';
 import { hitStopScale } from './render/hitStop';
-import { buildCommand, controlSettings, queueRespawn, updateLook, view } from './controls';
+import { buildCommand, controlSettings, queueRespawn, queueSkipBreak, updateLook, view } from './controls';
 import { TICK_DT, tuning } from './sim/config';
 import { copyPlayer, createPlayer } from './sim/player';
 import { createGame, spawnBullInFront, spawnSharpshooterInFront, spawnEyebatInFront, spawnHoundInFront, spawnSmithInFront, dropPickupsInFront, spawnHolyFireInFront, stepGame } from './sim/game';
@@ -285,14 +285,18 @@ window.addEventListener('keydown', (e) => {
   }
   // E (or the key bound to 'interact', keybinds.ts): open/close the shop, if a vendor is within reach (src/sim/shop.ts).
   // Opening frees the mouse (to click in the panel); closing grabs it back.
+  // Away from any counter, the same key starts the next wave now (skips the
+  // break): the simulation ignores it while a wave is on (waves.ts).
   if (isBound('interact', e.code)) {
     if (shopMenu.isOpen) {
       closeShop();
-    } else {
-      const shop = paused ? null : shopInReach(player, world);
+    } else if (!paused) {
+      const shop = shopInReach(player, world);
       if (shop) {
         shopMenu.open(shop.kind); // first: when the lock is released, updatePause must know
         document.exitPointerLock();
+      } else {
+        queueSkipBreak();
       }
     }
   }

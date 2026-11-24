@@ -19,6 +19,7 @@ import { updateHealthPlate } from './healthPlate';
 import { updateLowHealth } from './lowHealth';
 import { addHurtArc, screenAngle, updateHurtArcs } from './damageIndicator';
 import { hurtKick } from './cameraFeel';
+import { mainKeyName } from '../keybinds';
 
 const damage = document.getElementById('damage')!;
 const pickupFlash = document.getElementById('pickup-flash')!;
@@ -182,11 +183,13 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
     showBanner(next.title, next.sub, next.seconds);
     next.sound();
   }
-  if (w.phase === 'break' && w.number > 0 && w.breakTicks < 60 * 5 && bannerTime <= 0) {
+  // The countdown for the whole break (as soon as "ONDATA SUPERATA" is gone),
+  // with the key that skips it: the interact key, away from any counter (main.ts).
+  if (w.phase === 'break' && w.number > 0 && bannerTime <= 0) {
     // A new stamp only when the digit changes, not every frame.
     const n = Math.ceil(w.breakTicks / 60);
     if (n !== countdownShown) {
-      setBanner(String(n), 'prossima ondata tra', 'countdown');
+      setBanner(String(n), `prossima ondata tra · ${mainKeyName('interact')} per iniziare subito`, 'countdown');
       countdownShown = n;
     }
     banner.style.opacity = '0.85';

@@ -1142,8 +1142,8 @@ export const tuning = {
   peakRunnerChance: 0.9,
   /** Seconds before the first wave. */
   waveFirstBreak: 4,
-  /** Seconds of breather between waves. */
-  waveBreak: 8,
+  /** Seconds of breather between waves (the 'interact' key skips it: InputCommand.skipBreak). */
+  waveBreak: 10,
   /** Enemies never spawn closer than this to the player, meters. */
   spawnMinDistance: 15,
   /** Spawn points farther than this are used only if there's nothing closer, meters. */

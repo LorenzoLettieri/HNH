@@ -203,7 +203,7 @@ export function stepGame(
   // Enemies are solid: push the player out of their bodies (after they moved, see bodyBlock.ts).
   blockPlayerWithBodies(game.player, game.entities, world, dt);
   game.projectiles = stepProjectiles(game.projectiles, game.player, world, dt, events);
-  stepWaves(game, world, events);
+  stepWaves(game, world, events, cmd.skipBreak);
   // Right after the waves: it listens to their waveStart/waveEnd, and to
   // this tick's shots and blasts for the objectives (mapEvents.ts).
   stepMapEvents(game, world, events, tickEvents);

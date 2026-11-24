@@ -58,6 +58,12 @@ export function queueRespawn(): void {
   pendingRespawn = true;
 }
 
+/** Same for "start the next wave now" (the interact key away from a counter, main.ts): the next command's `skipBreak`. */
+let pendingSkipBreak = false;
+export function queueSkipBreak(): void {
+  pendingSkipBreak = true;
+}
+
 export function buildCommand(tick: number): InputCommand {
   // Actions, not keys: which keys do what is in keybinds.ts (rebindable).
   let forward = 0;
@@ -95,7 +101,10 @@ export function buildCommand(tick: number): InputCommand {
   pendingDrink = null;
   const respawn = pendingRespawn;
   pendingRespawn = false;
+  const skipBreak = pendingSkipBreak;
+  pendingSkipBreak = false;
   return {
-    tick, forward, strafe, jump, crouch, fire, altFire, kick, reload, weaponSelect, respawn, buy, forge, drink, yaw: view.yaw, pitch: view.pitch,
+    tick, forward, strafe, jump, crouch, fire, altFire, kick, reload, weaponSelect, respawn, buy, forge, drink, skipBreak,
+    yaw: view.yaw, pitch: view.pitch,
   };
 }

@@ -189,7 +189,8 @@ export function enemyCost(e: Enemy): number {
   return tuning.bullCost;
 }
 
-export function stepWaves(game: GameState, world: World, events: SimEvent[]): void {
+/** skipBreak: the player asked to start the next wave now (InputCommand.skipBreak). */
+export function stepWaves(game: GameState, world: World, events: SimEvent[], skipBreak = false): void {
   // Dead enemies lie on the ground for a while, then are removed from the list.
   // (Eye-bats, hounds, bulls and sharpshooters count their own stateTicks: they keep falling while dead.)
   const corpseTicks = {
@@ -217,7 +218,9 @@ export function stepWaves(game: GameState, world: World, events: SimEvent[]): vo
   }
 
   if (w.phase === 'break') {
-    w.breakTicks--;
+    // Skipping = the break's clock jumps to zero: the wave starts down the
+    // same path as always (waveStart event, budget, Smiths), nothing special.
+    w.breakTicks = skipBreak ? 0 : w.breakTicks - 1;
     if (w.breakTicks <= 0) {
       w.number++;
       w.phase = 'active';

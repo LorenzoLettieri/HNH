@@ -48,10 +48,10 @@ export const ACTIONS = {
   nextWeapon: { label: 'Arma successiva', group: 'Armi', keys: ['KeyQ', 'WheelDown'] },
   prevWeapon: { label: 'Arma precedente', group: 'Armi', keys: ['WheelUp'] },
   interact: {
-    label: 'Shop',
+    label: 'Interagisci',
     group: 'Gioco',
     keys: ['KeyE'],
-    note: 'vicino a un venditore: apri/chiudi · solo tastiera',
+    note: 'vicino a un bancone: apri/chiudi · tra un’ondata e l’altra: inizia subito · solo tastiera',
     keyboardOnly: true,
   },
   map: { label: 'Mappa', group: 'Gioco', keys: ['Tab'], note: 'tieni premuto' },
