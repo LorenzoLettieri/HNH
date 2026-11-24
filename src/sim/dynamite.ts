@@ -81,6 +81,16 @@ export interface Dynamite {
   /** Card "Razzo": it blows up on any contact; it flies with no gravity while rocketTicks > 0. */
   rocket: boolean;
   rocketTicks: number;
+  /** Card "A grappolo": its blast throws mini sticks around. */
+  cluster: boolean;
+  /** One of those mini sticks: smaller, weaker, and it doesn't split again. */
+  mini: boolean;
+  /**
+   * Ticks before a direct hit can set it off. The mini sticks are born INSIDE
+   * a blast, maybe inside an enemy still standing: without this they would
+   * all go off at once, right there.
+   */
+  armTicks: number;
 }
 
 /**
@@ -130,6 +140,9 @@ export function throwDynamite(p: PlayerState, world: World, nextId: number): Dyn
     stuck: false,
     rocket,
     rocketTicks: rocket ? Math.round(tuning.rocketTime * TICK_RATE) : 0,
+    cluster: hasCard(p, 'cluster'),
+    mini: false,
+    armTicks: 0,
   };
 }
 
@@ -146,6 +159,8 @@ export function stepDynamite(
   entities: Entity[],
   dt: number,
   events: SimEvent[],
+  /** A new id for a new stick (the mini sticks of "A grappolo"): the game's entity counter. */
+  nextId: () => number,
 ): Dynamite[] {
   const alive: Dynamite[] = [];
   // The enemies' hitboxes, grown by the stick's size on every side: the same
@@ -164,6 +179,7 @@ export function stepDynamite(
     d.py = d.y;
     d.pz = d.z;
     let boom = --d.fuseTicks <= 0;
+    if (d.armTicks > 0) d.armTicks--;
     const falling = d.rocketTicks <= 0; // "Razzo": no gravity while its rocket burns
     if (d.rocketTicks > 0) d.rocketTicks--;
     // Sub-steps: as many as needed so that none moves farther than MAX_STEP.
@@ -183,7 +199,7 @@ export function stepDynamite(
         d.stuck = true;
         d.vx = d.vy = d.vz = 0;
       }
-      boom = boom || touches(ax, ay, az, d, targets);
+      boom = boom || (d.armTicks <= 0 && touches(ax, ay, az, d, targets));
     }
     // One "tonk" per tick at most, and only for real hits: rolling makes
     // tiny impacts on every tick, and a sound for each would be a buzz.
@@ -196,14 +212,59 @@ export function stepDynamite(
       // Card "Rimbalzo infernale": every bounce (up to hellBounceMax) adds damage.
       const bonus = d.hellBounce ? 1 + tuning.hellBounceBonus * Math.min(d.bounces, tuning.hellBounceMax) : 1;
       // The center of the box, not its bottom: that's where the powder is.
-      const push = d.rocket ? tuning.rocketSelfPushScale : 1; // "Razzo": a stronger dynamite jump
-      explode(player, { x: d.x, y: d.y + r, z: d.z }, dynamiteBlast(d.holy, d.radius, bonus, push), world, entities, events);
+      const push = d.rocket ? tuning.rocketSelfPushScale : d.mini ? tuning.clusterDamageScale : 1; // "Razzo": a stronger dynamite jump
+      const damage = bonus * (d.mini ? tuning.clusterDamageScale : 1);
+      explode(player, { x: d.x, y: d.y + r, z: d.z }, dynamiteBlast(d.holy, d.radius, damage, push), world, entities, events);
+      // "A grappolo": the mini sticks fly out of the blast.
+      if (d.cluster) for (const m of clusterOf(d, nextId)) alive.push(m);
       continue;
     }
     if (d.y < tuning.killY) continue; // fell off the map
     alive.push(d);
   }
   return alive;
+}
+
+/**
+ * Card "A grappolo": the mini sticks a blast throws. Evenly spaced around the
+ * circle (360°/n apart, like the loot of a dead enemy: never two side by
+ * side), the whole fan turned by an angle taken from the stick's id (a
+ * deterministic "random": same game, same fan), up and out. Each one's fuse
+ * a little longer than the one before: they pop one after the other, a
+ * rattle, not a single bang.
+ */
+function clusterOf(d: Dynamite, nextId: () => number): Dynamite[] {
+  const n = Math.max(0, Math.round(tuning.clusterCount));
+  const turn = (d.id * 2.399963) % (Math.PI * 2); // the golden angle: ids next to each other give far apart turns
+  const out: Dynamite[] = [];
+  for (let i = 0; i < n; i++) {
+    const a = turn + (i / n) * Math.PI * 2;
+    const fuse = Math.max(1, Math.round((tuning.clusterFuse + i * tuning.clusterStagger) * TICK_RATE));
+    const y = d.y + DYNAMITE_RADIUS; // a bit up: out of the floor
+    out.push({
+      id: nextId(),
+      x: d.x, y, z: d.z,
+      px: d.x, py: y, pz: d.z,
+      vx: Math.cos(a) * tuning.clusterSpeed,
+      vy: tuning.clusterLift,
+      vz: Math.sin(a) * tuning.clusterSpeed,
+      fuseTicks: fuse,
+      fuseTotal: fuse,
+      holy: false, // (no pools of holy fire from the minis: one per stick is plenty)
+      radius: tuning.clusterRadius,
+      hellBounce: false,
+      bounces: 0,
+      rolling: false,
+      sticky: false,
+      stuck: false,
+      rocket: false,
+      rocketTicks: 0,
+      cluster: false, // a mini never splits again
+      mini: true,
+      armTicks: 12, // 0.2 s
+    });
+  }
+  return out;
 }
 
 /**

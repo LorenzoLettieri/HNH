@@ -128,6 +128,13 @@ export function createDebugPanel(options: {
   shop.number(tuning, 'rocketSpeedScale', 1, 3, 0.05);
   shop.number(tuning, 'rocketTime', 0, 2, 0.05);
   shop.number(tuning, 'rocketSelfPushScale', 1, 3, 0.05);
+  shop.number(tuning, 'clusterCount', 0, 8, 1);
+  shop.number(tuning, 'clusterSpeed', 0, 15, 0.5);
+  shop.number(tuning, 'clusterLift', 0, 15, 0.5);
+  shop.number(tuning, 'clusterFuse', 0.1, 2, 0.05);
+  shop.number(tuning, 'clusterStagger', 0, 0.5, 0.01);
+  shop.number(tuning, 'clusterRadius', 0.5, 5, 0.1);
+  shop.number(tuning, 'clusterDamageScale', 0, 1, 0.05);
 
   // --- Style meter ---
   const style = panel.folder('Style (src/sim/config.ts, src/sim/style.ts)');

@@ -54,7 +54,8 @@ export type CardId =
   | 'powderKeg'
   | 'hellBounce'
   | 'sticky'
-  | 'rocket';
+  | 'rocket'
+  | 'cluster';
 
 export interface CardInfo {
   /** The weapon (or gear: the shovel) whose deck it's in. */
@@ -128,6 +129,8 @@ export const CARDS: Record<CardId, CardInfo> = {
   sticky: { weapon: 'dynamite', excludes: ['hellBounce'] },
   /** Razzo: flies straight and fast for rocketTime, blows up on ANY contact (floor too); a stronger dynamite jump. */
   rocket: { weapon: 'dynamite', excludes: ['sticky', 'hellBounce'] },
+  /** A grappolo: the blast throws clusterCount mini sticks around, which blow up a moment later (stepDynamite). */
+  cluster: { weapon: 'dynamite' },
 };
 
 /** Is this card out of the deck because you took one that excludes it (or that it excludes)? */

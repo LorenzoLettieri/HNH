@@ -19,6 +19,7 @@
 // the worst moment. So the lights are created once, at the start, and
 // "turned off" (intensity 0) when not in use: a small POOL.
 import * as THREE from 'three';
+import { tuning } from '../sim/config';
 import type { SimEvent } from '../sim/events';
 import { playDynamiteBlast } from '../audio/sfx';
 import { blastShake } from './cameraFeel';
@@ -119,7 +120,10 @@ export function createExplosionRenderer(scene: THREE.Scene): ExplosionRenderer {
     const distance = camera.position.distanceTo(point);
     const reach = radius * SHAKE_REACH;
     if (distance < reach) blastShake(1 - distance / reach);
-    playDynamiteBlast(soundAt(camera, x, y, z));
+    // Smaller blasts (the mini sticks of "A grappolo") are quieter: three full booms in a row would be a wall of noise.
+    const where = soundAt(camera, x, y, z);
+    where.volume *= Math.min(1, radius / tuning.dynamiteRadius);
+    playDynamiteBlast(where);
   }
 
   return {

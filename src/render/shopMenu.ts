@@ -166,6 +166,10 @@ const CARD_TEXT: Record<CardId, { name: string; desc: string }> = {
     name: 'Razzo',
     desc: 'Vola dritto e veloce per mezzo secondo e scoppia al primo contatto, anche col terreno. Ai tuoi piedi: un salto molto più alto.',
   },
+  cluster: {
+    name: 'A grappolo',
+    desc: 'Scoppiando lancia tre candelotti più piccoli tutt’intorno, che esplodono un attimo dopo. Per le orde ammassate.',
+  },
   hellBounce: {
     name: 'Rimbalzo infernale',
     desc: 'Ogni rimbalzo fa più male: +25% di danno a rimbalzo, fino a quattro. I tiri di sponda pagano.',

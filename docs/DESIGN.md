@@ -886,11 +886,11 @@ Oltre al cambio di modello, un **aumento di danno netto** che segue i gradini (r
   azzurre, luce blu, suono continuo; nemici che bruciano di blu con un sibilo; esplosione col nucleo azzurro.
   I candelotti benedetti [FATTO]: carta avorio con nastri blu e croce blu, miccia che brucia azzurra, in volo, nel
   tamburo dell'arma (con un leggero bagliore) e nell'HUD munizioni.
-**Le carte del lancia-dinamite** [DECISO la rosa, novembre 2026; IN CORSO]: **Miccia corta** (la miccia dura metà),
+**Le carte del lancia-dinamite** [FATTO, da provare, novembre 2026]: **Miccia corta** (la miccia dura metà),
 **Botte di polvere** (raggio +40%), **Rimbalzo infernale** (+25% di danno a ogni rimbalzo, fino a quattro),
 **Appiccicosa** (si incolla al primo muro o pavimento), **Razzo** (vola dritto e più veloce per mezzo secondo,
-dynamite jump una volta e mezza più forte, **esplode al primo contatto, anche col terreno**) [FATTE];
-**A grappolo** (esplodendo lancia mini-candelotti intorno) [DA FARE]. Esclusive: Appiccicosa ↔ Rimbalzo infernale, Razzo ↔ Appiccicosa e Rimbalzo infernale (il razzo non si
+dynamite jump una volta e mezza più forte, **esplode al primo contatto, anche col terreno**), **A grappolo**
+(l'esplosione lancia tre mini-candelotti intorno, che scoppiano uno dopo l'altro: 40% del danno, raggio 2,2 m) [FATTE]. Esclusive: Appiccicosa ↔ Rimbalzo infernale, Razzo ↔ Appiccicosa e Rimbalzo infernale (il razzo non si
 incolla e non rimbalza). Scartate: Tamburo da sei e Detonatore.
 **Livelli successivi** [DA DECIDERE]: come il doppio Pack-a-Punch di CoD, forse **proiettili con abilità
 speciali** (fuoco, rimbalzo, esplosivi…).

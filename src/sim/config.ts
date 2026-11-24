@@ -192,6 +192,20 @@ export const tuning = {
   rocketSpeedScale: 1.6,
   rocketTime: 0.5,
   rocketSelfPushScale: 1.5,
+  /**
+   * Card "A grappolo": the blast throws clusterCount mini sticks around
+   * (clusterSpeed outward, clusterLift up); each blows up after clusterFuse
+   * seconds (one after the other, clusterStagger apart) with clusterRadius
+   * and clusterDamageScale of a stick's damage (0.4 = 60 at the center: a
+   * basic ghoul of the first waves).
+   */
+  clusterCount: 3,
+  clusterSpeed: 5,
+  clusterLift: 6,
+  clusterFuse: 0.55,
+  clusterStagger: 0.1,
+  clusterRadius: 2.2,
+  clusterDamageScale: 0.4,
   /** Minimum seconds between two shots (it's semi-automatic: one click = one shot). */
   revolverFireInterval: 0.32,
   /** A click slightly before the gun is ready still fires as soon as it is, seconds. */

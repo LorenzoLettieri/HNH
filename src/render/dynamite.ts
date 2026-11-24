@@ -29,6 +29,8 @@ const SPARK_EVERY = 0.03;
 const EMBER_GLOW = 6;
 /** How much the paper lights itself (0 = only the scene's lights): it must stand out on the ground. */
 const PAPER_SELF_LIGHT = 0.35;
+/** Card "A grappolo": how big the mini sticks are, × a normal one. */
+const MINI_SCALE = 0.6;
 /** Card "Razzo": a puff of its fire-and-smoke trail every this many seconds. */
 const ROCKET_PUFF_EVERY = 0.012;
 const X_AXIS = new THREE.Vector3(1, 0, 0);
@@ -197,6 +199,7 @@ export function createDynamiteRenderer(scene: THREE.Scene): DynamiteRenderer {
     // Start at a random angle, so two sticks don't look identical.
     mesh.rotation.set(Math.random() * 6, Math.random() * 6, 0);
     mesh.position.set(d.x, d.y + DYNAMITE_RADIUS, d.z);
+    if (d.mini) mesh.scale.setScalar(MINI_SCALE); // card "A grappolo": the little ones
     scene.add(mesh);
     return { mesh, fuse, ember, hiss: playFuseHiss(soundAt(camera, d.x, d.y, d.z)) };
   }

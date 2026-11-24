@@ -132,7 +132,7 @@ export function stepGame(
   }
   // Your dynamite: its explosions are your hits too (score, drops, style).
   const beforeSticks = events.length;
-  game.dynamite = stepDynamite(game.dynamite, game.player, world, game.entities, dt, events);
+  game.dynamite = stepDynamite(game.dynamite, game.player, world, game.entities, dt, events, () => game.nextEntityId++);
   // A holy-water stick blew up: the water splashes down and burns (same idea
   // as the sticks: the explosion only reports, the game creates the pool).
   for (let i = beforeSticks; i < events.length; i++) {
