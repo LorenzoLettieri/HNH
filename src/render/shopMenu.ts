@@ -150,6 +150,18 @@ const CARD_TEXT: Record<CardId, { name: string; desc: string }> = {
     name: 'Due alla volta',
     desc: 'La ricarica infila due colpi per volta.',
   },
+  shortFuse: {
+    name: 'Miccia corta',
+    desc: 'La miccia brucia in metà tempo. Meno rimbalzi, più precisione: scoppia dove la vuoi.',
+  },
+  powderKeg: {
+    name: 'Botte di polvere',
+    desc: 'Più polvere in ogni candelotto: l’esplosione è larga il 40% in più.',
+  },
+  hellBounce: {
+    name: 'Rimbalzo infernale',
+    desc: 'Ogni rimbalzo fa più male: +25% di danno a rimbalzo, fino a quattro. I tiri di sponda pagano.',
+  },
 };
 
 /** Weapon names in the upgrade panel's title. */

@@ -121,6 +121,10 @@ export function createDebugPanel(options: {
   shop.number(tuning, 'scopeCritMultiplier', 1, 10, 0.5);
   shop.number(tuning, 'quickscopeWindow', 0.05, 1, 0.01);
   shop.number(tuning, 'markMultiplier', 1, 4, 0.1);
+  shop.number(tuning, 'shortFuseScale', 0.1, 1, 0.05);
+  shop.number(tuning, 'powderKegRadiusScale', 1, 3, 0.05);
+  shop.number(tuning, 'hellBounceBonus', 0, 1, 0.05);
+  shop.number(tuning, 'hellBounceMax', 0, 10, 1);
 
   // --- Style meter ---
   const style = panel.folder('Style (src/sim/config.ts, src/sim/style.ts)');

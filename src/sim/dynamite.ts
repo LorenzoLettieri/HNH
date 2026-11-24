@@ -18,6 +18,7 @@ import { hitBox, isAlive, isEnemy, type Entity } from './entities';
 import { dynamiteBlast, explode } from './explosion';
 import { raycastBoxes } from './raycast';
 import type { Box, World } from './world';
+import { hasCard } from './upgrades';
 
 /** Half the size of the stick's collision box, meters (a 12 cm cube: a stick seen from any side). */
 export const DYNAMITE_RADIUS = 0.06;
@@ -61,6 +62,16 @@ export interface Dynamite {
   fuseTotal: number;
   /** Soaked in holy water (thrown by the launcher reinforced at the Forge): it leaves a pool of holy fire. */
   holy: boolean;
+  /**
+   * The blast's radius, meters: decided at the throw, like everything the
+   * cards change (card "Botte di polvere"). The stick carries the rules it
+   * was fired with: buying a card while it flies doesn't change it.
+   */
+  radius: number;
+  /** Card "Rimbalzo infernale": it counts its bounces (each one adds damage). Off: no counting. */
+  hellBounce: boolean;
+  /** Real bounces so far (not the rolling): the renderer makes its ember angrier with each one. */
+  bounces: number;
   /** Resting on the floor (it rolls instead of bouncing). */
   rolling: boolean;
 }
@@ -89,6 +100,8 @@ export function throwDynamite(p: PlayerState, world: World, nextId: number): Dyn
   const x = p.x + dx * ahead;
   const y = eyeY + dy * ahead - DYNAMITE_RADIUS;
   const z = p.z + dz * ahead;
+  // Card "Miccia corta": the fuse burns faster.
+  const fuse = Math.max(1, Math.round(tuning.dynamiteFuse * (hasCard(p, 'shortFuse') ? tuning.shortFuseScale : 1) * TICK_RATE));
   return {
     id: nextId,
     x, y, z,
@@ -96,9 +109,12 @@ export function throwDynamite(p: PlayerState, world: World, nextId: number): Dyn
     vx: dx * s + p.vx * k,
     vy: dy * s + tuning.dynamiteLift + p.vy * k,
     vz: dz * s + p.vz * k,
-    fuseTicks: Math.round(tuning.dynamiteFuse * TICK_RATE),
-    fuseTotal: Math.round(tuning.dynamiteFuse * TICK_RATE),
+    fuseTicks: fuse,
+    fuseTotal: fuse,
     holy: p.forged.dynamite > 0,
+    radius: tuning.dynamiteRadius * (hasCard(p, 'powderKeg') ? tuning.powderKegRadiusScale : 1),
+    hellBounce: hasCard(p, 'hellBounce'),
+    bounces: 0,
     rolling: false,
   };
 }
@@ -150,9 +166,13 @@ export function stepDynamite(
     if (!boom && impact > BOUNCE_SOUND_MIN) {
       events.push({ type: 'dynamiteBounce', x: d.x, y: d.y + r, z: d.z, speed: impact });
     }
+    // A REAL bounce (hard enough to leave the surface, not rolling): one more for "Rimbalzo infernale".
+    if (impact > tuning.dynamiteBounceMinSpeed) d.bounces++;
     if (boom) {
+      // Card "Rimbalzo infernale": every bounce (up to hellBounceMax) adds damage.
+      const bonus = d.hellBounce ? 1 + tuning.hellBounceBonus * Math.min(d.bounces, tuning.hellBounceMax) : 1;
       // The center of the box, not its bottom: that's where the powder is.
-      explode(player, { x: d.x, y: d.y + r, z: d.z }, dynamiteBlast(d.holy), world, entities, events);
+      explode(player, { x: d.x, y: d.y + r, z: d.z }, dynamiteBlast(d.holy, d.radius, bonus), world, entities, events);
       continue;
     }
     if (d.y < tuning.killY) continue; // fell off the map

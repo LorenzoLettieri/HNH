@@ -48,7 +48,11 @@ export type CardId =
   | 'hawkEye'
   | 'quickscope'
   | 'mark'
-  | 'twoAtATime';
+  | 'twoAtATime'
+  // Dynamite launcher
+  | 'shortFuse'
+  | 'powderKeg'
+  | 'hellBounce';
 
 export interface CardInfo {
   /** The weapon (or gear: the shovel) whose deck it's in. */
@@ -110,6 +114,13 @@ export const CARDS: Record<CardId, CardInfo> = {
   mark: { weapon: 'rifle' },
   /** Due alla volta: the reload pushes in two rounds at a time. */
   twoAtATime: { weapon: 'rifle' },
+
+  /** Miccia corta: the fuse burns in shortFuseScale of the time (throwDynamite in dynamite.ts). */
+  shortFuse: { weapon: 'dynamite' },
+  /** Botte di polvere: a bigger blast, × powderKegRadiusScale (the stick's `radius`). */
+  powderKeg: { weapon: 'dynamite' },
+  /** Rimbalzo infernale: every bounce adds hellBounceBonus to the blast's damage, up to hellBounceMax bounces. */
+  hellBounce: { weapon: 'dynamite' },
 };
 
 /** Is this card out of the deck because you took one that excludes it (or that it excludes)? */

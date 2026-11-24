@@ -57,11 +57,11 @@ export function lastShotBlast(): Blast {
  * (holy water): the Forge's extra damage (like every reinforced gun), and
  * its own kind (stepGame lights a pool of holy fire under it).
  */
-export function dynamiteBlast(holy = false): Blast {
+export function dynamiteBlast(holy = false, radius = tuning.dynamiteRadius, damageScale = 1): Blast {
   return {
     kind: holy ? 'holyDynamite' : 'dynamite',
-    radius: tuning.dynamiteRadius,
-    damage: tuning.dynamiteDamage * (holy ? tuning.forgeDamageMultiplier : 1),
+    radius,
+    damage: tuning.dynamiteDamage * (holy ? tuning.forgeDamageMultiplier : 1) * damageScale,
     edge: tuning.dynamiteEdgeDamage,
     source: 'dynamite',
     knockback: tuning.dynamiteKnockback,

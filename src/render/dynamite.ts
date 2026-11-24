@@ -11,6 +11,7 @@ import * as THREE from 'three';
 import type { Dynamite } from '../sim/dynamite';
 import { DYNAMITE_RADIUS } from '../sim/dynamite';
 import type { SimEvent } from '../sim/events';
+import { tuning } from '../sim/config';
 import { playDynamiteBounce, playFuseHiss, type LoopingSound } from '../audio/sfx';
 import { spawnHolyFlame, spawnSparks } from './particles';
 import { soundAt } from './soundPosition';
@@ -28,6 +29,8 @@ const SPARK_EVERY = 0.03;
 const EMBER_GLOW = 6;
 /** How much the paper lights itself (0 = only the scene's lights): it must stand out on the ground. */
 const PAPER_SELF_LIGHT = 0.35;
+/** Card "Rimbalzo infernale": how much bigger the ember gets with every bounce. */
+const HELL_BOUNCE_SWELL = 0.45;
 /** Bounce sound: this speed into the surface (m/s) is a full-strength "tonk". */
 const BOUNCE_LOUD = 10;
 
@@ -229,7 +232,9 @@ export function createDynamiteRenderer(scene: THREE.Scene): DynamiteRenderer {
         const length = Math.max(0.005, FUSE_LENGTH * left);
         v.fuse.scale.x = length;
         v.ember.position.x = STICK_LENGTH / 2 + length;
-        v.ember.scale.setScalar(0.7 + Math.random() * 0.7);
+        // Card "Rimbalzo infernale": the ember swells with every bounce (the stick is getting angrier).
+        const angry = d.hellBounce ? 1 + HELL_BOUNCE_SWELL * Math.min(d.bounces, tuning.hellBounceMax) : 1;
+        v.ember.scale.setScalar((0.7 + Math.random() * 0.7) * angry);
         if (Math.random() < dt / SPARK_EVERY) {
           v.ember.getWorldPosition(point);
           if (d.holy) spawnHolyFlame(point, up, 1); // the holy fuse spits blue

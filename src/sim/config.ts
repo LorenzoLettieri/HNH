@@ -177,6 +177,13 @@ export const tuning = {
   quickscopeWindow: 0.2,
   /** Card "Marchio": damage × this on a marked enemy. */
   markMultiplier: 2,
+  /** Card "Miccia corta": the dynamite's fuse × this (0.5 = it blows up in half the time). */
+  shortFuseScale: 0.5,
+  /** Card "Botte di polvere": the dynamite's blast radius × this. */
+  powderKegRadiusScale: 1.4,
+  /** Card "Rimbalzo infernale": +this share of damage for every bounce, counted up to hellBounceMax bounces. */
+  hellBounceBonus: 0.25,
+  hellBounceMax: 4,
   /** Minimum seconds between two shots (it's semi-automatic: one click = one shot). */
   revolverFireInterval: 0.32,
   /** A click slightly before the gun is ready still fires as soon as it is, seconds. */
