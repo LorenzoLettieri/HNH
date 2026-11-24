@@ -691,7 +691,10 @@ evento (stile gli eventi di Diablo 4) **durante un'ondata**.
   della polvere** da scortare.
 
 **Passo 1** [FATTO]: lo scheletro nella simulazione (`src/sim/mapEvents.ts`): quando compare, attivo → riuscito/fallito,
-eventi `mapEventStart`/`mapEventEnd`; senza obiettivi né grafica (si vede nella console e coi bottoni del pannello debug).
+eventi `mapEventStart`/`mapEventEnd`; senza obiettivi (si prova coi bottoni del pannello debug).
+**Passo 2** [FATTO]: l'annuncio. Scritta in alto come il Fabbro (titolo dell'evento + obiettivo), **dopo** "ONDATA N"
+(una coda di scritte: arrivano nello stesso tick), e a fine evento "EVENTO COMPLETATO" / "EVENTO FALLITO".
+Suono suo: un **triangolo da saloon** battuto veloce (le ondate hanno la campana grave, il Fabbro l'incudine).
 
 **Ordine proposto**: prima lo **scheletro comune** con l'evento più semplice (Campane o Scommessa): comparsa e
 annuncio, timer, successo/fallimento, valuta nuova nell'HUD; poi il barista e i drink; poi gli eventi con un'IA
