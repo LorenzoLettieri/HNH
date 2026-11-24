@@ -230,6 +230,7 @@ const debugPanel = createDebugPanel({
     spawnTool('Fai cadere un raccoglibile di ogni tipo', dropPickupsInFront),
     spawnTool('Fai apparire: pozza di fuoco santo', (g) => spawnHolyFireInFront(g, world)),
     spawnTool('Evento sulla mappa alla prossima ondata', (g) => forceMapEventNextWave(g.mapEvent, g.wave.number)),
+    spawnTool('Evento Pony Express alla prossima ondata', (g) => forceMapEventNextWave(g.mapEvent, g.wave.number, 'ponyExpress')),
     // Like the respawn below, it should go through the InputCommand one day: it's only a flag the next tick reads.
     spawnTool("Completa l'evento in corso", (g) => { g.mapEvent.forceSuccess = true; }),
     // Respawn goes through the InputCommand like a key would (controls.ts):

@@ -1136,6 +1136,20 @@ export const tuning = {
   /** Your chest this close to the bell's middle rings it: run into it, kick it (meters). */
   bellTouchReach: 1.6,
 
+  // "Pony Express dell'Inferno" (src/sim/ponyExpress.ts)
+  /** How many rings in the trail. */
+  ponyRings: 8,
+  /** Each ring between these many meters (on the ground plane) from the one before it. */
+  ponyMinGap: 12,
+  ponyMaxGap: 22,
+  /** Your chest passing this close to a ring's middle counts as through it (meters). */
+  ponyRingRadius: 1.5,
+  /** Seconds on the clock when you pass the first ring, and added by every next one... */
+  ponyStartTime: 10,
+  ponyRingBonus: 5,
+  /** ...but never more than this on the clock (seconds): a fast start can't bank a minute. */
+  ponyMaxTime: 15,
+
   // --- Enemy projectiles (src/sim/projectiles.ts) ---
   /** Radius of an enemy projectile, meters (for hitting the player). */
   projectileRadius: 0.25,

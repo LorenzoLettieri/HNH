@@ -81,6 +81,13 @@ export function createDebugPanel(options: {
   waves.number(tuning, 'bellsMinSpacing', 0, 50, 1);
   waves.number(tuning, 'bellRadius', 0.2, 3, 0.1);
   waves.number(tuning, 'bellTouchReach', 0.5, 4, 0.1);
+  waves.number(tuning, 'ponyRings', 2, 20, 1);
+  waves.number(tuning, 'ponyMinGap', 4, 40, 1);
+  waves.number(tuning, 'ponyMaxGap', 4, 60, 1);
+  waves.number(tuning, 'ponyRingRadius', 0.5, 4, 0.1);
+  waves.number(tuning, 'ponyStartTime', 3, 60, 1);
+  waves.number(tuning, 'ponyRingBonus', 1, 30, 1);
+  waves.number(tuning, 'ponyMaxTime', 5, 120, 1);
   waves.number(tuning, 'ghoulSpawnWeight', 0, 30, 1);
   waves.number(tuning, 'eyebatSpawnWeight', 0, 30, 1);
   waves.number(tuning, 'houndSpawnWeight', 0, 30, 1);

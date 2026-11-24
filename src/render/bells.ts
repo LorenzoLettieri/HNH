@@ -8,7 +8,7 @@
 // It only READS the simulation: which bells, how many rung (game.mapEvent),
 // and the bellRung events for the swing and the sound.
 import * as THREE from 'three';
-import { BELL_HANG, bellCenter } from '../sim/bells';
+import { BELL_HANG, bellCenter, type BellsEvent } from '../sim/bells';
 import type { SimEvent } from '../sim/events';
 import type { GameState } from '../sim/game';
 import type { World } from '../sim/world';
@@ -95,8 +95,7 @@ export function createBellRenderer(scene: THREE.Scene, world: World): BellRender
   let key = ''; // which event the views were built for
   let linger = 0;
 
-  function build(game: GameState): void {
-    const ev = game.mapEvent.active!;
+  function build(ev: BellsEvent): void {
     views = ev.bells.map((spot) => {
       const c = bellCenter(world, spot);
       const group = new THREE.Group();
@@ -143,12 +142,14 @@ export function createBellRenderer(scene: THREE.Scene, world: World): BellRender
 
   return {
     update(game, events, camera, dt, time) {
-      const ev = game.mapEvent.active;
+      // Only the bells event concerns us (the other kinds have their own renderers).
+      const active = game.mapEvent.active;
+      const ev = active?.kind === 'bells' ? active : null;
       // A new event: build its bells. Over: keep them a moment, then remove them.
       const now = ev ? `${ev.wave}:${ev.bells.join(',')}` : '';
-      if (now && now !== key) {
+      if (ev && now !== key) {
         clear();
-        build(game);
+        build(ev);
         key = now;
         linger = LINGER;
       }

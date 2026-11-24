@@ -112,8 +112,9 @@ function bellTouched(c: { x: number; y: number; z: number }, player: PlayerState
  * misses in projectiles.ts): project p onto the line through a and b with
  * the DOT PRODUCT, which says how far along the segment the closest point
  * is (t from 0 = at a to 1 = at b); clamp t into the segment, then measure.
+ * Also used by the Pony Express (ponyExpress.ts): your chest's path past a ring.
  */
-function distanceToSegment(
+export function distanceToSegment(
   p: { x: number; y: number; z: number },
   a: { x: number; y: number; z: number },
   b: { x: number; y: number; z: number },

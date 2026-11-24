@@ -719,6 +719,15 @@ di Claude scelte da lui. Il primo mazzo inventato da Claude (Whiskey del Becchin
 Latte del Diavolo, Bourbon Infernale) è stato tolto. **Ogni drink ha un livello solo, per ora** [DECISO]: il
 meccanismo dei livelli (bere di nuovo = livello dopo) resta nel codice, pronto (`DRINK_INFO` in `drinks.ts`).
 Idea per dopo: un drink "maledetto" che il barista ti offre solo dopo un evento fallito.
+**Passo 8** [FATTO, da tarare]: **il Pony Express nella simulazione** (`src/sim/ponyExpress.ts`), il secondo evento.
+Una scia di **8 anelli**, ognuno a 12–22 m dal precedente; il primo avvia il timer con **10 s**, ogni anello dopo ne
+aggiunge **5**, mai più di **15 s** sull'orologio (una partenza veloce non mette da parte un minuto). Gli anelli
+stanno 1,2 m sopra i **nodi del grafo dei ghoul**, quindi sono sempre raggiungibili e su qualsiasi livello senza
+piazzarli a mano, ma solo sui nodi che raggiungi **tu** (i ghoul si arrampicano fino a 15 m, tu ~3 m coi wall jump:
+niente anelli in cima alle pareti del canyon; il campanile sì, c'è lo sfiatatoio). Attraversato = il **segmento**
+percorso dal petto nel tick passa entro 1,5 m dal centro (come i proiettili: a velocità alte non si salta un anello).
+Lo scheletro ora **sceglie il tipo** a caso tra quelli che il livello può ospitare, **mai lo stesso due volte di
+fila**. A schermo per ora solo la riga dell'HUD ("ANELLO 3 / 8 · 0:12"); gli anelli 3D e la mappa nel passo dopo.
 
 **Ordine proposto**: prima lo **scheletro comune** con l'evento più semplice (Campane o Scommessa): comparsa e
 annuncio, timer, successo/fallimento, valuta nuova nell'HUD; poi il barista e i drink; poi gli eventi con un'IA

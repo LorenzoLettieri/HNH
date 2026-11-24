@@ -4,7 +4,7 @@
 //
 // This file is the SKELETON shared by every event: WHEN one appears, its
 // lifecycle (active → success or failure), the prize and the events it
-// reports. What each event asks you to do lives in its own file (bells.ts):
+// reports. What each event asks you to do lives in its own file (bells.ts, ponyExpress.ts):
 // a create function and a step function that says "running / success /
 // failure". If the wave ends first, the event fails.
 //
@@ -27,10 +27,11 @@ import { randomInt, type RandomState } from './random';
 import { isSmithWave } from './waves';
 import type { World } from './world';
 import { createBellsEvent, stepBells, type BellsEvent } from './bells';
+import { createPonyExpressEvent, stepPonyExpress, type PonyExpressEvent } from './ponyExpress';
 
 /**
- * Which event. One for now (the first one we built, docs/DESIGN.md); adding
- * one = its file (like bells.ts), its type in ActiveMapEvent, its id here.
+ * Which event. Adding one = its file (like bells.ts), its type in
+ * ActiveMapEvent, its create function in CREATORS and its step in stepEvent.
  */
 export type MapEventKind = ActiveMapEvent['kind'];
 
@@ -41,7 +42,18 @@ export type MapEventKind = ActiveMapEvent['kind'];
  * which ones after a check on `kind`. Every kind has `kind` and `wave` (the
  * wave it showed up in: it ends with it).
  */
-export type ActiveMapEvent = BellsEvent;
+export type ActiveMapEvent = BellsEvent | PonyExpressEvent;
+
+/**
+ * How to build each kind. A Record over every MapEventKind: a kind with no
+ * creator is a compile error. The order is also the order the picker tries
+ * them in (after shuffling).
+ */
+const CREATORS: Record<MapEventKind, (world: World, rng: RandomState, wave: number) => ActiveMapEvent | null> = {
+  bells: createBellsEvent,
+  ponyExpress: createPonyExpressEvent,
+};
+const KINDS = Object.keys(CREATORS) as MapEventKind[];
 
 export interface MapEventState {
   /** First wave the next event may show up in (a Smith wave pushes it one later). */
@@ -50,6 +62,10 @@ export interface MapEventState {
   active: ActiveMapEvent | null;
   /** Debug: the objective counts as done on the next tick (button in the debug panel). */
   forceSuccess: boolean;
+  /** The kind of the last event: the next one is a different kind, if the level can host another. */
+  lastKind: MapEventKind | null;
+  /** Debug: the next event is of this kind (buttons in the debug panel). Null = random. */
+  forceKind: MapEventKind | null;
 }
 
 /**
@@ -66,16 +82,43 @@ function rollGap(rng: RandomState): number {
 
 /** At the start of a game: the first event comes after one gap, like every other one. */
 export function createMapEventState(rng: RandomState): MapEventState {
-  return { nextWave: rollGap(rng), active: null, forceSuccess: false };
+  return { nextWave: rollGap(rng), active: null, forceSuccess: false, lastKind: null, forceKind: null };
 }
 
 /**
- * A new event of some kind, or null if this level can't host it (no bell
- * spots...). Only one kind exists for now; with more, a weighted pick like
- * the waves' roster, trying another kind when one can't be built.
+ * A new event, or null if this level can't host any (no bell spots, no
+ * graph...). Which kind: at random, but never the same as the last one
+ * (two Pony Express in a row is less fun than one of each). How: the kinds
+ * in random order (a Fisher-Yates shuffle with the seeded generator), the
+ * last one moved to the end, and the first one that can be built wins: a
+ * level with no bell spots just never gets the bells, without a special case.
  */
-function createEvent(world: World, rng: RandomState, wave: number): ActiveMapEvent | null {
-  return createBellsEvent(world, rng, wave);
+function createEvent(state: MapEventState, world: World, rng: RandomState, wave: number): ActiveMapEvent | null {
+  const order = [...KINDS];
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = randomInt(rng, i + 1);
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  order.sort((a, b) => Number(a === state.lastKind) - Number(b === state.lastKind)); // stable: only the last kind moves
+  if (state.forceKind) order.unshift(state.forceKind);
+  state.forceKind = null;
+  for (const kind of order) {
+    const ev = CREATORS[kind](world, rng, wave);
+    if (ev) return ev;
+  }
+  return null;
+}
+
+/** One tick of the event being played: each kind has its own step, and says whether it's done. */
+function stepEvent(ev: ActiveMapEvent, game: GameState, world: World, events: SimEvent[], firstEvent: number) {
+  // The `switch` on `kind` NARROWS the type: inside each case TypeScript
+  // knows which event it is (and which fields it has).
+  switch (ev.kind) {
+    case 'bells':
+      return stepBells(ev, world, game.player, events, firstEvent);
+    case 'ponyExpress':
+      return stepPonyExpress(ev, game.player, events);
+  }
 }
 
 /**
@@ -89,8 +132,7 @@ export function stepMapEvents(game: GameState, world: World, events: SimEvent[],
   // The objective first: completed in the last instant of the wave, it counts.
   const active = state.active;
   if (active) {
-    // Each kind has its own step; it says whether it's done.
-    const result = state.forceSuccess ? 'success' : stepBells(active, world, game.player, events, firstEvent);
+    const result = state.forceSuccess ? 'success' : stepEvent(active, game, world, events, firstEvent);
     if (result !== 'running') finish(game, events, result === 'success');
   }
   state.forceSuccess = false;
@@ -113,13 +155,14 @@ export function stepMapEvents(game: GameState, world: World, events: SimEvent[],
 }
 
 function start(game: GameState, world: World, events: SimEvent[], wave: number): void {
-  const ev = createEvent(world, game, wave);
+  const ev = createEvent(game.mapEvent, world, game, wave);
   // This level can't host it: try again after another gap.
   if (!ev) {
     game.mapEvent.nextWave = wave + rollGap(game);
     return;
   }
   game.mapEvent.active = ev;
+  game.mapEvent.lastKind = ev.kind;
   events.push({ type: 'mapEventStart', kind: ev.kind, wave });
 }
 
@@ -146,7 +189,8 @@ function finish(game: GameState, events: SimEvent[], success: boolean): void {
   events.push({ type: 'mapEventEnd', kind: ended.kind, success, fiches });
 }
 
-/** Debug: the next wave has an event (if it's not a Smith wave: then the one after). */
-export function forceMapEventNextWave(state: MapEventState, currentWave: number): void {
+/** Debug: the next wave has an event (if it's not a Smith wave: then the one after), of this kind if given. */
+export function forceMapEventNextWave(state: MapEventState, currentWave: number, kind: MapEventKind | null = null): void {
   state.nextWave = currentWave + 1;
+  state.forceKind = kind;
 }

@@ -229,12 +229,15 @@ function updateEventLine(game: GameState): void {
   if (!ev) return;
   eventName.textContent = MAP_EVENT_TEXT[ev.kind].title;
   if (ev.ticksLeft < 0) {
-    eventGoal.textContent = 'suona la campana che brilla';
+    eventGoal.textContent = ev.kind === 'bells' ? 'suona la campana che brilla' : 'attraversa il primo anello';
     eventGoal.classList.remove('hurry');
     return;
   }
   const seconds = Math.ceil(ev.ticksLeft / 60);
   const clock = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
-  eventGoal.textContent = `CAMPANA ${ev.rung + 1} / ${ev.bells.length} · ${clock}`;
+  eventGoal.textContent =
+    ev.kind === 'bells'
+      ? `CAMPANA ${ev.rung + 1} / ${ev.bells.length} · ${clock}`
+      : `ANELLO ${ev.passed + 1} / ${ev.rings.length} · ${clock}`;
   eventGoal.classList.toggle('hurry', seconds <= EVENT_HURRY);
 }

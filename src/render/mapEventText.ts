@@ -5,4 +5,5 @@ import type { MapEventKind } from '../sim/mapEvents';
 
 export const MAP_EVENT_TEXT: Record<MapEventKind, { title: string; goal: string }> = {
   bells: { title: 'LE CAMPANE DEL GIUDIZIO', goal: 'suona le campane sui tetti prima che finisca l’ondata' },
+  ponyExpress: { title: 'PONY EXPRESS DELL’INFERNO', goal: 'attraversa gli anelli di fuoco: ognuno ti dà qualche secondo' },
 };

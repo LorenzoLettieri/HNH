@@ -116,6 +116,8 @@ export type SimEvent =
   | { type: 'mapEventEnd'; kind: MapEventKind; success: boolean; fiches: number }
   /** A bell of the bells event rang (bells.ts): the `index`-th of `count`, where it hangs, and whether it was the last one. */
   | { type: 'bellRung'; index: number; count: number; x: number; y: number; z: number; last: boolean }
+  /** You ran through a ring of the Pony Express (ponyExpress.ts): the `index`-th of `count`, where, and whether it was the last one. */
+  | { type: 'ringPassed'; index: number; count: number; x: number; y: number; z: number; last: boolean }
   | { type: 'ghoulAttack'; entityId: number }
   | { type: 'ghoulLunge'; entityId: number } // starts crouching for a pounce (the warning)
   /** A hound starts its ambush: the howl (the warning). */

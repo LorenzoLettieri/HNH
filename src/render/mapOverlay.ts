@@ -175,7 +175,7 @@ export function createMapOverlay(world: World): MapOverlay {
       // The bells of the map event (src/sim/bells.ts): the next one a gold
       // dot with a pulsing ring (where to go), the others small, the rung ones grey.
       const ev = game.mapEvent.active;
-      if (ev) {
+      if (ev?.kind === 'bells') {
         ev.bells.forEach((spot, i) => {
           const s = world.bellSpots![spot];
           const bx = mapX(s.x);
