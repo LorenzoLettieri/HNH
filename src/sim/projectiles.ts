@@ -13,7 +13,7 @@ import { tuning } from './config';
 import type { SimEvent } from './events';
 import { currentHeight, hurtPlayer, type PlayerState } from './player';
 import { raycastBoxes } from './raycast';
-import type { World } from './world';
+import type { Box, World } from './world';
 
 export interface Projectile {
   id: number;
@@ -74,6 +74,25 @@ export function batProjectiles(projectiles: Projectile[], player: PlayerState, e
 }
 
 /**
+ * Where along this tick's segment the projectile touches a (grown) box, or
+ * null. The ray alone misses one case: a body that RAN INTO the projectile
+ * between two ticks. Both moving toward each other, last tick the segment
+ * stopped a couple of centimeters short of the box; this tick the box has
+ * moved and the projectile starts already inside it. A ray that starts
+ * inside a box never "enters" it, so the slab test says nothing: it would
+ * pass through (TUNNELING, the same family as the fast bullet through thin
+ * planks). So: inside already = a hit right here, at distance 0.
+ */
+function sweepHit(
+  p: Projectile,
+  b: { minX: number; maxX: number; minY: number; maxY: number; minZ: number; maxZ: number },
+  dx: number, dy: number, dz: number, step: number,
+): { distance: number } | null {
+  const inside = p.x > b.minX && p.x < b.maxX && p.y > b.minY && p.y < b.maxY && p.z > b.minZ && p.z < b.maxZ;
+  return inside ? { distance: 0 } : raycastBoxes(p.x, p.y, p.z, dx, dy, dz, step, [b as Box]);
+}
+
+/**
  * A projectile you sent back: the first enemy hitbox on its segment this tick
  * (same Minkowski trick as against you). Returns the enemy, or null.
  */
@@ -83,13 +102,7 @@ function friendlyHit(p: Projectile, entities: Entity[], dx: number, dy: number, 
     if (!isEnemy(e) || !isAlive(e)) continue;
     const b = hitBox(e);
     const grown = { minX: b.minX - p.radius, maxX: b.maxX + p.radius, minY: b.minY - p.radius, maxY: b.maxY + p.radius, minZ: b.minZ - p.radius, maxZ: b.maxZ + p.radius };
-    // Already INSIDE it: the enemy ran into the projectile between two ticks
-    // (both moving toward each other: last tick the segment stopped short,
-    // this tick it starts inside). A ray that starts inside a box doesn't
-    // "enter" it, so check this case first: a hit right here.
-    const inside =
-      p.x > grown.minX && p.x < grown.maxX && p.y > grown.minY && p.y < grown.maxY && p.z > grown.minZ && p.z < grown.maxZ;
-    const hit = inside ? { distance: 0 } : raycastBoxes(p.x, p.y, p.z, dx, dy, dz, step, [grown]);
+    const hit = sweepHit(p, grown, dx, dy, dz, step);
     if (hit && (!best || hit.distance < best.distance)) best = { target: e, distance: hit.distance };
   }
   return best;
@@ -154,13 +167,13 @@ export function stepProjectiles(
         minZ: player.z - r,
         maxZ: player.z + r,
       };
-      const hit = raycastBoxes(p.x, p.y, p.z, dx, dy, dz, step, [grown]);
+      const hit = sweepHit(p, grown, dx, dy, dz, step);
       // It hits you only if you come BEFORE the wall on the segment.
       hitsPlayer = hit !== null && (wall === null || hit.distance < wall.distance);
       if (hitsPlayer) {
-        p.x = hit!.x;
-        p.y = hit!.y;
-        p.z = hit!.z;
+        p.x += dx * hit!.distance;
+        p.y += dy * hit!.distance;
+        p.z += dz * hit!.distance;
       }
     }
 
