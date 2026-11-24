@@ -8,6 +8,7 @@ import { secondsToTicks, tuning } from './config';
 import type { AmmoType, GearId, WeaponId } from './weapon';
 import type { SimEvent } from './events';
 import { noCards, type CardId } from './upgrades';
+import type { WagerCurse } from './wager';
 
 // Pure data: no Three.js, no DOM. Can be copied, compared, sent over the network.
 export interface PlayerState {
@@ -151,6 +152,11 @@ export interface PlayerState {
   /** "Mano del baro": max health lost to failed map events. */
   cardSharpPenalty: number;
   /**
+   * The devil's wager (wager.ts): the curse you're playing this wave with,
+   * null = none. Switched on and off by the event; read with hasCurse.
+   */
+  curse: WagerCurse | null;
+  /**
    * Card "Volo di piombo": shells spent on shotgun jumps since you left the
    * ground. A kill before landing gives them back (refundLeadFlight in weapon.ts).
    */
@@ -227,6 +233,7 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     cleanKills: 0,
     contractHealth: 0,
     cardSharpPenalty: 0,
+    curse: null,
     leadFlightShells: 0,
     quietTicks: 0,
     aimHeldTicks: 0,
@@ -570,6 +577,7 @@ export function respawn(p: PlayerState, world: World): void {
   p.sliding = false;
   p.contractHealth = 0; // (before the max health is read below)
   p.cardSharpPenalty = 0;
+  p.curse = null;
   p.drinks = noDrinks(); // before the health: dead = no more drinks, back to the plain max
   p.health = maxHealth(p);
   p.loaded = fullWeapons();

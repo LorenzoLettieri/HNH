@@ -242,6 +242,28 @@ export function createMapOverlay(world: World): MapOverlay {
         label(`ANELLO ${ev.passed + 1}`, rx, ry + BELL_RADIUS * unit, '#ff8a30');
       }
 
+      // The devil's table (src/sim/wager.ts), only while the bet is on offer:
+      // a blood-red square with a pulsing ring, like the next bell.
+      if (ev?.kind === 'wager' && ev.phase === 'offered') {
+        const tx = mapX(ev.x);
+        const ty = mapY(ev.z);
+        const phase = (time % PING_TIME) / PING_TIME;
+        ctx.globalAlpha = 1 - phase;
+        ctx.lineWidth = 2 * unit;
+        ctx.strokeStyle = '#ff3020';
+        ctx.beginPath();
+        ctx.arc(tx, ty, (BELL_RADIUS + phase * PING_RADIUS * 1.5) * unit, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        const half = BELL_RADIUS * unit;
+        ctx.fillStyle = '#c02018';
+        ctx.fillRect(tx - half, ty - half, half * 2, half * 2);
+        ctx.lineWidth = unit;
+        ctx.strokeStyle = '#000';
+        ctx.strokeRect(tx - half, ty - half, half * 2, half * 2);
+        label('TAVOLO', tx, ty + half, '#ff5040');
+      }
+
       // Enemies: red dots, at the same in-between position the renderer
       // draws them (between the last two ticks, see `alpha` in main.ts).
       const enemies = game.entities.filter((e) => isEnemy(e) && e.state !== 'dead');

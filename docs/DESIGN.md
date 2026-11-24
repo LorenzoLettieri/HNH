@@ -735,6 +735,18 @@ trasparenza, così sai già dove girare (la "traiettoria" dei giochi di corse). 
 fiammata con un "whoosh" e una nota che sale di un gradino della scala pentatonica a ogni anello (all'ultimo una
 fanfara). Negli ultimi 3 s l'anello sfarfalla veloce e la riga dell'HUD diventa rossa. Sulla mappa (Tab) il prossimo
 anello e una linea tratteggiata verso quello dopo.
+**Passo 10** [FATTO, da tarare]: **la Scommessa del Diavolo nella simulazione** (`src/sim/wager.ts`), il terzo evento.
+Quando viene estratto compare un **tavolo da gioco nella piazza del pozzo** (centro della città, `wagerTable` del
+livello) con la posta già sopra: **una maledizione** tirata a caso. Ci vai e premi **E** (il tasto dello shop,
+"E · SCOMMETTI") = scommessa accettata: **l'ondata dopo** la giochi con la maledizione; finita viva, vinci le fiches.
+Puoi accettare durante l'ondata dell'evento o nella pausa dopo. **Se non ci vai non succede niente**: all'inizio
+dell'ondata dopo il tavolo sparisce, niente premio e **niente penalità** (rifiutare non è perdere: la Mano del baro
+non ti fa pagare). È l'unico evento che vive **due ondate**: gestisce da solo i `waveStart`/`waveEnd`. La maledizione
+sta sul **giocatore** (`player.curse`, letta con `hasCurse` come `hasDrink`). Maledizioni fatte: **niente medikit**
+(non cadono, e quelli a terra non curano) e **una sola arma** (resti con quella che hai in mano a inizio ondata; un'arma
+comprata nel frattempo resta nella fondina). [PROPOSTO, dopo]: nemici più veloci, buio; più fiches della Scommessa
+rispetto agli altri eventi (dura due ondate). A schermo per ora: la scritta "E · SCOMMETTI", la riga dell'HUD, le
+scritte al centro e il tavolo sulla mappa (Tab); il tavolo 3D nel passo dopo.
 
 **Ordine proposto**: prima lo **scheletro comune** con l'evento più semplice (Campane o Scommessa): comparsa e
 annuncio, timer, successo/fallimento, valuta nuova nell'HUD; poi il barista e i drink; poi gli eventi con un'IA

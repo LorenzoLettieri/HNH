@@ -222,7 +222,7 @@ export function stepGame(
   stepWaves(game, world, events, cmd.skipBreak);
   // Right after the waves: it listens to their waveStart/waveEnd, and to
   // this tick's shots and blasts for the objectives (mapEvents.ts).
-  stepMapEvents(game, world, events, tickEvents);
+  stepMapEvents(game, world, cmd, events, tickEvents);
   // Drink "Ultimo respiro": once per wave, it's back at every new wave.
   if (events.slice(tickEvents).some((e) => e.type === 'waveStart')) game.player.lastBreathUsed = false;
   stepPickups(game, world, dt, events);

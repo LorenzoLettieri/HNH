@@ -12,6 +12,7 @@ import type { ForgeRefusal } from './forge';
 import type { StyleAward } from './style';
 import type { Stats } from './stats';
 import type { MapEventKind } from './mapEvents';
+import type { WagerCurse } from './wager';
 import type { DrinkId, DrinkRefusal } from './drinks';
 
 /** What hit an enemy ('hit' events). */
@@ -112,8 +113,15 @@ export type SimEvent =
   | { type: 'waveEnd'; wave: number }
   /** A map event shows up at the start of this wave (mapEvents.ts): the announcement. */
   | { type: 'mapEventStart'; kind: MapEventKind; wave: number }
-  /** The map event is over: objective done (success) or the wave ended first; the fiches it gave (0 if it failed). */
-  | { type: 'mapEventEnd'; kind: MapEventKind; success: boolean; fiches: number }
+  /**
+   * The map event is over: objective done (success) or the wave ended first; the fiches it gave (0 if it failed).
+   * `declined` = never played (a wager nobody took, wager.ts): not a failure, nothing lost.
+   */
+  | { type: 'mapEventEnd'; kind: MapEventKind; success: boolean; declined: boolean; fiches: number }
+  /** You took the devil's wager at the table (wager.ts): the next wave is played with this curse. */
+  | { type: 'wagerAccepted'; curse: WagerCurse }
+  /** The wave you bet on starts: the curse is on you until it ends. */
+  | { type: 'wagerCurse'; curse: WagerCurse; wave: number }
   /** A bell of the bells event rang (bells.ts): the `index`-th of `count`, where it hangs, and whether it was the last one. */
   | { type: 'bellRung'; index: number; count: number; x: number; y: number; z: number; last: boolean }
   /** You ran through a ring of the Pony Express (ponyExpress.ts): the `index`-th of `count`, where, and whether it was the last one. */

@@ -27,12 +27,14 @@ import { secondsToTicks, tuning } from './config';
 import type { SimEvent } from './events';
 import type { Enemy } from './entities';
 import type { GameState } from './game';
+import type { PlayerState } from './player';
 import { random } from './random';
 import { moveAndCollide } from './collision';
 import { enemyCost } from './waves';
 import { styleMultiplier } from './style';
 import { AMMO_TYPE, WEAPONS, type AmmoType, type WeaponId } from './weapon';
 import type { World } from './world';
+import { hasCurse } from './wager';
 
 /** 'iron' = the Damned Iron, dropped only by the Damned Smith (smith.ts), spent at the Forge. */
 export type PickupKind = 'bullets' | 'shells' | 'sticks' | 'medkit' | 'coin' | 'iron';
@@ -114,7 +116,7 @@ function whatDrops(game: GameState, enemy: Enemy): Loot[] {
   if (enemy.type === 'smith') loot.push({ kind: 'iron', value: 0 });
   const chance = Math.min(tuning.dropChanceMax, enemyCost(enemy) * tuning.dropChancePerWeight);
   // Debito col diavolo: while you owe, no items (the coins above still fall: that's how you pay back).
-  if (random(game) < chance && !inDebt(game.player)) loot.push({ kind: pickKind(random(game), game.player.owned), value: 0 });
+  if (random(game) < chance && !inDebt(game.player)) loot.push({ kind: pickKind(random(game), game.player), value: 0 });
   return loot;
 }
 
@@ -174,7 +176,8 @@ export function createPickup(game: GameState, kind: PickupKind, x: number, y: nu
  * of percentages: you can change one without having to fix the others to
  * make 100. (Loot tables in every game work like this.)
  */
-function pickKind(roll: number, owned: Record<WeaponId, boolean>): PickupKind {
+function pickKind(roll: number, p: PlayerState): PickupKind {
+  const owned = p.owned;
   // Ammo for a weapon you don't own never drops: its weight becomes 0
   // (the other kinds split its share: that's the beauty of weights).
   const ammo = (kind: AmmoType, w: number) => (usesAmmo(owned, kind) ? w : 0);
@@ -182,7 +185,7 @@ function pickKind(roll: number, owned: Record<WeaponId, boolean>): PickupKind {
     ['bullets', ammo('bullets', tuning.dropWeightBullets)],
     ['shells', ammo('shells', tuning.dropWeightShells)],
     ['sticks', ammo('sticks', tuning.dropWeightSticks)],
-    ['medkit', tuning.dropWeightMedkit],
+    ['medkit', hasCurse(p, 'noMedkits') ? 0 : tuning.dropWeightMedkit], // the wager's curse
   ];
   const total = weights.reduce((sum, [, w]) => sum + w, 0);
   let dart = roll * total;
@@ -263,7 +266,8 @@ function collect(game: GameState, d: Pickup): boolean {
     return true;
   }
   if (kind === 'medkit') {
-    if (p.health >= maxHealth(p)) return false;
+    // The wager's "no medkits" curse: the ones on the ground stay there, useless until the wave is over.
+    if (p.health >= maxHealth(p) || hasCurse(p, 'noMedkits')) return false;
     p.health = Math.min(maxHealth(p), p.health + tuning.medkitHeal);
     return true;
   }

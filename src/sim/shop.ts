@@ -12,6 +12,7 @@ import type { SimEvent } from './events';
 import type { PlayerState } from './player';
 import { CARDS, upgradeOffer, upgradePrice, type CardId } from './upgrades';
 import { switchWeapon, type GearId } from './weapon';
+import { hasCurse } from './wager';
 import type { ShopSpawn, World } from './world';
 
 /**
@@ -112,7 +113,8 @@ export function stepShop(p: PlayerState, cmd: InputCommand, world: World, events
     p.loaded.dynamite = tuning.dynamiteAmmo;
     p.reserve.sticks = Math.max(p.reserve.sticks, tuning.dynamiteReserveStart);
   }
-  switchWeapon(p, id, events);
+  // (Not with the wager's "one gun" curse: it's yours, but it stays in the holster until the wave is over.)
+  if (!hasCurse(p, 'oneGun')) switchWeapon(p, id, events);
   events.push({ type: 'purchase', item: id, price: item.price });
 }
 

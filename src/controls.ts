@@ -53,6 +53,12 @@ export function queueForge(weapon: WeaponId): void {
 }
 
 /** Same for the debug panel's "Respawn" button: the next command's `respawn`. */
+/** E next to the devil's table (main.ts): the bet goes into the next command, like a purchase. */
+let pendingWager = false;
+export function queueWager(): void {
+  pendingWager = true;
+}
+
 let pendingRespawn = false;
 export function queueRespawn(): void {
   pendingRespawn = true;
@@ -95,10 +101,12 @@ export function buildCommand(tick: number): InputCommand {
   pendingDrink = null;
   const respawn = pendingRespawn;
   pendingRespawn = false;
+  const wager = pendingWager;
+  pendingWager = false;
   // Start the next wave now (default Q): the simulation ignores it while a wave is on (waves.ts).
   const skipBreak = actionPressed('skipBreak');
   return {
-    tick, forward, strafe, jump, crouch, fire, altFire, kick, reload, weaponSelect, respawn, buy, forge, drink, skipBreak,
+    tick, forward, strafe, jump, crouch, fire, altFire, kick, reload, weaponSelect, respawn, buy, forge, drink, wager, skipBreak,
     yaw: view.yaw, pitch: view.pitch,
   };
 }

@@ -191,6 +191,12 @@ export interface World {
    * standing there). Optional: without them that event never shows up.
    */
   bellSpots?: { x: number; y: number; z: number }[];
+  /**
+   * Where the devil's gambling table appears during the "Scommessa del
+   * Diavolo" map event (wager.ts), feet level. Optional: without it that
+   * event never shows up.
+   */
+  wagerTable?: { x: number; y: number; z: number };
   /** Where the player (re)appears, feet position. */
   spawn: { x: number; y: number; z: number };
 }

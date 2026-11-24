@@ -31,6 +31,7 @@
 // BOTTOMLESS (the HIGH NOON climax, see style.ts): the gun in your hands is
 // always full and firing doesn't use rounds. No reloading: you just shoot.
 import { hasDrink } from './drinks';
+import { hasCurse } from './wager';
 import type { InputCommand } from './command';
 import { secondsToTicks, tuning } from './config';
 import type { SimEvent } from './events';
@@ -491,7 +492,8 @@ export function switchWeapon(p: PlayerState, w: WeaponId, events: SimEvent[]): v
  */
 function selectedWeapon(p: PlayerState, select: number): WeaponId {
   const current = p.weapon;
-  if (select === 0) return current;
+  // The wager's "one gun" curse: the gun in your hands when the wave started is the only one.
+  if (select === 0 || hasCurse(p, 'oneGun')) return current;
   if (select > 0) {
     const slot = WEAPONS[select - 1];
     return slot && p.owned[slot] ? slot : current;

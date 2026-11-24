@@ -8,12 +8,13 @@ import { markPractice, practiceGame, startGame } from './fairPlay';
 import { createMenu } from './menu';
 import { createDebugPanel, debugTime, type DebugTool } from './debug/debugPanel';
 import { hitStopScale } from './render/hitStop';
-import { buildCommand, controlSettings, queueRespawn, updateLook, view } from './controls';
+import { buildCommand, controlSettings, queueRespawn, queueWager, updateLook, view } from './controls';
 import { TICK_DT, tuning } from './sim/config';
 import { copyPlayer, createPlayer } from './sim/player';
 import { createGame, spawnBullInFront, spawnSharpshooterInFront, spawnEyebatInFront, spawnHoundInFront, spawnSmithInFront, dropPickupsInFront, spawnHolyFireInFront, stepGame } from './sim/game';
 import { jumpToWave } from './sim/waves';
 import { forceMapEventNextWave } from './sim/mapEvents';
+import { wagerInReach } from './sim/wager';
 import { DEFAULT_LEVEL, LEVELS } from './levels';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
 import { lookScale, updateCameraFeel } from './render/cameraFeel';
@@ -233,6 +234,7 @@ const debugPanel = createDebugPanel({
     spawnTool('Fai apparire: pozza di fuoco santo', (g) => spawnHolyFireInFront(g, world)),
     spawnTool('Evento sulla mappa alla prossima ondata', (g) => forceMapEventNextWave(g.mapEvent, g.wave.number)),
     spawnTool('Evento Pony Express alla prossima ondata', (g) => forceMapEventNextWave(g.mapEvent, g.wave.number, 'ponyExpress')),
+    spawnTool('Evento Scommessa del Diavolo alla prossima ondata', (g) => forceMapEventNextWave(g.mapEvent, g.wave.number, 'wager')),
     // Like the respawn below, it should go through the InputCommand one day: it's only a flag the next tick reads.
     spawnTool("Completa l'evento in corso", (g) => { g.mapEvent.forceSuccess = true; }),
     // Respawn goes through the InputCommand like a key would (controls.ts):
@@ -298,6 +300,9 @@ window.addEventListener('keydown', (e) => {
       if (shop) {
         shopMenu.open(shop.kind); // first: when the lock is released, updatePause must know
         document.exitPointerLock();
+      } else if (!paused && wagerInReach(game.mapEvent.active, player)) {
+        // The devil's table (src/sim/wager.ts): no panel, the bet goes into the next command.
+        queueWager();
       }
     }
   }
@@ -537,7 +542,7 @@ renderer.setAnimationLoop((now: number) => {
   const shopNearby = shopInReach(player, world);
   if (shopMenu.isOpen && !shopNearby) closeShop();
   shopMenu.onEvents(events);
-  shopMenu.update(player, shopNearby, paused);
+  shopMenu.update(player, shopNearby, paused, wagerInReach(game.mapEvent.active, player));
   updateHud(game, events, dt);
   // Game over: send the score (unless it was a practice game, fairPlay.ts)
   // and show the end screen. The simulation has already reset everything for

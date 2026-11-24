@@ -570,6 +570,9 @@ export const town: World = {
   // The "Campane del Giudizio" map event (src/sim/bells.ts) picks a few of
   // these, far apart, and you ring them in order: rooftops of every height,
   // all over the town (each reachable: routes at the top of the file).
+  // The devil's gambling table ("Scommessa del Diavolo", src/sim/wager.ts):
+  // in the square at the crossing, next to the well, the middle of the town.
+  wagerTable: { x: -2, y: 0, z: 5 },
   bellSpots: [
     { x: -15, y: 7.3, z: -12 }, // saloon
     { x: 17, y: 9.3, z: -12 }, // church

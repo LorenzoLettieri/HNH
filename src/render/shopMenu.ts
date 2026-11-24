@@ -209,8 +209,11 @@ export interface ShopMenu {
   readonly isOpen: boolean;
   open(kind: ShopSpawn['kind']): void;
   close(): void;
-  /** Every frame. `inReach` = the shop within reach right now (null = none): it drives the prompt. */
-  update(player: PlayerState, inReach: ShopSpawn | null, paused: boolean): void;
+  /**
+   * Every frame. `inReach` = the shop within reach right now (null = none): it drives the prompt.
+   * `wager` = the devil's table is within reach (wager.ts): the same prompt says "SCOMMETTI".
+   */
+  update(player: PlayerState, inReach: ShopSpawn | null, paused: boolean, wager: boolean): void;
   /** The simulation's answers to the purchases (sounds, the vendor's line). */
   onEvents(events: SimEvent[]): void;
   /** "Clicca per riprendere la mira": the shop closed but the browser didn't give the mouse back. */
@@ -465,10 +468,10 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
       forge.reset();
       bar.reset();
     },
-    update(player, inReach, paused) {
-      // The prompt: next to a vendor, shop closed, game running.
-      prompt.hidden = isOpen || paused || inReach === null;
-      promptWord.textContent = inReach?.kind === 'forge' ? 'FORGIA' : inReach?.kind === 'saloon' ? 'ORDINA' : 'COMMERCIA';
+    update(player, inReach, paused, wager) {
+      // The prompt: next to a vendor (or the devil's table), shop closed, game running.
+      prompt.hidden = isOpen || paused || (inReach === null && !wager);
+      promptWord.textContent = inReach?.kind === 'forge' ? 'FORGIA' : inReach?.kind === 'saloon' ? 'ORDINA' : inReach ? 'COMMERCIA' : 'SCOMMETTI';
       if (!isOpen) return;
       if (kind === 'saloon') {
         bar.refresh(list, player);

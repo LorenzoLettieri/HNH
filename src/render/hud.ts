@@ -7,7 +7,7 @@ import { tuning } from '../sim/config';
 import type { SimEvent } from '../sim/events';
 import type { PlayerState } from '../sim/player';
 import { playBell, playMapEventEnd, playMapEventStart, playPickup, playPlayerHurt, playSmithArrived } from '../audio/sfx';
-import { MAP_EVENT_TEXT } from './mapEventText';
+import { MAP_EVENT_TEXT, WAGER_CURSE_TEXT } from './mapEventText';
 import { PONY_HURRY } from './ponyRings';
 import { maxHealth } from '../sim/drinks';
 import type { GameState } from '../sim/game';
@@ -153,8 +153,16 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
     }
     if (e.type === 'mapEventEnd') {
       const name = MAP_EVENT_TEXT[e.kind].title.toLowerCase();
-      if (e.success) queueBanner('EVENTO COMPLETATO', `+${e.fiches} ${e.fiches === 1 ? 'fiche' : 'fiches'} · spendile al saloon`, 3, () => playMapEventEnd(true));
+      if (e.declined) queueBanner('IL DIAVOLO SI ALZA DAL TAVOLO', 'scommessa rifiutata: niente vinto, niente perso', 3, () => playMapEventEnd(false));
+      else if (e.success) queueBanner('EVENTO COMPLETATO', `+${e.fiches} ${e.fiches === 1 ? 'fiche' : 'fiches'} · spendile al saloon`, 3, () => playMapEventEnd(true));
       else queueBanner('EVENTO FALLITO', name, 3, () => playMapEventEnd(false));
+    }
+    // The devil's wager (wager.ts): the bet is taken, then the cursed wave starts.
+    if (e.type === 'wagerAccepted') {
+      queueBanner('SCOMMESSA ACCETTATA', `prossima ondata: ${WAGER_CURSE_TEXT[e.curse].name.toLowerCase()}`, 3, playMapEventStart);
+    }
+    if (e.type === 'wagerCurse') {
+      queueBanner(WAGER_CURSE_TEXT[e.curse].name, `${WAGER_CURSE_TEXT[e.curse].rule} · sopravvivi`, 4, playMapEventStart);
     }
     // The banner says what the climax gives you; tint and sounds are in highNoon.ts.
     if (e.type === 'highNoon') showBanner('HIGH NOON', 'caricatore infinito', 2.5, 'hot');
@@ -229,6 +237,18 @@ function updateEventLine(game: GameState): void {
   eventLine.hidden = !ev;
   if (!ev) return;
   eventName.textContent = MAP_EVENT_TEXT[ev.kind].title;
+  // The wager has no clock: what's on the table, then the curse you're playing with.
+  if (ev.kind === 'wager') {
+    const curse = WAGER_CURSE_TEXT[ev.curse].name;
+    eventGoal.textContent =
+      ev.phase === 'offered'
+        ? `IN PALIO: ${curse} · vai al tavolo nella piazza`
+        : ev.phase === 'accepted'
+          ? `SCOMMESSA FATTA · prossima ondata: ${curse}`
+          : `${curse} · sopravvivi all’ondata`;
+    eventGoal.classList.toggle('hurry', ev.phase === 'cursed');
+    return;
+  }
   if (ev.ticksLeft < 0) {
     eventGoal.textContent = ev.kind === 'bells' ? 'suona la campana che brilla' : 'attraversa il primo anello';
     eventGoal.classList.remove('hurry');
