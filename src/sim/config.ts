@@ -83,7 +83,7 @@ export const tuning = {
    * Speed added by each successful hop (jumping within the grace window), m/s.
    * It shrinks as you go faster (see bhopBoostFalloff): speed grows, but slower and slower.
    */
-  bhopBoost: 0.7,
+  bhopBoost: 0.6,
   /** Above this speed the hop boost starts shrinking: boost × (this / speed)². m/s. */
   bhopBoostFalloff: 9,
 
@@ -338,7 +338,7 @@ export const tuning = {
    * No damage to you (docs/DESIGN.md). Right under your feet: 11 m/s up =
    * ~3 m high on its own; with a jump (7 m/s) on top, ~8 m: a roof.
    */
-  dynamiteSelfPush: 11,
+  dynamiteSelfPush: 20,
   /** The Damned Smith's armor: explosions do this × the damage to it. */
   dynamiteSmithScale: 0.5,
   /**
@@ -648,9 +648,9 @@ export const tuning = {
    * Running speed while stalking / retreating, m/s. Faster than you on foot
    * (maxGroundSpeed 8): it can always keep up and get behind you.
    */
-  houndSpeed: 9.5,
+  houndSpeed: 9,
   /** Sprint speed of the ambush, m/s: as fast as a good bunny hop. */
-  houndChargeSpeed: 12,
+  houndChargeSpeed: 11,
   /** While stalking it keeps about this far from you, meters. */
   houndStalkDistance: 14,
   /** It only launches an ambush from closer than this, meters. */
@@ -712,7 +712,7 @@ export const tuning = {
    * The bite's wind-up, seconds: it opens its jaws (and snarls), the teeth
    * close at the end. Short, but enough to dodge it if you're moving away.
    */
-  houndBiteWindup: 0.25,
+  houndBiteWindup: 0.35,
   /** Damage of a bite (less than a claw: it's quick and bites often). */
   houndBiteDamage: 15,
   /** Seconds between two bites. */
@@ -1015,10 +1015,10 @@ export const tuning = {
    * range (meters), if it sees you, it swings the chain for smithHookWindup
    * seconds (the warning), then throws the hook at where you'll be.
    */
-  smithHookRange: 22,
+  smithHookRange: 30,
   smithHookWindup: 0.7,
   /** Speed of the flying hook, m/s (18 m in 0.6 s: a sidestep when it leaves its hand dodges it). */
-  smithHookSpeed: 30,
+  smithHookSpeed: 28,
   /** How much it leads you (0 = at where you are, 1 = exactly where you'll be): partial, so a sidestep works. */
   smithHookLead: 0.5,
   /** The hook's size for hitting you, meters (added to your body, like the projectiles). */
