@@ -650,16 +650,20 @@ Punteggio e moneta sono **separati**:
 
 **Eventi sulla mappa** [DECISO, da progettare nei dettagli; novembre 2026]: ogni tot ondate compare un
 evento (stile gli eventi di Diablo 4) **durante un'ondata**.
-- **Quando**: compare **a inizio ondata**, annunciato in alto con una scritta come il Fabbro (`showBanner`).
-  [DA DECIDERE: ogni quante ondate, e se mai nelle ondate del Fabbro]
-- **Avvio** [DA DECIDERE]: a pagamento (vildenaro: tensione con l'armeria) oppure gratis. Proposta: **gratis**,
-  il costo è il rischio (tempo e attenzione tolti all'orda); dove l'evento ha un oggetto fisico (cristallo,
-  prima campana, pozzo) si avvia **andandoci** (scelta volontaria), il goblin e la taglia partono da soli.
-- **Ricompensa**: una **valuta nuova** nell'inventario [DA DECIDERE il nome: proposta **fiches** da poker],
+- **Quando**: compare **a inizio ondata**, annunciato in alto con una scritta come il Fabbro (`showBanner`),
+  **ogni 4–5 ondate, a caso**: dopo un evento il prossimo arriva fra 4 o 5 ondate (tirato col generatore con
+  seed del `GameState`, così `?seed=` rigioca anche gli eventi). [PROPOSTO: mai nelle ondate del Fabbro
+  (9, 19, 29…): se ci cade, slitta all'ondata dopo]
+- **Avvio** [DECISO]: **gratis**. Il costo è il rischio (tempo e attenzione tolti all'orda); il vildenaro
+  resta per armeria e carte. Dove l'evento ha un oggetto fisico (cristallo, prima campana, pozzo, predicatore)
+  si avvia **andandoci** (scelta volontaria), lo Sciacallo e la Taglia partono da soli.
+- **Ricompensa** [DECISO]: le **fiches** (da poker, una valuta nuova nell'inventario),
   accanto a vildenaro e Ferro Dannato. Si spende al **saloon**: dentro c'è un NPC, **il barista**, e i
   **patti sono i drink** che ti propone (stesso schema delle carte dell'armeria: qualche drink sul bancone,
   ne scegli uno; prendere di nuovo lo stesso drink = il livello successivo del patto).
-  [DA DECIDERE: il drink dura tutta la partita o qualche ondata? Ha un lato negativo ("patto" col diavolo) o è un buff puro?]
+  Un drink dura **tutta la partita** (come le carte). **Due tipi di patti**: **buff puri** e **buff con un
+  lato negativo** (il patto col diavolo: più forte, ma costa qualcosa, es. "+1 colpo nel tamburo, −20 di
+  salute massima"). [DA DECIDERE: l'elenco dei drink]
 - Gli obiettivi devono **far muovere**, non tenere fermi in un cerchio (sarebbe camping per regolamento).
   "Resta qui" solo se la zona si sposta.
 - Fallire non deve voler dire solo tempo buttato: dove si può, qualcosa resta (il goblin perde monete a ogni colpo).
