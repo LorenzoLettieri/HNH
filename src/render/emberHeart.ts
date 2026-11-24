@@ -254,6 +254,10 @@ export function createEmberHeartRenderer(scene: THREE.Scene): EmberHeartRenderer
     }),
   );
   soulPoints.frustumCulled = false; // its bounding sphere isn't updated as the points move
+  // Hidden until an event shows it: the buffer starts full of points at the
+  // world's origin (0, 0, 0) and the draw range starts at "draw them all",
+  // so a visible Points here is a bright blob in the middle of the town.
+  soulPoints.visible = false;
   scene.add(soulPoints);
 
   let mode: Mode = 'none';

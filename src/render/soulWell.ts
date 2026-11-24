@@ -212,6 +212,7 @@ export function createSoulWellRenderer(scene: THREE.Scene): SoulWellRenderer {
     }),
   );
   motes.frustumCulled = false; // its bounding sphere isn't updated as the points move
+  motes.visible = false; // until the well shows up: all its points start at (0, 0, 0)
   scene.add(motes);
 
   let mode: Mode = 'none';
