@@ -158,6 +158,14 @@ const CARD_TEXT: Record<CardId, { name: string; desc: string }> = {
     name: 'Botte di polvere',
     desc: 'Più polvere in ogni candelotto: l’esplosione è larga il 40% in più.',
   },
+  sticky: {
+    name: 'Appiccicosa',
+    desc: 'Il candelotto si incolla dove tocca: muro, soffitto o pavimento. Lì aspetta la miccia, o il primo dannato che ci passa.',
+  },
+  rocket: {
+    name: 'Razzo',
+    desc: 'Vola dritto e veloce per mezzo secondo e scoppia al primo contatto, anche col terreno. Ai tuoi piedi: un salto molto più alto.',
+  },
   hellBounce: {
     name: 'Rimbalzo infernale',
     desc: 'Ogni rimbalzo fa più male: +25% di danno a rimbalzo, fino a quattro. I tiri di sponda pagano.',

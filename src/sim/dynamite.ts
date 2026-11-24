@@ -74,6 +74,13 @@ export interface Dynamite {
   bounces: number;
   /** Resting on the floor (it rolls instead of bouncing). */
   rolling: boolean;
+  /** Card "Appiccicosa": it sticks where it first touches the level... */
+  sticky: boolean;
+  /** ...and once it has, it doesn't move again (an enemy walking into it still sets it off). */
+  stuck: boolean;
+  /** Card "Razzo": it blows up on any contact; it flies with no gravity while rocketTicks > 0. */
+  rocket: boolean;
+  rocketTicks: number;
 }
 
 /**
@@ -88,7 +95,10 @@ export function throwDynamite(p: PlayerState, world: World, nextId: number): Dyn
   const dx = -Math.sin(p.yaw) * cosPitch;
   const dy = Math.sin(p.pitch);
   const dz = -Math.cos(p.yaw) * cosPitch;
-  const s = tuning.dynamiteSpeed;
+  // Card "Razzo": faster, and no lift (it flies straight where you aim).
+  const rocket = hasCard(p, 'rocket');
+  const s = tuning.dynamiteSpeed * (rocket ? tuning.rocketSpeedScale : 1);
+  const lift = rocket ? 0 : tuning.dynamiteLift;
   const k = tuning.dynamiteInherit;
   // Born a bit in front of the eyes and centered on the aim: y is the
   // BOTTOM of its box, so half its size lower.
@@ -107,7 +117,7 @@ export function throwDynamite(p: PlayerState, world: World, nextId: number): Dyn
     x, y, z,
     px: x, py: y, pz: z,
     vx: dx * s + p.vx * k,
-    vy: dy * s + tuning.dynamiteLift + p.vy * k,
+    vy: dy * s + lift + p.vy * k,
     vz: dz * s + p.vz * k,
     fuseTicks: fuse,
     fuseTotal: fuse,
@@ -116,6 +126,10 @@ export function throwDynamite(p: PlayerState, world: World, nextId: number): Dyn
     hellBounce: hasCard(p, 'hellBounce'),
     bounces: 0,
     rolling: false,
+    sticky: hasCard(p, 'sticky'),
+    stuck: false,
+    rocket,
+    rocketTicks: rocket ? Math.round(tuning.rocketTime * TICK_RATE) : 0,
   };
 }
 
@@ -150,6 +164,8 @@ export function stepDynamite(
     d.py = d.y;
     d.pz = d.z;
     let boom = --d.fuseTicks <= 0;
+    const falling = d.rocketTicks <= 0; // "Razzo": no gravity while its rocket burns
+    if (d.rocketTicks > 0) d.rocketTicks--;
     // Sub-steps: as many as needed so that none moves farther than MAX_STEP.
     const speed = Math.hypot(d.vx, d.vy, d.vz) + tuning.gravity * dt;
     const steps = Math.max(1, Math.ceil((speed * dt) / MAX_STEP));
@@ -158,8 +174,16 @@ export function stepDynamite(
       const ax = d.x;
       const ay = d.y + r;
       const az = d.z;
-      impact = Math.max(impact, move(d, world, dt / steps));
-      boom = touches(ax, ay, az, d, targets);
+      // Stuck ("Appiccicosa"): it doesn't move, but an enemy walking into it still sets it off.
+      const hit = d.stuck ? 0 : move(d, world, dt / steps, falling);
+      impact = Math.max(impact, hit);
+      if (hit > 0 && d.rocket) boom = true; // "Razzo": any contact, the floor too
+      if (hit > 0 && d.sticky && !d.stuck) {
+        // "Appiccicosa": glued right where it touched.
+        d.stuck = true;
+        d.vx = d.vy = d.vz = 0;
+      }
+      boom = boom || touches(ax, ay, az, d, targets);
     }
     // One "tonk" per tick at most, and only for real hits: rolling makes
     // tiny impacts on every tick, and a sound for each would be a buzz.
@@ -172,7 +196,8 @@ export function stepDynamite(
       // Card "Rimbalzo infernale": every bounce (up to hellBounceMax) adds damage.
       const bonus = d.hellBounce ? 1 + tuning.hellBounceBonus * Math.min(d.bounces, tuning.hellBounceMax) : 1;
       // The center of the box, not its bottom: that's where the powder is.
-      explode(player, { x: d.x, y: d.y + r, z: d.z }, dynamiteBlast(d.holy, d.radius, bonus), world, entities, events);
+      const push = d.rocket ? tuning.rocketSelfPushScale : 1; // "Razzo": a stronger dynamite jump
+      explode(player, { x: d.x, y: d.y + r, z: d.z }, dynamiteBlast(d.holy, d.radius, bonus, push), world, entities, events);
       continue;
     }
     if (d.y < tuning.killY) continue; // fell off the map
@@ -216,8 +241,8 @@ function touches(ax: number, ay: number, az: number, d: Dynamite, targets: Box[]
  * Boxes only have faces along the axes, so "which axis" = "which face".
  * Returns the speed it hit a surface with (0 = it touched nothing): the sound of the bounce.
  */
-function move(d: Dynamite, world: World, dt: number): number {
-  d.vy -= tuning.gravity * dt;
+function move(d: Dynamite, world: World, dt: number, gravity = true): number {
+  if (gravity) d.vy -= tuning.gravity * dt;
   const vx = d.vx;
   const vy = d.vy;
   const vz = d.vz;

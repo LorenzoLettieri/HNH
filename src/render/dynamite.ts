@@ -13,7 +13,7 @@ import { DYNAMITE_RADIUS } from '../sim/dynamite';
 import type { SimEvent } from '../sim/events';
 import { tuning } from '../sim/config';
 import { playDynamiteBounce, playFuseHiss, type LoopingSound } from '../audio/sfx';
-import { spawnHolyFlame, spawnSparks } from './particles';
+import { spawnHolyFlame, spawnSmoke, spawnSnort, spawnSparks } from './particles';
 import { soundAt } from './soundPosition';
 
 /** Size of the stick, meters (a bit bigger than a real one: it must be readable in flight). */
@@ -29,6 +29,10 @@ const SPARK_EVERY = 0.03;
 const EMBER_GLOW = 6;
 /** How much the paper lights itself (0 = only the scene's lights): it must stand out on the ground. */
 const PAPER_SELF_LIGHT = 0.35;
+/** Card "Razzo": a puff of its fire-and-smoke trail every this many seconds. */
+const ROCKET_PUFF_EVERY = 0.012;
+const X_AXIS = new THREE.Vector3(1, 0, 0);
+const heading = new THREE.Vector3();
 /** Card "Rimbalzo infernale": how much bigger the ember gets with every bounce. */
 const HELL_BOUNCE_SWELL = 0.45;
 /** Bounce sound: this speed into the surface (m/s) is a full-strength "tonk". */
@@ -219,11 +223,28 @@ export function createDynamiteRenderer(scene: THREE.Scene): DynamiteRenderer {
         const moved = Math.hypot(x - v.mesh.position.x, y - v.mesh.position.y, z - v.mesh.position.z);
         // Spin around the axis perpendicular to the motion and to "up" (the
         // cross product of the two): that's how a rolling thing turns.
-        axis.set(d.vz, 0, -d.vx);
-        if (axis.lengthSq() > 1e-6) {
-          axis.normalize();
-          spin.setFromAxisAngle(axis, moved * SPIN_PER_METER);
-          v.mesh.quaternion.premultiply(spin);
+        const rocketing = d.rocket && d.rocketTicks > 0;
+        if (rocketing) {
+          // Card "Razzo": it doesn't tumble, it FLIES, nose first. The stick
+          // lies along X with its fuse at +X: turning +X to point BACKWARD
+          // (heading = −velocity) puts the nose forward and the burning fuse
+          // behind. setFromUnitVectors = the rotation that takes one direction
+          // onto another (the shortest one).
+          heading.set(d.vx, d.vy, d.vz).normalize().negate();
+          v.mesh.quaternion.setFromUnitVectors(X_AXIS, heading);
+          // A trail of fire and smoke behind it.
+          point.set(x, y, z).addScaledVector(heading, STICK_LENGTH * 0.6);
+          if (Math.random() < dt / ROCKET_PUFF_EVERY) {
+            spawnSnort(point, heading, 2);
+            spawnSmoke(point, heading, 1);
+          }
+        } else {
+          axis.set(d.vz, 0, -d.vx);
+          if (axis.lengthSq() > 1e-6) {
+            axis.normalize();
+            spin.setFromAxisAngle(axis, moved * SPIN_PER_METER);
+            v.mesh.quaternion.premultiply(spin);
+          }
         }
         v.mesh.position.set(x, y, z);
 

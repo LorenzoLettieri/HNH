@@ -125,6 +125,9 @@ export function createDebugPanel(options: {
   shop.number(tuning, 'powderKegRadiusScale', 1, 3, 0.05);
   shop.number(tuning, 'hellBounceBonus', 0, 1, 0.05);
   shop.number(tuning, 'hellBounceMax', 0, 10, 1);
+  shop.number(tuning, 'rocketSpeedScale', 1, 3, 0.05);
+  shop.number(tuning, 'rocketTime', 0, 2, 0.05);
+  shop.number(tuning, 'rocketSelfPushScale', 1, 3, 0.05);
 
   // --- Style meter ---
   const style = panel.folder('Style (src/sim/config.ts, src/sim/style.ts)');

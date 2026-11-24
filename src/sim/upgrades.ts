@@ -52,17 +52,20 @@ export type CardId =
   // Dynamite launcher
   | 'shortFuse'
   | 'powderKeg'
-  | 'hellBounce';
+  | 'hellBounce'
+  | 'sticky'
+  | 'rocket';
 
 export interface CardInfo {
   /** The weapon (or gear: the shovel) whose deck it's in. */
   weapon: GearId;
   /**
-   * A card that can't live with this one (they contradict each other): once
-   * you take one, the other leaves the deck. Written on ONE of the two is
-   * enough, the check goes both ways (see `excluded`).
+   * Cards that can't live with this one (they contradict each other): once
+   * you take one, the others leave the deck. Written on ONE of the two is
+   * enough, the check goes both ways (see `excluded`). A list: Razzo
+   * contradicts two cards at once.
    */
-  excludes?: CardId;
+  excludes?: CardId[];
 }
 
 export const CARDS: Record<CardId, CardInfo> = {
@@ -86,7 +89,7 @@ export const CARDS: Record<CardId, CardInfo> = {
   /** Fiato di drago: the pellets set enemies on fire (burnTicks, see status.ts). */
   dragonBreath: { weapon: 'shotgun' },
   /** Mulo: double recoil on you, a huge shotgun jump. Can't live with Calcio di piombo (no recoil). */
-  mule: { weapon: 'shotgun', excludes: 'leadStock' },
+  mule: { weapon: 'shotgun', excludes: ['leadStock'] },
   /** Calcio di piombo: no recoil, double knockback; thrown into a wall, an enemy takes damage (status.ts). */
   leadStock: { weapon: 'shotgun' },
   /** Bruciapelo fortunato: a point-blank kill puts the shell back in the barrel. */
@@ -121,12 +124,16 @@ export const CARDS: Record<CardId, CardInfo> = {
   powderKeg: { weapon: 'dynamite' },
   /** Rimbalzo infernale: every bounce adds hellBounceBonus to the blast's damage, up to hellBounceMax bounces. */
   hellBounce: { weapon: 'dynamite' },
+  /** Appiccicosa: the stick sticks where it first touches the level, and waits for its fuse (stepDynamite). */
+  sticky: { weapon: 'dynamite', excludes: ['hellBounce'] },
+  /** Razzo: flies straight and fast for rocketTime, blows up on ANY contact (floor too); a stronger dynamite jump. */
+  rocket: { weapon: 'dynamite', excludes: ['sticky', 'hellBounce'] },
 };
 
 /** Is this card out of the deck because you took one that excludes it (or that it excludes)? */
 function excluded(p: PlayerState, id: CardId): boolean {
   const taken = p.cards[CARDS[id].weapon];
-  return taken.some((t) => CARDS[t].excludes === id || CARDS[id].excludes === t);
+  return taken.some((t) => CARDS[t].excludes?.includes(id) || CARDS[id].excludes?.includes(t));
 }
 
 /** The deck of a weapon: every card that belongs to it, in a fixed order (the draw shuffles a copy). */

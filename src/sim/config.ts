@@ -184,6 +184,14 @@ export const tuning = {
   /** Card "Rimbalzo infernale": +this share of damage for every bounce, counted up to hellBounceMax bounces. */
   hellBounceBonus: 0.25,
   hellBounceMax: 4,
+  /**
+   * Card "Razzo": the stick is fired this × faster, flies with NO gravity for
+   * rocketTime seconds (straight, like a rocket), blows up on any contact,
+   * and its dynamite jump pushes this × harder.
+   */
+  rocketSpeedScale: 1.6,
+  rocketTime: 0.5,
+  rocketSelfPushScale: 1.5,
   /** Minimum seconds between two shots (it's semi-automatic: one click = one shot). */
   revolverFireInterval: 0.32,
   /** A click slightly before the gun is ready still fires as soon as it is, seconds. */
