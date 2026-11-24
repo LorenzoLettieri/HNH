@@ -17,7 +17,8 @@ import { triggerLandingDip, updateLandingDip } from './render/landingDip';
 import { lookScale, updateCameraFeel } from './render/cameraFeel';
 import { createGroundMeshes, createLevelMeshes, loadMaterials } from './render/materials';
 import { createDecalMeshes } from './render/decals';
-import { ATMOSPHERES, type Atmosphere } from './render/atmospheres';
+import { ATMOSPHERES, HIGH_MIDNIGHT, mixAtmosphere, type Atmosphere } from './render/atmospheres';
+import { createNightfall } from './render/nightfall';
 import { applySunLight, createSunLight } from './render/sunLight';
 import { applyFireLights, createFireLights, updateFireLights } from './render/fireLights';
 import { createProps } from './render/props';
@@ -168,7 +169,15 @@ weaponFx.onReload.push((weapon, seconds, forged) => viewmodel.onReload(weapon, s
 weaponFx.onKick.push((tool) => viewmodel.onKick(tool));
 
 let atmosphereIndex = 0;
-applyAtmosphere(ATMOSPHERES[atmosphereIndex]);
+// The Damned Smith's waves bring the night (render/nightfall.ts): `night` is
+// how far we are from the chosen preset (debug button) toward High Midnight.
+const nightfall = createNightfall();
+let night = 0;
+/** The atmosphere on screen right now: the chosen preset, darkened by the night. */
+function currentAtmosphere(): Atmosphere {
+  return mixAtmosphere(ATMOSPHERES[atmosphereIndex], HIGH_MIDNIGHT, night);
+}
+applyAtmosphere(currentAtmosphere());
 
 // --- Debug panel (key below Esc) -------------------------------------------
 /** Debug tools that change the game: this game won't count for the leaderboard (fairPlay.ts). */
@@ -192,7 +201,7 @@ const debugPanel = createDebugPanel({
       label: 'Atmosfera: High Noon / High Midnight',
       run: () => {
         atmosphereIndex = (atmosphereIndex + 1) % ATMOSPHERES.length;
-        applyAtmosphere(ATMOSPHERES[atmosphereIndex]);
+        applyAtmosphere(currentAtmosphere());
         debugPanel.showAtmosphere(ATMOSPHERES[atmosphereIndex]);
       },
     },
@@ -217,7 +226,7 @@ const debugPanel = createDebugPanel({
     // the simulation only changes from commands.
     { label: 'Respawn', run: () => queueRespawn() },
   ],
-  onAtmosphereChange: () => applyAtmosphere(ATMOSPHERES[atmosphereIndex]),
+  onAtmosphereChange: () => applyAtmosphere(currentAtmosphere()),
   onPostSizeChange: () => post.refresh(),
   onJumpToWave: (n) => {
     markPractice('ondata scelta dal pannello di debug');
@@ -530,6 +539,12 @@ renderer.setAnimationLoop((now: number) => {
   // The map: only while Tab is held, never over the pause menu.
   mapOverlay.update(game, alpha, camera.position.x, camera.position.z, view.yaw, actionDown('map') && !paused, now / 1000);
 
+  // Day ↔ night: re-applied only while it's changing (a few seconds per wave).
+  const nightNow = nightfall.update(dt, game.wave);
+  if (nightNow !== null) {
+    night = nightNow;
+    applyAtmosphere(currentAtmosphere());
+  }
   updateFireLights(now / 1000);
   props.update(now / 1000);
   updateParticles(dt, now / 1000, camera, post.sceneSize.y);

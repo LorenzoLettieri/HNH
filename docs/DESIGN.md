@@ -840,6 +840,9 @@ al braccio. Tre viste come toro e cane. Lento (2,8 m/s), un martello enorme. **P
 Non si fa spingere da calcio, doppietta e cariche dei tori. Compare **a metà** delle ondate 9, 19, 29
 (quando metà del budget è uscita), **fuori dal budget**, annunciato da una scritta e da tre colpi d'incudine.
 Lascia **sempre** il Ferro Dannato (un lingotto incandescente a terra, dura 90 s) più 10 monete.
+**Le ondate del Fabbro sono di notte** [FATTO, novembre 2026]: all'inizio dell'ondata il cielo passa in 4 s
+da High Noon a High Midnight, e torna giorno quando l'ondata è finita (`src/render/nightfall.ts`). Annuncia
+l'ondata speciale prima ancora che il Fabbro compaia.
 - **Martellata** (l'unico attacco per ora): entro 9 m si ferma e **alza il martello** (0,9 s: trema e si
   scalda, freccia arancio se è fuori schermo), poi lo schianta a terra davanti a sé e parte un'**onda
   d'urto ad anello** che si allarga sul terreno (12 m/s, fino a 13 m): chi è a terra quando passa prende

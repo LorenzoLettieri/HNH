@@ -135,3 +135,38 @@ export const HIGH_MIDNIGHT: Atmosphere = {
 };
 
 export const ATMOSPHERES = [HIGH_NOON, HIGH_MIDNIGHT];
+
+/**
+ * A preset in between a and b: t = 0 is a, t = 1 is b. Every number goes
+ * straight from one value to the other (linear interpolation, "lerp"), every
+ * color channel by channel: 0xRRGGBB is three numbers packed together, so we
+ * unpack red, green and blue, lerp each one and pack them back. It's how a CSS
+ * `transition` on a color works. (Mixing in sRGB, like CSS does, not in the
+ * linear space of the lights: in between it looks a bit darker, a dusk.)
+ */
+export function mixAtmosphere(a: Atmosphere, b: Atmosphere, t: number): Atmosphere {
+  const mixed = { ...a };
+  for (const key of Object.keys(a) as (keyof Atmosphere)[]) {
+    if (key === 'name') continue;
+    (mixed[key] as number) = COLOR_KEYS.has(key)
+      ? mixColor(a[key] as number, b[key] as number, t)
+      : (a[key] as number) + ((b[key] as number) - (a[key] as number)) * t;
+  }
+  mixed.name = t < 0.5 ? a.name : b.name;
+  return mixed;
+}
+
+/** Which fields are colors (they're lerped channel by channel, not as one number). */
+const COLOR_KEYS = new Set<keyof Atmosphere>([
+  'skyTop', 'skyHorizon', 'sunColor', 'sunLightColor', 'lanternColor', 'dustColor', 'ambientSky', 'ambientGround',
+]);
+
+function mixColor(a: number, b: number, t: number): number {
+  let out = 0;
+  for (const shift of [16, 8, 0]) {
+    const ca = (a >> shift) & 0xff; // ">> 16" moves red down, "& 0xff" keeps one byte
+    const cb = (b >> shift) & 0xff;
+    out |= Math.round(ca + (cb - ca) * t) << shift;
+  }
+  return out;
+}
