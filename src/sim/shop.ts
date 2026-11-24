@@ -5,6 +5,7 @@
 // They live here, not in the UI, because one day the SERVER will have to say
 // yes or no to a purchase: a client could claim to be next to the vendor
 // from the other side of the map. Same rule as everything in src/sim: no DOM.
+import { canAfford } from './drinks';
 import type { InputCommand } from './command';
 import { tuning } from './config';
 import type { SimEvent } from './events';
@@ -87,7 +88,7 @@ export function stepShop(p: PlayerState, cmd: InputCommand, world: World, events
   const item = shop ? shopCatalog(shop.kind).find((i) => i.id === id) : undefined;
   if (!item) return void events.push({ type: 'purchaseFailed', item: id, reason: 'far' });
   if (ownsItem(p, id)) return void events.push({ type: 'purchaseFailed', item: id, reason: 'owned' });
-  if (p.money < item.price) return void events.push({ type: 'purchaseFailed', item: id, reason: 'money' });
+  if (!canAfford(p, item.price)) return void events.push({ type: 'purchaseFailed', item: id, reason: 'money' });
 
   p.money -= item.price;
   p.owned[id] = true;
@@ -129,7 +130,7 @@ function buyCard(p: PlayerState, id: CardId, world: World, events: SimEvent[]): 
   if (!p.owned[weapon] || price === null || !upgradeOffer(p, weapon).includes(id)) {
     return void events.push({ type: 'purchaseFailed', item: id, reason: 'unavailable' });
   }
-  if (p.money < price) return void events.push({ type: 'purchaseFailed', item: id, reason: 'money' });
+  if (!canAfford(p, price)) return void events.push({ type: 'purchaseFailed', item: id, reason: 'money' });
 
   p.money -= price;
   p.cards[weapon].push(id); // the level goes up, and with it the next offer changes

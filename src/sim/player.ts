@@ -140,6 +140,11 @@ export interface PlayerState {
   peakY: number;
   /** "Scia di brace": meters slid since the last patch of fire. */
   emberTrailMeters: number;
+  /** "Fondina calda": ticks toward the next round for each gun in the holster. */
+  holsterTicks: Record<WeaponId, number>;
+  /** "Ultimo respiro": already used in this wave; and "it just saved you this tick" (game.ts throws the enemies away). */
+  lastBreathUsed: boolean;
+  lastBreathNow: boolean;
   /**
    * Card "Volo di piombo": shells spent on shotgun jumps since you left the
    * ground. A kill before landing gives them back (refundLeadFlight in weapon.ts).
@@ -211,6 +216,9 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     airJumpsLeft: 0,
     peakY: y,
     emberTrailMeters: 0,
+    holsterTicks: { revolver: 0, shotgun: 0, rifle: 0, dynamite: 0 },
+    lastBreathUsed: false,
+    lastBreathNow: false,
     leadFlightShells: 0,
     quietTicks: 0,
     aimHeldTicks: 0,
@@ -563,6 +571,8 @@ export function respawn(p: PlayerState, world: World): void {
   p.cards = noCards(); // ...and plain weapons
   p.damnedIron = 0;
   p.fiches = 0;
+  p.lastBreathUsed = false;
+  p.lastBreathNow = false;
   p.forged = noForge();
   p.reloadTicks = 0;
   p.fanShotsLeft = 0;
@@ -636,7 +646,15 @@ function landingSoon(p: PlayerState, world: World): boolean {
 /** Damages the player and pushes them away from (fromX, fromZ). */
 export function hurtPlayer(p: PlayerState, amount: number, fromX: number, fromZ: number, push: number): void {
   // Bourbon Infernale's price: every hit is heavier (rounded: health stays a whole number).
-  p.health = Math.max(0, p.health - Math.round(amount * damageTakenMultiplier(p)));
+  const after = p.health - Math.round(amount * damageTakenMultiplier(p));
+  // Drink "Ultimo respiro": once per wave, a lethal hit leaves you at 1.
+  if (after <= 0 && p.health > 0 && hasDrink(p, 'lastBreath') && !p.lastBreathUsed) {
+    p.health = 1;
+    p.lastBreathUsed = true;
+    p.lastBreathNow = true;
+  } else {
+    p.health = Math.max(0, after);
+  }
   const dx = p.x - fromX;
   const dz = p.z - fromZ;
   const d = Math.hypot(dx, dz) || 1;

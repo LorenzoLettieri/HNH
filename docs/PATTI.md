@@ -8,14 +8,14 @@ Si provano con `?drinks=all` (o `?drinks=id1,id2`) nell'URL.
 - Scia di brace: la scivolata lascia una striscia di fuoco per 2 s. **[FATTO]** (`emberTrail`)
 - Fantasma: in scivolata passi attraverso i nemici (niente body block). **[FATTO]** (`ghost`)
 - Corazza di vapore: sopra i 12 m/s i proiettili ti fanno metà danno. **[FATTO]** (`steamArmor`)
-- Zoccolo duro: i colpi corpo a corpo stordiscono i nemici colpiti
+- Zoccolo duro: i colpi corpo a corpo stordiscono i nemici colpiti **[FATTO]** (`hardHoof`)
 - Ferro di cavallo storto: le monete schizzano il doppio più lontano e valgono il doppio. **[FATTO]** (`crookedHorseshoe`)
-- Debito col diavolo: puoi comprare andando sotto zero. Finché hai debiti, non cadono drop.
+- Debito col diavolo: puoi comprare andando sotto zero. Finché hai debiti, non cadono drop. **[FATTO]** (`devilsDebt`)
 - Avidità: le monete non spariscono più, ma ogni moneta raccolta vale la metà. **[FATTO]** (`greed`)
-- Sangue per piombo: a munizioni finite spari lo stesso, ma ogni colpo costa 5 di salute.
+- Sangue per piombo: a munizioni finite spari lo stesso, ma ogni colpo costa 5 di salute. **[FATTO]** (`bloodForLead`)
 - Cambio lampo: per 1 s dopo un cambio arma, il primo colpo è un critico. **[FATTO]** (`quickDraw`)
-- Fondina calda: le armi che non hai in mano si ricaricano da sole, lentamente.
+- Fondina calda: le armi che non hai in mano si ricaricano da sole, lentamente. **[FATTO]** (`hotHolster`)
 - Mano del morto: l'ultimo colpo di ogni caricatore fa danno triplo. Vale per tutte le armi. **[FATTO]** (`deadMansHand`)
-- Ultimo respiro: una volta per ondata, un colpo letale ti lascia a 1 di salute e respinge i nemici vicini
+- Ultimo respiro: una volta per ondata, un colpo letale ti lascia a 1 di salute e respinge i nemici vicini **[FATTO]** (`lastBreath`)
 - Bloody Mary: ogni uccisione ti cura di 1. **[FATTO]** (`bloodyMary`)
-- Bobby: Gli attacchi corpo a corpo respingono i proiettili
+- Bobby: Gli attacchi corpo a corpo respingono i proiettili **[FATTO]** (`bobby`)

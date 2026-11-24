@@ -528,7 +528,7 @@ renderer.setAnimationLoop((now: number) => {
   holyFires.update(game.holyFires, camera, dt, now / 1000);
   vendors.update(camera, now / 1000);
   bells.update(game, events, camera, dt, now / 1000);
-  handlePactEvents(events); // the drinks that make something happen (pactFx.ts)
+  handlePactEvents(events, game.entities, camera, dt); // the drinks that make something happen (pactFx.ts)
   // Walked away from the vendor (or died, and woke up at the spawn): the shop closes.
   const shopNearby = shopInReach(player, world);
   if (shopMenu.isOpen && !shopNearby) closeShop();

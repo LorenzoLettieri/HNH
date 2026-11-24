@@ -1107,6 +1107,22 @@ export const tuning = {
   emberTrailSpacing: 0.8,
   emberTrailRadius: 0.9,
   emberTrailTime: 2,
+  /** Zoccolo duro: an enemy hit by your boot or shovel is stunned this long (seconds): no AI, it just stands (or flies) there. */
+  hardHoofStun: 1.5,
+  /** Bobby: your melee sends back the enemy projectiles within this reach (meters, from your chest, in front of you), this × faster. */
+  bobbyReach: 3,
+  bobbySpeedScale: 1.3,
+  /** ...and they hit the enemies for this × the damage they'd have done to you. */
+  bobbyDamageScale: 3,
+  /** Debito col diavolo: how far below zero your vildenaro can go. */
+  devilsDebtLimit: 1500,
+  /** Sangue per piombo: health per shot when the gun and the pockets are empty (it never takes your last point). */
+  bloodForLeadCost: 5,
+  /** Fondina calda: a gun in the holster pushes one round from the pocket into itself every this many seconds. */
+  hotHolsterTime: 1.5,
+  /** Ultimo respiro: the enemies within this radius are thrown away when it saves you. */
+  lastBreathRadius: 5,
+  lastBreathPush: 14,
 
   // "Le Campane del Giudizio" (src/sim/bells.ts)
   /** How many bells to ring, in order. */

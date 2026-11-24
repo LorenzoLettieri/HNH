@@ -26,6 +26,8 @@ interface EntityBase {
   slamSpeed?: number;
   /** Card "Marchio": marked by a carbine hit, the next carbine hit on it does double damage. */
   marked?: boolean;
+  /** Drink "Zoccolo duro": ticks of stun left (status.ts: no AI, only physics). */
+  stunTicks?: number;
 }
 
 export interface TargetEntity extends EntityBase {

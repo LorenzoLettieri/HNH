@@ -8,6 +8,8 @@
 //   if it hits a wall while still flying.
 // It runs right after your weapon in stepGame, so its kills count as YOUR
 // kills (score, coins, style), like a shot.
+import { moveAndCollide } from './collision';
+import type { World } from './world';
 import { secondsToTicks, tuning } from './config';
 import { damage, isAlive, isEnemy, type Entity } from './entities';
 import type { HitSource, SimEvent } from './events';
@@ -36,6 +38,47 @@ export function ignite(e: Entity, holy = false): void {
   if (!e.burnTicks) e.burnClock = 0; // a new fire: the first chunk comes after one interval
   e.burnHoly = holy;
   e.burnTicks = secondsToTicks(holy ? tuning.holyBurnTime : tuning.dragonBurnTime);
+}
+
+/** Drink "Zoccolo duro": hit by your boot or shovel, it's stunned for a moment. */
+export function stun(e: Entity): void {
+  if (!isEnemy(e) || !isAlive(e)) return;
+  e.stunTicks = secondsToTicks(tuning.hardHoofStun);
+}
+
+/** The collider of each enemy that walks (the eye-bat flies: a stunned one just hangs in the air). */
+function stunBody(e: Entity): { radius: number; height: number } | null {
+  switch (e.type) {
+    case 'ghoul': return { radius: tuning.ghoulRadius, height: tuning.ghoulHeight };
+    case 'hound': return { radius: tuning.houndRadius, height: tuning.houndHeight };
+    case 'bull': return { radius: tuning.bullRadius, height: tuning.bullHeight };
+    case 'smith': return { radius: tuning.smithRadius, height: tuning.smithHeight };
+    case 'sharpshooter': return { radius: tuning.sharpshooterRadius, height: tuning.sharpshooterHeight };
+    default: return null;
+  }
+}
+
+/**
+ * A stunned enemy's tick, INSTEAD of its AI (game.ts skips the AI while
+ * stunTicks > 0). Every AI is a different state machine; stopping them all
+ * from outside is simpler than teaching each one to be stunned: no
+ * thinking, no attacks, only the physics every body obeys (gravity, the
+ * kick's push sliding out on the floor, the walls). Returns true while stunned.
+ */
+export function stepStunned(e: Entity, world: World, dt: number): boolean {
+  if (!e.stunTicks || !isAlive(e)) return false;
+  e.stunTicks--;
+  const body = stunBody(e);
+  if (body && 'vx' in e) {
+    e.vy -= tuning.gravity * dt;
+    const { landed } = moveAndCollide(e, body.radius, body.height, world.boxes, dt);
+    if (landed) {
+      // Friction on the ground: the push dies out in a fraction of a second.
+      e.vx *= 0.85;
+      e.vz *= 0.85;
+    }
+  }
+  return true;
 }
 
 /** Thrown by a "Calcio di piombo" blast: for a moment, a wall hurts. */

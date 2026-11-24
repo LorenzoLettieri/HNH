@@ -287,11 +287,16 @@ export function stepWeapon(
   p.adsTicks = aimAllowed ? Math.min(adsFull, p.adsTicks + 1) : Math.max(0, p.adsTicks - 1);
   p.aimHeldTicks = aimAllowed ? p.aimHeldTicks + 1 : 0; // "Quickscope": since when you're aiming
 
+  stepHotHolster(p);
   const ammo = currentAmmo(p);
   // Nothing in the pockets = no reload. You hear the click and that's it:
   // switch weapon, kick, or go find ammo.
   const canReload = tuning.infiniteAmmo || p.reserve[pocket] > 0;
-  if (ammo === 0 && pressed && !canReload && p.reloadTicks === 0 && p.switchTicks === 0) {
+  // Drink "Sangue per piombo": gun and pockets empty, and you fire anyway,
+  // paying in health (never your last point: it won't kill you).
+  const bloodShot =
+    ammo === 0 && !canReload && !bottomless && hasDrink(p, 'bloodForLead') && p.health > tuning.bloodForLeadCost;
+  if (ammo === 0 && pressed && !canReload && !bloodShot && p.reloadTicks === 0 && p.switchTicks === 0) {
     events.push({ type: 'dryFire' });
     p.fireBufferTicks = 0;
   }
@@ -310,7 +315,7 @@ export function stepWeapon(
     return;
   }
 
-  const ready = p.fireCooldownTicks === 0 && p.reloadTicks === 0 && p.switchTicks === 0 && ammo > 0;
+  const ready = p.fireCooldownTicks === 0 && p.reloadTicks === 0 && p.switchTicks === 0 && (ammo > 0 || bloodShot);
   // A queued right click on the revolver starts the burst: as many shots as
   // there are rounds in the cylinder. From then on the gun fires by itself,
   // one shot every revolverFanInterval, until the burst is over.
@@ -362,7 +367,8 @@ export function stepWeapon(
       events.push({ type: 'fire', weapon: 'revolver', barrel: revolverHand(p, full, ammo), seconds: fireInterval(p, 'revolver'), forged: p.forged.revolver > 0 });
       fireRevolver(p, world, entities, events, lastRound);
     }
-    if (!bottomless) setCurrentAmmo(p, Math.min(full, ammo - shells));
+    if (bloodShot) p.health -= tuning.bloodForLeadCost; // the round is paid in blood: nothing comes out of the gun
+    else if (!bottomless) setCurrentAmmo(p, Math.min(full, ammo - shells));
     p.quietTicks = 0; // "Duellante": the wait starts over
     p.wallJumpShot = false; // the wall jump's shot is fired (hit or miss)
     p.quickDrawTicks = 0; // "Cambio lampo": the quick-draw shot is gone (hit or miss)
@@ -383,6 +389,29 @@ export function stepWeapon(
       const interval = tuning.revolverFanInterval * (hasCard(p, 'quickHand') ? tuning.quickHandIntervalScale : 1);
       p.fireCooldownTicks = secondsToTicks(p.fanShotsLeft > 0 ? interval : tuning.revolverFanRecovery);
     }
+  }
+}
+
+/**
+ * Drink "Fondina calda": the guns you're NOT holding load themselves, one
+ * round from the pocket every hotHolsterTime seconds (all of them at once,
+ * each with its own clock). Switch to a gun you emptied a minute ago and it's
+ * (partly) full.
+ */
+function stepHotHolster(p: PlayerState): void {
+  if (!hasDrink(p, 'hotHolster')) return;
+  const every = secondsToTicks(tuning.hotHolsterTime);
+  for (const w of WEAPONS) {
+    if (w === p.weapon || !p.owned[w]) continue;
+    const pocket = AMMO_TYPE[w];
+    if (p.loaded[w] >= magazineSize(p, w) || (!tuning.infiniteAmmo && p.reserve[pocket] <= 0)) {
+      p.holsterTicks[w] = 0;
+      continue;
+    }
+    if (++p.holsterTicks[w] < every) continue;
+    p.holsterTicks[w] = 0;
+    p.loaded[w]++;
+    if (!tuning.infiniteAmmo) p.reserve[pocket]--;
   }
 }
 

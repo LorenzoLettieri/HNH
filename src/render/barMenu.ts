@@ -29,6 +29,10 @@ const DRINK_TEXT: Record<DrinkId, { name: string; gift: string; cost?: string }>
   devilsHoof: { name: 'Zoccolo del diavolo', gift: `Atterrando da più di ${tuning.hoofMinDrop} m fai un'onda d'urto che scaraventa via i nemici.` },
   emberTrail: { name: 'Scia di brace', gift: `La scivolata lascia una striscia di fuoco per ${tuning.emberTrailTime} s.` },
   ghost: { name: 'Fantasma', gift: "In scivolata passi attraverso i nemici." },
+  hardHoof: { name: 'Zoccolo duro', gift: `Calcio e badile stordiscono i nemici colpiti per ${tuning.hardHoofStun} s.` },
+  bobby: { name: 'Bobby', gift: 'Calcio e badile rispediscono i proiettili nemici da dove vengono.' },
+  hotHolster: { name: 'Fondina calda', gift: `Le armi che non hai in mano si ricaricano da sole, un colpo ogni ${tuning.hotHolsterTime} s.` },
+  lastBreath: { name: 'Ultimo respiro', gift: 'Una volta per ondata, un colpo letale ti lascia a 1 di salute e respinge i nemici vicini.' },
   lightningShine: { name: 'Acquavite Fulmine', gift: `Corri più veloce: +${tuning.shineSpeed} m/s.` },
   deadMansRum: { name: 'Rum del Morto', gift: `La catena dello Stile dura ${tuning.rumChainSeconds} s in più.` },
   devilsMilk: {
@@ -47,6 +51,16 @@ const DRINK_TEXT: Record<DrinkId, { name: string; gift: string; cost?: string }>
     cost: 'Schizzano il doppio più lontano: corrigli dietro.',
   },
   greed: { name: 'Avidità', gift: 'Le monete non spariscono più.', cost: 'Ogni moneta vale la metà.' },
+  devilsDebt: {
+    name: 'Debito col diavolo',
+    gift: `Puoi comprare andando sotto zero, fino a −${tuning.devilsDebtLimit}.`,
+    cost: 'Finché hai debiti, i nemici non lasciano munizioni né medikit.',
+  },
+  bloodForLead: {
+    name: 'Sangue per piombo',
+    gift: 'A munizioni finite spari lo stesso.',
+    cost: `Ogni colpo costa ${tuning.bloodForLeadCost} di salute.`,
+  },
 };
 
 /** Roman numerals for the levels: I, II, III (it's a saloon, not a spreadsheet). */

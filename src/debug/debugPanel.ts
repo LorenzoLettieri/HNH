@@ -123,6 +123,15 @@ export function createDebugPanel(options: {
   shop.number(tuning, 'emberTrailSpacing', 0.3, 3, 0.1);
   shop.number(tuning, 'emberTrailRadius', 0.3, 2, 0.1);
   shop.number(tuning, 'emberTrailTime', 0.5, 6, 0.5);
+  shop.number(tuning, 'hardHoofStun', 0, 5, 0.1);
+  shop.number(tuning, 'bobbyReach', 0.5, 6, 0.25);
+  shop.number(tuning, 'bobbySpeedScale', 0.5, 3, 0.1);
+  shop.number(tuning, 'bobbyDamageScale', 0, 10, 0.5);
+  shop.number(tuning, 'devilsDebtLimit', 0, 5000, 100);
+  shop.number(tuning, 'bloodForLeadCost', 0, 25, 1);
+  shop.number(tuning, 'hotHolsterTime', 0.25, 5, 0.25);
+  shop.number(tuning, 'lastBreathRadius', 0, 12, 0.5);
+  shop.number(tuning, 'lastBreathPush', 0, 25, 1);
   shop.number(tuning, 'shineSpeed', 0, 3, 0.25);
   shop.number(tuning, 'rumChainSeconds', 0, 5, 0.5);
   shop.number(tuning, 'devilsMilkDamage', 0, 2, 0.25);

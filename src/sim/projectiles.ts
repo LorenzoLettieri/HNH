@@ -6,6 +6,8 @@
 //
 // They are not entities: you can't shoot them and they have no health. They
 // live in their own list in the GameState, as plain data (serializable).
+import { hitBox, isAlive, isEnemy, type Entity } from './entities';
+import { applyGunDamage } from './gunDamage';
 import { projectileDamageScale } from './drinks';
 import { tuning } from './config';
 import type { SimEvent } from './events';
@@ -38,6 +40,59 @@ export interface Projectile {
   ticksLeft: number;
   /** It already flew past you, close (a 'nearMiss' is reported once per projectile). */
   grazed?: boolean;
+  /** Sent back by your melee (drink "Bobby"): now it's yours, it hits the enemies and never you. */
+  friendly?: boolean;
+}
+
+/**
+ * Drink "Bobby": your melee bats the enemy projectiles in front of you back
+ * where you look, faster. Called when the boot or the shovel lands. Same
+ * cone idea as the kick: close to your chest, and in front (dot product
+ * with where you look).
+ */
+export function batProjectiles(projectiles: Projectile[], player: PlayerState, events: SimEvent[]): void {
+  const chestY = player.y + currentHeight(player) * 0.6;
+  const lx = -Math.sin(player.yaw) * Math.cos(player.pitch);
+  const ly = Math.sin(player.pitch);
+  const lz = -Math.cos(player.yaw) * Math.cos(player.pitch);
+  for (const p of projectiles) {
+    if (p.friendly) continue;
+    const dx = p.x - player.x;
+    const dy = p.y - chestY;
+    const dz = p.z - player.z;
+    const d = Math.hypot(dx, dy, dz);
+    if (d > tuning.bobbyReach) continue;
+    if (d > 0.5 && (dx * lx + dy * ly + dz * lz) / d < 0.2) continue; // behind you
+    const speed = Math.hypot(p.vx, p.vy, p.vz) * tuning.bobbySpeedScale;
+    p.vx = lx * speed;
+    p.vy = ly * speed;
+    p.vz = lz * speed;
+    p.friendly = true;
+    p.ticksLeft = Math.max(p.ticksLeft, 180);
+    events.push({ type: 'projectileBatted', x: p.x, y: p.y, z: p.z });
+  }
+}
+
+/**
+ * A projectile you sent back: the first enemy hitbox on its segment this tick
+ * (same Minkowski trick as against you). Returns the enemy, or null.
+ */
+function friendlyHit(p: Projectile, entities: Entity[], dx: number, dy: number, dz: number, step: number): { target: Entity; distance: number } | null {
+  let best: { target: Entity; distance: number } | null = null;
+  for (const e of entities) {
+    if (!isEnemy(e) || !isAlive(e)) continue;
+    const b = hitBox(e);
+    const grown = { minX: b.minX - p.radius, maxX: b.maxX + p.radius, minY: b.minY - p.radius, maxY: b.maxY + p.radius, minZ: b.minZ - p.radius, maxZ: b.maxZ + p.radius };
+    // Already INSIDE it: the enemy ran into the projectile between two ticks
+    // (both moving toward each other: last tick the segment stopped short,
+    // this tick it starts inside). A ray that starts inside a box doesn't
+    // "enter" it, so check this case first: a hit right here.
+    const inside =
+      p.x > grown.minX && p.x < grown.maxX && p.y > grown.minY && p.y < grown.maxY && p.z > grown.minZ && p.z < grown.maxZ;
+    const hit = inside ? { distance: 0 } : raycastBoxes(p.x, p.y, p.z, dx, dy, dz, step, [grown]);
+    if (hit && (!best || hit.distance < best.distance)) best = { target: e, distance: hit.distance };
+  }
+  return best;
 }
 
 /**
@@ -50,6 +105,7 @@ export function stepProjectiles(
   world: World,
   dt: number,
   events: SimEvent[],
+  entities: Entity[],
 ): Projectile[] {
   const alive: Projectile[] = [];
   for (const p of projectiles) {
@@ -78,8 +134,17 @@ export function stepProjectiles(
     //    the ball to a point and fatten the box instead). Then it's just our
     //    usual ray-box test. (Exact on the faces, slightly generous on the
     //    corners: the grown box has square corners, the real shape rounded ones.)
+    // A projectile you sent back (drink "Bobby") hits the enemies, never you.
+    if (p.friendly) {
+      const hit = friendlyHit(p, entities, dx, dy, dz, step);
+      if (hit && (!wall || hit.distance < wall.distance)) {
+        applyGunDamage(hit.target, p.damage * tuning.bobbyDamageScale, false, 'kick', hit.distance, events);
+        events.push({ type: 'projectileHit', kind: p.kind, x: p.x + dx * hit.distance, y: p.y + dy * hit.distance, z: p.z + dz * hit.distance, nx: -dx, ny: -dy, nz: -dz, player: false });
+        continue;
+      }
+    }
     let hitsPlayer = false;
-    if (player.health > 0) {
+    if (player.health > 0 && !p.friendly) {
       const r = tuning.playerRadius + p.radius;
       const grown = {
         minX: player.x - r,
@@ -113,7 +178,7 @@ export function stepProjectiles(
     // clamped to the segment. If that point is INSIDE the segment (not at
     // its end), the projectile is passing you right now; at the end it's
     // still coming (next tick it might hit).
-    if (!p.grazed && player.health > 0) {
+    if (!p.grazed && !p.friendly && player.health > 0) { // (a projectile you batted back is no dodge)
       const cx = player.x - p.x;
       const cy = player.y + currentHeight(player) / 2 - p.y;
       const cz = player.z - p.z;

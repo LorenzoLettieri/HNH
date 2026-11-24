@@ -22,7 +22,7 @@
 // same spot (coins and ammo would hide each other).
 //
 // Pure simulation, like everything in src/sim: the renderer reads the list.
-import { coinBurstScale, coinValueScale, hasDrink, maxHealth, rewardBonus } from './drinks';
+import { coinBurstScale, coinValueScale, hasDrink, inDebt, maxHealth, rewardBonus } from './drinks';
 import { secondsToTicks, tuning } from './config';
 import type { SimEvent } from './events';
 import type { Enemy } from './entities';
@@ -113,7 +113,8 @@ function whatDrops(game: GameState, enemy: Enemy): Loot[] {
   // The Damned Smith ALWAYS leaves its Damned Iron (the reason to kill it).
   if (enemy.type === 'smith') loot.push({ kind: 'iron', value: 0 });
   const chance = Math.min(tuning.dropChanceMax, enemyCost(enemy) * tuning.dropChancePerWeight);
-  if (random(game) < chance) loot.push({ kind: pickKind(random(game), game.player.owned), value: 0 });
+  // Debito col diavolo: while you owe, no items (the coins above still fall: that's how you pay back).
+  if (random(game) < chance && !inDebt(game.player)) loot.push({ kind: pickKind(random(game), game.player.owned), value: 0 });
   return loot;
 }
 

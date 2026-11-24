@@ -74,6 +74,10 @@ export type SimEvent =
   | { type: 'dynamiteBounce'; x: number; y: number; z: number; speed: number }
   /** A pool of holy fire lit on the floor (the Forge's dynamite, holyFire.ts). */
   | { type: 'holyFire'; x: number; y: number; z: number; radius: number }
+  /** Drink "Bobby": your melee sent an enemy projectile back. */
+  | { type: 'projectileBatted'; x: number; y: number; z: number }
+  /** Drink "Ultimo respiro": a lethal hit left you at 1, and the enemies around were thrown away. */
+  | { type: 'lastBreath'; x: number; y: number; z: number }
   /** Drink "Ali del corvo": a jump in mid-air, from where your feet are. */
   | { type: 'airJump'; x: number; y: number; z: number }
   /** Drink "Zoccolo del diavolo": a hard landing's shockwave, and how many enemies it threw. */

@@ -19,6 +19,7 @@
 // the answer comes back as an event ('purchase' / 'purchaseFailed', see onEvents).
 // Opening and closing (E, Esc, walking away) are wired in main.ts.
 // Markup and CSS in index.html (#shop, #shop-upgrades, #shop-prompt, #grab-hint).
+import { canAfford } from '../sim/drinks';
 import { mainKeyName, onKeybindsChange } from '../keybinds';
 import { playPurchase, playPurchaseDenied } from '../audio/sfx';
 import { queueBuy } from '../controls';
@@ -420,7 +421,7 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
   /** Every frame: prices in red, "POTENZIA" on your weapons, which one is selected. */
   function refreshRow(r: Row, player: PlayerState): void {
     r.owned = !r.card && ownsItem(player, r.id as ShopItemId);
-    r.poor = !r.owned && player.money < r.price;
+    r.poor = !r.owned && !canAfford(player, r.price); // (Debito col diavolo: below zero is fine)
     r.el.classList.toggle('owned', r.owned);
     r.el.classList.toggle('poor', r.poor);
     r.el.classList.toggle('selected', r.owned && selected === r.weapon);

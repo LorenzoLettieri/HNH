@@ -5,7 +5,7 @@ import { hasDrink, healPerKill, maxHealth, rewardBonus, stepBar } from './drinks
 import type { InputCommand } from './command';
 import { createBull, createEntities, createEyebat, createHound, createSharpshooter, createSmith, isEnemy, stepTarget, type Entity } from './entities';
 import { stepEyebat } from './eyebat';
-import { stepProjectiles, type Projectile } from './projectiles';
+import { batProjectiles, stepProjectiles, type Projectile } from './projectiles';
 import { stepDynamite, throwDynamite, type Dynamite } from './dynamite';
 import { spawnEmberPatch, spawnHolyFire, stepHolyFire, type HolyFire } from './holyFire';
 import { stepGhoul } from './ghoul';
@@ -21,7 +21,7 @@ import type { SimEvent } from './events';
 import { cellAt, getAirGrid } from './airNav';
 import { createPlayer, currentHeight, respawn, stepPlayer, type PlayerState } from './player';
 import { refundLeadFlight, stepWeapon } from './weapon';
-import { stepStatus } from './status';
+import { stepStatus, stepStunned } from './status';
 import { stepKick } from './kick';
 import { blockPlayerWithBodies } from './bodyBlock';
 import { stepShop } from './shop';
@@ -132,7 +132,12 @@ export function stepGame(
   const firstNewEvent = events.length;
   // During HIGH NOON the guns are bottomless (the weapon doesn't know why: it only gets the flag).
   stepWeapon(game.player, cmd, world, game.entities, events, isHighNoon(game.style), game);
+  const beforeKick = events.length;
   stepKick(game.player, cmd, world, game.entities, events);
+  // Drink "Bobby": the boot (or shovel) that lands bats the projectiles back.
+  if (hasDrink(game.player, 'bobby') && events.slice(beforeKick).some((e) => e.type === 'kickLand')) {
+    batProjectiles(game.projectiles, game.player, events);
+  }
   // Fire and wall slams from the shotgun's cards: their kills are yours too.
   stepStatus(game.player, game.entities, events);
   // The launcher fired: a new stick leaves the barrel (weapon.ts only reports the shot).
@@ -189,6 +194,8 @@ export function stepGame(
 
   for (const e of game.entities) {
     if (e.type === 'target') stepTarget(e);
+    // Drink "Zoccolo duro": a stunned enemy doesn't think, it only falls and slides (status.ts).
+    else if (stepStunned(e, world, dt)) continue;
     else if (e.type === 'eyebat') stepEyebat(e, game, world, air, dt, events);
     else if (e.type === 'sharpshooter') stepSharpshooter(e, game, world, graph, dt, events);
     // Hounds: the ghouls' graph, but their own flow field with no climbing (they ride the vents instead).
@@ -205,11 +212,18 @@ export function stepGame(
   }
   // Enemies are solid: push the player out of their bodies (after they moved, see bodyBlock.ts).
   blockPlayerWithBodies(game.player, game.entities, world, dt);
-  game.projectiles = stepProjectiles(game.projectiles, game.player, world, dt, events);
+  game.projectiles = stepProjectiles(game.projectiles, game.player, world, dt, events, game.entities);
+  // Drink "Ultimo respiro": a hit this tick should have killed you; you're at 1, and the enemies around are thrown away.
+  if (game.player.lastBreathNow) {
+    game.player.lastBreathNow = false;
+    lastBreath(game, events);
+  }
   stepWaves(game, world, events, cmd.skipBreak);
   // Right after the waves: it listens to their waveStart/waveEnd, and to
   // this tick's shots and blasts for the objectives (mapEvents.ts).
   stepMapEvents(game, world, events, tickEvents);
+  // Drink "Ultimo respiro": once per wave, it's back at every new wave.
+  if (events.slice(tickEvents).some((e) => e.type === 'waveStart')) game.player.lastBreathUsed = false;
   stepPickups(game, world, dt, events);
   // Last: it needs the whole tick (your hits come first, the enemies' hits on you later).
   stepStyle(game.style, game.player, events, tickEvents);
@@ -241,6 +255,19 @@ export function stepGame(
  * player's step doesn't know the enemies or the fires, the game does (the
  * same split as the dynamite: player.ts only reports the landing).
  */
+function lastBreath(game: GameState, events: SimEvent[]): void {
+  const p = game.player;
+  for (const en of game.entities) {
+    if (!isEnemy(en) || en.state === 'dead') continue;
+    const dx = en.x - p.x;
+    const dz = en.z - p.z;
+    const d = Math.hypot(dx, dz);
+    if (d > tuning.lastBreathRadius || Math.abs(en.y - p.y) > 3) continue;
+    knockBack(en, d > 0.01 ? dx / d : 1, d > 0.01 ? dz / d : 0, tuning.lastBreathPush, 5);
+  }
+  events.push({ type: 'lastBreath', x: p.x, y: p.y, z: p.z });
+}
+
 function stepPactMoves(game: GameState, events: SimEvent[], from: number, dt: number): void {
   const p = game.player;
   const end = events.length;

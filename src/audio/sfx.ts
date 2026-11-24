@@ -951,6 +951,28 @@ export function playHoofSlam(): void {
   noiseBurst({ start: 0.04, duration: 0.8, volume: 0.6, filter: 'lowpass', frequency: 500, frequencyEnd: 70 });
 }
 
+/**
+ * Drink "Bobby": an enemy projectile batted back. A bright metal "TING" (the
+ * boot's iron toe) with a quick swish of the shot leaving faster.
+ */
+export function playBatted(where: Where): void {
+  const out = placeSound(where);
+  if (!out) return;
+  ring(1500, 0.5, 0.3, out);
+  noiseBurst({ out, duration: 0.18, volume: 0.4, filter: 'bandpass', frequency: 2500, frequencyEnd: 900, q: 2 });
+}
+
+/**
+ * Drink "Ultimo respiro": death said no. A huge heartbeat (two thumps) and a
+ * low church bell under it, and a gasp of air (noise rising).
+ */
+export function playLastBreath(): void {
+  thump({ duration: 0.25, volume: 1.4, from: 70, to: 35 });
+  thump({ start: 0.28, duration: 0.3, volume: 1.1, from: 65, to: 30 });
+  ring(98, 3, 0.35);
+  noiseBurst({ start: 0.5, duration: 0.6, volume: 0.25, filter: 'bandpass', frequency: 600, frequencyEnd: 1800, q: 1 });
+}
+
 /** The Damned Smith falls: a huge clatter of armor and a last low groan. */
 export function playSmithDeath(where: Where): void {
   const out = placeSound(where);

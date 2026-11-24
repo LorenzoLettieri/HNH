@@ -40,11 +40,17 @@ export const DRINK_INFO = {
   devilsHoof: { levels: 1 },
   emberTrail: { levels: 1 },
   ghost: { levels: 1 },
+  hardHoof: { levels: 1 },
+  bobby: { levels: 1 },
+  hotHolster: { levels: 1 },
+  lastBreath: { levels: 1 },
   // Pacts with a price
   devilsMilk: { levels: 'levels' },
   hellfireBourbon: { levels: 'levels' },
   crookedHorseshoe: { levels: 1 },
   greed: { levels: 1 },
+  devilsDebt: { levels: 1 },
+  bloodForLead: { levels: 1 },
 } as const satisfies Record<string, { levels: 'levels' | 1 }>;
 
 /** A drink's id: the keys of DRINK_INFO (one place to add a drink). */
@@ -125,6 +131,20 @@ export function projectileDamageScale(p: PlayerState): number {
 /** What a coin is worth, × these: Ferro di cavallo storto doubles it, Avidità halves it. */
 export function coinValueScale(p: PlayerState): number {
   return (hasDrink(p, 'crookedHorseshoe') ? tuning.horseshoeCoinScale : 1) * (hasDrink(p, 'greed') ? tuning.greedCoinScale : 1);
+}
+
+/**
+ * Debito col diavolo: how much you can spend, debt included. Below zero is
+ * allowed down to -devilsDebtLimit (the shop asks this, not p.money).
+ */
+export function canAfford(p: PlayerState, price: number): boolean {
+  const floor = hasDrink(p, 'devilsDebt') ? -tuning.devilsDebtLimit : 0;
+  return p.money - price >= floor;
+}
+
+/** Debito col diavolo's price: while you owe, the dead drop no items (coins still fall: that's how you pay back). */
+export function inDebt(p: PlayerState): boolean {
+  return p.money < 0;
 }
 
 /** How far the coins fly out of a body: Ferro di cavallo storto (the price: you run after them). */
