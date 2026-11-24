@@ -17,6 +17,7 @@
 // Markup and CSS in index.html (#map, #map-legend).
 import type { GameState } from '../sim/game';
 import { isEnemy } from '../sim/entities';
+import { bountyEntity } from '../sim/bounty';
 import type { ShopSpawn, World } from '../sim/world';
 import { coinIcon } from './pickupSprites';
 import './fonts'; // the labels are written in Rye
@@ -264,11 +265,42 @@ export function createMapOverlay(world: World): MapOverlay {
         label('TAVOLO', tx, ty + half, '#ff5040');
       }
 
+      // La Taglia's outlaw (src/sim/bounty.ts): a gold star with a pulsing
+      // ring, wherever it is, even in the wager's darkness (a wanted man is
+      // never hidden: the whole town knows where he is).
+      const outlaw = ev?.kind === 'bounty' && ev.phase === 'hunting' ? bountyEntity(ev, game) : null;
+      if (outlaw && outlaw.state !== 'dead') {
+        const ox = mapX(outlaw.px + (outlaw.x - outlaw.px) * alpha);
+        const oy = mapY(outlaw.pz + (outlaw.z - outlaw.pz) * alpha);
+        const phase = (time % PING_TIME) / PING_TIME;
+        ctx.globalAlpha = 1 - phase;
+        ctx.lineWidth = 2 * unit;
+        ctx.strokeStyle = '#ffc040';
+        ctx.beginPath();
+        ctx.arc(ox, oy, (BELL_RADIUS + phase * PING_RADIUS * 1.5) * unit, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        // A five-pointed star: ten corners, alternating far (a point) and near (between two).
+        ctx.beginPath();
+        for (let i = 0; i < 10; i++) {
+          const r = (i % 2 === 0 ? BELL_RADIUS * 1.6 : BELL_RADIUS * 0.7) * unit;
+          const a = (i / 10) * Math.PI * 2;
+          ctx.lineTo(ox + Math.sin(a) * r, oy - Math.cos(a) * r);
+        }
+        ctx.closePath();
+        ctx.fillStyle = '#ffc040';
+        ctx.fill();
+        ctx.lineWidth = unit;
+        ctx.strokeStyle = '#000';
+        ctx.stroke();
+        label('TAGLIA', ox, oy + BELL_RADIUS * 1.6 * unit, '#ffc040');
+      }
+
       // Enemies: red dots, at the same in-between position the renderer
       // draws them (between the last two ticks, see `alpha` in main.ts).
       // (Not with the wager's darkness curse, src/sim/wager.ts: in the dark you don't know where they are.)
       const blind = game.player.curse === 'darkness';
-      const enemies = blind ? [] : game.entities.filter((e) => isEnemy(e) && e.state !== 'dead');
+      const enemies = blind ? [] : game.entities.filter((e) => isEnemy(e) && e.state !== 'dead' && e !== outlaw);
       const ping = enemies.length <= PING_BELOW;
       for (const e of enemies) {
         const ex = mapX(e.px + (e.x - e.px) * alpha);

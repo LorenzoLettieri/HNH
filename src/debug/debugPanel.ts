@@ -78,6 +78,18 @@ export function createDebugPanel(options: {
   waves.number(tuning, 'mapEventFiches', 0, 5, 1);
   waves.number(tuning, 'wagerFiches', 0, 5, 1);
   waves.number(tuning, 'wagerFastEnemiesScale', 1, 2, 0.05);
+  waves.number(tuning, 'bountyDelay', 0, 20, 0.5);
+  waves.number(tuning, 'bountyHealthScale', 1, 20, 0.5);
+  waves.number(tuning, 'bountyCoins', 0, 100, 1);
+  waves.number(tuning, 'bountySwiftScale', 1, 3, 0.05);
+  waves.number(tuning, 'bountyShieldScale', 0, 5, 0.1);
+  waves.number(tuning, 'bountyShieldRegenDelay', 0, 10, 0.1);
+  waves.number(tuning, 'bountyShieldRegenTime', 0.1, 10, 0.1);
+  waves.number(tuning, 'bountyFuse', 0.2, 5, 0.1);
+  waves.number(tuning, 'bountyBlastRadius', 1, 15, 0.5);
+  waves.number(tuning, 'bountyBlastDamage', 0, 150, 5);
+  waves.number(tuning, 'bountyBlastPush', 0, 25, 1);
+  waves.number(tuning, 'bountyBlastEnemyDamage', 0, 1000, 10);
   waves.number(tuning, 'bellsCount', 1, 6, 1);
   waves.number(tuning, 'bellsTime', 10, 180, 5);
   waves.number(tuning, 'bellsMinSpacing', 0, 50, 1);

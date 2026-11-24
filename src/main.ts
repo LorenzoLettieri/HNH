@@ -44,6 +44,8 @@ import { createVendorRenderer } from './render/vendors';
 import { createBellRenderer } from './render/bells';
 import { createPonyRingRenderer } from './render/ponyRings';
 import { createWagerTableRenderer } from './render/wagerTable';
+import { createBountyRenderer } from './render/bounty';
+import { createBountyPoster } from './render/bountyPoster';
 import { handlePactEvents } from './render/pactFx';
 import { createShopMenu } from './render/shopMenu';
 import { createMapOverlay } from './render/mapOverlay';
@@ -167,6 +169,8 @@ const vendors = createVendorRenderer(scene, world);
 const bells = createBellRenderer(scene, world);
 const ponyRings = createPonyRingRenderer(scene);
 const wagerTable = createWagerTableRenderer(scene);
+const bounty = createBountyRenderer(scene); // La Taglia: the star over the outlaw, its shield, its fuse
+const bountyPoster = createBountyPoster(); // ...and the WANTED poster
 const mapOverlay = createMapOverlay(world);
 const navDebug = createNavDebug(scene, getNavGraph(world));
 const navDebugBig = createNavDebug(scene, getNavGraph(world, BIG_BODY));
@@ -241,6 +245,7 @@ const debugPanel = createDebugPanel({
     spawnTool('Evento sulla mappa alla prossima ondata', (g) => forceMapEventNextWave(g.mapEvent, g.wave.number)),
     spawnTool('Evento Pony Express alla prossima ondata', (g) => forceMapEventNextWave(g.mapEvent, g.wave.number, 'ponyExpress')),
     spawnTool('Evento Scommessa del Diavolo alla prossima ondata', (g) => forceMapEventNextWave(g.mapEvent, g.wave.number, 'wager')),
+    spawnTool('Evento Taglia alla prossima ondata', (g) => forceMapEventNextWave(g.mapEvent, g.wave.number, 'bounty')),
     // Like the respawn below, it should go through the InputCommand one day: it's only a flag the next tick reads.
     spawnTool("Completa l'evento in corso", (g) => { g.mapEvent.forceSuccess = true; }),
     // Respawn goes through the InputCommand like a key would (controls.ts):
@@ -544,6 +549,8 @@ renderer.setAnimationLoop((now: number) => {
   bells.update(game, events, camera, dt, now / 1000);
   ponyRings.update(game, events, camera, dt, now / 1000);
   wagerTable.update(game, events, camera, dt, now / 1000);
+  bounty.update(game, events, camera, alpha, dt, now / 1000);
+  bountyPoster.update(game, dt);
   handlePactEvents(events, game.entities, camera, dt); // the drinks that make something happen (pactFx.ts)
   // Walked away from the vendor (or died, and woke up at the spawn): the shop closes.
   const shopNearby = shopInReach(player, world);

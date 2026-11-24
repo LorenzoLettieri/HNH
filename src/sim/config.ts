@@ -1129,6 +1129,29 @@ export const tuning = {
   cardSharpFichesScale: 2,
   cardSharpHealthCost: 25,
 
+  // "La Taglia" (src/sim/bounty.ts)
+  /** Seconds between the poster (the event's banner) and the outlaw showing up in town. */
+  bountyDelay: 4,
+  /** The outlaw's health: this × the health of its kind in that wave (a miniboss: a ghoul in wave 5 = 5 shots, 2 to the head). */
+  bountyHealthScale: 5,
+  /** Coins that burst out of the outlaw's body, on top of its usual ones (each worth coinValue × the style multiplier). */
+  bountyCoins: 30,
+  /** "Lesto": its time runs this much faster (1.6 = 60%: walking, attacks, everything). */
+  bountySwiftScale: 1.6,
+  /** "Corazzato": a shield of this × its health, soaked up before the health... */
+  bountyShieldScale: 1,
+  /** ...that starts growing back after this many seconds without a hit, and refills in this many. */
+  bountyShieldRegenDelay: 2.5,
+  bountyShieldRegenTime: 1.5,
+  /** "Polveriera": seconds from its death to the blast... */
+  bountyFuse: 1.5,
+  /** ...how big (meters), the damage to you at the center (fading to 40% at the edge) and how hard it throws you (m/s)... */
+  bountyBlastRadius: 7,
+  bountyBlastDamage: 60,
+  bountyBlastPush: 9,
+  /** ...and the damage to the enemies around (your kills: score, drops, style). */
+  bountyBlastEnemyDamage: 250,
+
   // "Le Campane del Giudizio" (src/sim/bells.ts)
   /** How many bells to ring, in order. */
   bellsCount: 3,

@@ -3,11 +3,33 @@
 // compile error, like the cards' CARD_TEXT in shopMenu.ts.
 import type { MapEventKind } from '../sim/mapEvents';
 import type { WagerCurse } from '../sim/wager';
+import type { BountyModifier, BountyTarget } from '../sim/bounty';
 
 export const MAP_EVENT_TEXT: Record<MapEventKind, { title: string; goal: string }> = {
   bells: { title: 'LE CAMPANE DEL GIUDIZIO', goal: 'suona le campane sui tetti prima che finisca l’ondata' },
   ponyExpress: { title: 'PONY EXPRESS DELL’INFERNO', goal: 'attraversa gli anelli di fuoco: ognuno ti dà qualche secondo' },
   wager: { title: 'LA SCOMMESSA DEL DIAVOLO', goal: 'un tavolo da gioco nella piazza del pozzo: scommetti sulla prossima ondata' },
+  bounty: { title: 'LA TAGLIA', goal: 'un ricercato è in città: uccidilo prima che finisca l’ondata' },
+};
+
+/**
+ * La Taglia (src/sim/bounty.ts): the outlaw's modifier. `name` = the
+ * adjective on the poster and in the HUD line, `rule` = what it means for
+ * you, said plainly. A Record: a new modifier with no text is a compile error.
+ */
+export const BOUNTY_MODIFIER_TEXT: Record<BountyModifier, { name: string; rule: string }> = {
+  swift: { name: 'LESTO', rule: 'è più veloce di tutti: corre, salta e attacca prima' },
+  shielded: { name: 'CORAZZATO', rule: 'uno scudo para i colpi e ricresce se smetti di colpirlo' },
+  explosive: { name: 'POLVERIERA', rule: 'quando muore esplode: abbattilo da lontano' },
+};
+
+/** What kind of enemy the outlaw is, as the poster says it. */
+export const BOUNTY_TARGET_TEXT: Record<BountyTarget, string> = {
+  ghoul: 'GHOUL',
+  eyebat: 'MALOCCHIO',
+  hound: 'CANE INFERNALE',
+  bull: 'TORO',
+  sharpshooter: 'TIRATORE SCELTO',
 };
 
 /**

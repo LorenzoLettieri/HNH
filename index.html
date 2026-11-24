@@ -283,6 +283,35 @@
       #event-goal { font-size: 18px; line-height: 1.2; color: #e4d8c0; text-shadow: 0 0 2px #000, 2px 2px 0 #000, 0 0 10px rgba(255, 150, 40, 0.4); }
       #event-goal.hurry { color: #e03018; }
       #fps { margin-top: 6px; font-size: 11px; opacity: 0.7; }
+      /* --- La Taglia's WANTED poster (src/render/bountyPoster.ts): yellowed paper pinned
+         on the left, under the wave; it slides in when the outlaw is posted and slides out
+         a few seconds after it shows up. The paper is CSS: a radial gradient (lighter in the
+         middle, burnt at the edges) and an inset shadow; the portrait is a pixel-art canvas. */
+      #bounty-poster {
+        position: fixed; left: 28px; top: 210px; width: 190px; padding: 12px 12px 14px;
+        font-family: 'Rye', Georgia, serif; text-align: center; color: #2a1608; pointer-events: none;
+        background: radial-gradient(ellipse at 50% 45%, #e8d2a0 0%, #d4b47a 55%, #a07840 85%, #5a3818 100%);
+        box-shadow: inset 0 0 18px rgba(60, 30, 5, 0.8), 4px 6px 0 rgba(0, 0, 0, 0.6), 0 0 24px rgba(0, 0, 0, 0.8);
+        transform: rotate(-3deg) translateX(-260px); opacity: 0;
+        transition: transform 0.45s cubic-bezier(0.2, 1.4, 0.4, 1), opacity 0.3s;
+      }
+      #bounty-poster.shown { transform: rotate(-3deg) translateX(0); opacity: 1; }
+      /* The nail at the top. */
+      #bounty-poster::before {
+        content: ''; position: absolute; left: 50%; top: 5px; width: 8px; height: 8px; margin-left: -4px;
+        border-radius: 50%; background: #3a3430; box-shadow: 1px 1px 0 #000;
+      }
+      #bounty-poster .bp-title { font-size: 29px; line-height: 1; letter-spacing: 1px; margin-top: 6px; color: #5a0c04; }
+      #bounty-poster .bp-sub { font-size: 11px; letter-spacing: 3px; }
+      #bounty-poster canvas {
+        display: block; width: 128px; height: 128px; margin: 8px auto 6px; image-rendering: pixelated;
+        border: 3px solid #2a1608; background: #c8a468;
+      }
+      #bounty-poster .bp-name { font-size: 19px; line-height: 1.1; }
+      #bounty-poster .bp-kind { font-size: 12px; letter-spacing: 2px; margin-top: 2px; }
+      #bounty-poster .bp-kind b { color: #8a1408; font-weight: normal; }
+      #bounty-poster .bp-rule { font: italic 12px Georgia, serif; margin-top: 6px; line-height: 1.25; }
+      #bounty-poster .bp-reward { font-size: 15px; margin-top: 8px; letter-spacing: 1px; color: #5a0c04; border-top: 2px solid #2a1608; padding-top: 6px; }
       .hud-label { font-size: 13px; letter-spacing: 3px; color: #8a7a62; text-shadow: 2px 2px 0 #000, 0 0 8px #000; }
       /* Wave number: the round tally of CoD Zombies, in dried-blood red. */
       #wave {
@@ -735,6 +764,15 @@
         <div id="fiches-box" hidden><span id="fiches">×0</span></div>
       </div></div>
     <div id="banner"><div id="banner-title"></div><div id="banner-sub"></div></div>
+    <div id="bounty-poster">
+      <div class="bp-title">RICERCATO</div>
+      <div class="bp-sub">VIVO O MORTO</div>
+      <canvas width="40" height="40"></canvas>
+      <div class="bp-name"></div>
+      <div class="bp-kind"></div>
+      <div class="bp-rule"></div>
+      <div class="bp-reward"></div>
+    </div>
     <div id="style-meter">
       <div id="style-letter"></div>
       <div id="style-name"></div>

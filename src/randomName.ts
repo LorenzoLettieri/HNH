@@ -32,6 +32,18 @@ function pick<T>(list: readonly T[]): T {
   return list[Math.floor(Math.random() * list.length)];
 }
 
+/**
+ * The name of La Taglia's outlaw (src/sim/bounty.ts), from the number the
+ * simulation drew (`seed`): the simulation keeps the CHOICE, the words are
+ * here. Two digits of a number in "base N": seed % N picks the first name,
+ * (seed / N) % M the surname, like the units and the tens of a number.
+ */
+export function outlawName(seed: number): string {
+  const first = FIRST_NAMES[seed % FIRST_NAMES.length];
+  const last = SURNAMES[Math.floor(seed / FIRST_NAMES.length) % SURNAMES.length];
+  return `${first} ${last}`;
+}
+
 /** A random "First Surname" that fits the leaderboard (NAME_MAX_LENGTH). */
 export function randomName(): string {
   // Some pairs are too long ("Mortimer Tumbleweed" = 19): draw again.

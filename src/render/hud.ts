@@ -7,7 +7,9 @@ import { tuning } from '../sim/config';
 import type { SimEvent } from '../sim/events';
 import type { PlayerState } from '../sim/player';
 import { playBell, playMapEventEnd, playMapEventStart, playPickup, playPlayerHurt, playSmithArrived } from '../audio/sfx';
-import { MAP_EVENT_TEXT, WAGER_CURSE_TEXT } from './mapEventText';
+import { BOUNTY_MODIFIER_TEXT, MAP_EVENT_TEXT, WAGER_CURSE_TEXT } from './mapEventText';
+import { outlawName } from '../randomName';
+import { bountyEntity } from '../sim/bounty';
 import { PONY_HURRY } from './ponyRings';
 import { maxHealth } from '../sim/drinks';
 import type { GameState } from '../sim/game';
@@ -36,6 +38,8 @@ const eventName = document.getElementById('event-name')!;
 const eventGoal = document.getElementById('event-goal')!;
 /** Under this many seconds the event's clock turns red. */
 const EVENT_HURRY = 10;
+/** La Taglia: with this many other enemies left (or fewer, all spawned) the line turns red: the outlaw is about to leave. */
+const BOUNTY_HURRY = 3;
 let fps = 60; // smoothed
 const banner = document.getElementById('banner')!;
 const bannerTitle = document.getElementById('banner-title')!;
@@ -154,6 +158,8 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
     if (e.type === 'mapEventEnd') {
       const name = MAP_EVENT_TEXT[e.kind].title.toLowerCase();
       if (e.declined) queueBanner('IL DIAVOLO SI ALZA DAL TAVOLO', 'scommessa rifiutata: niente vinto, niente perso', 3, () => playMapEventEnd(false));
+      else if (e.kind === 'bounty' && e.success) queueBanner('TAGLIA RISCOSSA', `raccogli le monete · +${e.fiches} ${e.fiches === 1 ? 'fiche' : 'fiches'}`, 3, () => playMapEventEnd(true));
+      else if (e.kind === 'bounty') queueBanner('IL RICERCATO È FUGGITO', 'la taglia è persa', 3, () => playMapEventEnd(false));
       else if (e.success) queueBanner('EVENTO COMPLETATO', `+${e.fiches} ${e.fiches === 1 ? 'fiche' : 'fiches'} · spendile al saloon`, 3, () => playMapEventEnd(true));
       else queueBanner('EVENTO FALLITO', name, 3, () => playMapEventEnd(false));
     }
@@ -247,6 +253,28 @@ function updateEventLine(game: GameState): void {
           ? `SCOMMESSA FATTA · prossima ondata: ${curse}`
           : `${curse} · sopravvivi all’ondata`;
     eventGoal.classList.toggle('hurry', ev.phase === 'cursed');
+    return;
+  }
+  // The bounty has no clock either: who, what kind, and how far. Red when
+  // the wave is about to end (it gets away), and while the fuse burns.
+  if (ev.kind === 'bounty') {
+    const name = outlawName(ev.nameSeed).toUpperCase();
+    const outlaw = bountyEntity(ev, game);
+    if (ev.phase === 'fuse') {
+      eventGoal.textContent = 'LA MICCIA BRUCIA · allontanati!';
+      eventGoal.classList.add('hurry');
+    } else if (ev.phase === 'posted' || !outlaw) {
+      eventGoal.textContent = `${name} · sta arrivando in città`;
+      eventGoal.classList.remove('hurry');
+    } else {
+      const p = game.player;
+      const meters = Math.round(Math.hypot(outlaw.x - p.x, outlaw.y - p.y, outlaw.z - p.z));
+      eventGoal.textContent = `${name} · ${BOUNTY_MODIFIER_TEXT[ev.modifier].name} · ${meters} m`;
+      // The others are almost all dead: the wave ends with the last of them, and the outlaw leaves.
+      let others = 0;
+      for (const e of game.entities) if (isEnemy(e) && e.state !== 'dead' && !e.bounty) others++;
+      eventGoal.classList.toggle('hurry', game.wave.budgetLeft === 0 && game.wave.smithsPending === 0 && others <= BOUNTY_HURRY);
+    }
     return;
   }
   if (ev.ticksLeft < 0) {

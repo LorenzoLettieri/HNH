@@ -2,6 +2,7 @@
 // can be shot: practice targets and enemies. Pure data, like the player state.
 import { secondsToTicks, tuning } from './config';
 import { box, type Box, type World } from './world';
+import type { BountyModifier } from './bounty';
 
 /** Fields every entity has. */
 interface EntityBase {
@@ -28,6 +29,14 @@ interface EntityBase {
   marked?: boolean;
   /** Drink "Zoccolo duro": ticks of stun left (status.ts: no AI, only physics). */
   stunTicks?: number;
+  /** Map event "La Taglia" (bounty.ts): this enemy is the wanted outlaw, with this modifier. */
+  bounty?: BountyModifier;
+  /** Bounty "shielded": shield points soaked up before the health, its full size, and ticks since the last hit (bounty.ts). */
+  shield?: number;
+  shieldMax?: number;
+  shieldTicks?: number;
+  /** Bounty "swift": AI time owed, in ticks (game.ts pays it with extra steps, like the wager's curse). */
+  timeDebt?: number;
 }
 
 export interface TargetEntity extends EntityBase {
@@ -531,6 +540,14 @@ export function hitBox(e: Entity): Box {
 /** Applies damage. Returns true if this hit killed / knocked down the entity. */
 export function damage(e: Entity, amount: number): boolean {
   if (!isAlive(e)) return false;
+  // The bounty's shield (bounty.ts) takes the hit first; only what's left over reaches the health.
+  if (e.shield !== undefined) {
+    e.shieldTicks = 0; // hit: the shield waits again before growing back
+    const soaked = Math.min(e.shield, amount);
+    e.shield -= soaked;
+    amount -= soaked;
+    if (amount <= 0) return false;
+  }
   e.health -= amount;
   if (e.health > 0) return false;
   e.health = 0;

@@ -17,7 +17,10 @@ export function applyGunDamage(
   distance: number,
   events: SimEvent[],
 ): void {
+  const before = target.health;
   const killed = damage(target, amount);
+  // All of it soaked up by a bounty's shield (bounty.ts): it rings like metal, and it's not worth points (scoreHits).
+  const soaked = !killed && target.health === before && target.shield !== undefined;
   if (killed && headshot && (target.type === 'ghoul' || target.type === 'sharpshooter')) target.headless = true;
   if (killed && headshot && target.type === 'eyebat') target.popped = true;
   events.push({
@@ -25,7 +28,7 @@ export function applyGunDamage(
     entityId: target.id,
     damage: amount,
     killed,
-    surface: isEnemy(target) ? 'flesh' : 'metal',
+    surface: isEnemy(target) && !soaked ? 'flesh' : 'metal',
     headshot,
     source,
     distance,

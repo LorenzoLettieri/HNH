@@ -111,7 +111,9 @@ function whatDrops(game: GameState, enemy: Enemy): Loot[] {
   const coins = Math.round(enemyCost(enemy) * tuning.coinsPerWeight);
   // The style's multiplier, × Ferro di cavallo storto and Avidità (drinks.ts).
   const coinValue = Math.max(1, Math.round(tuning.coinValue * styleMultiplier(game.style) * coinValueScale(game.player)));
-  for (let i = 0; i < coins; i++) loot.push({ kind: 'coin', value: coinValue });
+  // La Taglia (bounty.ts): the outlaw's bounty bursts out of its body, a fountain of coins.
+  const total = coins + (enemy.bounty ? tuning.bountyCoins : 0);
+  for (let i = 0; i < total; i++) loot.push({ kind: 'coin', value: coinValue });
   // The Damned Smith ALWAYS leaves its Damned Iron (the reason to kill it).
   if (enemy.type === 'smith') loot.push({ kind: 'iron', value: 0 });
   const chance = Math.min(tuning.dropChanceMax, enemyCost(enemy) * tuning.dropChancePerWeight);
