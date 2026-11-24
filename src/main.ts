@@ -20,8 +20,9 @@ import { triggerLandingDip, updateLandingDip } from './render/landingDip';
 import { lookScale, updateCameraFeel } from './render/cameraFeel';
 import { createGroundMeshes, createLevelMeshes, loadMaterials } from './render/materials';
 import { createDecalMeshes } from './render/decals';
-import { ATMOSPHERES, FIRE_ECLIPSE, mixAtmosphere, type Atmosphere } from './render/atmospheres';
+import { ATMOSPHERES, DEVIL_NIGHT, FIRE_ECLIPSE, mixAtmosphere, type Atmosphere } from './render/atmospheres';
 import { createEclipse } from './render/eclipse';
+import { createDarkness } from './render/darkness';
 import { applySunLight, createSunLight } from './render/sunLight';
 import { applyFireLights, createFireLights, updateFireLights } from './render/fireLights';
 import { createProps } from './render/props';
@@ -42,6 +43,7 @@ import { createHolyFireRenderer } from './render/holyFire';
 import { createVendorRenderer } from './render/vendors';
 import { createBellRenderer } from './render/bells';
 import { createPonyRingRenderer } from './render/ponyRings';
+import { createWagerTableRenderer } from './render/wagerTable';
 import { handlePactEvents } from './render/pactFx';
 import { createShopMenu } from './render/shopMenu';
 import { createMapOverlay } from './render/mapOverlay';
@@ -164,6 +166,7 @@ const holyFires = createHolyFireRenderer(scene);
 const vendors = createVendorRenderer(scene, world);
 const bells = createBellRenderer(scene, world);
 const ponyRings = createPonyRingRenderer(scene);
+const wagerTable = createWagerTableRenderer(scene);
 const mapOverlay = createMapOverlay(world);
 const navDebug = createNavDebug(scene, getNavGraph(world));
 const navDebugBig = createNavDebug(scene, getNavGraph(world, BIG_BODY));
@@ -183,9 +186,12 @@ let atmosphereIndex = 0;
 // toward FIRE_ECLIPSE.
 const eclipse = createEclipse();
 let eclipseAmount = 0;
-/** The atmosphere on screen right now: the chosen preset, as far into the eclipse as we are. */
+// The wager's "darkness" curse (render/darkness.ts): night falls on top of the rest.
+const darkness = createDarkness();
+let darknessAmount = 0;
+/** The atmosphere on screen right now: the chosen preset, as far into the eclipse (and the curse's night) as we are. */
 function currentAtmosphere(): Atmosphere {
-  return mixAtmosphere(ATMOSPHERES[atmosphereIndex], FIRE_ECLIPSE, eclipseAmount);
+  return mixAtmosphere(mixAtmosphere(ATMOSPHERES[atmosphereIndex], FIRE_ECLIPSE, eclipseAmount), DEVIL_NIGHT, darknessAmount);
 }
 applyAtmosphere(currentAtmosphere());
 
@@ -537,6 +543,7 @@ renderer.setAnimationLoop((now: number) => {
   vendors.update(camera, now / 1000);
   bells.update(game, events, camera, dt, now / 1000);
   ponyRings.update(game, events, camera, dt, now / 1000);
+  wagerTable.update(game, events, camera, dt, now / 1000);
   handlePactEvents(events, game.entities, camera, dt); // the drinks that make something happen (pactFx.ts)
   // Walked away from the vendor (or died, and woke up at the spawn): the shop closes.
   const shopNearby = shopInReach(player, world);
@@ -576,10 +583,10 @@ renderer.setAnimationLoop((now: number) => {
 
   // The eclipse: re-applied only while it's changing (a few seconds per wave).
   const eclipseNow = eclipse.update(dt, game.wave);
-  if (eclipseNow !== null) {
-    eclipseAmount = eclipseNow;
-    applyAtmosphere(currentAtmosphere());
-  }
+  if (eclipseNow !== null) eclipseAmount = eclipseNow;
+  const darkNow = darkness.update(dt, game.player);
+  if (darkNow !== null) darknessAmount = darkNow;
+  if (eclipseNow !== null || darkNow !== null) applyAtmosphere(currentAtmosphere());
   updateSky(sky, now / 1000);
   updateFireLights(now / 1000);
   props.update(now / 1000);

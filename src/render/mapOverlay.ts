@@ -266,7 +266,9 @@ export function createMapOverlay(world: World): MapOverlay {
 
       // Enemies: red dots, at the same in-between position the renderer
       // draws them (between the last two ticks, see `alpha` in main.ts).
-      const enemies = game.entities.filter((e) => isEnemy(e) && e.state !== 'dead');
+      // (Not with the wager's darkness curse, src/sim/wager.ts: in the dark you don't know where they are.)
+      const blind = game.player.curse === 'darkness';
+      const enemies = blind ? [] : game.entities.filter((e) => isEnemy(e) && e.state !== 'dead');
       const ping = enemies.length <= PING_BELOW;
       for (const e of enemies) {
         const ex = mapX(e.px + (e.x - e.px) * alpha);

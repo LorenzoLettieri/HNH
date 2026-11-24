@@ -198,7 +198,8 @@ function finish(game: GameState, events: SimEvent[], result: Exclude<EventResult
   // leaves something anyway (the jackal's coins) does it on its own.
   // Drink "Mano del baro": double the fiches when you win, max health when you lose.
   const sharp = hasDrink(game.player, 'cardSharp');
-  const fiches = success ? tuning.mapEventFiches * (sharp ? tuning.cardSharpFichesScale : 1) : 0;
+  const prize = ended.kind === 'wager' ? tuning.wagerFiches : tuning.mapEventFiches;
+  const fiches = success ? prize * (sharp ? tuning.cardSharpFichesScale : 1) : 0;
   game.player.fiches += fiches;
   if (!success && !declined && sharp) {
     game.player.cardSharpPenalty += tuning.cardSharpHealthCost;

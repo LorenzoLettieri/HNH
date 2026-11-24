@@ -918,6 +918,91 @@ export function playRingPassed(where: Where, index: number, last: boolean): void
 }
 
 /**
+ * The devil's laugh: three "HA"s, each lower than the one before. A voice
+ * is a buzz (sawtooth, full of harmonics) shaped by the throat: a band-pass
+ * at ~700 Hz (a FORMANT, the resonance that makes an "a" sound like an "a").
+ * Low and slow, slightly detuned: not a person laughing.
+ */
+function devilLaugh(start: number, out: AudioNode): void {
+  if (!ctx) return;
+  [0, 0.26, 0.52].forEach((at, i) => {
+    const t0 = ctx!.currentTime + start + at;
+    const pitch = 92 - i * 9;
+    const osc = ctx!.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(pitch * 1.15, t0);
+    osc.frequency.exponentialRampToValueAtTime(pitch, t0 + 0.2);
+    const formant = ctx!.createBiquadFilter();
+    formant.type = 'bandpass';
+    formant.frequency.value = 700;
+    formant.Q.value = 2.5;
+    const gain = ctx!.createGain();
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.5, t0 + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
+    osc.connect(formant).connect(gain).connect(out);
+    osc.start(t0);
+    osc.stop(t0 + 0.25);
+    noiseBurst({ out, start: start + at, duration: 0.12, volume: 0.12, filter: 'bandpass', frequency: 1200, q: 2 }); // the breath of the "h"
+  });
+}
+
+/**
+ * The devil's wager taken, at the table: the deck riffled (a quick run of
+ * clicks of high noise), a stack of chips pushed in (lower clacks), a thump on
+ * the felt, and the devil laughing. Positional: you're right there anyway.
+ */
+export function playWagerAccepted(where: Where): void {
+  const out = placeSound({ volume: Math.max(0.6, where.volume), pan: where.pan });
+  if (!out) return;
+  for (let i = 0; i < 14; i++) {
+    noiseBurst({ out, start: i * 0.022, duration: 0.02, volume: 0.25, filter: 'bandpass', frequency: 4200, q: 3 });
+  }
+  for (let i = 0; i < 5; i++) {
+    noiseBurst({ out, start: 0.38 + i * 0.05, duration: 0.03, volume: 0.3, filter: 'bandpass', frequency: 2600, q: 5 });
+  }
+  thump({ out, start: 0.65, duration: 0.2, volume: 0.6, from: 120, to: 50 });
+  devilLaugh(0.8, out);
+}
+
+/**
+ * The cursed wave starts: a huge low gong (a ring at 70 Hz, long), a swell of
+ * dark noise rising under it, and a touch of the curse itself: a clock
+ * ticking too fast (faster enemies), the revolver's hammer cocked (one gun),
+ * a bottle breaking (no medkits), a cold wind (darkness).
+ */
+export function playWagerCurse(curse: 'noMedkits' | 'oneGun' | 'fastEnemies' | 'darkness'): void {
+  ring(70, 5, 0.5);
+  thump({ duration: 1.2, volume: 0.7, from: 60, to: 30 });
+  noiseBurst({ duration: 1.6, volume: 0.25, filter: 'lowpass', frequency: 150, frequencyEnd: 900 });
+  if (curse === 'fastEnemies') {
+    for (let i = 0; i < 12; i++) {
+      noiseBurst({ start: 0.6 + i * (0.12 - i * 0.005), duration: 0.015, volume: 0.35, filter: 'bandpass', frequency: i % 2 ? 3000 : 2400, q: 8 });
+    }
+  } else if (curse === 'oneGun') {
+    noiseBurst({ start: 0.7, duration: 0.03, volume: 0.5, filter: 'bandpass', frequency: 2000, q: 4 });
+    noiseBurst({ start: 0.82, duration: 0.04, volume: 0.6, filter: 'bandpass', frequency: 1500, q: 4 });
+  } else if (curse === 'noMedkits') {
+    setTimeout(() => ring(2400, 0.6, 0.12), 650);
+    noiseBurst({ start: 0.65, duration: 0.4, volume: 0.35, filter: 'highpass', frequency: 3000 });
+  } else {
+    noiseBurst({ start: 0.4, duration: 2.5, volume: 0.25, filter: 'bandpass', frequency: 500, frequencyEnd: 250, q: 3 });
+  }
+}
+
+/**
+ * The devil's table sinks into the ground in a burst of hellfire: a whoosh
+ * of fire (noise through a band-pass that sweeps down: it's going away) and
+ * a low rumble. Positional.
+ */
+export function playWagerVanish(where: Where): void {
+  const out = placeSound(where);
+  if (!out) return;
+  noiseBurst({ out, duration: 0.9, volume: 0.6, filter: 'bandpass', frequency: 1800, frequencyEnd: 200, q: 1.2 });
+  thump({ out, duration: 0.8, volume: 0.6, from: 70, to: 30 });
+}
+
+/**
  * The event is over. Success: three rising rings (a major arpeggio: 1, 5/4,
  * 3/2 of the base) and a rattle of chips on the counter (short clicks of
  * high noise). Failure: one low ring that drops a semitone, and nothing else.

@@ -2,6 +2,7 @@
 // by one tick. Main loop (and one day the server) only talk to this.
 import { knockBack } from './kick';
 import { hasDrink, healPerKill, maxHealth, stepBar } from './drinks';
+import { hasCurse } from './wager';
 import type { InputCommand } from './command';
 import { createBull, createEntities, createEyebat, createHound, createSharpshooter, createSmith, isEnemy, stepTarget, type Entity } from './entities';
 import { stepEyebat } from './eyebat';
@@ -60,6 +61,11 @@ export interface GameState {
   pickups: Pickup[];
   /** State of the seeded random generator (see random.ts): what the waves spawn. */
   rng: number;
+  /**
+   * The wager's "faster enemies" curse (wager.ts): enemy time owed, in ticks.
+   * Every tick adds (scale − 1); each whole tick owed is an extra AI step.
+   */
+  enemyTimeDebt: number;
 }
 
 /**
@@ -85,6 +91,7 @@ export function createGame(world: World, seed = 1): GameState {
     holyFires: [],
     pickups: [],
     rng: seed,
+    enemyTimeDebt: 0,
   };
   rollCardSeed(game);
   game.mapEvent = createMapEventState(game);
@@ -193,23 +200,46 @@ export function stepGame(
   }
   const pressure = wavePressure(game.wave.number);
 
-  for (const e of game.entities) {
-    if (e.type === 'target') stepTarget(e);
-    // Drink "Zoccolo duro": a stunned enemy doesn't think, it only falls and slides (status.ts).
-    else if (stepStunned(e, world, dt)) continue;
-    else if (e.type === 'eyebat') stepEyebat(e, game, world, air, dt, events);
-    else if (e.type === 'sharpshooter') stepSharpshooter(e, game, world, graph, dt, events);
-    // Hounds: the ghouls' graph, but their own flow field with no climbing (they ride the vents instead).
-    else if (e.type === 'hound') stepHound(e, game.player, game.entities, world, graph, getFlowField(graph, game.navGoal, NO_CLIMB), dt, events);
-    else if (e.type === 'bull') {
-      // Asked here, not every tick: with no bulls around it's never computed (cached per goal).
-      stepBull(e, game.player, game.entities, world, bigGraph, getFlowField(bigGraph, game.navGoalBig), dt, events);
-    } else if (e.type === 'smith') {
-      // The Smith has the bull's body: it walks on the bulls' graph, but it doesn't ride the
-      // vents (too heavy to fly: it waits below and pulls you down with the hook).
-      stepSmith(e, game.player, game.entities, world, bigGraph, getFlowField(bigGraph, game.navGoalBig, NO_VENT), dt, events);
+  // One step of every enemy's AI. Usually once per tick; with the wager's
+  // "faster enemies" curse, sometimes twice (see below).
+  const stepEnemies = (targets: boolean) => {
+    for (const e of game.entities) {
+      if (e.type === 'target') {
+        if (targets) stepTarget(e);
+      }
+      // Drink "Zoccolo duro": a stunned enemy doesn't think, it only falls and slides (status.ts).
+      else if (stepStunned(e, world, dt)) continue;
+      else if (e.type === 'eyebat') stepEyebat(e, game, world, air, dt, events);
+      else if (e.type === 'sharpshooter') stepSharpshooter(e, game, world, graph, dt, events);
+      // Hounds: the ghouls' graph, but their own flow field with no climbing (they ride the vents instead).
+      else if (e.type === 'hound') stepHound(e, game.player, game.entities, world, graph, getFlowField(graph, game.navGoal, NO_CLIMB), dt, events);
+      else if (e.type === 'bull') {
+        // Asked here, not every tick: with no bulls around it's never computed (cached per goal).
+        stepBull(e, game.player, game.entities, world, bigGraph, getFlowField(bigGraph, game.navGoalBig), dt, events);
+      } else if (e.type === 'smith') {
+        // The Smith has the bull's body: it walks on the bulls' graph, but it doesn't ride the
+        // vents (too heavy to fly: it waits below and pulls you down with the hook).
+        stepSmith(e, game.player, game.entities, world, bigGraph, getFlowField(bigGraph, game.navGoalBig, NO_VENT), dt, events);
+      }
+      else if (e.state !== 'dead') stepGhoul(e, game.player, game.entities, world, graph, flow, dt, events, pressure);
     }
-    else if (e.state !== 'dead') stepGhoul(e, game.player, game.entities, world, graph, flow, dt, events, pressure);
+  };
+  stepEnemies(true);
+  // The wager's "faster enemies" curse: their TIME runs faster, not their
+  // numbers. Changing every speed in config.ts would miss half of it (the
+  // windups, the cooldowns, the charge timers...); an extra step of the whole
+  // AI makes everything faster together: walking, jumping, aiming, biting.
+  // ×1.3 = an extra step every ~3 ticks: the debt grows by 0.3 a tick, and
+  // each whole tick owed is paid with one more step (like a fixed-step game
+  // loop paying the frame time in ticks, main.ts). Deterministic: no clock.
+  if (hasCurse(game.player, 'fastEnemies')) {
+    game.enemyTimeDebt += Math.max(0, tuning.wagerFastEnemiesScale - 1);
+    while (game.enemyTimeDebt >= 1) {
+      game.enemyTimeDebt -= 1;
+      stepEnemies(false);
+    }
+  } else {
+    game.enemyTimeDebt = 0;
   }
   // Enemies are solid: push the player out of their bodies (after they moved, see bodyBlock.ts).
   blockPlayerWithBodies(game.player, game.entities, world, dt);

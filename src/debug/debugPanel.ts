@@ -76,6 +76,8 @@ export function createDebugPanel(options: {
   waves.number(tuning, 'mapEventGapMin', 1, 10, 1);
   waves.number(tuning, 'mapEventGapMax', 1, 10, 1);
   waves.number(tuning, 'mapEventFiches', 0, 5, 1);
+  waves.number(tuning, 'wagerFiches', 0, 5, 1);
+  waves.number(tuning, 'wagerFastEnemiesScale', 1, 2, 0.05);
   waves.number(tuning, 'bellsCount', 1, 6, 1);
   waves.number(tuning, 'bellsTime', 10, 180, 5);
   waves.number(tuning, 'bellsMinSpacing', 0, 50, 1);

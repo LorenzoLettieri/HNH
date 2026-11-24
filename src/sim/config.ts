@@ -1063,6 +1063,11 @@ export const tuning = {
   mapEventGapMax: 5,
   /** Fiches for a completed event (one fiche = one drink at the saloon, for now). */
   mapEventFiches: 1,
+  // --- "La Scommessa del Diavolo" (src/sim/wager.ts) ---
+  /** Fiches for a won bet: more than the other events (it takes two waves, and a whole wave cursed). */
+  wagerFiches: 2,
+  /** Curse "nemici più veloci": how much faster the enemies' time runs (1.3 = 30% faster: walking, attacks, everything). */
+  wagerFastEnemiesScale: 1.3,
   // --- The barman's drinks, the pacts (src/sim/drinks.ts) ---
   /**
    * Fiches per drink, how many drinks on the counter, and the highest level

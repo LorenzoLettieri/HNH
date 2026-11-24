@@ -29,12 +29,17 @@ import type { World } from './world';
  * The curses the devil can put on the table. One per bet, drawn at random.
  * - noMedkits: no medkits drop, and the ones already on the ground don't heal.
  * - oneGun: you're stuck with the gun in your hands when the wave starts.
+ * - fastEnemies: the enemies' time runs faster (game.ts, wagerFastEnemiesScale).
+ * - darkness: night falls on the town, the fog closes in, the map (Tab)
+ *   doesn't show the enemies. Only the RENDERER reads it (render/darkness.ts):
+ *   it's still in the simulation, because it's part of the game's state and
+ *   one day the server decides it.
  * Adding one = an id here, its effect where it applies (with hasCurse), its
- * text in WAGER_CURSE_TEXT (render/mapEventText.ts).
- * Proposed next: faster enemies, darkness.
+ * text in WAGER_CURSE_TEXT (render/mapEventText.ts) and its card on the
+ * table (render/wagerTable.ts).
  */
-export type WagerCurse = 'noMedkits' | 'oneGun';
-const CURSES: WagerCurse[] = ['noMedkits', 'oneGun'];
+export type WagerCurse = 'noMedkits' | 'oneGun' | 'fastEnemies' | 'darkness';
+export const CURSES: WagerCurse[] = ['noMedkits', 'oneGun', 'fastEnemies', 'darkness'];
 
 /** The bet while it's being played: plain data, inside the GameState. */
 export interface WagerEvent {

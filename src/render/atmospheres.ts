@@ -187,6 +187,47 @@ export const FIRE_ECLIPSE: Atmosphere = {
 export const ATMOSPHERES = [HIGH_NOON, HIGH_MIDNIGHT, FIRE_ECLIPSE];
 
 /**
+ * The devil's night: the wager's "darkness" curse (render/darkness.ts). Not a
+ * preset you pick: the town goes pitch black on top of whatever sky it had.
+ * No moon, no stars, almost no ambient light, the fog 20 m away and the color
+ * of dried blood: you see the enemies when they're on you. Only the lanterns
+ * stay lit (stronger): islands of light in the dark, the places to fight in.
+ */
+export const DEVIL_NIGHT: Atmosphere = {
+  name: 'Devil Night',
+  skyTop: 0x000000,
+  skyHorizon: 0x120204,
+  skyCurve: 0.5,
+  sunColor: 0x400808,
+  sunSize: 3,
+  sunElevation: 20,
+  sunAzimuth: 15,
+  sunGlow: 0.05,
+  sunGlowTightness: 12,
+  sunBrightness: 0.3,
+  stars: 0,
+  eclipse: 0,
+  sunLightColor: 0x401010,
+  sunLightIntensity: 0.15,
+  lanternColor: 0xff7020,
+  lanternIntensity: 18,
+  dustColor: 0xff3010,
+  dustAmount: 0.25,
+  dustAlpha: 0.7,
+  dustWindX: 0.1,
+  dustWindZ: 0,
+  dustBlink: 1,
+  fogNear: 4,
+  fogFar: 24,
+  groundFogDensity: 0.06,
+  groundFogFalloff: 0.7,
+  godRays: 0,
+  ambientSky: 0x301018,
+  ambientGround: 0x080204,
+  ambientIntensity: 0.22,
+};
+
+/**
  * A preset in between a and b: t = 0 is a, t = 1 is b. Every number goes
  * straight from one value to the other (linear interpolation, "lerp"), every
  * color channel by channel: 0xRRGGBB is three numbers packed together, so we

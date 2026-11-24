@@ -18,4 +18,6 @@ export const MAP_EVENT_TEXT: Record<MapEventKind, { title: string; goal: string 
 export const WAGER_CURSE_TEXT: Record<WagerCurse, { name: string; rule: string }> = {
   noMedkits: { name: 'NIENTE MEDIKIT', rule: 'per tutta l’ondata i medikit non cadono e non curano' },
   oneGun: { name: 'UNA SOLA ARMA', rule: 'per tutta l’ondata tieni l’arma che hai in mano' },
+  fastEnemies: { name: 'NEMICI PIÙ VELOCI', rule: 'per tutta l’ondata il tempo dei nemici corre più veloce' },
+  darkness: { name: 'BUIO', rule: 'per tutta l’ondata è notte fonda, e la mappa non mostra i nemici' },
 };

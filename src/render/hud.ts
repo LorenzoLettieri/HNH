@@ -159,10 +159,10 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
     }
     // The devil's wager (wager.ts): the bet is taken, then the cursed wave starts.
     if (e.type === 'wagerAccepted') {
-      queueBanner('SCOMMESSA ACCETTATA', `prossima ondata: ${WAGER_CURSE_TEXT[e.curse].name.toLowerCase()}`, 3, playMapEventStart);
+      queueBanner('SCOMMESSA ACCETTATA', `prossima ondata: ${WAGER_CURSE_TEXT[e.curse].name.toLowerCase()}`, 3, () => {}); // its sound: at the table (render/wagerTable.ts)
     }
     if (e.type === 'wagerCurse') {
-      queueBanner(WAGER_CURSE_TEXT[e.curse].name, `${WAGER_CURSE_TEXT[e.curse].rule} · sopravvivi`, 4, playMapEventStart);
+      queueBanner(WAGER_CURSE_TEXT[e.curse].name, `${WAGER_CURSE_TEXT[e.curse].rule} · sopravvivi`, 4, () => {}); // its sound: playWagerCurse (render/wagerTable.ts)
     }
     // The banner says what the climax gives you; tint and sounds are in highNoon.ts.
     if (e.type === 'highNoon') showBanner('HIGH NOON', 'caricatore infinito', 2.5, 'hot');

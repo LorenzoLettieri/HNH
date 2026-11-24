@@ -23,18 +23,29 @@ export interface Eclipse {
 }
 
 export function createEclipse(): Eclipse {
+  const fade = createFade(ECLIPSE_TIME);
+  return {
+    update: (dt, wave) => fade(dt, isSmithWave(wave.number) && wave.phase === 'active'),
+  };
+}
+
+/**
+ * A slow fade toward "on" or "off", in `seconds`: call it every frame with
+ * whether you want it on. Returns how far it is (0..1, already eased), or
+ * null if nothing changed since the last frame. Shared by the eclipse and
+ * the wager's darkness (darkness.ts).
+ */
+export function createFade(seconds: number): (dt: number, on: boolean) => number | null {
   let progress = 0; // linear 0..1
   let first = true;
-  return {
-    update(dt, wave) {
-      const want = isSmithWave(wave.number) && wave.phase === 'active' ? 1 : 0;
-      if (progress === want && !first) return null;
-      first = false;
-      // Move toward the goal at a constant speed, without passing it.
-      const step = dt / ECLIPSE_TIME;
-      progress = want > progress ? Math.min(want, progress + step) : Math.max(want, progress - step);
-      // Smoothstep: starts and ends gently (3t² − 2t³), like CSS "ease-in-out".
-      return progress * progress * (3 - 2 * progress);
-    },
+  return (dt, on) => {
+    const want = on ? 1 : 0;
+    if (progress === want && !first) return null;
+    first = false;
+    // Move toward the goal at a constant speed, without passing it.
+    const step = dt / seconds;
+    progress = want > progress ? Math.min(want, progress + step) : Math.max(want, progress - step);
+    // Smoothstep: starts and ends gently (3t² − 2t³), like CSS "ease-in-out".
+    return progress * progress * (3 - 2 * progress);
   };
 }

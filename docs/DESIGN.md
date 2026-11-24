@@ -744,9 +744,20 @@ dell'ondata dopo il tavolo sparisce, niente premio e **niente penalità** (rifiu
 non ti fa pagare). È l'unico evento che vive **due ondate**: gestisce da solo i `waveStart`/`waveEnd`. La maledizione
 sta sul **giocatore** (`player.curse`, letta con `hasCurse` come `hasDrink`). Maledizioni fatte: **niente medikit**
 (non cadono, e quelli a terra non curano) e **una sola arma** (resti con quella che hai in mano a inizio ondata; un'arma
-comprata nel frattempo resta nella fondina). [PROPOSTO, dopo]: nemici più veloci, buio; più fiches della Scommessa
-rispetto agli altri eventi (dura due ondate). A schermo per ora: la scritta "E · SCOMMETTI", la riga dell'HUD, le
-scritte al centro e il tavolo sulla mappa (Tab); il tavolo 3D nel passo dopo.
+comprata nel frattempo resta nella fondina). A schermo: la scritta "E · SCOMMETTI", la riga dell'HUD, le scritte al
+centro e il tavolo sulla mappa (Tab).
+**Passo 11** [FATTO, da tarare]: **la Scommessa completa**. Il **tavolo 3D** (`src/render/wagerTable.ts`): panno
+verde con l'anello rosso al centro, carte a ventaglio, pile di fiches d'osso, un teschio con la candela, la tua sedia
+scostata e, dall'altra parte, il **trono del diavolo** (schienale di velluto rosso e due corna), vuoto. Sopra il tavolo
+gira **la posta**: una carta grande col segno della maledizione (croce verde barrata, revolver col "1", clessidra,
+occhio rosso), che brilla; luce rossa e **colonna di luce rossa** fino al cielo finché la scommessa aspetta. Accettata:
+la carta gira vorticosamente e brucia più forte, mescolata di carte, fiches spinte e **risata del diavolo**. All'inizio
+dell'ondata maledetta (o se nessuno ha scommesso) il tavolo **sprofonda nel terreno tra le fiamme**; gong della
+maledizione con un dettaglio suo (orologio che corre, cane del revolver, bottiglia rotta, vento). **Le altre due
+maledizioni**: **nemici più veloci** (×1,3: non si toccano le velocità, si accelera **il tempo dei nemici**, un passo
+d'IA in più ogni ~3 tick, così camminata, salti, cariche e preavvisi accelerano insieme) e **buio** (notte fonda sopra
+qualsiasi atmosfera, `DEVIL_NIGHT`: nebbia a 4–24 m, solo le lanterne accese; sulla mappa niente nemici). La Scommessa
+vinta dà **2 fiches** (`wagerFiches`: dura due ondate, e una la giochi maledetto).
 
 **Ordine proposto**: prima lo **scheletro comune** con l'evento più semplice (Campane o Scommessa): comparsa e
 annuncio, timer, successo/fallimento, valuta nuova nell'HUD; poi il barista e i drink; poi gli eventi con un'IA
