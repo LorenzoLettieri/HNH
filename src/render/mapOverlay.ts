@@ -37,6 +37,8 @@ const HIGH: RGB = [212, 190, 150];
 const ROCK = '#140c08';
 /** Sizes of the marks, in CSS pixels (so they're the same on any screen). */
 const ENEMY_RADIUS = 4;
+/** Bells of the map event: dot radius (the next one; the others are smaller). */
+const BELL_RADIUS = 6;
 const PLAYER_SIZE = 10;
 const SHOP_ICON = 22;
 const VENT_RADIUS = 4;
@@ -168,6 +170,36 @@ export function createMapOverlay(world: World): MapOverlay {
         const size = SHOP_ICON * unit;
         ctx.drawImage(coin, mapX(s.x) - size / 2, mapY(s.z) - size / 2, size, size);
         label(SHOP_NAMES[s.kind], mapX(s.x), mapY(s.z) + size / 2, '#d8a838');
+      }
+
+      // The bells of the map event (src/sim/bells.ts): the next one a gold
+      // dot with a pulsing ring (where to go), the others small, the rung ones grey.
+      const ev = game.mapEvent.active;
+      if (ev) {
+        ev.bells.forEach((spot, i) => {
+          const s = world.bellSpots![spot];
+          const bx = mapX(s.x);
+          const by = mapY(s.z);
+          const next = i === ev.rung;
+          if (next) {
+            const phase = (time % PING_TIME) / PING_TIME;
+            ctx.globalAlpha = 1 - phase;
+            ctx.lineWidth = 2 * unit;
+            ctx.strokeStyle = '#ffb030';
+            ctx.beginPath();
+            ctx.arc(bx, by, (BELL_RADIUS + phase * PING_RADIUS * 1.5) * unit, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+          }
+          ctx.beginPath();
+          ctx.arc(bx, by, (next ? BELL_RADIUS : BELL_RADIUS * 0.7) * unit, 0, Math.PI * 2);
+          ctx.fillStyle = i < ev.rung ? '#6a6458' : next ? '#ffc040' : '#a07a34';
+          ctx.fill();
+          ctx.lineWidth = unit;
+          ctx.strokeStyle = '#000';
+          ctx.stroke();
+          if (next) label(`CAMPANA ${i + 1}`, bx, by + BELL_RADIUS * unit, '#ffc040');
+        });
       }
 
       // Enemies: red dots, at the same in-between position the renderer

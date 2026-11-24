@@ -28,6 +28,11 @@ const killsHud = document.getElementById('kills')!;
 const enemiesHud = document.getElementById('enemies-left')!;
 const fpsHud = document.getElementById('fps')!;
 const speedHud = document.getElementById('speed')!;
+const eventLine = document.getElementById('event-line')!;
+const eventName = document.getElementById('event-name')!;
+const eventGoal = document.getElementById('event-goal')!;
+/** Under this many seconds the event's clock turns red. */
+const EVENT_HURRY = 10;
 let fps = 60; // smoothed
 const banner = document.getElementById('banner')!;
 const bannerTitle = document.getElementById('banner-title')!;
@@ -163,6 +168,7 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
   // of the way), otherwise the number jitters too fast to read. dt = 0 while paused.
   if (dt > 0) fps += (1 / dt - fps) * 0.05;
   fpsHud.textContent = `${Math.round(fps)} FPS`;
+  updateEventLine(game);
   // Speed on the ground (m/s), the number to watch when bunny hopping.
   speedHud.textContent = `${horizontalSpeed(player).toFixed(1)} m/s`;
   // The banner is free: the next queued message, if any (before the countdown: it doesn't queue).
@@ -201,4 +207,25 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
   pickupTime = Math.max(0, pickupTime - dt * 5); // gone in 0.2 s
   pickupFlash.style.opacity = String(pickupTime * 0.35);
 
+}
+
+/**
+ * The map event in progress, under the wave: its name, and where you are
+ * with it. Bells: before the first one, where to start; then which bell and
+ * the clock (m:ss), red in the last seconds. Hidden with no event.
+ */
+function updateEventLine(game: GameState): void {
+  const ev = game.mapEvent.active;
+  eventLine.hidden = !ev;
+  if (!ev) return;
+  eventName.textContent = MAP_EVENT_TEXT[ev.kind].title;
+  if (ev.ticksLeft < 0) {
+    eventGoal.textContent = 'suona la campana che brilla';
+    eventGoal.classList.remove('hurry');
+    return;
+  }
+  const seconds = Math.ceil(ev.ticksLeft / 60);
+  const clock = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+  eventGoal.textContent = `CAMPANA ${ev.rung + 1} / ${ev.bells.length} · ${clock}`;
+  eventGoal.classList.toggle('hurry', seconds <= EVENT_HURRY);
 }

@@ -276,6 +276,12 @@
       #hud-top-left { position: fixed; left: 28px; top: 16px; pointer-events: none; font-family: 'Rye', Georgia, serif; }
       #wave-box[hidden] { display: none; } /* before the first wave */
       #enemies-left { margin-top: 2px; }
+      /* The map event in progress (src/render/hud.ts): its name small, under it the goal in bone white
+         ("CAMPANA 2 / 3 · 0:42"); .hurry = the clock is running out, in red. */
+      #event-line { margin-top: 10px; }
+      #event-line[hidden] { display: none; }
+      #event-goal { font-size: 18px; line-height: 1.2; color: #e4d8c0; text-shadow: 0 0 2px #000, 2px 2px 0 #000, 0 0 10px rgba(255, 150, 40, 0.4); }
+      #event-goal.hurry { color: #e03018; }
       #fps { margin-top: 6px; font-size: 11px; opacity: 0.7; }
       .hud-label { font-size: 13px; letter-spacing: 3px; color: #8a7a62; text-shadow: 2px 2px 0 #000, 0 0 8px #000; }
       /* Wave number: the round tally of CoD Zombies, in dried-blood red. */
@@ -716,6 +722,7 @@
     </div>
     <div id="hud-top-left">
       <div id="wave-box" hidden><div class="hud-label">ONDATA</div><div id="wave"></div><div id="enemies-left" class="hud-label"></div></div>
+      <div id="event-line" hidden><div id="event-name" class="hud-label"></div><div id="event-goal"></div></div>
       <div id="fps" class="hud-label"></div>
     </div>
     <div id="score-box"><div class="hud-label">PUNTI</div><div id="score"></div><div id="kills" class="hud-label"></div>

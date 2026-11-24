@@ -38,6 +38,7 @@ import { createDynamiteRenderer } from './render/dynamite';
 import { createExplosionRenderer } from './render/explosions';
 import { createHolyFireRenderer } from './render/holyFire';
 import { createVendorRenderer } from './render/vendors';
+import { createBellRenderer } from './render/bells';
 import { createShopMenu } from './render/shopMenu';
 import { createMapOverlay } from './render/mapOverlay';
 import { shopInReach } from './sim/shop';
@@ -157,6 +158,7 @@ const dynamite = createDynamiteRenderer(scene);
 const explosions = createExplosionRenderer(scene);
 const holyFires = createHolyFireRenderer(scene);
 const vendors = createVendorRenderer(scene, world);
+const bells = createBellRenderer(scene, world);
 const mapOverlay = createMapOverlay(world);
 const navDebug = createNavDebug(scene, getNavGraph(world));
 const navDebugBig = createNavDebug(scene, getNavGraph(world, BIG_BODY));
@@ -510,6 +512,7 @@ renderer.setAnimationLoop((now: number) => {
   explosions.update(events, camera, dt);
   holyFires.update(game.holyFires, camera, dt, now / 1000);
   vendors.update(camera, now / 1000);
+  bells.update(game, events, camera, dt, now / 1000);
   // Walked away from the vendor (or died, and woke up at the spawn): the shop closes.
   const shopNearby = shopInReach(player, world);
   if (shopMenu.isOpen && !shopNearby) closeShop();

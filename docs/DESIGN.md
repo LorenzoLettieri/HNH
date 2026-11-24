@@ -703,6 +703,10 @@ dice "+1 fiche · spendile al saloon".
 (saloon, chiesa, banca, torri gemelle, serbatoio...), ognuna ad almeno 20 m dalla precedente; la prima avvia il timer
 di 60 s, le altre vanno suonate in ordine. Si suonano **sparando** (un proiettile che passa entro 0,8 m), con
 un'**esplosione** o **toccandole** (correndoci contro, calciandole): sparare da lontano va bene, ma prima devi trovarle.
+**Passo 5** [FATTO]: **le Campane a schermo**. Campana d'ottone su un telaio di legno; la prossima da suonare brilla
+e ha una **colonna di luce** fino al cielo (la vedi da tutta la città); suonata, oscilla e rintocca (ogni campana più
+acuta: senti a che punto sei). Riga dell'evento sotto l'ondata ("suona la campana che brilla", poi
+"CAMPANA 2 / 3 · 0:42", rossa negli ultimi 10 s) e le campane sulla mappa (Tab).
 
 **Ordine proposto**: prima lo **scheletro comune** con l'evento più semplice (Campane o Scommessa): comparsa e
 annuncio, timer, successo/fallimento, valuta nuova nell'HUD; poi il barista e i drink; poi gli eventi con un'IA

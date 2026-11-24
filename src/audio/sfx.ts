@@ -466,7 +466,7 @@ export function playReload(duration: number): void {
  * multiples of each other ("inharmonic"), which is what makes metal sound
  * like metal instead of like a musical note. Each one rings and fades.
  */
-function ring(base: number, duration: number, volume: number): void {
+function ring(base: number, duration: number, volume: number, out: AudioNode = world): void {
   if (!ctx) return;
   const t0 = ctx.currentTime;
   for (const [ratio, gainRatio] of [[1, 1], [2.76, 0.5], [5.4, 0.25], [8.9, 0.12]]) {
@@ -475,7 +475,7 @@ function ring(base: number, duration: number, volume: number): void {
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(volume * gainRatio, t0);
     gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration / ratio ** 0.3);
-    osc.connect(gain).connect(world);
+    osc.connect(gain).connect(out);
     osc.start(t0);
     osc.stop(t0 + duration);
   }
@@ -864,6 +864,20 @@ export function playMapEventStart(): void {
   for (let i = 0; i < 6; i++) setTimeout(() => ring(1250 + (i % 2) * 40, 0.9, 0.12), i * 110);
   // Two low drum hits under it, and a third one after the triangle stops.
   for (const at of [0, 0.22, 0.75]) thump({ start: at, duration: 0.3, volume: 0.45, from: 90, to: 45 });
+}
+
+/**
+ * A bell of the "Campane del Giudizio" rang, where it hangs. Each one is
+ * higher than the one before (a rising major chord: 1, 5/4, 3/2), so you hear
+ * your progress; the last one rings longer, with a low thump of the clapper.
+ * Positional but loud: you should hear a bell across the town.
+ */
+export function playEventBell(where: Where, index: number, last: boolean): void {
+  const out = placeSound({ volume: Math.max(0.35, where.volume), pan: where.pan });
+  if (!out) return;
+  const base = 330 * [1, 1.25, 1.5, 2][Math.min(index, 3)];
+  ring(base, last ? 4.5 : 3, 0.4, out);
+  thump({ out, duration: 0.18, volume: 0.5, from: base, to: base / 2 });
 }
 
 /**
