@@ -112,6 +112,15 @@ export function createDebugPanel(options: {
   waves.number(tuning, 'jackalSpawnMax', 10, 150, 1);
   waves.number(tuning, 'jackalCoinsPerHit', 0, 20, 1);
   waves.number(tuning, 'jackalBagCoins', 0, 100, 1);
+  // Il Pozzo delle Anime (src/sim/soulWell.ts)
+  waves.number(tuning, 'soulWellShare', 0.05, 1, 0.05);
+  waves.number(tuning, 'soulLifetime', 1, 30, 0.5);
+  waves.number(tuning, 'soulHover', 0.3, 2.5, 0.1);
+  waves.number(tuning, 'soulSinkSpeed', 0.5, 10, 0.5);
+  waves.number(tuning, 'soulMagnetRange', 0, 10, 0.5);
+  waves.number(tuning, 'soulMagnetSpeed', 1, 30, 1);
+  waves.number(tuning, 'soulCollectReach', 0.3, 3, 0.1);
+  waves.number(tuning, 'soulWellReach', 1, 8, 0.1);
   waves.number(tuning, 'ghoulSpawnWeight', 0, 30, 1);
   waves.number(tuning, 'eyebatSpawnWeight', 0, 30, 1);
   waves.number(tuning, 'houndSpawnWeight', 0, 30, 1);

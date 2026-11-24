@@ -1010,6 +1010,147 @@ export function playEmberHeartDie(where: Where): void {
 }
 
 /**
+ * A GHOST'S VOICE: a pure tone (a sine: no harmonics, nothing "throaty")
+ * that slides from `from` to `to` Hz with a slow VIBRATO (an LFO, a second
+ * oscillator at a few Hz wobbling the pitch, like playShovelBonk's DOIIING)
+ * and swells in and out softly (no hard attack: it doesn't strike, it
+ * appears). The building block of the Soul Well's sounds.
+ */
+function ghostVoice(out: AudioNode, start: number, from: number, to: number, duration: number, volume: number): void {
+  if (!ctx) return;
+  const t0 = ctx.currentTime + start;
+  const osc = ctx.createOscillator();
+  osc.frequency.setValueAtTime(from, t0);
+  osc.frequency.exponentialRampToValueAtTime(to, t0 + duration);
+  const lfo = ctx.createOscillator();
+  lfo.frequency.value = 4.5 + Math.random() * 1.5;
+  const depth = ctx.createGain();
+  depth.gain.value = from * 0.015; // ±1.5% of the pitch
+  lfo.connect(depth).connect(osc.frequency);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.exponentialRampToValueAtTime(volume, t0 + duration * 0.3);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+  osc.connect(gain).connect(out);
+  osc.start(t0);
+  lfo.start(t0);
+  osc.stop(t0 + duration);
+  lfo.stop(t0 + duration);
+}
+
+/** A rising major pentatonic (semitones): the Soul Well's notes climb it, like the Pony Express rings. */
+const SOUL_STEPS = [0, 2, 4, 7, 9];
+function soulNote(base: number, step: number): number {
+  return base * 2 ** ((SOUL_STEPS[step % 5] + 12 * Math.floor(step / 5)) / 12);
+}
+
+/**
+ * The Soul Well wakes up (you walked to it): wind howling up out of the
+ * shaft (noise through a band-pass sweeping up and down: the well
+ * "breathing"), a deep hollow boom from far below, and a choir of ghosts
+ * fading in on a minor chord (three ghost voices) that hangs in the air.
+ */
+export function playSoulWellWake(where: Where): void {
+  const out = placeSound({ volume: Math.max(0.6, where.volume), pan: where.pan });
+  if (!out) return;
+  noiseBurst({ out, duration: 1.4, volume: 0.45, filter: 'bandpass', frequency: 220, frequencyEnd: 1400, q: 3 });
+  noiseBurst({ out, start: 0.7, duration: 1.4, volume: 0.3, filter: 'bandpass', frequency: 1400, frequencyEnd: 300, q: 3 });
+  thump({ out, duration: 1.8, volume: 0.8, from: 70, to: 24 });
+  ghostVoice(out, 0.2, 220, 220, 2.6, 0.14);
+  ghostVoice(out, 0.35, 262, 262, 2.4, 0.1); // a minor third over it
+  ghostVoice(out, 0.5, 330, 311, 2.2, 0.09); // the fifth, sagging a little: something's wrong
+}
+
+/**
+ * You caught a soul: a short breath IN (noise whose band-pass sweeps up,
+ * getting louder: it comes to you), a glassy chime and a tiny ghost voice,
+ * pitched up the pentatonic with how many souls you carry: you HEAR your
+ * hands filling. Not positional: it's in your hands.
+ */
+export function playSoulCollect(carried: number): void {
+  if (!ctx) return;
+  const t0 = ctx.currentTime;
+  const src = ctx.createBufferSource();
+  src.buffer = noiseBuffer;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.Q.value = 3;
+  filter.frequency.setValueAtTime(500, t0);
+  filter.frequency.exponentialRampToValueAtTime(3000, t0 + 0.16);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.01, t0);
+  gain.gain.exponentialRampToValueAtTime(0.22, t0 + 0.14);
+  gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.2);
+  src.connect(filter).connect(gain).connect(world);
+  src.start(t0, Math.random() * 0.5, 0.22);
+  const note = soulNote(523, Math.min(14, Math.max(0, carried - 1)));
+  setTimeout(() => ring(note * 2, 0.5, 0.05), 120);
+  ghostVoice(world, 0.1, note, note * 1.02, 0.5, 0.08);
+}
+
+/**
+ * A soul on the ground went out before you got there: a little sigh, a
+ * ghost voice sliding down and away. Quiet, positional: you hear the ones
+ * you're losing around you.
+ */
+export function playSoulFaded(where: Where): void {
+  const out = placeSound({ volume: where.volume * 0.5, pan: where.pan });
+  if (!out) return;
+  ghostVoice(out, 0, 700, 260, 0.6, 0.12);
+  noiseBurst({ out, duration: 0.4, volume: 0.06, filter: 'bandpass', frequency: 1800, frequencyEnd: 500, q: 2 });
+}
+
+/**
+ * Souls dropped into the well: one falling whoosh for each soul (a few at
+ * most), each going DOWN (noise and a ghost voice sliding down: into the
+ * shaft), then a hollow splash from far below and a bright chime that climbs
+ * with how full the well is (`fill` 0..1), with an echo of itself.
+ */
+export function playSoulsDeposited(where: Where, souls: number, fill: number): void {
+  const out = placeSound({ volume: Math.max(0.5, where.volume), pan: where.pan });
+  if (!out) return;
+  const n = Math.min(6, souls);
+  for (let i = 0; i < n; i++) {
+    noiseBurst({ out, start: i * 0.07, duration: 0.35, volume: 0.2, filter: 'bandpass', frequency: 2400, frequencyEnd: 200, q: 2 });
+    ghostVoice(out, i * 0.07, 880 - i * 40, 180, 0.45, 0.06);
+  }
+  const land = n * 0.07 + 0.3;
+  thump({ out, start: land, duration: 0.6, volume: 0.55, from: 120, to: 40 });
+  noiseBurst({ out, start: land, duration: 0.5, volume: 0.25, filter: 'lowpass', frequency: 1600, frequencyEnd: 200 });
+  const note = soulNote(330, Math.min(9, Math.floor(fill * 10)));
+  setTimeout(() => ring(note, 1.4, 0.16, out), land * 1000);
+  setTimeout(() => ring(note, 1.0, 0.06, out), (land + 0.3) * 1000); // the echo down the shaft
+}
+
+/**
+ * The well is full: a deep boom, the GEYSER of souls roaring up out of it
+ * (noise through a low-pass that OPENS: the opposite of a dying fire), and
+ * the ghost choir again, this time on a MAJOR chord that climbs: freed.
+ */
+export function playSoulWellFull(where: Where): void {
+  const out = placeSound({ volume: Math.max(0.7, where.volume), pan: where.pan });
+  if (!out) return;
+  thump({ out, duration: 1.6, volume: 1, from: 90, to: 24 });
+  noiseBurst({ out, duration: 1.8, volume: 0.6, filter: 'lowpass', frequency: 300, frequencyEnd: 5000 });
+  [262, 330, 392, 523].forEach((f, i) => ghostVoice(out, 0.15 + i * 0.12, f, f * 1.5, 2.6, 0.12));
+  setTimeout(() => ring(1046, 2.2, 0.14, out), 400);
+}
+
+/**
+ * The well dies (the wave ended before it was full): a long moan falling
+ * into the dark (a ghost voice sliding down an octave and more), the wind
+ * in the shaft dying out.
+ */
+export function playSoulWellDie(where: Where): void {
+  const out = placeSound({ volume: Math.max(0.4, where.volume), pan: where.pan });
+  if (!out) return;
+  ghostVoice(out, 0, 330, 90, 2.2, 0.16);
+  ghostVoice(out, 0.15, 392, 110, 2.0, 0.08);
+  noiseBurst({ out, duration: 2, volume: 0.3, filter: 'bandpass', frequency: 900, frequencyEnd: 120, q: 2 });
+  thump({ out, start: 0.4, duration: 1, volume: 0.45, from: 50, to: 22 });
+}
+
+/**
  * The devil's laugh: three "HA"s, each lower than the one before. A voice
  * is a buzz (sawtooth, full of harmonics) shaped by the throat: a band-pass
  * at ~700 Hz (a FORMANT, the resonance that makes an "a" sound like an "a").

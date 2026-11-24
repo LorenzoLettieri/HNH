@@ -197,6 +197,12 @@ export interface World {
    * event never shows up.
    */
   wagerTable?: { x: number; y: number; z: number };
+  /**
+   * The middle of the mouth of the well of the "Pozzo delle Anime" map event
+   * (soulWell.ts): where you carry the souls. Optional: without it that event
+   * never shows up.
+   */
+  soulWell?: { x: number; y: number; z: number };
   /** Where the player (re)appears, feet position. */
   spawn: { x: number; y: number; z: number };
 }

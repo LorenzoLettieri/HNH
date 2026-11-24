@@ -355,6 +355,28 @@ export function spawnHolyFlame(point: THREE.Vector3, direction: THREE.Vector3, c
   holyFlame.spawn(point, direction, count);
 }
 
+/**
+ * SOUL WISPS (the Soul Well event, render/soulWell.ts): small pale-green
+ * motes of ghost light that drift slowly UP and fade, like the breath of a
+ * ghost. Slower and softer than the holy fire's tongues: not a fire, a
+ * spirit.
+ */
+const soulWisp = new Burst({
+  max: 600,
+  life: 0.9,
+  size: 0.11,
+  speed: 0.7,
+  gravity: -2.2, // it floats up
+  color: 0x7affc8,
+  brightness: 4,
+  additive: true,
+  spread: 1.4,
+});
+
+export function spawnSoulWisp(point: THREE.Vector3, direction: THREE.Vector3, count: number): void {
+  soulWisp.spawn(point, direction, count);
+}
+
 export function spawnBlastFire(point: THREE.Vector3, direction: THREE.Vector3, count: number): void {
   blastFire.spawn(point, direction, count);
 }
@@ -369,7 +391,7 @@ export function createParticles(
   levelVents: THREE.Vector3[] = [],
 ): void {
   vents = levelVents;
-  scene.add(steam.points, sparks.layer.points, blood.layer.points, dirt.layer.points, snort.layer.points, blastFire.layer.points, smoke.layer.points, holyFlame.layer.points);
+  scene.add(steam.points, sparks.layer.points, blood.layer.points, dirt.layer.points, snort.layer.points, blastFire.layer.points, smoke.layer.points, holyFlame.layer.points, soulWisp.layer.points);
   steam.material.uniforms.color.value.set(0xe8dccc);
   fires = levelFires;
   totalEmberRate = fires.reduce((sum, f) => sum + f.emberRate, 0);
@@ -417,7 +439,7 @@ export function updateParticles(
   steam.material.uniforms.pixelsPerMeterAt1m.value = ppm;
   sparks.layer.material.uniforms.pixelsPerMeterAt1m.value = ppm;
   blood.layer.material.uniforms.pixelsPerMeterAt1m.value = ppm;
-  for (const b of [dirt, snort, blastFire, smoke, holyFlame]) b.layer.material.uniforms.pixelsPerMeterAt1m.value = ppm;
+  for (const b of [dirt, snort, blastFire, smoke, holyFlame, soulWisp]) b.layer.material.uniforms.pixelsPerMeterAt1m.value = ppm;
 
   updateDust(dt, time, camera.position);
   updateEmbers(dt, time);
@@ -429,6 +451,7 @@ export function updateParticles(
   blastFire.update(dt);
   smoke.update(dt);
   holyFlame.update(dt);
+  soulWisp.update(dt);
 }
 
 function updateDust(dt: number, time: number, cam: THREE.Vector3): void {

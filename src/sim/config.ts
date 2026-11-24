@@ -1212,6 +1212,24 @@ export const tuning = {
   /** Seconds its body lies on the ground. */
   jackalCorpseTime: 4,
 
+  // "Il Pozzo delle Anime" (src/sim/soulWell.ts)
+  /** Souls the well wants: this share of the wave's whole weight (waveBudget: ~7 at wave 5, ~15 at wave 10). */
+  soulWellShare: 0.4,
+  /** Seconds a soul floats on the ground before it goes out (the clock of this event). */
+  soulLifetime: 8,
+  /** How high over the floor a soul floats (meters): about your chest, so running through it catches it. */
+  soulHover: 1.1,
+  /** How fast a soul sinks (or rises) to that height, m/s (an eye-bat's soul comes down from the sky). */
+  soulSinkSpeed: 3,
+  /** Closer than this (meters, to your chest) a soul flies to you by itself... */
+  soulMagnetRange: 3.5,
+  /** ...this fast, m/s (faster than you run: once it's coming, it's yours). */
+  soulMagnetSpeed: 10,
+  /** Closer than this (meters, to your chest) and it's caught. */
+  soulCollectReach: 1.2,
+  /** Within this many meters of the well's middle (on the ground plane) you wake it and drop the souls in. */
+  soulWellReach: 3.5,
+
   // --- Enemy projectiles (src/sim/projectiles.ts) ---
   /** Radius of an enemy projectile, meters (for hitting the player). */
   projectileRadius: 0.25,

@@ -10,6 +10,7 @@ export const MAP_EVENT_TEXT: Record<MapEventKind, { title: string; goal: string 
   wager: { title: 'LA SCOMMESSA DEL DIAVOLO', goal: 'un tavolo da gioco nella piazza del pozzo: scommetti sulla prossima ondata' },
   emberHeart: { title: 'IL CUORE DI BRACE', goal: 'risveglia il cristallo, resta nel suo cerchio e uccidi' },
   jackal: { title: 'LO SCIACALLO', goal: 'un diavoletto scappa col sacco del vildenaro: prendilo prima che fugga' },
+  soulWell: { title: 'IL POZZO DELLE ANIME', goal: 'vai al pozzo nella piazza, poi portagli le anime dei nemici che uccidi' },
 };
 
 /**

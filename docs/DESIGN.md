@@ -685,7 +685,7 @@ evento (stile gli eventi di Diablo 4) **durante un'ondata**.
   da uccidere entro l'ondata, segnato sulla mappa (Tab). I "miniboss come eventi" di §3.
 - **La Testa del Ricercato** (trasporto): un teschio da portare all'altare o all'ufficio dello sceriffo;
   mentre lo porti solo revolver e i nemici puntano te; un colpo forte te lo fa cadere. Non rallenta.
-- **Il Pozzo delle Anime** (raccolta): i nemici uccisi lasciano un'anima che si spegne in 8 s; portane N al pozzo.
+- **Il Pozzo delle Anime** (raccolta) [FATTO, da tarare: passo 14]: i nemici uccisi lasciano un'anima che si spegne in 8 s; portane N al pozzo.
 - **Il Sermone di Sangue** (Stile): un predicatore vuole spettacolo: rank S, o catena viva per 45 s, nel suo raggio.
 - **La Scommessa del Diavolo** (rischio): sopravvivi alla prossima ondata con una maledizione (niente medikit,
   nemici più veloci, una sola arma, buio). Riusa tutto: cambia solo dei numeri.
@@ -791,6 +791,25 @@ arrivi a 10 m scappa dritto via. Per trovarlo: una **colonna di luce dorata** ch
 tintinnio del sacco a ogni passo (posizionali), la moneta "SCIACALLO" sulla mappa (Tab), la riga dell'HUD ("TI ASPETTA" /
 "IN FUGA" e l'orologio). Provato con una simulazione: un inseguitore che segue il grafo a 6,2 m/s lo tiene in media a
 14–16 m; in 60 s lui corre ~250 m, si arrampica, prende 3 sfiatatoi e salta 6–8 volte.
+**Passo 14** [FATTO, da tarare]: **il Pozzo delle Anime**, il sesto evento (`src/sim/soulWell.ts`, `src/render/soulWell.ts`).
+Il pozzo è **quello della piazza** (`soulWell` del livello: niente oggetti nuovi, il pozzo c'era già). Si avvia **andandoci**:
+finché dorme ha una spirale di luce verde spettrale nella bocca e la colonna di luce sopra il tettuccio. Sveglio, **ogni nemico
+ucciso lascia la sua anima** (da qualunque arma, ovunque): un fantasmino di luce che galleggia a 1,1 m dal pavimento sotto il
+punto in cui è morto (un raggio in giù trova il pavimento, come il fuoco santo; quella di un Malocchio scende dal cielo; sopra
+un burrone si perde) e **si spegne in 8 s**, lampeggiando negli ultimi 2. **Vale il peso del nemico** (ghoul 1, toro 5), come
+le anime del Cuore di Brace. Si prende passandoci attraverso, e **entro 3,5 m vola da sola verso di te** (10 m/s, attraverso i
+muri: è un fantasma), così basta passarci vicino correndo. **In mano non si spengono e non si perdono**: valgono solo quando le
+butti nel pozzo, cioè **passandogli entro 3,5 m** (si svuotano da sole). Il pozzo ne vuole **il 40% del peso dell'ondata**
+(`soulWellShare`: 7 all'ondata 5, 15 alla 10). Niente orologio: l'ondata è l'orologio. Il ciclo è quello della bandiera di
+"cattura la bandiera": esci a uccidere, raccogli, torna; restare al pozzo non basta (le anime lontane si spengono), restare fuori
+nemmeno. A schermo: le anime coi loro occhi e la bocca, più grandi per i nemici pesanti, una scia di faville; quelle **in mano
+girano attorno a te in basso** (le vedi passare in fondo allo schermo); la riga dell'HUD "POZZO 3 / 7 · IN MANO 2", **rossa finché
+porti anime**, e allora la colonna di luce torna forte per ritrovare la strada; buttate dentro **volano nella bocca ad arco**, il
+pozzo le ingoia con un lampo e una nota che sale con quanto è pieno. Pieno: un **geyser di anime** e il coro dei fantasmi su un
+accordo maggiore; fallito, un lungo lamento e il buio. Suoni fatti con le "voci di fantasma" (`ghostVoice`: un seno con un
+vibrato lento che entra e svanisce). Sulla mappa (Tab) il pozzo (pulsa finché dorme o finché porti anime) e le anime a terra.
+Provato con una simulazione (risveglio, l'anima scende a 1,1 m, la calamita la porta in 11 tick, deposito, si spegne a 8 s, il
+toro vale 5, pieno = riuscito, fine ondata = fallito) e con screenshot in Chrome headless senza errori.
 
 **Ordine proposto**: prima lo **scheletro comune** con l'evento più semplice (Campane o Scommessa): comparsa e
 annuncio, timer, successo/fallimento, valuta nuova nell'HUD; poi il barista e i drink; poi gli eventi con un'IA

@@ -18,7 +18,7 @@
 import type { GameState } from '../sim/game';
 import { isEnemy } from '../sim/entities';
 import { jackalOf } from '../sim/jackal';
-import { tuning } from '../sim/config';
+import { tuning, TICK_RATE } from '../sim/config';
 import type { ShopSpawn, World } from '../sim/world';
 import { coinIcon } from './pickupSprites';
 import './fonts'; // the labels are written in Rye
@@ -49,6 +49,9 @@ const PING_BELOW = 3;
 /** Seconds per ping, and how far its ring grows (CSS px). */
 const PING_TIME = 1.2;
 const PING_RADIUS = 26;
+/** The Soul Well and its souls: their ghost green, and how many ticks before a soul goes out it starts blinking (2 s). */
+const SOUL_GREEN = '#7affc8';
+const SOUL_HURRY_TICKS = 2 * TICK_RATE;
 /** Shop names on the map, by kind. */
 const SHOP_NAMES: Record<ShopSpawn['kind'], string> = { weapons: 'ARMERIA', forge: 'FORGIA', saloon: 'SALOON' };
 
@@ -332,6 +335,44 @@ export function createMapOverlay(world: World): MapOverlay {
         ctx.fillStyle = '#6a4010';
         ctx.fillRect(jx - 0.5 * unit, jy - BELL_RADIUS * 0.6 * unit, unit, BELL_RADIUS * 1.2 * unit); // the "$" stroke, roughly
         label('SCIACALLO', jx, jy + BELL_RADIUS * unit, '#ffd040');
+      }
+
+      // The Soul Well (src/sim/soulWell.ts): the well a ghost-green ring (a
+      // pulsing one while it sleeps, or while you carry souls: that's when
+      // you're looking for it), with how full it is; the souls on the ground
+      // small pale dots, blinking in their last seconds (run there NOW).
+      if (ev?.kind === 'soulWell') {
+        const wx = mapX(ev.x);
+        const wy = mapY(ev.z);
+        if (!ev.awake || ev.carried > 0) {
+          const phase = (time % PING_TIME) / PING_TIME;
+          ctx.globalAlpha = 1 - phase;
+          ctx.lineWidth = 2 * unit;
+          ctx.strokeStyle = SOUL_GREEN;
+          ctx.beginPath();
+          ctx.arc(wx, wy, (BELL_RADIUS + phase * PING_RADIUS * 1.5) * unit, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+        ctx.beginPath();
+        ctx.arc(wx, wy, BELL_RADIUS * 1.2 * unit, 0, Math.PI * 2);
+        ctx.fillStyle = '#123a30';
+        ctx.fill();
+        ctx.lineWidth = 2.5 * unit;
+        ctx.strokeStyle = SOUL_GREEN;
+        ctx.stroke();
+        label(ev.awake ? `POZZO ${ev.filled}/${ev.goal}` : 'POZZO', wx, wy + BELL_RADIUS * 1.2 * unit, SOUL_GREEN);
+        for (const s of ev.souls) {
+          const last = s.ticksLeft < SOUL_HURRY_TICKS;
+          if (last && Math.floor(time * 6) % 2 === 0) continue;
+          ctx.beginPath();
+          ctx.arc(mapX(s.px + (s.x - s.px) * alpha), mapY(s.pz + (s.z - s.pz) * alpha), (2 + s.value) * unit, 0, Math.PI * 2);
+          ctx.fillStyle = '#c8ffe8';
+          ctx.fill();
+          ctx.lineWidth = unit;
+          ctx.strokeStyle = '#000';
+          ctx.stroke();
+        }
       }
 
       // Enemies: red dots, at the same in-between position the renderer

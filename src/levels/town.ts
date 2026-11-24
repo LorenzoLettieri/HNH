@@ -573,6 +573,9 @@ export const town: World = {
   // The devil's gambling table ("Scommessa del Diavolo", src/sim/wager.ts):
   // in the square at the crossing, next to the well, the middle of the town.
   wagerTable: { x: -2, y: 0, z: 5 },
+  // The "Pozzo delle Anime" map event (src/sim/soulWell.ts): the town well
+  // itself (the stone ring near the bottom of this file), the top of its mouth.
+  soulWell: { x: 2, y: 1, z: 0 },
   bellSpots: [
     { x: -15, y: 7.3, z: -12 }, // saloon
     { x: 17, y: 9.3, z: -12 }, // church

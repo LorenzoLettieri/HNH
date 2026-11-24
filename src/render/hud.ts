@@ -148,6 +148,10 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
       showBanner('ONDATA SUPERATA', '', 2.5);
       playBell(1, 240);
     }
+    // The Soul Well (soulWell.ts) woke up: its sound is at the well (render/soulWell.ts).
+    if (e.type === 'soulWellWake') {
+      queueBanner('IL POZZO SI È RISVEGLIATO', 'ogni nemico ucciso lascia un’anima: prendila prima che si spenga e portala qui', 4, () => {});
+    }
     // Map events (mapEvents.ts): queued, they usually come with a wave message.
     if (e.type === 'mapEventStart') {
       const text = MAP_EVENT_TEXT[e.kind];
@@ -245,6 +249,17 @@ function updateEventLine(game: GameState): void {
   eventLine.hidden = !ev;
   if (!ev) return;
   eventName.textContent = MAP_EVENT_TEXT[ev.kind].title;
+  // The Soul Well: no clock (the wave is its clock; the souls on the ground
+  // have theirs, on screen). What's in the well, what's in your hands, and
+  // what to do now: grab, or run back. Red while you carry souls: they only
+  // count in the well.
+  if (ev.kind === 'soulWell') {
+    eventGoal.textContent = !ev.awake
+      ? 'vai al pozzo nella piazza per risvegliarlo'
+      : `POZZO ${ev.filled} / ${ev.goal} · IN MANO ${ev.carried} · ${ev.carried > 0 ? 'portale al pozzo!' : 'raccogli le anime prima che si spengano'}`;
+    eventGoal.classList.toggle('hurry', ev.awake && ev.carried > 0);
+    return;
+  }
   // The wager has no clock: what's on the table, then the curse you're playing with.
   if (ev.kind === 'wager') {
     const curse = WAGER_CURSE_TEXT[ev.curse].name;

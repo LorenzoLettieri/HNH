@@ -118,6 +118,14 @@ export type SimEvent =
    * `declined` = never played (a wager nobody took, wager.ts): not a failure, nothing lost.
    */
   | { type: 'mapEventEnd'; kind: MapEventKind; success: boolean; declined: boolean; fiches: number }
+  /** You walked to the Soul Well (soulWell.ts): it wakes up, and from now on the kills leave souls. Its mouth. */
+  | { type: 'soulWellWake'; x: number; y: number; z: number }
+  /** You caught a soul (worth `value`): you now carry `carried`. Where it was. */
+  | { type: 'soulCollected'; x: number; y: number; z: number; value: number; carried: number }
+  /** A soul on the ground went out before you caught it. Where it was. */
+  | { type: 'soulFaded'; x: number; y: number; z: number }
+  /** You dropped `souls` into the well: it now holds `total` of `goal`. */
+  | { type: 'soulsDeposited'; souls: number; total: number; goal: number }
   /** You took the devil's wager at the table (wager.ts): the next wave is played with this curse. */
   | { type: 'wagerAccepted'; curse: WagerCurse }
   /** The wave you bet on starts: the curse is on you until it ends. */
