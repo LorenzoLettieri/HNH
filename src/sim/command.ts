@@ -47,7 +47,7 @@ export interface InputCommand {
   drink: DrinkId | null;
   /**
    * Start the next wave now, without waiting for the end of the break
-   * (waves.ts). Ignored while a wave is on. In multiplayer it will become a
+   * (waves.ts; default key Q, action 'skipBreak' in keybinds.ts). Ignored while a wave is on. In multiplayer it will become a
    * vote, but the field stays the same: "this player is ready".
    */
   skipBreak: boolean;

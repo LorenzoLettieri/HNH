@@ -509,7 +509,7 @@ da 20 a 110 m invece che da 12 a 85, nebbia a terra quasi dimezzata, luce ambien
 ### Struttura della partita [FATTO: ondate stile CoD Zombies]
 Ondate numerate (`src/sim/waves.ts`), sempre più dure, 10 s di pausa tra una e l'altra
 (per lo shop, la Forgia, il saloon), annunciate dalla campana della chiesa. Chi non ha bisogno
-della pausa preme **E** (lontano da un bancone) e l'ondata parte subito: il ritmo lo decide il
+della pausa preme **Q** e l'ondata parte subito: il ritmo lo decide il
 giocatore. In multiplayer andrà votato (o deciso dall'host). Alla morte: riepilogo (ondata, uccisioni, punti) e
 si ricomincia dall'ondata 1.
 

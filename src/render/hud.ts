@@ -184,12 +184,12 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
     next.sound();
   }
   // The countdown for the whole break (as soon as "ONDATA SUPERATA" is gone),
-  // with the key that skips it: the interact key, away from any counter (main.ts).
+  // with the key that skips it (the 'skipBreak' action, keybinds.ts).
   if (w.phase === 'break' && w.number > 0 && bannerTime <= 0) {
     // A new stamp only when the digit changes, not every frame.
     const n = Math.ceil(w.breakTicks / 60);
     if (n !== countdownShown) {
-      setBanner(String(n), `prossima ondata tra · ${mainKeyName('interact')} per iniziare subito`, 'countdown');
+      setBanner(String(n), `prossima ondata tra · ${mainKeyName('skipBreak')} per iniziare subito`, 'countdown');
       countdownShown = n;
     }
     banner.style.opacity = '0.85';

@@ -426,8 +426,8 @@ export function switchWeapon(p: PlayerState, w: WeaponId, events: SimEvent[]): v
 
 /**
  * Which weapon the command asks for (see InputCommand.weaponSelect).
- * Only weapons you OWN: a slot you haven't bought is ignored, and Q/the
- * wheel skip it (with just the revolver, they do nothing).
+ * Only weapons you OWN: a slot you haven't bought is ignored, and the
+ * wheel skips it (with just the revolver, they do nothing).
  */
 function selectedWeapon(p: PlayerState, select: number): WeaponId {
   const current = p.weapon;

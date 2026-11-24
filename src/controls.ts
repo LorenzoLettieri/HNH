@@ -58,12 +58,6 @@ export function queueRespawn(): void {
   pendingRespawn = true;
 }
 
-/** Same for "start the next wave now" (the interact key away from a counter, main.ts): the next command's `skipBreak`. */
-let pendingSkipBreak = false;
-export function queueSkipBreak(): void {
-  pendingSkipBreak = true;
-}
-
 export function buildCommand(tick: number): InputCommand {
   // Actions, not keys: which keys do what is in keybinds.ts (rebindable).
   let forward = 0;
@@ -81,7 +75,7 @@ export function buildCommand(tick: number): InputCommand {
   const altFire = actionDown('altFire');
   const reload = actionActive('reload');
   const kick = actionActive('kick');
-  // Weapons: a slot each, or cycle. (Pressed only: holding Q must not
+  // Weapons: a slot each, or cycle. (Pressed only: holding a key must not
   // switch back and forth every tick.) Every action is asked, even after a
   // "yes": asking also consumes the press (keybinds.ts).
   let weaponSelect = 0;
@@ -101,8 +95,8 @@ export function buildCommand(tick: number): InputCommand {
   pendingDrink = null;
   const respawn = pendingRespawn;
   pendingRespawn = false;
-  const skipBreak = pendingSkipBreak;
-  pendingSkipBreak = false;
+  // Start the next wave now (default Q): the simulation ignores it while a wave is on (waves.ts).
+  const skipBreak = actionPressed('skipBreak');
   return {
     tick, forward, strafe, jump, crouch, fire, altFire, kick, reload, weaponSelect, respawn, buy, forge, drink, skipBreak,
     yaw: view.yaw, pitch: view.pitch,

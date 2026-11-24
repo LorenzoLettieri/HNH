@@ -45,15 +45,16 @@ export const ACTIONS = {
   weapon2: { label: 'Doppietta', group: 'Armi', keys: ['Digit2'] },
   weapon3: { label: 'Carabina a leva', group: 'Armi', keys: ['Digit3'] },
   weapon4: { label: 'Lancia-dinamite', group: 'Armi', keys: ['Digit4'] },
-  nextWeapon: { label: 'Arma successiva', group: 'Armi', keys: ['KeyQ', 'WheelDown'] },
+  nextWeapon: { label: 'Arma successiva', group: 'Armi', keys: ['WheelDown'] },
   prevWeapon: { label: 'Arma precedente', group: 'Armi', keys: ['WheelUp'] },
   interact: {
-    label: 'Interagisci',
+    label: 'Shop',
     group: 'Gioco',
     keys: ['KeyE'],
-    note: 'vicino a un bancone: apri/chiudi · tra un’ondata e l’altra: inizia subito · solo tastiera',
+    note: 'vicino a un bancone: apri/chiudi · solo tastiera',
     keyboardOnly: true,
   },
+  skipBreak: { label: 'Inizia ondata', group: 'Gioco', keys: ['KeyQ'], note: 'nella pausa tra le ondate: parte subito' },
   map: { label: 'Mappa', group: 'Gioco', keys: ['Tab'], note: 'tieni premuto' },
 } satisfies Record<string, ActionInfo>;
 export type Action = keyof typeof ACTIONS;
@@ -245,10 +246,24 @@ export function loadKeybinds(): void {
   try {
     const saved: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}');
     if (typeof saved !== 'object' || saved === null) return;
+    const fresh: Action[] = []; // actions the save doesn't know (added after it was written)
     for (const action of Object.keys(ACTIONS) as Action[]) {
       const keys = (saved as Record<string, unknown>)[action];
-      if (!Array.isArray(keys) || !keys.every((k) => typeof k === 'string')) continue;
+      if (!Array.isArray(keys) || !keys.every((k) => typeof k === 'string')) {
+        fresh.push(action);
+        continue;
+      }
       bindings[action] = keys.filter((k) => bindRefusal(action, k) === null).slice(0, SLOTS);
+    }
+    // A new action's default key may still sit on an old action in the save
+    // (Q was "next weapon" before it started the wave). The new action takes
+    // it, the same rule as bindKey: a key does ONE thing.
+    for (const action of fresh) {
+      for (const code of bindings[action]) {
+        for (const other of Object.keys(bindings) as Action[]) {
+          if (other !== action) bindings[other] = bindings[other].filter((k) => k !== code);
+        }
+      }
     }
   } catch {
     // Nothing usable saved: keep the defaults.
