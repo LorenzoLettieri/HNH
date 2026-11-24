@@ -13,6 +13,7 @@ import { stepSmith } from './smith';
 import { stepSharpshooter } from './sharpshooter';
 import { createWaveState, scoreHits, stepWaves, wavePressure, type WaveState } from './waves';
 import { countStats, createStats, type Stats } from './stats';
+import { createMapEventState, stepMapEvents, type MapEventState } from './mapEvents';
 import { BIG_BODY, getFlowField, getNavGraph, nearestNode, NO_CLIMB, NO_VENT } from './nav';
 import type { SimEvent } from './events';
 import { cellAt, getAirGrid } from './airNav';
@@ -36,6 +37,8 @@ export interface GameState {
   /** Ids are never reused: the renderer recognizes entities by id. */
   nextEntityId: number;
   wave: WaveState;
+  /** Map events: when the next one comes, the one being played (mapEvents.ts). */
+  mapEvent: MapEventState;
   stats: Stats;
   /** The style meter (chain of stylish actions), see style.ts. */
   style: StyleState;
@@ -69,6 +72,7 @@ export function createGame(world: World, seed = 1): GameState {
     entities,
     nextEntityId: entities.length + 1,
     wave: createWaveState(),
+    mapEvent: createMapEventState({ rng: seed }), // replaced below, from the game's own generator
     stats: createStats(),
     style: createStyle(),
     navGoal: -1,
@@ -81,6 +85,7 @@ export function createGame(world: World, seed = 1): GameState {
     rng: seed,
   };
   rollCardSeed(game);
+  game.mapEvent = createMapEventState(game);
   return game;
 }
 
@@ -96,7 +101,7 @@ function rollCardSeed(game: GameState): void {
  * One tick of the whole game, always in the same order:
  * 1. the player moves; 2. the player's weapon fires (and hits), the boot kicks, the dynamite flies;
  * 3. targets and enemies update, their bodies block the player; 4. enemy projectiles fly (and hit);
- * 5. the wave system spawns enemies; 6. pickups age and get collected;
+ * 5. the wave system spawns enemies, the map events listen to it; 6. pickups age and get collected;
  * 7. the style meter reads everything that happened in the tick.
  * Things that happened go into `events`.
  */
@@ -190,7 +195,10 @@ export function stepGame(
   // Enemies are solid: push the player out of their bodies (after they moved, see bodyBlock.ts).
   blockPlayerWithBodies(game.player, game.entities, world, dt);
   game.projectiles = stepProjectiles(game.projectiles, game.player, world, dt, events);
+  const beforeWaves = events.length;
   stepWaves(game, world, events);
+  // Right after the waves: it listens to their waveStart/waveEnd (mapEvents.ts).
+  stepMapEvents(game.mapEvent, game, events, beforeWaves);
   stepPickups(game, world, dt, events);
   // Last: it needs the whole tick (your hits come first, the enemies' hits on you later).
   stepStyle(game.style, game.player, events, tickEvents);
@@ -210,6 +218,7 @@ export function stepGame(
     game.stats = createStats(); // a new object: the event keeps the old one
     game.style = createStyle();
     rollCardSeed(game); // new game, new cards on the counter
+    game.mapEvent = createMapEventState(game);
   }
   game.tick++;
 }

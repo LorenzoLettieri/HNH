@@ -11,6 +11,7 @@ import type { PurchaseId } from './shop';
 import type { ForgeRefusal } from './forge';
 import type { StyleAward } from './style';
 import type { Stats } from './stats';
+import type { MapEventKind } from './mapEvents';
 
 /** What hit an enemy ('hit' events). */
 export type HitSource = WeaponId | MeleeTool | 'dynamite';
@@ -94,6 +95,10 @@ export type SimEvent =
   | { type: 'playerDied'; wave: number; stats: Stats }
   | { type: 'waveStart'; wave: number }
   | { type: 'waveEnd'; wave: number }
+  /** A map event shows up at the start of this wave (mapEvents.ts): the announcement. */
+  | { type: 'mapEventStart'; kind: MapEventKind; wave: number }
+  /** The map event is over: objective done (success) or the wave ended first. */
+  | { type: 'mapEventEnd'; kind: MapEventKind; success: boolean }
   | { type: 'ghoulAttack'; entityId: number }
   | { type: 'ghoulLunge'; entityId: number } // starts crouching for a pounce (the warning)
   /** A hound starts its ambush: the howl (the warning). */

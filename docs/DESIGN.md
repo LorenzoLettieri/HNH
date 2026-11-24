@@ -690,6 +690,9 @@ evento (stile gli eventi di Diablo 4) **durante un'ondata**.
 - Scartati per ora (troppo pesanti): **treno fantasma** sui binari (servono piattaforme mobili), **carro
   della polvere** da scortare.
 
+**Passo 1** [FATTO]: lo scheletro nella simulazione (`src/sim/mapEvents.ts`): quando compare, attivo → riuscito/fallito,
+eventi `mapEventStart`/`mapEventEnd`; senza obiettivi né grafica (si vede nella console e coi bottoni del pannello debug).
+
 **Ordine proposto**: prima lo **scheletro comune** con l'evento più semplice (Campane o Scommessa): comparsa e
 annuncio, timer, successo/fallimento, valuta nuova nell'HUD; poi il barista e i drink; poi gli eventi con un'IA
 loro (Cuore di Brace, Sciacallo).

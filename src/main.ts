@@ -12,6 +12,7 @@ import { TICK_DT, tuning } from './sim/config';
 import { copyPlayer, createPlayer } from './sim/player';
 import { createGame, spawnBullInFront, spawnSharpshooterInFront, spawnEyebatInFront, spawnHoundInFront, spawnSmithInFront, dropPickupsInFront, spawnHolyFireInFront, stepGame } from './sim/game';
 import { jumpToWave } from './sim/waves';
+import { forceMapEventNextWave } from './sim/mapEvents';
 import { DEFAULT_LEVEL, LEVELS } from './levels';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
 import { lookScale, updateCameraFeel } from './render/cameraFeel';
@@ -223,6 +224,9 @@ const debugPanel = createDebugPanel({
     spawnTool('Fai apparire: tiratore scelto (a 20 m)', spawnSharpshooterInFront),
     spawnTool('Fai cadere un raccoglibile di ogni tipo', dropPickupsInFront),
     spawnTool('Fai apparire: pozza di fuoco santo', (g) => spawnHolyFireInFront(g, world)),
+    spawnTool('Evento sulla mappa alla prossima ondata', (g) => forceMapEventNextWave(g.mapEvent, g.wave.number)),
+    // Like the respawn below, it should go through the InputCommand one day: it's only a flag the next tick reads.
+    spawnTool("Completa l'evento in corso", (g) => { g.mapEvent.forceSuccess = true; }),
     // Respawn goes through the InputCommand like a key would (controls.ts):
     // the simulation only changes from commands.
     { label: 'Respawn', run: () => queueRespawn() },
@@ -511,6 +515,11 @@ renderer.setAnimationLoop((now: number) => {
   shopMenu.onEvents(events);
   shopMenu.update(player, shopNearby, paused);
   updateHud(game, events, dt);
+  // Map events: only in the console for now (step 1); the banner comes next.
+  for (const e of events) {
+    if (e.type === 'mapEventStart') console.log(`map event: ${e.kind} in wave ${e.wave}`);
+    if (e.type === 'mapEventEnd') console.log(`map event: ${e.kind} ${e.success ? 'completed' : 'failed'}, next from wave ${game.mapEvent.nextWave}`);
+  }
   // Game over: send the score (unless it was a practice game, fairPlay.ts)
   // and show the end screen. The simulation has already reset everything for
   // the next game: it waits, frozen, behind the screen. The submit isn't

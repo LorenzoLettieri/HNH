@@ -1044,6 +1044,16 @@ export const tuning = {
   /** Seconds the Damned Iron it drops stays on the ground (much longer than the other drops: it's rare). */
   ironLifetime: 90,
 
+  // --- Map events (src/sim/mapEvents.ts, docs/DESIGN.md §5) ---
+  /**
+   * Waves between two map events: a random number from min to max, both
+   * included (4-5 = the next one comes 4 or 5 waves after the last). The first
+   * one too comes after one gap (wave 4 or 5). Never in a Damned Smith wave:
+   * then it slips to the wave after.
+   */
+  mapEventGapMin: 4,
+  mapEventGapMax: 5,
+
   // --- Enemy projectiles (src/sim/projectiles.ts) ---
   /** Radius of an enemy projectile, meters (for hitting the player). */
   projectileRadius: 0.25,

@@ -72,6 +72,8 @@ export function createDebugPanel(options: {
   const jump = { wave: 10 };
   waves.number(jump, 'wave', 1, 60, 1);
   waves.button('Go to this wave', () => options.onJumpToWave(jump.wave));
+  waves.number(tuning, 'mapEventGapMin', 1, 10, 1);
+  waves.number(tuning, 'mapEventGapMax', 1, 10, 1);
   waves.number(tuning, 'ghoulSpawnWeight', 0, 30, 1);
   waves.number(tuning, 'eyebatSpawnWeight', 0, 30, 1);
   waves.number(tuning, 'houndSpawnWeight', 0, 30, 1);
