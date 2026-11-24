@@ -1,35 +1,38 @@
 // The shovel swing on screen (the simulation side is in src/sim/kick.ts):
-// an overhead BONK, cartoon style, but with weight.
+// a GOLF SWING, CoD style. The shovel takes both hands, so first the gun goes
+// down out of view (gunAwayAt below, used by viewmodel.ts), then the shovel
+// comes round from behind your right shoulder, sweeps LOW across the middle of
+// the screen, where it hits, and follows through up and out to the left. Then
+// the gun comes back up, drawn like a weapon switch.
 //
 // The model (public/models/shovel.glb, made by tools/blender/shovel.py) has
-// its origin on the D-grip, where the hand holds it, and the shaft along -Z.
-// We never show the hand: the grip stays BELOW the bottom edge of the screen
-// and only the shaft and the blade come into view. An old trick (many
-// shooters crop melee arms the same way): no arm to pose, and the eye reads
-// the blow from the blade anyway.
+// its origin on the D-grip, where the hands hold it, and the shaft along -Z;
+// the blade is a flat plate across X (its face looks along ±Y). We never show
+// the hands: the grip stays BELOW the bottom edge of the screen, the way a
+// golfer's hands are low in front of the belly, and only the shaft and the
+// blade come into view. (An old trick: no arms to pose, and the eye reads the
+// blow from the blade anyway.)
 //
-// What makes a motion look "artificial", and what we do about it:
-// - Everything turning around a FIXED pivot looks like a clock hand. A real
-//   person moves the arms too: here the grip rises and pulls back during the
-//   wind-up, then pushes down and forward with the blow (the arms extend).
-// - Perfectly straight paths look mechanical: the blade comes down on a
-//   DIAGONAL, from up-left to the middle (yaw changes during the strike).
-// - A formula for the bounce (a sine) repeats exactly. After the impact we
-//   switch to a tiny PHYSICS simulation instead: the shaft angle has a
-//   velocity, "gravity" pulls it back onto the target, and every time it
-//   touches it the velocity flips and loses part of itself (the coefficient
-//   of RESTITUTION, like a ball: 0 = it sticks, 1 = it bounces forever). The
-//   bounces get lower AND quicker, the way real ones do. The blade's quiver
-//   is a damped spring kicked by each bounce.
-// - Two identical swings in a row give the trick away: each swing gets
-//   small random variations (angle, roll, bounciness). Cosmetic only: the
-//   simulation, the one that decides the hit, isn't touched.
+// THE PATH: one number, `s`, says where the swing is: -1 = top of the
+// backswing (behind your right shoulder), 0 = the impact (in front of you,
+// low), +1 = the end of the follow-through (up on your left). Everything is a
+// function of s:
+// - yaw (left/right) grows linearly with s: the sweep across the screen;
+// - pitch (up/down) grows with s²: a parabola, lowest at s = 0, so the blade
+//   comes DOWN, goes through the target flat and sideways, and rises again:
+//   the U of a golf swing, seen from inside;
+// - the hands slide from right to left (they cross your body) and rise and
+//   come back beside your head at both ends.
+// Then only TIME → s is animated, like an "easing" in CSS: the backswing
+// creeps back (anticipation, off screen while the gun goes down), the
+// downswing accelerates (u³, fastest at the impact, which lands exactly when
+// the simulation hits: tuning.shovelWindup), the follow-through slows down
+// (ease-out). The two curves are joined at the SAME speed: the follow-through
+// is 1 - (1 - v)ⁿ, whose slope at the start is n / its duration; we pick n so
+// that it equals the downswing's speed at the impact. No jerk at the hit.
 //
-// The downswing itself stays scripted (keyframes in time), because it must
-// land exactly when the simulation lands the hit: tuning.shovelWindup after
-// the press. Its easing is ease-IN (u³: slow at the top, fastest at the very
-// end), so the blade arrives at full speed. Physics takes over from there,
-// starting from the speed the script had at the impact.
+// Two identical swings in a row give the trick away: each swing gets small
+// random variations (height, sweep, blade roll). Cosmetic only.
 //
 // Rotation order 'YXZ': first turn left/right (yaw), then tilt the shaft up
 // (pitch), then roll the blade around the shaft. The same order as an FPS
@@ -39,51 +42,60 @@ import { tuning } from '../../sim/config';
 import { ELASTIC_STEP, smoothstep } from './elastic';
 import { loadGunModel } from './gunModel';
 
-/** Pose and timing of the bonk. Camera space (x right, y up, -z forward); angles in radians. */
+/** Pose and timing of the swing. Camera space (x right, y up, -z forward); angles in radians. */
 export const shovelSettings = {
-  /**
-   * The grip at the impact, below the bottom edge of the view (out of
-   * sight), left of center and at arm's length: closer to the eye, the shaft
-   * would fill the screen as it goes past.
-   */
-  gripX: -0.12,
-  gripY: -0.45,
+  /** Seconds for the gun to go down out of view (it must be gone before the shovel shows up). */
+  gunDownTime: 0.1,
+  /** How far the gun drops (meters) and dips its muzzle (radians) going away. */
+  gunDownDrop: 0.3,
+  gunDownTilt: 0.7,
+  /** The grip at the impact: below the bottom edge of the view, at arm's length. */
+  gripX: 0.02,
+  gripY: -0.42,
   gripZ: -0.3,
-  /** Where the grip is during the wind-up, relative to the impact position, meters: up, back, a bit left. */
-  windGripX: -0.05,
-  windGripY: 0.1,
-  windGripZ: 0.12,
-  /** Shaft angle raised high (π/2 = straight up: the blade above your head, out of view). */
-  raisedPitch: 1.9,
-  /** How much further back it creeps while raised (the anticipation), radians. */
-  windBack: 0.25,
-  /** Shaft angle at the impact: the blade just below the crosshair. */
-  impactPitch: 0.5,
-  /** Shaft turned left at the top of the swing (the diagonal: it comes down from up-left)... */
-  windYaw: 0.35,
-  /** ...and at the impact, a little to the right: from the grip on the left, the blade lands in the middle. */
-  yaw: -0.15,
-  /** Blade roll: π = the flat face looks down, so it's the FACE that slaps the enemy. */
-  roll: Math.PI,
-  /** Fraction of the wind-up spent in the anticipation (the rest is the strike). */
-  raiseShare: 0.4,
-  /** After the impact: how much bounce is left (0 = it sticks, 1 = it bounces forever). */
-  restitution: 0.32,
-  /** The pull back onto the target (the weight of the shovel and your arms), rad/s². Higher = lower, quicker bounces. */
-  gravity: 450,
   /**
-   * Blade quiver around the shaft: how much each bounce kicks it (quiver
-   * speed per unit of bounce speed), its stiffness (1/s²) and damping (1/s).
+   * How far the hands slide sideways over the whole swing (right → left), and
+   * how much they rise and come BACK at its two ends, meters. Coming back
+   * matters: with the grip out in front, a shaft pointing behind you passes
+   * right beside your eye and crosses the whole screen. With the hands beside
+   * your head, like a golfer at the top of the backswing, it stays out of view.
    */
-  quiverKick: 0.17,
+  gripSwing: 0.35,
+  gripRise: 0.25,
+  gripBack: 0.3,
+  /** Top of the backswing: shaft turned right and back (beyond -π/2 = behind you), and raised. */
+  backYaw: -2.0,
+  backPitch: 1.2,
+  /** At the impact: almost straight ahead, the blade a little below the crosshair. */
+  impactYaw: 0.08,
+  impactPitch: 0.35,
+  /** End of the follow-through: up on the left, out of view. */
+  throughYaw: 2.0,
+  throughPitch: 1.4,
+  /**
+   * Blade roll: 0 = the flat face looks up, π/2 = it looks LEFT, the way it's
+   * going. π/2 would be "right" (the FACE whacks the enemy) but from your eye
+   * the blade is then seen edge-on, a thin line. In between: the face mostly
+   * up toward you and leading a little. Readability beats realism.
+   */
+  roll: 0.6,
+  /** The face opens on the backswing and closes on the follow-through (radians per unit of s), like a golf club. */
+  rollTwist: 0.35,
+  /** How much further back the backswing creeps before the downswing (in units of s: the anticipation). */
+  windBack: 0.25,
+  /** Fraction of the wind-up spent on the backswing (the gun goes down meanwhile; the rest is the downswing). */
+  backShare: 0.45,
+  /** Seconds of follow-through after the impact (until it's out of view on the left). */
+  throughTime: 0.2,
+  /**
+   * Blade quiver around the shaft after the impact: the kick it gets (rad/s),
+   * stiffness (1/s²), damping (1/s). A damped spring, like elastic.ts.
+   */
+  quiverKick: 9,
   quiverStiffness: 1800,
-  quiverDamping: 14,
+  quiverDamping: 18,
   /** Random variation from swing to swing (fraction: 0.15 = ±15%). */
   variation: 0.15,
-  /** Seconds it stays out bouncing before it drops. */
-  holdTime: 0.2,
-  /** Seconds to drop back out of view. */
-  dropTime: 0.18,
 };
 
 export interface ShovelView {
@@ -91,12 +103,21 @@ export interface ShovelView {
   root: THREE.Group;
   /** A swing starts now. */
   play(): void;
-  /** Advance the animation. Returns how "out" the swing is, 0..1 (to move the gun aside). */
-  update(dt: number): number;
+  /** Advance the animation. */
+  update(dt: number): void;
 }
 
-/** Below the screen: how far down the grip goes when the shovel is put away, meters. */
-const HIDDEN_DROP = 0.4;
+/**
+ * How far the gun is put away, `t` seconds after the press: 0 = in your hands,
+ * 1 = gone below the screen. It goes down with an ease-in (u²: it drops, it
+ * doesn't glide), stays away during the swing, and at tuning.shovelGunBack
+ * the viewmodel draws it back like a weapon switch (from then on: 0).
+ */
+export function gunAwayAt(t: number): number {
+  if (t >= tuning.shovelGunBack) return 0;
+  const u = Math.min(1, t / Math.max(0.01, shovelSettings.gunDownTime));
+  return u * u;
+}
 
 /** A random number in [-1, 1]. Cosmetic randomness: Math.random is fine here (the simulation has its own, seeded). */
 function wobble(): number {
@@ -112,104 +133,78 @@ export function createShovelView(): ShovelView {
   let time = Infinity; // seconds since the swing started
 
   // This swing's variations (rolled in play()).
-  let yawOffset = 0;
+  let pitchOffset = 0;
+  let yawScale = 1;
   let rollOffset = 0;
-  let bounciness = s.restitution;
 
-  // The physics after the impact: the shaft angle ABOVE the target and its
-  // speed, the blade's quiver and its speed, and the time not yet simulated.
-  let bounced = false; // physics started (the impact happened)
-  let lift = 0; // radians above impactPitch (never below: the target is there)
-  let liftVel = 0;
+  // The blade's quiver after the impact (a damped spring stepped at fixed steps).
+  let hit = false;
   let quiver = 0;
   let quiverVel = 0;
   let pending = 0;
-
-  /** One fixed step of the bounce: semi-implicit Euler (velocity first, then position), like elastic.ts. */
-  function stepBounce(h: number): void {
-    liftVel -= s.gravity * h;
-    lift += liftVel * h;
-    if (lift < 0) {
-      // Touched the target: flip the speed, keep only part of it. Below a
-      // tiny speed it just rests there (otherwise it would buzz forever).
-      lift = 0;
-      const speed = -liftVel;
-      liftVel = speed > 1 ? speed * bounciness : 0;
-      // Each knock shakes the blade, harder for a harder knock, either way.
-      quiverVel += s.quiverKick * speed * (Math.random() < 0.5 ? -1 : 1);
-    }
-    quiverVel += (-s.quiverStiffness * quiver - s.quiverDamping * quiverVel) * h;
-    quiver += quiverVel * h;
-  }
 
   return {
     root,
     play() {
       time = 0;
-      bounced = false;
-      pending = 0;
-      lift = liftVel = quiver = quiverVel = 0;
-      yawOffset = 0.12 * wobble() * (s.variation / 0.15);
-      rollOffset = 0.2 * wobble() * (s.variation / 0.15);
-      bounciness = s.restitution * (1 + s.variation * wobble());
+      hit = false;
+      quiver = quiverVel = pending = 0;
+      const k = s.variation / 0.15;
+      pitchOffset = 0.08 * wobble() * k;
+      yawScale = 1 + 0.1 * wobble() * k;
+      rollOffset = 0.2 * wobble() * k;
     },
     update(dt) {
       time += dt;
       // Phase boundaries, in seconds (read every frame: the debug panel can change them).
       const impact = tuning.shovelWindup;
-      const raised = impact * s.raiseShare;
-      const dropStart = impact + s.holdTime;
-      const end = dropStart + s.dropTime;
+      const back = impact * s.backShare;
+      const end = impact + s.throughTime;
       root.visible = time < end;
-      if (!root.visible) return 0;
+      if (!root.visible) return;
 
-      const top = s.raisedPitch + s.windBack;
-      let pitch: number;
-      let yaw = s.yaw + yawOffset;
-      let arms = 0; // 1 = the grip in the wind-up position, 0 = at the impact position
-      let drop = 0; // meters below the rest position (0 = out, HIDDEN_DROP = gone)
-      if (time < raised) {
-        // 1. RAISE: over your head, creeping back (ease-out: it slows down and hangs there).
-        pitch = s.raisedPitch + s.windBack * smoothstep(time / raised);
-        yaw = s.windYaw + yawOffset;
-        arms = 1;
+      // 1. TIME → s (where along the swing).
+      const top = -1 - s.windBack;
+      let swing: number;
+      if (time < back) {
+        // Backswing: creeps from the top of the backswing a bit further back (ease-out: it hangs there).
+        swing = -1 - s.windBack * smoothstep(time / back);
       } else if (time < impact) {
-        // 2. STRIKE: ease-in, u³. Its slope is 0 at the start and steepest at u = 1.
-        const u = (time - raised) / (impact - raised);
-        pitch = top + (s.impactPitch - top) * u * u * u;
-        // The diagonal and the arms follow a gentler curve: they lead, the blade lags behind.
-        const k = smoothstep(u);
-        yaw = s.windYaw + (s.yaw - s.windYaw) * k + yawOffset;
-        arms = 1 - k;
+        // Downswing: ease-in, u³. Slope 0 at the start, steepest at u = 1.
+        const u = (time - back) / (impact - back);
+        swing = top + (0 - top) * u * u * u;
       } else {
-        // 3. BOUNCE: physics, from the speed the strike had at the impact.
-        if (!bounced) {
-          bounced = true;
-          // d/dt of top + (impact - top)·u³ at u = 1: 3·(impact - top) / strike duration.
-          const strikeSpeed = (3 * (top - s.impactPitch)) / Math.max(0.01, impact - raised);
-          lift = 0;
-          liftVel = -strikeSpeed; // going down into the target: the first step bounces it
-          pending = time - impact; // the part of this frame after the impact
+        // Follow-through: 1 - (1 - v)ⁿ, n chosen so the speed at v = 0 is the downswing's at the impact.
+        // Downswing speed: d/dt of top·(1 - u³)... = 3·(0 - top) / its duration (in s per second).
+        const strikeSpeed = (3 * -top) / Math.max(0.01, impact - back);
+        const n = Math.max(1, strikeSpeed * s.throughTime);
+        const v = (time - impact) / s.throughTime;
+        swing = 1 - Math.pow(1 - v, n);
+        // The impact shakes the blade (once), then the quiver rings down at fixed steps.
+        if (!hit) {
+          hit = true;
+          quiverVel = s.quiverKick * (Math.random() < 0.5 ? -1 : 1);
+          pending = time - impact;
         } else {
           pending += dt;
         }
-        // Fixed steps (a stiff spring with a long step "explodes"; see elastic.ts).
         while (pending >= ELASTIC_STEP) {
-          stepBounce(ELASTIC_STEP);
+          quiverVel += (-s.quiverStiffness * quiver - s.quiverDamping * quiverVel) * ELASTIC_STEP;
+          quiver += quiverVel * ELASTIC_STEP;
           pending -= ELASTIC_STEP;
         }
-        pitch = s.impactPitch + lift;
-        // 4. DROP.
-        if (time > dropStart) drop = HIDDEN_DROP * smoothstep((time - dropStart) / s.dropTime);
       }
-      // The arms bounce a little with the blade (the shock goes back into your hands).
-      root.position.set(
-        s.gripX + s.windGripX * arms,
-        s.gripY + s.windGripY * arms + lift * 0.04 - drop,
-        s.gripZ + s.windGripZ * arms + lift * 0.03,
-      );
-      root.rotation.set(pitch, yaw, s.roll + rollOffset + quiver);
-      return 1 - drop / HIDDEN_DROP;
+
+      // 2. s → the pose. Yaw: linear on each side of the impact (the two ends can differ).
+      // Pitch: a parabola in s, lowest at the impact.
+      const side = swing < 0 ? -swing : swing; // 0 at the impact, 1 at either end
+      const endYaw = swing < 0 ? s.backYaw : s.throughYaw;
+      const endPitch = swing < 0 ? s.backPitch : s.throughPitch;
+      const yaw = s.impactYaw + (endYaw - s.impactYaw) * side * yawScale;
+      const pitch = s.impactPitch + pitchOffset + (endPitch - s.impactPitch) * side * side;
+      const ends = side * side; // 0 at the impact, 1 at either end
+      root.position.set(s.gripX - s.gripSwing * swing, s.gripY + s.gripRise * ends, s.gripZ + s.gripBack * ends);
+      root.rotation.set(pitch, yaw, s.roll - s.rollTwist * swing + rollOffset + quiver);
     },
   };
 }

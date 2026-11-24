@@ -79,9 +79,16 @@ export function stepKick(p: PlayerState, cmd: InputCommand, world: World, entiti
     p.kickTicks = 1;
     p.kickCooldownTicks = secondsToTicks(stats.cooldown);
     events.push({ type: 'kickStart', tool });
+    if (tool === 'shovel') putGunAway(p);
     // (With a wind-up of 0 the foot lands on this very tick: falls through.)
   } else if (p.kickTicks > 0) {
     p.kickTicks++;
+  }
+
+  // The shovel's swing is over: the gun comes back up, drawn like a switch
+  // (same animation and sound; `melee` so it isn't a "quick switch" for the Style).
+  if (tool === 'shovel' && p.kickTicks === secondsToTicks(tuning.shovelGunBack)) {
+    events.push({ type: 'weaponSwitch', weapon: p.weapon, forged: p.forged[p.weapon] > 0, melee: true });
   }
 
   // The foot lands exactly once, at the end of the wind-up.
@@ -90,6 +97,22 @@ export function stepKick(p: PlayerState, cmd: InputCommand, world: World, entiti
   }
   // The kick is "over" when the cooldown is: the renderer reads kickTicks to animate the leg.
   if (p.kickCooldownTicks === 0) p.kickTicks = 0;
+}
+
+/**
+ * The shovel takes both hands, so the gun goes away for the swing (CoD's
+ * melee): it can't fire until it's back up and drawn (switchTicks, the same
+ * timer as a weapon switch: every check "is the gun ready?" already reads it),
+ * and what the hands were doing stops: a reload in progress is cancelled (no
+ * free rounds), the fanning burst ends, the sights come down. The boot
+ * doesn't do any of this: kicking while you reload is its whole point.
+ */
+function putGunAway(p: PlayerState): void {
+  const busy = secondsToTicks(tuning.shovelGunBack + tuning.weaponSwitchTime);
+  p.switchTicks = Math.max(p.switchTicks, busy);
+  p.reloadTicks = 0;
+  p.fanShotsLeft = 0;
+  p.adsTicks = 0;
 }
 
 function landKick(

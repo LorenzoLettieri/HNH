@@ -487,10 +487,18 @@ export const tuning = {
   // --- Shovel (melee upgrade: bought at the armory, it takes the boot's place on F; see kick.ts) ---
   /**
    * Seconds from the press to the blade landing. Longer than the kick: the
-   * shovel goes up over your head and comes down (the animation in
-   * shovelView.ts is timed on this number: half raising, half striking).
+   * gun goes down out of view first (you need both hands), then the golf
+   * swing comes round from behind you (the animation in shovelView.ts is
+   * timed on this number).
    */
-  shovelWindup: 0.16,
+  shovelWindup: 0.2,
+  /**
+   * Seconds from the press to the gun coming back up. From then on it's drawn
+   * like a weapon switch (weaponSwitchTime): you can shoot again at
+   * shovelGunBack + weaponSwitchTime. Until then the gun is away: no shots,
+   * no reload (a reload in progress is cancelled by the swing, like in CoD).
+   */
+  shovelGunBack: 0.32,
   /** Seconds before the next swing (counted from the press). */
   shovelCooldown: 0.6,
   /** Reach, meters, edge to edge: the handle makes it longer than a leg. */

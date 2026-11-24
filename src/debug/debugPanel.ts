@@ -371,6 +371,7 @@ export function createDebugPanel(options: {
 
   const shovel = panel.folder('Shovel (src/sim/config.ts, src/sim/kick.ts)');
   shovel.number(tuning, 'shovelWindup', 0, 0.4, 0.01);
+  shovel.number(tuning, 'shovelGunBack', 0.1, 1, 0.01);
   shovel.number(tuning, 'shovelCooldown', 0.1, 2, 0.05);
   shovel.number(tuning, 'shovelRange', 0.3, 5, 0.1);
   shovel.number(tuning, 'shovelAngle', 10, 120, 1);
@@ -378,27 +379,30 @@ export function createDebugPanel(options: {
   shovel.number(tuning, 'shovelKnockback', 0, 40, 0.5);
   shovel.number(tuning, 'shovelLift', 0, 15, 0.5);
   // The swing on screen (render/weapons/shovelView.ts).
+  shovel.number(shovelSettings, 'gunDownTime', 0.02, 0.3, 0.01);
+  shovel.number(shovelSettings, 'gunDownDrop', 0, 0.8, 0.01);
+  shovel.number(shovelSettings, 'gunDownTilt', 0, 2, 0.05);
   shovel.number(shovelSettings, 'gripX', -0.5, 0.5, 0.01);
   shovel.number(shovelSettings, 'gripY', -0.8, 0, 0.01);
   shovel.number(shovelSettings, 'gripZ', -0.6, 0.2, 0.01);
-  shovel.number(shovelSettings, 'windGripX', -0.3, 0.3, 0.01);
-  shovel.number(shovelSettings, 'windGripY', -0.3, 0.3, 0.01);
-  shovel.number(shovelSettings, 'windGripZ', -0.3, 0.3, 0.01);
-  shovel.number(shovelSettings, 'raisedPitch', 0, 3, 0.05);
-  shovel.number(shovelSettings, 'windBack', 0, 1, 0.01);
-  shovel.number(shovelSettings, 'impactPitch', -0.5, 1.5, 0.01);
-  shovel.number(shovelSettings, 'windYaw', -1, 1, 0.01);
-  shovel.number(shovelSettings, 'yaw', -1, 1, 0.01);
+  shovel.number(shovelSettings, 'gripSwing', 0, 0.5, 0.01);
+  shovel.number(shovelSettings, 'gripRise', -0.2, 0.5, 0.01);
+  shovel.number(shovelSettings, 'gripBack', -0.2, 0.6, 0.01);
+  shovel.number(shovelSettings, 'backYaw', -3.2, 0, 0.05);
+  shovel.number(shovelSettings, 'backPitch', -0.5, 2.5, 0.05);
+  shovel.number(shovelSettings, 'impactYaw', -1, 1, 0.01);
+  shovel.number(shovelSettings, 'impactPitch', -0.8, 1, 0.01);
+  shovel.number(shovelSettings, 'throughYaw', 0, 3.2, 0.05);
+  shovel.number(shovelSettings, 'throughPitch', -0.5, 2.5, 0.05);
   shovel.number(shovelSettings, 'roll', -3.2, 3.2, 0.05);
-  shovel.number(shovelSettings, 'raiseShare', 0.1, 0.9, 0.05);
-  shovel.number(shovelSettings, 'restitution', 0, 0.9, 0.01);
-  shovel.number(shovelSettings, 'gravity', 50, 2000, 10);
-  shovel.number(shovelSettings, 'quiverKick', 0, 1, 0.01);
+  shovel.number(shovelSettings, 'rollTwist', -1.5, 1.5, 0.05);
+  shovel.number(shovelSettings, 'windBack', 0, 1, 0.01);
+  shovel.number(shovelSettings, 'backShare', 0.1, 0.9, 0.05);
+  shovel.number(shovelSettings, 'throughTime', 0.05, 0.5, 0.01);
+  shovel.number(shovelSettings, 'quiverKick', 0, 30, 0.5);
   shovel.number(shovelSettings, 'quiverStiffness', 100, 5000, 50);
   shovel.number(shovelSettings, 'quiverDamping', 1, 60, 0.5);
   shovel.number(shovelSettings, 'variation', 0, 0.5, 0.01);
-  shovel.number(shovelSettings, 'holdTime', 0, 0.6, 0.01);
-  shovel.number(shovelSettings, 'dropTime', 0.05, 0.6, 0.01);
   // Feel of the impact: camera dip (viewmodel.ts) and hit-stop (render/hitStop.ts).
   shovel.number(viewmodelSettings, 'shovelViewPunch', 0, 0.2, 0.005);
   shovel.number(hitStopSettings, 'shovel', 0, 0.2, 0.005);

@@ -413,7 +413,8 @@ function endReload(p: PlayerState, events: SimEvent[], cooldown: number): void {
 /** Puts `w` in your hands. Also used by the shop: a weapon you just bought goes straight to your hands. */
 export function switchWeapon(p: PlayerState, w: WeaponId, events: SimEvent[]): void {
   p.weapon = w;
-  p.switchTicks = secondsToTicks(tuning.weaponSwitchTime);
+  // (max: switching during the shovel's swing doesn't bring the gun back sooner.)
+  p.switchTicks = Math.max(p.switchTicks, secondsToTicks(tuning.weaponSwitchTime));
   p.reloadTicks = 0;
   p.fireCooldownTicks = 0;
   p.adsTicks = 0;

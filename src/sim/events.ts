@@ -27,7 +27,8 @@ export type SimEvent =
    */
   | { type: 'fire'; weapon: WeaponId; barrel: number; seconds: number; forged: boolean }
   /** You switched weapon: the new one is coming up. `forged`: its reinforced version (each gun is drawn its own way). */
-  | { type: 'weaponSwitch'; weapon: WeaponId; forged: boolean }
+  /** `melee`: not a real switch, the same gun coming back up after the shovel's swing. */
+  | { type: 'weaponSwitch'; weapon: WeaponId; forged: boolean; melee?: boolean }
   /** One bullet or pellet: where it went and what it hit (impacts, blood). A shotgun blast is many of these. */
   | {
       type: 'shot';

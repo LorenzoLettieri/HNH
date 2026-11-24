@@ -14,7 +14,7 @@ import { PixelCanvas } from '../props/pixelCanvas';
 import { createRevolverModel } from './revolverModel';
 import { createFanning, createHands } from './hands';
 import { createKickLeg } from './kickLeg';
-import { createShovelView } from './shovelView';
+import { createShovelView, gunAwayAt, shovelSettings } from './shovelView';
 import type { MeleeTool } from '../../sim/kick';
 import { createShotgunView } from './shotgunView';
 import { createPumpView } from './pumpView';
@@ -273,6 +273,31 @@ export function createViewmodel(): Viewmodel {
   let kickPunched = true; // the camera dip of this kick already happened
   let kickTool: MeleeTool = 'kick'; // what's swinging (the dip comes at its own wind-up)
 
+  /** Stops the gun's own animations (a reload, a draw): it's being put away or replaced. */
+  function cancelGunAnimations(): void {
+    recoil.reset(); // the gun doesn't carry its old kick
+    recoilL.reset();
+    revolverReload.cancel(); // a reload in progress was cancelled (by the switch or the shovel)
+    akimboSpin.cancel();
+    shotgun.cancel();
+    pump.cancel();
+    rifle.cancel();
+    dynamite.cancel();
+    flashTime = 0;
+  }
+
+  /** The gun in your hands is drawn now: DRAW_KEYS plus its signature. A weapon switch, or the gun back after the shovel. */
+  function startDraw(player: PlayerState): void {
+    drawTime = 0;
+    cancelGunAnimations();
+    // Each gun's draw signature (see DRAW_KEYS).
+    if (shownWeapon === 'shotgun' && isPump(player)) pump.draw();
+    else if (shownWeapon === 'shotgun') shotgun.draw();
+    else if (shownWeapon === 'rifle') rifle.draw();
+    else if (shownWeapon === 'dynamite') dynamite.draw();
+    // (The revolver's twirl follows drawK directly: see revolverDraw.ts.)
+  }
+
   const flashMap = flashTexture();
   const flash = createFlash(flashMap);
   flash.position.copy(gun.muzzle);
@@ -402,8 +427,12 @@ export function createViewmodel(): Viewmodel {
       kickTime = 0;
       kickPunched = false;
       kickTool = tool;
-      if (tool === 'shovel') shovel.play();
-      else leg.play();
+      if (tool === 'shovel') {
+        // Both hands on the shovel: whatever the gun was doing stops (the
+        // simulation cancelled the reload too), and it goes away (gunAwayAt).
+        cancelGunAnimations();
+        shovel.play();
+      } else leg.play();
     },
     applyAtmosphere(a) {
       ambient.color.set(a.ambientSky);
@@ -433,27 +462,20 @@ export function createViewmodel(): Viewmodel {
       // --- Weapon switch: the new gun is drawn (DRAW_KEYS) ---
       if (player.weapon !== shownWeapon) {
         shownWeapon = player.weapon;
-        drawTime = 0;
-        recoil.reset(); // the new gun doesn't carry the old one's kick
-        recoilL.reset();
-        revolverReload.cancel(); // a reload in progress was cancelled by the switch
-        akimboSpin.cancel();
-        shotgun.cancel();
-        pump.cancel();
-        rifle.cancel();
-        dynamite.cancel();
-        flashTime = 0;
-        // Each gun's draw signature (see DRAW_KEYS).
-        if (shownWeapon === 'shotgun' && isPump(player)) pump.draw();
-        else if (shownWeapon === 'shotgun') shotgun.draw();
-        else if (shownWeapon === 'rifle') rifle.draw();
-        else if (shownWeapon === 'dynamite') dynamite.draw();
-        // (The revolver's twirl follows drawK directly: see revolverDraw.ts.)
+        startDraw(player);
       }
+      // --- The shovel: the gun goes away for the swing, then it's drawn back like a switch ---
+      // (the simulation sends the 'weaponSwitch' event at the same moment: the draw's sound).
+      const lastKickTime = kickTime;
+      kickTime += dt;
+      const shovelSwing = kickTool === 'shovel';
+      if (shovelSwing && lastKickTime < tuning.shovelGunBack && kickTime >= tuning.shovelGunBack) startDraw(player);
+      const away = shovelSwing ? gunAwayAt(kickTime) : 0;
       revolver.visible = shownWeapon === 'revolver';
       // Akimbo: the left gun appears, the fanning hand goes away (it's holding a gun now).
       const akimbo = shownWeapon === 'revolver' && isAkimbo(player);
-      holderL.visible = akimbo;
+      holderL.visible = akimbo && away < 1;
+      holder.visible = away < 1; // fully away: not drawn at all (the shovel has the screen)
       // The shotgun: the double barrel, or the pump-action once reinforced at the Forge.
       const pumpShown = shownWeapon === 'shotgun' && isPump(player);
       shotgun.root.visible = shownWeapon === 'shotgun' && !pumpShown;
@@ -549,9 +571,9 @@ export function createViewmodel(): Viewmodel {
       // --- Kick: the boot swings out; the gun is pulled aside to make room ---
       // (the body twists when you kick). At the moment of contact, a small
       // camera dip: the "weight" of the impact.
-      kickTime += dt;
-      // The shovel swings from the left: same twist of the body, the gun moves aside the same way.
-      const legOut = Math.max(leg.update(dt), shovel.update(dt));
+      // (kickTime was advanced at the top, with the shovel's gun-away.)
+      const legOut = leg.update(dt);
+      shovel.update(dt);
       const windup = kickTool === 'shovel' ? tuning.shovelWindup : tuning.kickWindup;
       if (!kickPunched && kickTime >= windup) {
         kickPunched = true;
@@ -600,13 +622,15 @@ export function createViewmodel(): Viewmodel {
       // The reloads move the whole gun too: `rp` = pose offsets (elastic.ts);
       // and so does the shot: `k` = the recoil spring's offsets (recoil.ts).
       const k = recoil.pose;
+      // `away`: the gun put away for the shovel, down and with the muzzle dipping (an ease-in: it drops).
+      const sh = shovelSettings;
       holder.position.set(
         rest.x + swayX + bobX + rp.x + dp.x + k.x - slideTilt * 0.02 + legOut * 0.04,
-        rest.y + swayY + bobY + fallOffset + rp.y + dp.y + k.y - slideTilt * 0.03 - legOut * 0.05,
+        rest.y + swayY + bobY + fallOffset + rp.y + dp.y + k.y - slideTilt * 0.03 - legOut * 0.05 - away * sh.gunDownDrop,
         rest.z + rp.z + dp.z + k.z,
       );
       holder.rotation.set(
-        rest.pitch + rp.pitch + dp.pitch + k.pitch - swayY * 2,
+        rest.pitch + rp.pitch + dp.pitch + k.pitch - swayY * 2 - away * sh.gunDownTilt,
         rest.yaw + swayX * 2 + rp.yaw + dp.yaw + k.yaw,
         rest.roll + rp.roll + dp.roll + k.roll + slideTilt * 0.35 - legOut * 0.25,
       );

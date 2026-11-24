@@ -327,7 +327,7 @@ function remember(style: StyleState, player: PlayerState, events: SimEvent[], fr
   style.sinceSwitchTicks++;
   for (let i = from; i < end; i++) {
     const e = events[i];
-    if (e.type === 'weaponSwitch') style.sinceSwitchTicks = 0;
+    if (e.type === 'weaponSwitch' && !e.melee) style.sinceSwitchTicks = 0; // the gun back after the shovel isn't a quick switch
     // A hop extends the run of bunny hops, any other jump starts a new one.
     if (e.type === 'jump') style.bhops = e.hop ? style.bhops + 1 : 0;
   }
