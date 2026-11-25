@@ -586,7 +586,7 @@ export const tuning = {
   /** Pause between attacks, seconds. */
   ghoulAttackCooldown: 0.6,
   /** Damage of one claw swipe. */
-  ghoulDamage: 20,
+  ghoulDamage: 15,
   /** The swipe lands at this fraction of the attack animation (when the claws come down). */
   ghoulHitMoment: 0.55,
   /** Push given to the player by a hit, m/s. */
@@ -714,7 +714,7 @@ export const tuning = {
    */
   houndBiteWindup: 0.35,
   /** Damage of a bite (less than a claw: it's quick and bites often). */
-  houndBiteDamage: 15,
+  houndBiteDamage: 12,
   /** Seconds between two bites. */
   houndBiteCooldown: 1,
   /** Push given to the player by a bite, m/s. */
@@ -773,7 +773,7 @@ export const tuning = {
   /** A charge never lasts more than this, seconds (safety: open fields). */
   bullChargeMaxTime: 2.5,
   /** Damage when it runs you over. A lot: being hit is the mistake to avoid. */
-  bullChargeDamage: 40,
+  bullChargeDamage: 30,
   /** It throws you: horizontal push (m/s, along its charge) and upward push (m/s). */
   bullChargeKnockback: 14,
   bullChargeLift: 7,
@@ -795,7 +795,7 @@ export const tuning = {
    * Crashed into a wall (or a low obstacle: it doesn't jump while charging):
    * dazed for this long, seconds. Every hit is critical meanwhile. The reward for dodging.
    */
-  bullStunTime: 2.2,
+  bullStunTime: 2.4,
   /** Minimum time between two charges, seconds (counted from the end of the previous one). */
   bullChargeCooldown: 1.5,
   /** Half the width of its COLLIDER, meters: wide, but it still fits in the 2.5 m alleys. */
@@ -876,7 +876,7 @@ export const tuning = {
    * you must CHANGE direction (jump, slide, cut back) after the warning.
    */
   eyebatLeadFactor: 0.9,
-  eyebatProjectileDamage: 15,
+  eyebatProjectileDamage: 12,
   /** Push given to the player by a fireball, m/s. */
   eyebatProjectileKnockback: 3,
 
@@ -915,7 +915,7 @@ export const tuning = {
   sharpshooterLoseSightTime: 0.4,
   /** Speed of its bullet, m/s: much faster than a fireball (12). Across 40 m in under half a second. */
   sharpshooterBulletSpeed: 100,
-  sharpshooterBulletDamage: 35,
+  sharpshooterBulletDamage: 30,
   /** Push given to the player by its bullet, m/s. */
   sharpshooterBulletKnockback: 5,
   /** Radius of its bullet, meters (for hitting the player): small, it's a bullet. */
@@ -1006,7 +1006,7 @@ export const tuning = {
   smithWaveThickness: 0.9,
   /** Feet higher than this above the ground the ring runs on = you jumped it. Meters. */
   smithWaveHeight: 0.45,
-  smithWaveDamage: 35,
+  smithWaveDamage: 30,
   /** Push given by the wave, outward and up, m/s. */
   smithWaveKnockback: 6,
   smithWaveLift: 5,
@@ -1024,7 +1024,7 @@ export const tuning = {
   /** The hook's size for hitting you, meters (added to your body, like the projectiles). */
   smithHookRadius: 0.35,
   /** Damage when the hook bites. */
-  smithHookDamage: 10,
+  smithHookDamage: 7,
   /** Hooked: you're pulled toward it at this speed (m/s), lifted off your feet at the start (m/s up). */
   smithHookPullSpeed: 13,
   smithHookLift: 4,
@@ -1110,7 +1110,7 @@ export const tuning = {
   bobbyReach: 3,
   bobbySpeedScale: 1.3,
   /** ...and they hit the enemies for this × the damage they'd have done to you. */
-  bobbyDamageScale: 3,
+  bobbyDamageScale: 5,
   /** Debito col diavolo: how far below zero your vildenaro can go. */
   devilsDebtLimit: 1500,
   /** Sangue per piombo: health per shot when the gun and the pockets are empty (it never takes your last point). */
