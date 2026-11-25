@@ -39,6 +39,9 @@ function build(weapon: WeaponId, size: number, akimbo: boolean, holy: boolean): 
 }
 
 export function updateAmmoHud(player: PlayerState): void {
+  // A melee weapon in your hands: nothing to count.
+  box.style.visibility = player.meleeDrawn ? 'hidden' : '';
+  if (player.meleeDrawn) return;
   const size = magazineSize(player, player.weapon);
   const akimbo = player.weapon === 'revolver' && isAkimbo(player);
   const holy = player.weapon === 'dynamite' && player.forged.dynamite > 0;

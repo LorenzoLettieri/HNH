@@ -7,7 +7,7 @@
 // pixelated), like the rest of the game. Markup is built here; CSS in
 // index.html (#weapon-bar, .weapon-slot).
 import type { PlayerState } from '../sim/player';
-import { WEAPONS, type WeaponId } from '../sim/weapon';
+import { heldItem, SLOTS, type SlotId } from '../sim/weapon';
 import './fonts'; // the key numbers are written in Rye
 
 /** Silhouette color (bone, like the HUD numbers); the CSS dims the inactive ones. */
@@ -22,11 +22,22 @@ interface Silhouette {
   draw(ctx: CanvasRenderingContext2D): void;
 }
 
+/** A ring of pixels (the lasso's loops): every pixel whose distance from the center is within half a pixel of r. */
+function ring(ctx: CanvasRenderingContext2D, cx: number, cy: number, rx: number, ry: number): void {
+  for (let y = Math.floor(cy - ry - 1); y <= cy + ry + 1; y++) {
+    for (let x = Math.floor(cx - rx - 1); x <= cx + rx + 1; x++) {
+      // Distance in "ellipse units": 1 on the ellipse. Within ±half a pixel of it: paint.
+      const d = Math.hypot((x + 0.5 - cx) / rx, (y + 0.5 - cy) / ry);
+      if (Math.abs(d - 1) * Math.min(rx, ry) < 0.55) ctx.fillRect(x, y, 1, 1);
+    }
+  }
+}
+
 /**
- * One silhouette per weapon. A Record keyed by WeaponId: adding a weapon to
- * WEAPONS without drawing it here is a compile error, not a missing icon.
+ * One silhouette per slot. A Record keyed by SlotId: adding a weapon to
+ * SLOTS without drawing it here is a compile error, not a missing icon.
  */
-const SILHOUETTES: Record<WeaponId, Silhouette> = {
+const SILHOUETTES: Record<SlotId, Silhouette> = {
   // Revolver, 24 × 13: barrel, cylinder, frame, hammer, trigger guard, slanted grip.
   revolver: {
     width: 24,
@@ -99,13 +110,44 @@ const SILHOUETTES: Record<WeaponId, Silhouette> = {
       ctx.fillRect(0, 4, 5, 4); // stock
     },
   },
+  // Shovel, 32 × 11: the D-grip, the long shaft, the blade's socket and the pointed blade.
+  shovel: {
+    width: 32,
+    height: 11,
+    draw(ctx) {
+      ctx.fillRect(0, 3, 1, 5); // D-grip: the bar...
+      ctx.fillRect(1, 3, 3, 1); // ...and its loop
+      ctx.fillRect(1, 7, 3, 1);
+      ctx.fillRect(4, 4, 1, 3);
+      ctx.fillRect(5, 5, 15, 1); // shaft
+      ctx.fillRect(19, 4, 3, 3); // socket
+      // Blade: wide at the socket, a point at the end (each column a bit shorter).
+      for (let x = 22; x < 32; x++) {
+        const half = x < 28 ? 5 : 5 - (x - 27) * 1.2;
+        ctx.fillRect(x, Math.round(5.5 - half), 1, Math.max(1, Math.round(half * 2)));
+      }
+    },
+  },
+  // Lasso, 24 × 14: the coil (three loops one over the other) and the open noose with its honda.
+  lasso: {
+    width: 24,
+    height: 14,
+    draw(ctx) {
+      ring(ctx, 6, 7, 5, 6); // the coil
+      ring(ctx, 6.5, 7, 4, 5);
+      ctx.fillRect(4, 0, 4, 2); // the tie on top
+      ring(ctx, 17, 6, 6, 4.5); // the noose
+      ctx.fillRect(11, 3, 2, 2); // the honda
+      ctx.fillRect(9, 8, 3, 1); // the rope from the coil to the noose
+    },
+  },
 };
 
 const bar = document.getElementById('weapon-bar')!;
-const slots = new Map<WeaponId, HTMLElement>();
+const slots = new Map<SlotId, HTMLElement>();
 
 // Build the slots once, in slot order (= key order).
-WEAPONS.forEach((weapon, i) => {
+SLOTS.forEach((weapon, i) => {
   const slot = document.createElement('div');
   slot.className = 'weapon-slot';
   const key = document.createElement('span');
@@ -130,11 +172,12 @@ let shown = ''; // what the bar shows now: weapon in hand + owned weapons, as on
 export function updateWeaponBar(player: PlayerState): void {
   // Touch the DOM only when something changes (weapon in hand, or a weapon
   // bought / lost at death), not every frame. One string is an easy "key".
-  const key = `${player.weapon}|${WEAPONS.map((w) => (player.owned[w] ? 1 : 0)).join('')}`;
+  const held = heldItem(player);
+  const key = `${held}|${SLOTS.map((w) => (player.owned[w] ? 1 : 0)).join('')}`;
   if (key === shown) return;
   shown = key;
   for (const [weapon, slot] of slots) {
-    slot.classList.toggle('active', weapon === player.weapon);
+    slot.classList.toggle('active', weapon === held);
     // A weapon you don't own (yet): no slot. It appears when you buy it.
     slot.hidden = !player.owned[weapon];
   }

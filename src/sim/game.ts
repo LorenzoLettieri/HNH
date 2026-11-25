@@ -26,6 +26,7 @@ import { createPlayer, currentHeight, respawn, stepPlayer, type PlayerState } fr
 import { refundLeadFlight, spurRound, stepWeapon } from './weapon';
 import { stepStatus, stepStunned } from './status';
 import { stepKick } from './kick';
+import { stepHook } from './lasso';
 import { blockPlayerWithBodies } from './bodyBlock';
 import { stepShop } from './shop';
 import { stepForge } from './forge';
@@ -143,8 +144,10 @@ export function stepGame(
   stepWeapon(game.player, cmd, world, game.entities, events, isHighNoon(game.style), game);
   const beforeKick = events.length;
   stepKick(game.player, cmd, world, game.entities, events);
-  // Drink "Bobby": the boot (or shovel) that lands bats the projectiles back.
-  if (hasDrink(game.player, 'bobby') && events.slice(beforeKick).some((e) => e.type === 'kickLand')) {
+  // The lasso's grappling hook (right button with the lasso in your hands).
+  stepHook(game.player, cmd, world, game.entities, events);
+  // Drink "Bobby": the boot (or shovel) that lands bats the projectiles back (not the lasso: it's 9 m away).
+  if (hasDrink(game.player, 'bobby') && events.slice(beforeKick).some((e) => e.type === 'kickLand' && e.tool !== 'lasso')) {
     batProjectiles(game.projectiles, game.player, events);
   }
   // Fire and wall slams from the shotgun's cards: their kills are yours too.

@@ -54,7 +54,11 @@ const ITEM_TEXT: Record<ShopItemId, { name: string; desc: string }> = {
   },
   shovel: {
     name: 'Badile da becchino',
-    desc: 'Prende il posto dello stivale (F). Più lungo, più largo, tre volte il danno. Scava fosse, ne riempie altre.',
+    desc: 'Tasto 5 per impugnarlo, ed è anche il tuo F. Più lungo dello stivale, più largo, tre volte il danno. Scava fosse, ne riempie altre.',
+  },
+  lasso: {
+    name: 'Lazo del mandriano',
+    desc: 'Tasto 6. Sinistro (o F): il cappio prende un nemico a nove metri e te lo trascina davanti. Destro: rampino, ti aggrappi dove guardi e voli.',
   },
 };
 
@@ -185,6 +189,7 @@ const WEAPON_NAMES: Record<GearId, string> = {
   rifle: 'Carabina',
   dynamite: 'Lancia-dinamite',
   shovel: 'Badile',
+  lasso: 'Lazo',
 };
 
 /** What he says after a purchase, and when you can't pay. */

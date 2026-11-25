@@ -97,16 +97,34 @@ function gunPower(p: PlayerState, weapon: WeaponId): number {
 }
 
 /**
- * Everything you can OWN and UPGRADE: the guns, plus the shovel. The shovel
- * isn't a slot (you never hold it in your hands instead of a gun): once
- * bought it takes the boot's place on the melee key (kick.ts). Same idea as
- * the bowie knife in CoD Zombies. Kept apart from WeaponId so that
- * everything about slots, magazines and ammo (WEAPONS, loaded, AMMO_TYPE)
- * doesn't have to pretend the shovel has bullets.
+ * MELEE WEAPONS: the shovel and the lasso. They aren't guns (no magazine,
+ * no ammo), but since the lasso they are SLOTS like the guns: keys 5 and 6
+ * put one in your hands, and then the left button attacks with it (and the
+ * right button does its alternate fire: the lasso's grappling hook). The
+ * melee key (F) ALWAYS swings one: the one in your hands, or with a gun in
+ * your hands the last one you held or bought (p.melee); the boot if you
+ * have none. Kept apart from WeaponId so that everything about magazines
+ * and ammo (WEAPONS, loaded, AMMO_TYPE) doesn't have to pretend a shovel
+ * has bullets: what's in your hands is a SlotId, the GUN you hold or come
+ * back to is still p.weapon (heldItem below).
  */
-export type GearId = WeaponId | 'shovel';
-/** Every piece of gear, in the order the shop lists it. */
-export const GEAR: readonly GearId[] = [...WEAPONS, 'shovel'];
+export type MeleeId = 'shovel' | 'lasso';
+export const MELEE: readonly MeleeId[] = ['shovel', 'lasso'];
+/** Anything that can be in your hands: a gun or a melee weapon. */
+export type SlotId = WeaponId | MeleeId;
+/** Every slot, in key order: 1-4 the guns, 5 the shovel, 6 the lasso. */
+export const SLOTS: readonly SlotId[] = [...WEAPONS, ...MELEE];
+export function isMelee(id: SlotId): id is MeleeId {
+  return (MELEE as readonly SlotId[]).includes(id);
+}
+/** What's in your hands right now: the melee weapon if one is drawn, otherwise the gun. */
+export function heldItem(p: PlayerState): SlotId {
+  return p.meleeDrawn && p.melee ? p.melee : p.weapon;
+}
+
+/** Everything you can OWN and UPGRADE: every slot (the shop lists them in this order). */
+export type GearId = SlotId;
+export const GEAR: readonly GearId[] = SLOTS;
 
 /** What's in your pockets: kinds of cartridges. */
 export type AmmoType = 'bullets' | 'shells' | 'sticks';
@@ -223,8 +241,23 @@ export function stepWeapon(
   // Switching: the new weapon is in your hands at once, but it needs
   // weaponSwitchTime to come up before it can fire. A reload in progress is
   // CANCELLED (no free ammo: the rounds weren't in yet).
-  const target = selectedWeapon(p, cmd.weaponSelect);
-  if (target !== p.weapon) switchWeapon(p, target, events);
+  const target = selectedSlot(p, cmd.weaponSelect);
+  if (target !== heldItem(p)) {
+    if (isMelee(target)) drawMelee(p, target, events);
+    else switchWeapon(p, target, events);
+  }
+  // A melee weapon in your hands: the guns' rules (firing, reloading,
+  // aiming) are off. Its attacks are in kick.ts (left button = the melee
+  // key) and lasso.ts (right button = the grappling hook).
+  if (p.meleeDrawn) {
+    p.fireHeld = cmd.fire;
+    p.altFireHeld = cmd.altFire;
+    p.fireBufferTicks = 0;
+    p.adsTicks = Math.max(0, p.adsTicks - 1);
+    p.aimHeldTicks = 0;
+    stepHotHolster(p); // (every gun is in the holster now: the drink loads all of them)
+    return;
+  }
 
   const pocket = AMMO_TYPE[p.weapon];
   const oneByOne = reloadsOneByOne(p, p.weapon);
@@ -403,7 +436,7 @@ function stepHotHolster(p: PlayerState): void {
   if (!hasDrink(p, 'hotHolster')) return;
   const every = secondsToTicks(tuning.hotHolsterTime);
   for (const w of WEAPONS) {
-    if (w === p.weapon || !p.owned[w]) continue;
+    if ((w === p.weapon && !p.meleeDrawn) || !p.owned[w]) continue;
     const pocket = AMMO_TYPE[w];
     if (p.loaded[w] >= magazineSize(p, w) || (!tuning.infiniteAmmo && p.reserve[pocket] <= 0)) {
       p.holsterTicks[w] = 0;
@@ -472,6 +505,7 @@ function endReload(p: PlayerState, events: SimEvent[], cooldown: number): void {
 /** Puts `w` in your hands. Also used by the shop: a weapon you just bought goes straight to your hands. */
 export function switchWeapon(p: PlayerState, w: WeaponId, events: SimEvent[]): void {
   p.weapon = w;
+  p.meleeDrawn = false; // (if a melee weapon was in your hands: it goes back on your belt)
   // (max: switching during the shovel's swing doesn't bring the gun back sooner.)
   p.switchTicks = Math.max(p.switchTicks, secondsToTicks(tuning.weaponSwitchTime));
   p.reloadTicks = 0;
@@ -486,25 +520,43 @@ export function switchWeapon(p: PlayerState, w: WeaponId, events: SimEvent[]): v
 }
 
 /**
- * Which weapon the command asks for (see InputCommand.weaponSelect).
- * Only weapons you OWN: a slot you haven't bought is ignored, and the
- * wheel skips it (with just the revolver, they do nothing).
+ * Puts a melee weapon in your hands (keys 5, 6): drawn like a gun (it takes
+ * weaponSwitchTime before it can swing), and from now on it's also the one
+ * on the melee key. The gun you held stays p.weapon: it's the one that comes
+ * back with the wheel or its key.
  */
-function selectedWeapon(p: PlayerState, select: number): WeaponId {
-  const current = p.weapon;
+export function drawMelee(p: PlayerState, m: MeleeId, events: SimEvent[]): void {
+  p.melee = m;
+  p.meleeDrawn = true;
+  p.switchTicks = Math.max(p.switchTicks, secondsToTicks(tuning.weaponSwitchTime));
+  p.reloadTicks = 0; // a reload in progress is cancelled, like any switch
+  p.fireCooldownTicks = 0;
+  p.adsTicks = 0;
+  p.fanShotsLeft = 0;
+  p.fanQueued = false;
+  events.push({ type: 'weaponSwitch', weapon: m, forged: false });
+}
+
+/**
+ * Which slot the command asks for (see InputCommand.weaponSelect).
+ * Only what you OWN: a slot you haven't bought is ignored, and the wheel
+ * skips it (with just the revolver, they do nothing).
+ */
+function selectedSlot(p: PlayerState, select: number): SlotId {
+  const current = heldItem(p);
   // The wager's "one gun" curse: the gun in your hands when the wave started is the only one.
   if (select === 0 || hasCurse(p, 'oneGun')) return current;
   if (select > 0) {
-    const slot = WEAPONS[select - 1];
+    const slot = SLOTS[select - 1];
     return slot && p.owned[slot] ? slot : current;
   }
-  // Cycle: step forward (or back) until the next weapon you own.
+  // Cycle: step forward (or back) until the next slot you own.
   const step = select === -1 ? 1 : -1;
-  const n = WEAPONS.length;
-  let i = WEAPONS.indexOf(current);
+  const n = SLOTS.length;
+  let i = SLOTS.indexOf(current);
   for (let k = 0; k < n; k++) {
     i = (i + step + n) % n;
-    if (p.owned[WEAPONS[i]]) return WEAPONS[i];
+    if (p.owned[SLOTS[i]]) return SLOTS[i];
   }
   return current;
 }

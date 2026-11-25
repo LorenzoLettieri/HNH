@@ -15,7 +15,9 @@ import { createRevolverModel } from './revolverModel';
 import { createFanning, createHands } from './hands';
 import { createKickLeg } from './kickLeg';
 import { createShovelView, gunAwayAt, shovelSettings } from './shovelView';
-import type { MeleeTool } from '../../sim/kick';
+import { meleeGunBack, type MeleeTool } from '../../sim/kick';
+import { createLassoView } from './lassoView';
+import type { SimEvent } from '../../sim/events';
 import { createShotgunView } from './shotgunView';
 import { createPumpView } from './pumpView';
 import { createRevolverReload } from './revolverReload';
@@ -23,7 +25,7 @@ import { createAkimboSpin } from './akimboSpin';
 import { drawHammer, drawSpin, LEFT_LAG, SPIN_TO } from './revolverDraw';
 import { createRifleView } from './rifleView';
 import { createDynamiteView } from './dynamiteView';
-import { adsAmount, isAkimbo, isPump, type WeaponId } from '../../sim/weapon';
+import { adsAmount, heldItem, isAkimbo, isMelee, isPump, type SlotId, type WeaponId } from '../../sim/weapon';
 import { poseAt, smoothstep, ZERO_POSE, type GunPose } from './elastic';
 import { lookingThroughScope } from '../scopeOverlay';
 import { RecoilSpring, recoilSettings } from './recoil';
@@ -190,8 +192,16 @@ export interface Viewmodel {
   onShot(weapon: WeaponId, barrel: number, forged: boolean): void;
   /** A reload starts and lasts `seconds` (the revolver's timeline is stretched to fit). */
   onReload(weapon: WeaponId, seconds: number, forged: boolean): void;
-  /** The melee attack started: play the leg (kickLeg.ts) or the shovel swing (shovelView.ts). */
+  /** The melee attack started: play the leg (kickLeg.ts), the shovel swing (shovelView.ts) or the lasso's throw (lassoView.ts). */
   onKick(tool: MeleeTool): void;
+  /** The simulation's events of this frame (the lasso's catch and hook: lassoView.ts). */
+  handleEvents(events: SimEvent[]): void;
+  /**
+   * Where the lasso's rope leaves your fist, in this scene's camera space,
+   * or null when the lasso isn't in view (render/lassoRope.ts draws the
+   * rope in the world from there).
+   */
+  lassoHand(out: THREE.Vector3): THREE.Vector3 | null;
   applyAtmosphere(a: Atmosphere): void;
   setAspect(aspect: number): void;
   /**
@@ -272,6 +282,13 @@ export function createViewmodel(): Viewmodel {
   let kickTime = Infinity; // seconds since the kick started (Infinity = none)
   let kickPunched = true; // the camera dip of this kick already happened
   let kickTool: MeleeTool = 'kick'; // what's swinging (the dip comes at its own wind-up)
+  let kickFromGun = false; // this swing put the gun away (a melee weapon swung from F with a gun in your hands)
+  let meleeDrawn = false; // last frame: a melee weapon was in your hands
+  // The lasso: hands, coil and spinning noose (lassoView.ts). In the scene, like the shovel.
+  const lasso = createLassoView();
+  scene.add(lasso.root);
+  let shownSlot: SlotId = 'revolver'; // what's in your hands on screen (a gun or a melee weapon)
+  const anchor = new THREE.Vector3();
 
   /** Stops the gun's own animations (a reload, a draw): it's being put away or replaced. */
   function cancelGunAnimations(): void {
@@ -427,12 +444,19 @@ export function createViewmodel(): Viewmodel {
       kickTime = 0;
       kickPunched = false;
       kickTool = tool;
-      if (tool === 'shovel') {
-        // Both hands on the shovel: whatever the gun was doing stops (the
-        // simulation cancelled the reload too), and it goes away (gunAwayAt).
-        cancelGunAnimations();
-        shovel.play();
-      } else leg.play();
+      kickFromGun = tool !== 'kick' && !meleeDrawn;
+      // Both hands on the melee weapon: whatever the gun was doing stops (the
+      // simulation cancelled the reload too), and it goes away (gunAwayAt).
+      if (kickFromGun) cancelGunAnimations();
+      if (tool === 'shovel') shovel.play();
+      else if (tool === 'lasso') lasso.throwLoop();
+      else leg.play();
+    },
+    handleEvents(events) {
+      lasso.handle(events);
+    },
+    lassoHand(out) {
+      return lasso.root.visible ? lasso.handPoint(out) : null;
     },
     applyAtmosphere(a) {
       ambient.color.set(a.ambientSky);
@@ -459,18 +483,25 @@ export function createViewmodel(): Viewmodel {
       inverseCamera.copy(worldCamera.quaternion).invert();
       sun.position.copy(sunDir).applyQuaternion(inverseCamera).multiplyScalar(5);
 
-      // --- Weapon switch: the new gun is drawn (DRAW_KEYS) ---
-      if (player.weapon !== shownWeapon) {
+      // --- Weapon switch: the new gun (or melee weapon) is drawn (DRAW_KEYS) ---
+      const held = heldItem(player);
+      meleeDrawn = isMelee(held);
+      if (held !== shownSlot) {
+        shownSlot = held;
         shownWeapon = player.weapon;
-        startDraw(player);
+        if (meleeDrawn) {
+          drawTime = 0;
+          cancelGunAnimations();
+        } else startDraw(player);
       }
-      // --- The shovel: the gun goes away for the swing, then it's drawn back like a switch ---
+      // --- A melee swing from F: the gun goes away for it, then it's drawn back like a switch ---
       // (the simulation sends the 'weaponSwitch' event at the same moment: the draw's sound).
       const lastKickTime = kickTime;
       kickTime += dt;
-      const shovelSwing = kickTool === 'shovel';
-      if (shovelSwing && lastKickTime < tuning.shovelGunBack && kickTime >= tuning.shovelGunBack) startDraw(player);
-      const away = shovelSwing ? gunAwayAt(kickTime) : 0;
+      const gunBack = meleeGunBack(kickTool);
+      if (kickFromGun && lastKickTime < gunBack && kickTime >= gunBack) startDraw(player);
+      // A melee weapon in your hands: no gun at all.
+      const away = meleeDrawn ? 1 : kickFromGun ? gunAwayAt(kickTime, gunBack) : 0;
       revolver.visible = shownWeapon === 'revolver';
       // Akimbo: the left gun appears, the fanning hand goes away (it's holding a gun now).
       const akimbo = shownWeapon === 'revolver' && isAkimbo(player);
@@ -573,8 +604,7 @@ export function createViewmodel(): Viewmodel {
       // camera dip: the "weight" of the impact.
       // (kickTime was advanced at the top, with the shovel's gun-away.)
       const legOut = leg.update(dt);
-      shovel.update(dt);
-      const windup = kickTool === 'shovel' ? tuning.shovelWindup : tuning.kickWindup;
+      const windup = kickTool === 'shovel' ? tuning.shovelWindup : kickTool === 'lasso' ? Infinity : tuning.kickWindup;
       if (!kickPunched && kickTime >= windup) {
         kickPunched = true;
         viewKick -= kickTool === 'shovel' ? s.shovelViewPunch : s.kickViewPunch;
@@ -597,6 +627,32 @@ export function createViewmodel(): Viewmodel {
 
       // --- Sliding: the gun tilts inward and drops a little ---
       slideTilt = approach(slideTilt, player.sliding ? 1 : 0, 10, dt);
+
+      // --- The melee weapons in your hands (or swung from F): their shared motion ---
+      // The same sway, bob and fall as a gun, plus the draw (dp) when it was just
+      // put in your hands. Swung from F with a gun in your hands, the lasso's
+      // hands come up from below for the throw and go back down before the gun returns.
+      let rise = 0;
+      if (!meleeDrawn && kickFromGun && kickTool === 'lasso') {
+        const inK = Math.min(1, kickTime / 0.1);
+        const outK = THREE.MathUtils.clamp((kickTime - (gunBack - 0.12)) / 0.12, 0, 1);
+        rise = (1 - inK * inK) + outK * outK;
+      }
+      const meleeOffset = {
+        x: swayX + bobX + dp.x * (meleeDrawn ? 1 : 0) - slideTilt * 0.02,
+        y: swayY + bobY + fallOffset + dp.y * (meleeDrawn ? 1 : 0) - slideTilt * 0.03 - rise * 0.3,
+        z: dp.z * (meleeDrawn ? 1 : 0),
+        pitch: -swayY * 2 + dp.pitch * (meleeDrawn ? 1 : 0) - rise * 0.6,
+        yaw: swayX * 2 + dp.yaw * (meleeDrawn ? 1 : 0),
+        roll: slideTilt * 0.35 + dp.roll * (meleeDrawn ? 1 : 0),
+      };
+      shovel.update(dt, held === 'shovel', meleeOffset);
+      lasso.root.visible = held === 'lasso' || (kickFromGun && kickTool === 'lasso' && kickTime < gunBack);
+      // The hook's anchor, in camera space: the arm reaches for it.
+      const hk = player.hook;
+      const anchorSeen = hk.phase !== 'idle' ? worldCamera.worldToLocal(anchor.set(hk.x, hk.y, hk.z)) : null;
+      if (lasso.root.visible) lasso.update(dt, player, meleeOffset, anchorSeen);
+      viewKick -= lasso.takePunch();
 
       // --- Compose the final pose ---
       // Each weapon has its own rest pose and recoil; everything else

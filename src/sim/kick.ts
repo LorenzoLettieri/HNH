@@ -13,11 +13,17 @@
 //    accelerates on the ground), so it really flies, then stays down for a
 //    moment (state 'staggered', see ghoul.ts).
 //
-// The SHOVEL (bought at the armory) takes the boot's place: same key, same
-// code, only the numbers change (longer reach, wider arc, more damage). The
-// numbers are picked once per attack by meleeStats(): the attack doesn't
-// care WHAT hits, only how far, how wide, how hard. (Like a Laravel
-// controller that receives a config array instead of an if per case.)
+// The MELEE WEAPONS (bought at the armory: the shovel, the lasso) take the
+// boot's place: same key, same code, only the numbers change (longer reach,
+// wider arc, more damage). The numbers are picked once per attack by
+// meleeStats(): the attack doesn't care WHAT hits, only how far, how wide,
+// how hard. (Like a Laravel controller that receives a config array instead
+// of an if per case.) They are also SLOTS (keys 5, 6: weapon.ts): with one in
+// your hands, the LEFT button attacks with it too, like F.
+//
+// The LASSO is the odd one: not a cone around you but a loop thrown in front
+// of you, 9 m: it catches ONE enemy (lassoTarget in lasso.ts, picked at the
+// press so the loop on screen flies at it) and YANKS it toward you (yank).
 import { hasDrink } from './drinks';
 import { stun } from './status';
 import type { InputCommand } from './command';
@@ -27,9 +33,12 @@ import type { SimEvent } from './events';
 import type { PlayerState } from './player';
 import { raycastBoxes } from './raycast';
 import type { World } from './world';
+import type { MeleeId } from './weapon';
+import { lassoMissPoint, lassoTarget } from './lasso';
+import { hitCenter } from './gunDamage';
 
-/** What swings when you press F: your boot, or the shovel once you own it. */
-export type MeleeTool = 'kick' | 'shovel';
+/** What swings when you press F: your boot, or the melee weapon you own (the last held or bought). */
+export type MeleeTool = 'kick' | MeleeId;
 
 /** The numbers of a melee attack (read from tuning every time: the debug panel can change them). */
 interface MeleeStats {
@@ -43,10 +52,27 @@ interface MeleeStats {
 }
 
 export function meleeTool(p: PlayerState): MeleeTool {
-  return p.owned.shovel ? 'shovel' : 'kick';
+  return p.melee ?? 'kick';
+}
+
+/** With a gun in your hands: seconds from the press to the gun coming back up (the boot never puts it away). */
+export function meleeGunBack(tool: MeleeTool): number {
+  return tool === 'lasso' ? tuning.lassoGunBack : tuning.shovelGunBack;
 }
 
 function meleeStats(tool: MeleeTool): MeleeStats {
+  if (tool === 'lasso') {
+    // (Range and angle aren't a cone for the lasso: see lassoTarget.)
+    return {
+      windup: tuning.lassoWindup,
+      cooldown: tuning.lassoCooldown,
+      range: tuning.lassoRange,
+      angle: 0,
+      damage: tuning.lassoDamage,
+      knockback: 0,
+      lift: tuning.lassoYankLift,
+    };
+  }
   if (tool === 'shovel') {
     return {
       windup: tuning.shovelWindup,
@@ -74,43 +100,61 @@ export function stepKick(p: PlayerState, cmd: InputCommand, world: World, entiti
   const stats = meleeStats(tool);
   if (p.kickCooldownTicks > 0) p.kickCooldownTicks--;
 
-  // New press (not held from before) and ready: start a kick.
-  const pressed = cmd.kick && !p.kickHeld;
-  p.kickHeld = cmd.kick;
-  if (pressed && p.kickCooldownTicks === 0) {
+  // New press (not held from before) and ready: start a kick. With a melee
+  // weapon in your hands the left button is its attack too (the same press:
+  // either of the two). Not while it's still being drawn, and the lasso not
+  // while its rope is out as a grappling hook.
+  const inHand = p.meleeDrawn && p.melee !== null;
+  const want = cmd.kick || (inHand && cmd.fire);
+  const pressed = want && !p.kickHeld;
+  p.kickHeld = want;
+  const busy = (inHand && p.switchTicks > 0) || (tool === 'lasso' && p.hook.phase !== 'idle');
+  if (pressed && p.kickCooldownTicks === 0 && !busy) {
     p.kickTicks = 1;
     p.kickCooldownTicks = secondsToTicks(stats.cooldown);
-    events.push({ type: 'kickStart', tool });
-    if (tool === 'shovel') putGunAway(p);
+    // A melee weapon swung from F with a gun in your hands: the gun goes away for it.
+    p.kickGunAway = !inHand && tool !== 'kick';
+    if (p.kickGunAway) putGunAway(p, tool);
+    if (tool === 'lasso') {
+      // The loop's target is picked NOW: it flies at it during the wind-up.
+      const target = lassoTarget(p, entities, world);
+      p.lassoTargetId = target ? target.id : -1;
+      const to = target ? hitCenter(target) : lassoMissPoint(p, world, tuning.lassoRange);
+      events.push({ type: 'kickStart', tool, targetId: p.lassoTargetId, to });
+    } else events.push({ type: 'kickStart', tool });
     // (With a wind-up of 0 the foot lands on this very tick: falls through.)
   } else if (p.kickTicks > 0) {
     p.kickTicks++;
   }
 
-  // The shovel's swing is over: the gun comes back up, drawn like a switch
+  // The swing is over: the gun comes back up, drawn like a switch
   // (same animation and sound; `melee` so it isn't a "quick switch" for the Style).
-  if (tool === 'shovel' && p.kickTicks === secondsToTicks(tuning.shovelGunBack)) {
+  if (p.kickGunAway && p.kickTicks === secondsToTicks(meleeGunBack(tool))) {
     events.push({ type: 'weaponSwitch', weapon: p.weapon, forged: p.forged[p.weapon] > 0, melee: true });
   }
 
   // The foot lands exactly once, at the end of the wind-up.
   if (p.kickTicks > 0 && p.kickTicks === Math.max(1, secondsToTicks(stats.windup))) {
-    landKick(p, tool, stats, world, entities, events);
+    if (tool === 'lasso') landLasso(p, stats, world, entities, events);
+    else landKick(p, tool, stats, world, entities, events);
   }
   // The kick is "over" when the cooldown is: the renderer reads kickTicks to animate the leg.
-  if (p.kickCooldownTicks === 0) p.kickTicks = 0;
+  if (p.kickCooldownTicks === 0) {
+    p.kickTicks = 0;
+    p.kickGunAway = false;
+  }
 }
 
 /**
- * The shovel takes both hands, so the gun goes away for the swing (CoD's
- * melee): it can't fire until it's back up and drawn (switchTicks, the same
+ * The shovel takes both hands (and so does the lasso: one spins the loop, the
+ * other holds the coil), so the gun goes away for the swing (CoD's melee): it can't fire until it's back up and drawn (switchTicks, the same
  * timer as a weapon switch: every check "is the gun ready?" already reads it),
  * and what the hands were doing stops: a reload in progress is cancelled (no
  * free rounds), the fanning burst ends, the sights come down. The boot
  * doesn't do any of this: kicking while you reload is its whole point.
  */
-function putGunAway(p: PlayerState): void {
-  const busy = secondsToTicks(tuning.shovelGunBack + tuning.weaponSwitchTime);
+function putGunAway(p: PlayerState, tool: MeleeTool): void {
+  const busy = secondsToTicks(meleeGunBack(tool) + tuning.weaponSwitchTime);
   p.switchTicks = Math.max(p.switchTicks, busy);
   p.reloadTicks = 0;
   p.fanShotsLeft = 0;
@@ -198,6 +242,60 @@ function landKick(
     if (hasDrink(p, 'hardHoof')) stun(e); // drink "Zoccolo duro"
   }
   events.push({ type: 'kickLand', tool, hits, at });
+}
+
+/**
+ * The lasso catches (the end of its wind-up). The target picked at the press,
+ * if it's still there and within reach (a little more: it may have stepped
+ * back); otherwise whatever is in the loop's way now. Caught: a little damage,
+ * and the YANK.
+ */
+function landLasso(p: PlayerState, stats: MeleeStats, world: World, entities: Entity[], events: SimEvent[]): void {
+  const picked = entities.find((e) => e.id === p.lassoTargetId && isAlive(e));
+  const stillThere = picked && lassoTarget(p, [picked], world, 1.4) === picked;
+  const e = stillThere ? picked : lassoTarget(p, entities, world);
+  p.lassoTargetId = -1;
+  if (!e) return void events.push({ type: 'kickLand', tool: 'lasso', hits: 0, at: [] });
+  const c = hitCenter(e);
+  const dist = Math.hypot(c.x - p.x, c.z - p.z);
+  const killed = damage(e, stats.damage);
+  events.push({
+    type: 'hit',
+    entityId: e.id,
+    damage: stats.damage,
+    killed,
+    surface: isEnemy(e) ? 'flesh' : 'metal',
+    headshot: false,
+    source: 'lasso',
+    distance: dist,
+    target: e.type,
+  });
+  if (!killed) yank(e, p, stats.lift);
+  events.push({ type: 'kickLand', tool: 'lasso', hits: 1, at: [{ ...c, flesh: isEnemy(e) }] });
+}
+
+/**
+ * The lasso's yank: the enemy flies TOWARD you on an arc and lands
+ * lassoYankStop meters in front of you. Ballistics backwards: an upward
+ * speed `lift` keeps it in the air for T = 2·lift/g (up and down again), so to
+ * cover `d` meters in that time the horizontal speed is d / T. Thrown with
+ * knockBack, like the boot's kick but pointing at you: a ghoul in the air
+ * can't steer, it really flies. The heavy ones don't budge: the rope holds
+ * them still instead (the stun of status.ts: no AI for a moment).
+ */
+function yank(e: Entity, p: PlayerState, lift: number): void {
+  if (e.type === 'bull' || e.type === 'smith') {
+    e.stunTicks = Math.max(e.stunTicks ?? 0, secondsToTicks(tuning.lassoHeavyHold));
+    return;
+  }
+  const c = hitCenter(e);
+  const dx = p.x - c.x;
+  const dz = p.z - c.z;
+  const d = Math.hypot(dx, dz);
+  if (d < 0.01) return;
+  const flight = (2 * lift) / tuning.gravity;
+  const speed = Math.min(tuning.lassoYankMaxSpeed, Math.max(0, d - tuning.lassoYankStop) / flight);
+  knockBack(e, dx / d, dz / d, speed, lift);
 }
 
 /**

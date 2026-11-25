@@ -98,6 +98,7 @@ export type StyleAward =
   | 'slideKill'
   | 'kickKill'
   | 'shovelKill'
+  | 'lassoKill'
   | 'quickSwitch'
   | 'quickscope'
   | 'noscope'
@@ -115,6 +116,7 @@ export type StyleAward =
   | 'bhop' // `count` = hops in a row
   | 'slideJump'
   | 'vent'
+  | 'grapple' // the lasso's hook caught something and you're flying to it
   | 'nearMiss' // a projectile missed you by a hair
   | 'torero'; // a bull's charge missed you by a hair
 
@@ -222,6 +224,7 @@ export function stepStyle(style: StyleState, player: PlayerState, events: SimEve
     if (e.type === 'jump' && e.hop) award('bhop', tuning.styleBhop * Math.min(style.bhops, 5), style.bhops);
     if (e.type === 'jump' && e.slide) award('slideJump', tuning.styleSlideJump);
     if (e.type === 'ventLaunch') award('vent', tuning.styleVent);
+    if (e.type === 'hookAttach') award('grapple', tuning.styleGrapple);
     if (e.type === 'nearMiss') award('nearMiss', tuning.styleNearMiss);
     if (e.type === 'bullMiss' && e.side <= tuning.styleToreroDistance) award('torero', tuning.styleTorero);
 
@@ -247,6 +250,7 @@ export function stepStyle(style: StyleState, player: PlayerState, events: SimEve
     if (player.sliding) award('slideKill', tuning.styleSlideKill);
     if (e.source === 'kick') award('kickKill', tuning.styleKickKill);
     if (e.source === 'shovel') award('shovelKill', tuning.styleKickKill);
+    if (e.source === 'lasso') award('lassoKill', tuning.styleKickKill);
     if (style.sinceSwitchTicks <= secondsToTicks(tuning.weaponSwitchTime + tuning.styleQuickSwitchTime)) {
       award('quickSwitch', tuning.styleQuickSwitchKill);
     }
@@ -327,7 +331,7 @@ function remember(style: StyleState, player: PlayerState, events: SimEvent[], fr
   style.sinceSwitchTicks++;
   for (let i = from; i < end; i++) {
     const e = events[i];
-    if (e.type === 'weaponSwitch' && !e.melee) style.sinceSwitchTicks = 0; // the gun back after the shovel isn't a quick switch
+    if (e.type === 'weaponSwitch' && !e.melee) style.sinceSwitchTicks = 0; // the gun back after a melee swing isn't a quick switch
     // A hop extends the run of bunny hops, any other jump starts a new one.
     if (e.type === 'jump') style.bhops = e.hop ? style.bhops + 1 : 0;
   }

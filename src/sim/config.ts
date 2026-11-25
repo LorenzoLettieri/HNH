@@ -415,8 +415,10 @@ export const tuning = {
   riflePrice: 1000,
   /** Price of the dynamite launcher: the most expensive gun (it comes with dynamiteReserveStart sticks). */
   dynamitePrice: 1500,
-  /** Price of the shovel (it replaces the kick on F). */
+  /** Price of the shovel (it replaces the kick on F, and it's a slot: key 5). */
   shovelPrice: 400,
+  /** Price of the lasso (key 6; on F too: the last melee weapon you held or bought). */
+  lassoPrice: 400,
   // --- Weapon upgrades: decks of cards at the armory (see upgrades.ts) ---
   /** Price of a weapon's first card, in vildenaro. */
   upgradeBasePrice: 500,
@@ -546,6 +548,55 @@ export const tuning = {
   shovelKnockback: 15,
   /** Upward speed given to a hit enemy, m/s. */
   shovelLift: 6,
+
+  // --- Lasso (melee weapon, key 6: kick.ts for the throw, lasso.ts for the hook) ---
+  /**
+   * Seconds from the press to the loop catching: it flies out meanwhile (the
+   * animation and the rope in render/ are timed on this number). Longer than
+   * the shovel's swing: it has to get there, 9 m away.
+   */
+  lassoWindup: 0.22,
+  /** With a gun in your hands (F): seconds from the press to the gun coming back up, like the shovel's. */
+  lassoGunBack: 0.5,
+  /** Seconds before the next throw (counted from the press). */
+  lassoCooldown: 0.75,
+  /** How far the loop reaches, meters: medium range, between the shovel's 2 m and a gun. */
+  lassoRange: 9,
+  /** Radius of the catch around your aim, meters (plus the enemy's own half-width): a loop, not a bullet. */
+  lassoCatchRadius: 0.7,
+  /** Damage: a little, it's for dragging them, not for killing them. */
+  lassoDamage: 20,
+  /**
+   * The yank: the caught enemy flies toward you on an arc with this upward
+   * speed, m/s, and lands lassoYankStop meters in front of you (the
+   * horizontal speed is worked out from the distance: flight time = 2·lift/g).
+   */
+  lassoYankLift: 6,
+  lassoYankStop: 2.2,
+  /** ...but never faster than this, m/s. */
+  lassoYankMaxSpeed: 20,
+  /** The heavy ones (bull, Smith) can't be dragged: the rope holds them still this long, seconds. */
+  lassoHeavyHold: 1.1,
+  // The grappling hook (right button, the lasso in your hands).
+  /** How far the hook reaches, meters. */
+  lassoHookRange: 32,
+  /** How fast the loop flies out, m/s. */
+  lassoHookSpeed: 90,
+  /** Seconds before it can be thrown again after letting go. */
+  lassoHookCooldown: 0.3,
+  /** The reel's pull, m/s² (gravity is 20: it lifts you), up to this speed along the rope, m/s. */
+  lassoReelAccel: 60,
+  lassoReelMaxSpeed: 24,
+  /** Fraction of gravity the rope holds up while it pulls (1 = none: a straight line to the anchor). */
+  lassoHookLift: 0.5,
+  /** Closer than this to the anchor, meters, it lets go (you keep the speed: the slingshot). */
+  lassoHookDetach: 1.6,
+  /** ...and to an enemy (you'd be inside it), meters. */
+  lassoEnemyDetach: 2.4,
+  /** Hooked for longer than this, seconds, it lets go anyway. */
+  lassoHookMaxTime: 3,
+  /** Hooked while standing: a little hop, m/s, so the pull lifts you off the ground. */
+  lassoHookHop: 4,
 
   // --- Player health ---
   playerMaxHealth: 100,
@@ -1347,7 +1398,7 @@ export const tuning = {
   styleAirKill: 30,
   /** A kill while sliding ("IN SCIVOLATA"). */
   styleSlideKill: 25,
-  /** A kill with your boot ("DI STIVALE") or the shovel ("DI BADILE"). */
+  /** A kill with your boot ("KUNG FU"), the shovel ("BONK") or the lasso ("YEEHAW"). */
   styleKickKill: 30,
   /** A kill right after switching weapon ("CAMBIO LAMPO")... */
   styleQuickSwitchKill: 30,
@@ -1398,6 +1449,8 @@ export const tuning = {
   styleSlideJump: 15,
   /** Launched by a steam vent. */
   styleVent: 10,
+  /** The lasso's grappling hook catches something and pulls you ("AL LAZO"). */
+  styleGrapple: 10,
   /** An enemy projectile flew past you by a hair ("PER UN PELO")... */
   styleNearMiss: 30,
   /** ...closer than this to your chest, meters. */

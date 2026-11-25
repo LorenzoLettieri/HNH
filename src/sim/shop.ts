@@ -11,7 +11,7 @@ import { tuning } from './config';
 import type { SimEvent } from './events';
 import type { PlayerState } from './player';
 import { CARDS, upgradeOffer, upgradePrice, type CardId } from './upgrades';
-import { switchWeapon, type GearId } from './weapon';
+import { drawMelee, isMelee, switchWeapon, type GearId } from './weapon';
 import { hasCurse } from './wager';
 import type { ShopSpawn, World } from './world';
 
@@ -48,6 +48,7 @@ export function shopCatalog(kind: ShopSpawn['kind']): ShopItem[] {
         { id: 'rifle', price: tuning.riflePrice },
         { id: 'dynamite', price: tuning.dynamitePrice },
         { id: 'shovel', price: tuning.shovelPrice },
+        { id: 'lasso', price: tuning.lassoPrice },
       ];
     case 'forge':
       return []; // nothing for vildenaro: the Forge takes Damned Iron (forge.ts)
@@ -93,9 +94,11 @@ export function stepShop(p: PlayerState, cmd: InputCommand, world: World, events
 
   p.money -= item.price;
   p.owned[id] = true;
-  if (id === 'shovel') {
-    // Not a gun: nothing to load, nothing to put in your hands. From now on
-    // the melee key swings it (kick.ts).
+  if (isMelee(id)) {
+    // Not a gun: nothing to load. From now on the melee key swings it
+    // (kick.ts), and it goes to your hands, like a new gun (it's a slot too).
+    p.melee = id;
+    if (!hasCurse(p, 'oneGun')) drawMelee(p, id, events);
     return void events.push({ type: 'purchase', item: id, price: item.price });
   }
   // A new weapon comes loaded, with the starting spare rounds, and goes

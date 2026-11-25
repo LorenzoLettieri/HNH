@@ -2471,3 +2471,173 @@ export function playStickThrow(where: Where): void {
   noiseBurst({ out, duration: 0.25, volume: 0.45, filter: 'bandpass', frequency: 2000, frequencyEnd: 500, q: 1.5 });
   thump({ out, duration: 0.12, volume: 0.35, from: 140, to: 80 });
 }
+
+// --- The lasso (render/weapons/lassoView.ts, render/lassoRope.ts) ---------------------------------------
+
+/**
+ * A rope's PLUCK: the "thwang" of a rope going taut all at once. A string
+ * that's plucked starts bright and gets dull (its high harmonics die first):
+ * a sawtooth (all the harmonics) through a low-pass filter that CLOSES fast.
+ * Its pitch sags a little as it settles: "twaanng".
+ */
+function ropePluck(start: number, base: number, volume: number): void {
+  if (!ctx) return;
+  const t0 = ctx.currentTime + start;
+  const osc = ctx.createOscillator();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(base * 1.15, t0);
+  osc.frequency.exponentialRampToValueAtTime(base, t0 + 0.12);
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.Q.value = 4; // a little resonance: it "sings"
+  filter.frequency.setValueAtTime(base * 14, t0);
+  filter.frequency.exponentialRampToValueAtTime(base * 1.5, t0 + 0.25);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(volume, t0);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.35);
+  osc.connect(filter).connect(gain).connect(world);
+  osc.start(t0);
+  osc.stop(t0 + 0.4);
+}
+
+/** One turn of the spinning loop: a soft "whup" of air (louder while winding up to throw). */
+export function playLassoWhirl(volume: number): void {
+  if (!ctx) return;
+  const v = 0.9 + Math.random() * 0.2;
+  noiseBurst({ duration: 0.16, volume: 0.18 * volume, filter: 'bandpass', frequency: 260 * v, frequencyEnd: 620 * v, q: 1.4 });
+}
+
+/**
+ * The throw: the loop let go (at `release` seconds from now) with a fast
+ * whoosh, then the rope paying out through your glove, a hiss that fades
+ * as it slows (until the catch, `catchAt`).
+ */
+export function playLassoThrow(release: number, catchAt: number): void {
+  if (!ctx) return;
+  const v = 0.9 + Math.random() * 0.2;
+  noiseBurst({ start: release * 0.4, duration: 0.05, volume: 0.25, filter: 'bandpass', frequency: 700 * v, q: 5 }); // leather glove creaks
+  noiseBurst({ start: release, duration: 0.18, volume: 0.7, filter: 'bandpass', frequency: 500 * v, frequencyEnd: 1800 * v, q: 1.1 }); // whoosh
+  noiseBurst({ start: release + 0.02, duration: Math.max(0.1, catchAt - release), volume: 0.25, filter: 'highpass', frequency: 3500 * v }); // the rope hissing out
+}
+
+/**
+ * The loop catches and you YANK: the rope snaps taut (a pluck and a dull
+ * slap on the body), the rush of the pull, and your grunt (a short low
+ * "hup": a thump with a quick formant-ish band of noise on top).
+ */
+export function playLassoCatch(): void {
+  if (!ctx) return;
+  const v = 0.92 + Math.random() * 0.16;
+  ropePluck(0, 95 * v, 0.32);
+  thump({ duration: 0.14, volume: 0.6, from: 160 * v, to: 60 }); // the slap of the loop on the body
+  noiseBurst({ duration: 0.05, volume: 0.4, filter: 'bandpass', frequency: 1200 * v, q: 2 });
+  noiseBurst({ start: 0.03, duration: 0.25, volume: 0.45, filter: 'bandpass', frequency: 1400 * v, frequencyEnd: 300, q: 0.9 }); // the pull
+  thump({ start: 0.02, duration: 0.12, volume: 0.25, from: 210, to: 130 }); // "hup!"
+  noiseBurst({ start: 0.02, duration: 0.08, volume: 0.15, filter: 'bandpass', frequency: 700, q: 6 });
+}
+
+/** Nothing caught: the loop slaps the dirt and comes back, a soft flop and a slither. */
+export function playLassoMiss(): void {
+  if (!ctx) return;
+  noiseBurst({ duration: 0.09, volume: 0.35, filter: 'lowpass', frequency: 900, frequencyEnd: 200 });
+  noiseBurst({ start: 0.06, duration: 0.2, volume: 0.2, filter: 'bandpass', frequency: 2400, frequencyEnd: 900, q: 1.2 });
+}
+
+/** The hook flies: a sharper, longer whoosh than the throw (it goes 30 m), and the rope paying out. */
+export function playHookThrow(): void {
+  if (!ctx) return;
+  const v = 0.9 + Math.random() * 0.2;
+  noiseBurst({ duration: 0.22, volume: 0.7, filter: 'bandpass', frequency: 600 * v, frequencyEnd: 2600 * v, q: 1 });
+  noiseBurst({ start: 0.03, duration: 0.3, volume: 0.22, filter: 'highpass', frequency: 4000 * v });
+}
+
+/** The hook bites: a heavy wooden THUNK, the rope's creak as your weight hits it, and the pluck. */
+export function playHookCatch(onEnemy: boolean): void {
+  if (!ctx) return;
+  const v = 0.9 + Math.random() * 0.2;
+  if (onEnemy) {
+    thump({ duration: 0.16, volume: 0.7, from: 150 * v, to: 55 });
+    noiseBurst({ duration: 0.1, volume: 0.4, filter: 'bandpass', frequency: 900, frequencyEnd: 300, q: 1.5 }); // wet slap
+  } else {
+    thump({ duration: 0.12, volume: 0.65, from: 230 * v, to: 90 }); // wood
+    noiseBurst({ duration: 0.04, volume: 0.45, filter: 'bandpass', frequency: 1800 * v, q: 3 });
+  }
+  noiseBurst({ start: 0.05, duration: 0.12, volume: 0.3, filter: 'bandpass', frequency: 450 * v, q: 9 }); // creak
+  ropePluck(0.03, 80 * v, 0.25);
+}
+
+/**
+ * The rope while it pulls you: a continuous CREAK (noise through a narrow
+ * band, its volume wobbling slowly and irregularly, like fibers stretching)
+ * and the wind of the ride. A LoopingSound like the fuse's: stopped on release.
+ */
+export function playRopeStrain(): LoopingSound {
+  if (!ctx) return { move: () => {}, stop: () => {} };
+  const audio = ctx;
+  const t0 = audio.currentTime;
+  const src = audio.createBufferSource();
+  src.buffer = noiseBuffer;
+  src.loop = true;
+  const filter = audio.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.value = 380;
+  filter.Q.value = 10;
+  const creak = audio.createGain();
+  creak.gain.value = 0.18;
+  const wobbles: OscillatorNode[] = [];
+  for (const [rate, depth] of [[3.1, 0.12], [7.3, 0.08]]) {
+    const lfo = audio.createOscillator();
+    lfo.frequency.value = rate;
+    const amount = audio.createGain();
+    amount.gain.value = depth;
+    lfo.connect(amount).connect(creak.gain);
+    lfo.start(t0);
+    wobbles.push(lfo);
+  }
+  const wind = audio.createBiquadFilter();
+  wind.type = 'lowpass';
+  wind.frequency.value = 700;
+  const windGain = audio.createGain();
+  windGain.gain.value = 0.12;
+  const volume = audio.createGain();
+  volume.gain.setValueAtTime(0.0001, t0);
+  volume.gain.exponentialRampToValueAtTime(1, t0 + 0.08);
+  src.connect(filter).connect(creak).connect(volume);
+  src.connect(wind).connect(windGain).connect(volume);
+  volume.connect(world);
+  src.start(t0, Math.random() * 0.5);
+  let stopped = false;
+  return {
+    move() {},
+    stop() {
+      if (stopped) return;
+      stopped = true;
+      const now = audio.currentTime;
+      volume.gain.setTargetAtTime(0, now, 0.03);
+      src.stop(now + 0.2);
+      for (const o of wobbles) o.stop(now + 0.2);
+    },
+  };
+}
+
+/** The hook lets go: the rope zipping back into your hand. */
+export function playHookRelease(): void {
+  if (!ctx) return;
+  noiseBurst({ duration: 0.2, volume: 0.35, filter: 'bandpass', frequency: 2600, frequencyEnd: 700, q: 1.3 });
+  noiseBurst({ start: 0.17, duration: 0.05, volume: 0.25, filter: 'bandpass', frequency: 800, q: 3 }); // caught in the glove
+}
+
+/** The lasso in your hands (key 6): the coil shaken loose and the loop starting to spin. */
+export function playLassoDraw(): void {
+  if (!ctx) return;
+  noiseBurst({ duration: 0.08, volume: 0.3, filter: 'bandpass', frequency: 900, q: 2 });
+  noiseBurst({ start: 0.08, duration: 0.18, volume: 0.25, filter: 'bandpass', frequency: 300, frequencyEnd: 800, q: 1.4 });
+}
+
+/** The shovel in your hands (key 5): the blade scraping off your back, the shaft slapped into the palms. */
+export function playShovelDraw(): void {
+  if (!ctx) return;
+  noiseBurst({ duration: 0.12, volume: 0.3, filter: 'bandpass', frequency: 3200, frequencyEnd: 1500, q: 2 });
+  thump({ start: 0.15, duration: 0.08, volume: 0.4, from: 180, to: 110 });
+  ring(640, 0.25, 0.04);
+}

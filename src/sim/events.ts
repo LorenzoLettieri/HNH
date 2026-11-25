@@ -3,7 +3,7 @@
 // appends them to a list; it doesn't know or care who listens.
 // (On a future server, the same events would be sent to the clients.)
 
-import type { WeaponId } from './weapon';
+import type { SlotId, WeaponId } from './weapon';
 import type { Entity } from './entities';
 import type { MeleeTool } from './kick';
 import type { PickupKind } from './pickups';
@@ -31,8 +31,9 @@ export type SimEvent =
    */
   | { type: 'fire'; weapon: WeaponId; barrel: number; seconds: number; forged: boolean }
   /** You switched weapon: the new one is coming up. `forged`: its reinforced version (each gun is drawn its own way). */
-  /** `melee`: not a real switch, the same gun coming back up after the shovel's swing. */
-  | { type: 'weaponSwitch'; weapon: WeaponId; forged: boolean; melee?: boolean }
+  /** `melee`: not a real switch, the same gun coming back up after a melee swing (shovel, lasso). */
+  /** `weapon` can be a melee weapon too: the shovel or the lasso put in your hands (keys 5, 6). */
+  | { type: 'weaponSwitch'; weapon: SlotId; forged: boolean; melee?: boolean }
   /** One bullet or pellet: where it went and what it hit (impacts, blood). A shotgun blast is many of these. */
   | {
       type: 'shot';
@@ -198,13 +199,27 @@ export type SimEvent =
   /** A projectile hit the level or the player (where, and the surface normal). */
   | { type: 'projectileHit'; kind: 'fireball' | 'bullet'; x: number; y: number; z: number; nx: number; ny: number; nz: number; player: boolean }
   /** The melee attack starts (the leg or the shovel swings: whoosh). */
-  | { type: 'kickStart'; tool: MeleeTool }
+  /**
+   * A melee attack starts. The lasso's also says what it's thrown at:
+   * `targetId` = the entity it will catch (-1 = nothing in reach: it flies to
+   * `to`, the end of its reach or the wall in the way). The loop flies there
+   * during the wind-up (render/lassoRope.ts).
+   */
+  | { type: 'kickStart'; tool: MeleeTool; targetId?: number; to?: { x: number; y: number; z: number } }
   /**
    * The foot (or the blade) lands: how many things it hit (0 = hit the air),
    * and WHERE on each one (the side of its body facing you, at chest
    * height): sparks go there, and blood if it's `flesh` (not a steel target).
    */
   | { type: 'kickLand'; tool: MeleeTool; hits: number; at: { x: number; y: number; z: number; flesh: boolean }[] }
+  /**
+   * The lasso's grappling hook (lasso.ts): thrown toward (x, y, z) (`miss`:
+   * nothing there, it'll come back empty), caught something (`entityId`: an
+   * enemy, -1 = the level), and let go (released, too far, snagged, or arrived).
+   */
+  | { type: 'hookThrow'; x: number; y: number; z: number; miss: boolean }
+  | { type: 'hookAttach'; x: number; y: number; z: number; entityId: number }
+  | { type: 'hookRelease'; x: number; y: number; z: number; attached: boolean }
   | { type: 'dryFire' } // pulled the trigger with an empty cylinder
   /**
    * A reload starts; `seconds` = how long it lasts (cards can change it: the
