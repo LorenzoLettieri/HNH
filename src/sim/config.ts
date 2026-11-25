@@ -622,14 +622,14 @@ export const tuning = {
   lassoHeavyHold: 1.1,
   // The grappling hook (right button, the lasso in your hands).
   /** How far the hook reaches, meters. */
-  lassoHookRange: 32,
+  lassoHookRange: 25,
   /** How fast the loop flies out, m/s. */
   lassoHookSpeed: 90,
   /** Seconds before it can be thrown again after letting go. */
   lassoHookCooldown: 0.3,
   /** The reel's pull, m/s² (gravity is 20: it lifts you), up to this speed along the rope, m/s. */
-  lassoReelAccel: 60,
-  lassoReelMaxSpeed: 24,
+  lassoReelAccel: 40,
+  lassoReelMaxSpeed: 18,
   /** Fraction of gravity the rope holds up while it pulls (1 = none: a straight line to the anchor). */
   lassoHookLift: 0.5,
   /** Closer than this to the anchor, meters, it lets go (you keep the speed: the slingshot). */
