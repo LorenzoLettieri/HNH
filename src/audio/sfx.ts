@@ -1608,11 +1608,13 @@ export function playShovelSwing(impact: number): void {
  *   fades out with the vibration.
  * More things hit = louder.
  */
-export function playShovelBonk(hits: number): void {
+export function playShovelBonk(hits: number, power = 1): void {
   if (!ctx) return;
-  const v = 0.92 + Math.random() * 0.16;
+  // power > 1 (card "Slancio"): every step lowers the pitch a bit (a bigger, heavier bell) and adds a deep crunch.
+  const v = (0.92 + Math.random() * 0.16) * Math.pow(0.88, power - 1);
   const loud = Math.min(1, 0.75 + hits * 0.1);
   thump({ duration: 0.2, volume: 0.9 * loud, from: 140 * v, to: 45 });
+  if (power > 1) thump({ duration: 0.35, volume: Math.min(1, 0.4 + 0.2 * power), from: 90, to: 28 });
   noiseBurst({ duration: 0.05, volume: 0.5 * loud, filter: 'highpass', frequency: 2500 }); // the slap
   ring(520 * v, 0.5, 0.18 * loud);
 
@@ -2709,6 +2711,53 @@ export function playHookRelease(): void {
   if (!ctx) return;
   noiseBurst({ duration: 0.2, volume: 0.35, filter: 'bandpass', frequency: 2600, frequencyEnd: 700, q: 1.3 });
   noiseBurst({ start: 0.17, duration: 0.05, volume: 0.25, filter: 'bandpass', frequency: 800, q: 3 }); // caught in the glove
+}
+
+/** Card "Pogo": the shovel's blade bounces you up: a springy "boing" (a sine thrown UP in pitch) and the slap. */
+export function playPogo(): void {
+  if (!ctx) return;
+  noiseBurst({ duration: 0.05, volume: 0.4, filter: 'highpass', frequency: 2000 });
+  const t0 = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(180, t0);
+  osc.frequency.exponentialRampToValueAtTime(620, t0 + 0.18);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.35, t0);
+  gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.25);
+  osc.connect(gain).connect(world);
+  osc.start(t0);
+  osc.stop(t0 + 0.26);
+}
+
+/** Card "Schianto dal cielo", the dive: wind rushing past, falling in pitch. */
+export function playSkyDive(): void {
+  noiseBurst({ duration: 0.45, volume: 0.45, filter: 'bandpass', frequency: 1800, frequencyEnd: 400, q: 0.8 });
+}
+
+/** Card "Schianto dal cielo", the landing: a huge BOOM in the ground, the blade's clang, rubble. `size` 0..1 = how big. */
+export function playSkySlam(size: number): void {
+  thump({ duration: 0.7, volume: 1.2 + 0.4 * size, from: 120, to: 24 });
+  noiseBurst({ duration: 0.1, volume: 0.9, filter: 'highpass', frequency: 1500 });
+  noiseBurst({ duration: 0.6, volume: 0.5 + 0.3 * size, filter: 'lowpass', frequency: 900, frequencyEnd: 120 });
+  ring(330, 0.7, 0.18);
+}
+
+/** Card "Fionda": the rope lets go like a slingshot band: a twang and a whoosh. */
+export function playSling(): void {
+  if (!ctx) return;
+  const t0 = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(110, t0);
+  osc.frequency.exponentialRampToValueAtTime(70, t0 + 0.2);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.2, t0);
+  gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.22);
+  osc.connect(gain).connect(world);
+  osc.start(t0);
+  osc.stop(t0 + 0.23);
+  noiseBurst({ start: 0.03, duration: 0.35, volume: 0.4, filter: 'bandpass', frequency: 600, frequencyEnd: 2400, q: 0.9 });
 }
 
 /** The lasso in your hands (key 5): the coil shaken loose and the loop starting to spin. */

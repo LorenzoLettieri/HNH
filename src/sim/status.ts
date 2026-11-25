@@ -23,7 +23,7 @@ export function stepStatus(player: PlayerState, entities: Entity[], events: SimE
       continue;
     }
     stepBurn(player, e, events);
-    stepSlam(player, e, events);
+    stepSlam(player, e, entities, events);
   }
 }
 
@@ -82,13 +82,20 @@ export function stepStunned(e: Entity, world: World, dt: number): boolean {
   return true;
 }
 
-/** Thrown by a "Calcio di piombo" blast: for a moment, a wall hurts. */
-export function markSlam(e: Entity): void {
+/**
+ * Thrown by a "Calcio di piombo" blast (or yanked by the lasso with
+ * "Strattone che schianta"): for a moment, a wall hurts. The lasso's slam
+ * also hurts on another enemy: a body flying into a body.
+ */
+export function markSlam(e: Entity, source: 'shotgun' | 'lasso' = 'shotgun'): void {
   // Only the bodies a blast really throws (the bull doesn't budge, the
   // eye-bat flies: its own steering changes its speed all the time).
   if (e.type !== 'ghoul' && e.type !== 'hound' && e.type !== 'sharpshooter' && e.type !== 'jackal') return;
-  e.slamTicks = secondsToTicks(tuning.leadStockSlamTime);
+  const lasso = source === 'lasso';
+  e.slamTicks = secondsToTicks(lasso ? tuning.slamYankTime : tuning.leadStockSlamTime);
   e.slamSpeed = Math.hypot(e.vx, e.vz);
+  e.slamDamage = lasso ? tuning.slamYankDamage : tuning.leadStockSlamDamage;
+  e.slamSource = source;
 }
 
 /**
@@ -116,15 +123,28 @@ function stepBurn(player: PlayerState, e: Entity, events: SimEvent[]): void {
  * while the ground friction only takes ~13% a tick. If more than half of
  * the speed vanished in one tick, it hit something.
  */
-function stepSlam(player: PlayerState, e: Entity, events: SimEvent[]): void {
+function stepSlam(player: PlayerState, e: Entity, entities: Entity[], events: SimEvent[]): void {
   if (!e.slamTicks || !('vx' in e)) return;
   e.slamTicks--;
   const speed = Math.hypot(e.vx, e.vz);
   const before = e.slamSpeed ?? 0;
   e.slamSpeed = speed;
+  const amount = e.slamDamage ?? tuning.leadStockSlamDamage;
+  const source = e.slamSource ?? 'shotgun';
   if (before > 3 && speed < before * 0.5) {
     e.slamTicks = 0; // once per throw
-    hurt(player, e, tuning.leadStockSlamDamage, events);
+    hurt(player, e, amount, events, source);
+    return;
+  }
+  // The lasso's slam: flying into another enemy hurts both (the first one in the way, once).
+  if (source !== 'lasso' || speed < 3) return;
+  for (const o of entities) {
+    if (o === e || !isEnemy(o) || !isAlive(o)) continue;
+    if (Math.hypot(o.x - e.x, o.z - e.z) > tuning.slamYankReach || Math.abs(o.y - e.y) > 1.5) continue;
+    e.slamTicks = 0;
+    hurt(player, e, amount, events, source);
+    hurt(player, o, amount, events, source);
+    return;
   }
 }
 

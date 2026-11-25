@@ -79,6 +79,17 @@ export function spawnEmberPatch(fires: HolyFire[], id: number, x: number, y: num
   fires.push({ id, x, y, z, radius: tuning.emberTrailRadius, ticksLeft: ticks, ticksTotal: ticks, holy: false });
 }
 
+/**
+ * Card "Scia Napalm" (lasso): a patch of ordinary fire on the floor under a
+ * point in the air (the ray down of spawnHolyFire; over a chasm, nothing).
+ */
+export function spawnNapalmPatch(fires: HolyFire[], id: number, x: number, y: number, z: number, world: World): void {
+  const floor = raycastBoxes(x, y + 0.05, z, 0, -1, 0, tuning.napalmFallReach, world.boxes);
+  if (!floor) return;
+  const ticks = secondsToTicks(tuning.napalmTime);
+  fires.push({ id, x, y: floor.y, z, radius: tuning.napalmRadius, ticksLeft: ticks, ticksTotal: ticks, holy: false });
+}
+
 /** One tick: every pool burns the enemies standing in it, and burns out. Returns the pools still burning. */
 export function stepHolyFire(fires: HolyFire[], entities: Entity[]): HolyFire[] {
   for (const f of fires) {

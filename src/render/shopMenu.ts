@@ -172,6 +172,54 @@ const CARD_TEXT: Record<CardId, { name: string; desc: string }> = {
     name: 'Razzo',
     desc: 'Vola dritto e veloce per mezzo secondo e scoppia al primo contatto, anche col terreno. Ai tuoi piedi: un salto molto più alto.',
   },
+  momentum: {
+    name: 'Slancio',
+    desc: 'Più corri, più fa male. Da nove metri al secondo il colpo vale doppio, poi triplo, fino al quadruplo: scivola o fai bhop e i ghoul volano via in un colpo.',
+  },
+  pogo: {
+    name: 'Pogo',
+    desc: 'Colpisci qualcosa mentre sei in aria e rimbalzi in su: di testa in testa, senza toccare terra.',
+  },
+  skySlam: {
+    name: 'Schianto dal cielo',
+    desc: 'Colpisci in aria guardando in basso e piombi giù: dove atterri parte un\'onda d\'urto, più larga e più forte quanto più in alto eri.',
+  },
+  parry: {
+    name: 'Parata',
+    desc: 'Il colpo rimanda indietro palle di fuoco e proiettili del tiratore, dove guardi, più veloci. Ora fanno male a loro.',
+  },
+  slideSweep: {
+    name: 'Spazzata in scivolata',
+    desc: 'In scivolata il colpo diventa un arco larghissimo e più lungo, e chi prende resta a terra un attimo.',
+  },
+  longRope: {
+    name: 'Rampino lungo',
+    desc: 'Il rampino arriva una volta e mezza più lontano e ti tira più forte.',
+  },
+  slingshot: {
+    name: 'Fionda',
+    desc: 'Molla la corda in aria e la corda ti lancia: più velocità, nella direzione in cui stavi andando.',
+  },
+  doubleLoop: {
+    name: 'Laccio doppio',
+    desc: 'Il cappio prende anche il nemico più vicino al primo: due alla volta davanti alle canne.',
+  },
+  slamYank: {
+    name: 'Strattone che schianta',
+    desc: 'Chi trascini e sbatte contro un muro o contro un altro nemico si fa male, e fa male anche all\'altro.',
+  },
+  hotRope: {
+    name: 'Corda rovente',
+    desc: 'Chi finisce nel cappio, o sotto il rampino, prende fuoco.',
+  },
+  bootArrival: {
+    name: 'Arrivo di stivale',
+    desc: 'Agganciato a un nemico col rampino, arrivi con un calcio in faccia: lo spinge via e lo stordisce.',
+  },
+  napalmTrail: {
+    name: 'Scia Napalm',
+    desc: 'Mentre voli appeso alla corda lasci sul terreno sotto di te una scia di fuoco.',
+  },
   cluster: {
     name: 'A grappolo',
     desc: 'Scoppiando lancia tre candelotti più piccoli tutt’intorno, che esplodono un attimo dopo. Per le orde ammassate.',

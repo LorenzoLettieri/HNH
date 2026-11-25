@@ -25,6 +25,9 @@ interface EntityBase {
   /** Card "Calcio di piombo": ticks left in which hitting a wall hurts (status.ts), and its speed last tick. */
   slamTicks?: number;
   slamSpeed?: number;
+  /** What the slam does: its damage, and which weapon it counts for (the lasso's card or the shotgun's). */
+  slamDamage?: number;
+  slamSource?: 'shotgun' | 'lasso';
   /** Card "Marchio": marked by a carbine hit, the next carbine hit on it does double damage. */
   marked?: boolean;
   /** Drink "Zoccolo duro": ticks of stun left (status.ts: no AI, only physics). */

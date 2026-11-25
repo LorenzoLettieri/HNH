@@ -8,7 +8,7 @@ import { createBull, createEntities, createEyebat, createHound, createSharpshoot
 import { stepEyebat } from './eyebat';
 import { batProjectiles, stepProjectiles, type Projectile } from './projectiles';
 import { stepDynamite, throwDynamite, type Dynamite } from './dynamite';
-import { spawnEmberPatch, spawnHolyFire, stepHolyFire, type HolyFire } from './holyFire';
+import { spawnEmberPatch, spawnHolyFire, spawnNapalmPatch, stepHolyFire, type HolyFire } from './holyFire';
 import { stepGhoul } from './ghoul';
 import { stepHound } from './hound';
 import { stepBull } from './bull';
@@ -25,7 +25,7 @@ import { cellAt, getAirGrid } from './airNav';
 import { createPlayer, currentHeight, respawn, stepPlayer, type PlayerState } from './player';
 import { refundLeadFlight, spurRound, stepWeapon } from './weapon';
 import { stepStatus, stepStunned } from './status';
-import { stepKick } from './kick';
+import { stepKick, stepSkySlam } from './kick';
 import { stepHook } from './lasso';
 import { blockPlayerWithBodies } from './bodyBlock';
 import { stepShop } from './shop';
@@ -34,6 +34,8 @@ import { createPickup, dropFromKills, stepPickups, type Pickup } from './pickups
 import { createStyle, isHighNoon, stepStyle, styleMultiplier, type StyleState } from './style';
 import type { World } from './world';
 import { tuning } from './config';
+import { hasCard } from './upgrades';
+import { hooked } from './lasso';
 import { randomInt } from './random';
 
 export interface GameState {
@@ -146,10 +148,15 @@ export function stepGame(
   stepKick(game.player, cmd, world, game.entities, events);
   // The lasso's grappling hook (right button with the lasso in your hands).
   stepHook(game.player, cmd, world, game.entities, events);
+  // Card "Schianto dal cielo": you landed from a shovel dive this tick (the 'land' event is the player's).
+  stepSkySlam(game.player, game.entities, events, beforePlayer, firstNewEvent);
   // Drink "Bobby": the boot (or shovel) that lands bats the projectiles back (not the lasso: it's 9 m away).
-  if (hasDrink(game.player, 'bobby') && events.slice(beforeKick).some((e) => e.type === 'kickLand' && e.tool !== 'lasso')) {
-    batProjectiles(game.projectiles, game.player, events);
-  }
+  // Card "Parata": the same, with the shovel only.
+  const swings = events.slice(beforeKick).filter((e) => e.type === 'kickLand');
+  const bobby = hasDrink(game.player, 'bobby') && swings.some((e) => e.type === 'kickLand' && e.tool !== 'lasso');
+  const parry = hasCard(game.player, 'parry') && swings.some((e) => e.type === 'kickLand' && e.tool === 'shovel');
+  if (bobby || parry) batProjectiles(game.projectiles, game.player, events);
+  stepNapalmTrail(game, world, dt);
   // Fire and wall slams from the shotgun's cards: their kills are yours too.
   stepStatus(game.player, game.entities, events);
   // The launcher fired: a new stick leaves the barrel (weapon.ts only reports the shot).
@@ -353,6 +360,23 @@ function lastBreath(game: GameState, events: SimEvent[]): void {
     knockBack(en, d > 0.01 ? dx / d : 1, d > 0.01 ? dz / d : 0, tuning.lastBreathPush, 5);
   }
   events.push({ type: 'lastBreath', x: p.x, y: p.y, z: p.z });
+}
+
+/**
+ * Card "Scia Napalm" (lasso): while the rope pulls you, a patch of fire every
+ * napalmSpacing meters, on the floor under where you fly (the same pools as
+ * the drink "Scia di brace", holyFire.ts). Meters = speed × time, summed.
+ */
+function stepNapalmTrail(game: GameState, world: World, dt: number): void {
+  const p = game.player;
+  if (!hooked(p) || !hasCard(p, 'napalmTrail')) {
+    p.napalmMeters = tuning.napalmSpacing; // the first patch comes as soon as the rope pulls
+    return;
+  }
+  p.napalmMeters += Math.hypot(p.vx, p.vy, p.vz) * dt;
+  if (p.napalmMeters < tuning.napalmSpacing) return;
+  p.napalmMeters = 0;
+  spawnNapalmPatch(game.holyFires, game.nextEntityId++, p.x, p.y, p.z, world);
 }
 
 function stepPactMoves(game: GameState, events: SimEvent[], from: number, dt: number): void {

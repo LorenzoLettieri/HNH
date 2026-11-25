@@ -55,7 +55,21 @@ export type CardId =
   | 'hellBounce'
   | 'sticky'
   | 'rocket'
-  | 'cluster';
+  | 'cluster'
+  // Shovel
+  | 'momentum'
+  | 'pogo'
+  | 'skySlam'
+  | 'parry'
+  | 'slideSweep'
+  // Lasso
+  | 'longRope'
+  | 'slingshot'
+  | 'doubleLoop'
+  | 'slamYank'
+  | 'hotRope'
+  | 'bootArrival'
+  | 'napalmTrail';
 
 export interface CardInfo {
   /** The weapon (or gear: the shovel) whose deck it's in. */
@@ -131,6 +145,32 @@ export const CARDS: Record<CardId, CardInfo> = {
   rocket: { weapon: 'dynamite', excludes: ['sticky', 'hellBounce'] },
   /** A grappolo: the blast throws clusterCount mini sticks around, which blow up a moment later (stepDynamite). */
   cluster: { weapon: 'dynamite' },
+
+  /** Slancio: the faster you run, the harder it hits, in whole steps (momentumMultiplier in kick.ts). */
+  momentum: { weapon: 'shovel' },
+  /** Pogo: a swing that hits something while you're in the air bounces you up (landKick). */
+  pogo: { weapon: 'shovel' },
+  /** Schianto dal cielo: a swing in the air looking down dives you to the ground, a shockwave where you land (stepSkySlam). */
+  skySlam: { weapon: 'shovel' },
+  /** Parata: the swing bats the enemy projectiles back, like the drink "Bobby" (batProjectiles). */
+  parry: { weapon: 'shovel' },
+  /** Spazzata in scivolata: sliding, the swing is a wide, longer arc that knocks everyone down (landKick). */
+  slideSweep: { weapon: 'shovel' },
+
+  /** Rampino lungo: the hook reaches farther and reels faster (hookRange, reelAccel, reelMaxSpeed in lasso.ts). */
+  longRope: { weapon: 'lasso' },
+  /** Fionda: letting go of the rope in mid-air throws you forward, along where you were going (release). */
+  slingshot: { weapon: 'lasso' },
+  /** Laccio doppio: the loop also catches the enemy nearest to the first (landLasso). */
+  doubleLoop: { weapon: 'lasso' },
+  /** Strattone che schianta: a yanked enemy hurts itself and whoever it flies into (markSlam, status.ts). */
+  slamYank: { weapon: 'lasso' },
+  /** Corda rovente: whatever the loop or the hook catches catches fire (ignite). */
+  hotRope: { weapon: 'lasso' },
+  /** Arrivo di stivale: hooked onto an enemy, you arrive with a kick that stuns it (bootArrival in lasso.ts). */
+  bootArrival: { weapon: 'lasso' },
+  /** Scia Napalm (the user's idea): flying on the rope you leave patches of fire on the floor below (stepNapalmTrail in game.ts). */
+  napalmTrail: { weapon: 'lasso' },
 };
 
 /** Is this card out of the deck because you took one that excludes it (or that it excludes)? */
