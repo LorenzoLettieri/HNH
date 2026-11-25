@@ -770,7 +770,9 @@ western): un nemico già comparso in quell'ondata (mai il Fabbro), con **5× la 
 - **Polveriera**: **ti lancia la dinamite**. Ogni 3 s, se ti vede (3–28 m), accende un candelotto (0,7 s di preavviso:
   bagliore nella mano, fiammifero, miccia che sfrigola, freccia se è fuori schermo) e te lo lancia ad arco **dove
   stai per andare**; il candelotto rimbalza, la miccia brucia 0,6 s dopo l'atterraggio e scoppia (o subito se ti
-  tocca): 35 danni al centro, raggio 3,5 m, **solo a te**. Prima versione [SCARTATA, decisione dell'utente]: esplodeva
+  tocca): 35 danni al centro, raggio 3,5 m, **solo a te**. Il **ghoul** Polveriera tiene la distanza (gli altri tipi
+  combattono già da lontano): se ti vede entro 11 m si ferma e lancia, sotto i 6 m indietreggia (più lento di te: caricarlo
+  funziona), sotto i 3 m torna a graffiare. Prima versione [SCARTATA, decisione dell'utente]: esplodeva
   da morta, ferendo anche i nemici intorno; era un regalo al giocatore, non un rafforzamento del nemico.
 Sopra la testa una **stella da sceriffo** sempre visibile, anche attraverso i muri, con la gemma del colore del
 modificatore; sulla mappa (Tab) una stella d'oro (anche col buio); nell'HUD nome, modificatore e **distanza**.

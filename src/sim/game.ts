@@ -14,6 +14,7 @@ import { stepHound } from './hound';
 import { stepBull } from './bull';
 import { stepSmith } from './smith';
 import { stepSharpshooter } from './sharpshooter';
+import { stepHoldGround } from './bounty';
 import { createWaveState, scoreHits, stepWaves, wavePressure, type WaveState } from './waves';
 import { countStats, createStats, type Stats } from './stats';
 import { createMapEventState, stepMapEvents, type MapEventState } from './mapEvents';
@@ -218,6 +219,8 @@ export function stepGame(
       // vents (too heavy to fly: it waits below and pulls you down with the hook).
       stepSmith(e, game.player, game.entities, world, bigGraph, getFlowField(bigGraph, game.navGoalBig, NO_VENT), dt, events);
     }
+    // La Taglia's ghoul "Polveriera" keeps its distance to throw (bounty.ts): its ghoul AI waits.
+    else if (e.state !== 'dead' && stepHoldGround(e, game, world, dt)) return;
     else if (e.state !== 'dead') stepGhoul(e, game.player, game.entities, world, graph, flow, dt, events, pressure);
   };
   const stepEnemies = (targets: boolean) => {

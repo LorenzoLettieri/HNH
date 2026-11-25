@@ -1149,6 +1149,10 @@ export const tuning = {
   /** ...only if it sees you, between these distances (meters)... */
   bountyThrowMinRange: 3,
   bountyThrowMaxRange: 28,
+  /** The ghoul "Polveriera" stops to throw when it sees you within this many meters, and backs off (× ghoulSpeed) when you're closer than this. */
+  bountyHoldRange: 11,
+  bountyBackOffRange: 6,
+  bountyBackOffSpeed: 0.7,
   /** ...aimed where you'll be: this share of your velocity × the flight time (1 = a perfect interception)... */
   bountyThrowLead: 0.6,
   /** ...and the fuse burns this many seconds more than the flight (the moment you have to run once it lands). */

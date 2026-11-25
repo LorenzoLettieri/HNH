@@ -89,6 +89,9 @@ export function createDebugPanel(options: {
   waves.number(tuning, 'bountyThrowWindup', 0, 3, 0.05);
   waves.number(tuning, 'bountyThrowMinRange', 0, 15, 0.5);
   waves.number(tuning, 'bountyThrowMaxRange', 5, 60, 1);
+  waves.number(tuning, 'bountyHoldRange', 3, 30, 0.5);
+  waves.number(tuning, 'bountyBackOffRange', 0, 15, 0.5);
+  waves.number(tuning, 'bountyBackOffSpeed', 0, 2, 0.05);
   waves.number(tuning, 'bountyThrowLead', 0, 1.5, 0.05);
   waves.number(tuning, 'bountyStickFuse', 0, 3, 0.05);
   waves.number(tuning, 'bountyBlastRadius', 1, 10, 0.5);

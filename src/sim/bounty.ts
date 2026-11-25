@@ -31,9 +31,10 @@
 // event: damage() (shield) and game.ts (time) read it there, and they don't
 // need to know map events exist (the same idea as player.curse).
 import { secondsToTicks, tuning } from './config';
-import { createBull, createEyebat, createGhoul, createHound, createSharpshooter, hitBox, isEnemy, type Enemy } from './entities';
+import { createBull, createEyebat, createGhoul, createHound, createSharpshooter, hitBox, isEnemy, type Enemy, type GhoulEntity } from './entities';
 import type { SimEvent } from './events';
 import { DYNAMITE_RADIUS, enemyStick } from './dynamite';
+import { moveAndCollide } from './collision';
 import type { GameState } from './game';
 import { hitCenter, lineFree } from './gunDamage';
 import { currentHeight } from './player';
@@ -244,6 +245,47 @@ function stepThrower(e: Enemy, game: GameState, world: World, events: SimEvent[]
   if (!sees) return;
   e.throwWindup = secondsToTicks(tuning.bountyThrowWindup);
   events.push({ type: 'bountyWindup', entityId: e.id, x: from.x, y: from.y, z: from.z });
+}
+
+/**
+ * The ghoul "Polveriera" keeps its DISTANCE (the other kinds already fight
+ * from afar: the sharpshooter from a perch, the eye-bat orbiting, the bull
+ * and the hound with their own windups). A plain ghoul runs straight into
+ * your face, under the 3 m it needs to throw: as an outlaw it would never use
+ * its dynamite. So, when it sees you and you're within bountyHoldRange, its
+ * ghoul AI is skipped (the same trick as the stun: game.ts runs this
+ * INSTEAD of stepGhoul) and it:
+ * - backs off, walking straight away from you, if you're closer than
+ *   bountyBackOffRange (a wall behind it stops it: moveAndCollide);
+ * - otherwise stands its ground, braking, facing you, and throws.
+ * Cornered (under bountyThrowMinRange), out of sight, or farther than
+ * bountyHoldRange: back to the ghoul AI (it claws at you, or it comes to
+ * find you). A pounce or a stagger already started is never interrupted.
+ * Returns true if it took over this tick.
+ */
+export function stepHoldGround(g: GhoulEntity, game: GameState, world: World, dt: number): boolean {
+  if (g.bounty !== 'explosive' || g.state !== 'chase' || !g.onGround) return false;
+  const p = game.player;
+  const dx = g.x - p.x;
+  const dz = g.z - p.z;
+  const d = Math.hypot(dx, dz);
+  if (p.health <= 0 || d < tuning.bountyThrowMinRange || d > tuning.bountyHoldRange) return false;
+  const from = throwPoint(g);
+  if (!lineFree(world, from.x, from.y, from.z, p.x, p.y + currentHeight(p) * 0.6, p.z)) return false;
+  // Backing off: a target velocity away from you, reached quickly (like the
+  // ghoul's own acceleration); standing: the same with a zero target, i.e. braking.
+  const back = d < tuning.bountyBackOffRange ? tuning.ghoulSpeed * tuning.bountyBackOffSpeed : 0;
+  const wantX = (dx / d) * back;
+  const wantZ = (dz / d) * back;
+  const k = Math.min(1, 12 * dt);
+  g.vx += (wantX - g.vx) * k;
+  g.vz += (wantZ - g.vz) * k;
+  g.vy -= tuning.gravity * dt;
+  const { landed } = moveAndCollide(g, tuning.ghoulRadius, tuning.ghoulHeight, world.boxes, dt);
+  g.onGround = landed;
+  if (landed && g.vy < 0) g.vy = 0;
+  g.stateTicks++;
+  return true;
 }
 
 /** Where the stick leaves its hand: the top of its hitbox, a bit lower (a raised arm). */
