@@ -36,6 +36,7 @@ import { addHeightFog } from '../heightFog';
 import { spawnSnort } from '../particles';
 import { soundAt } from '../soundPosition';
 import { FRAMES, FRAME_H, FRAME_W, SIDE_MUZZLE_X, sharpshooterSheet } from './sharpshooterSprite';
+import { addSpecimen } from '../warmUp';
 
 const PIXELS_PER_METER = 32;
 
@@ -447,6 +448,9 @@ export function createSharpshooterRenderer(scene: THREE.Scene, world: World): Sh
     v.flashMaterial.dispose();
     views.delete(id);
   }
+
+  // One hidden at startup, so the warm-up compiles its shaders (render/warmUp.ts).
+  addSpecimen(scene, () => create());
 
   return {
     update(entities, events, camera, alpha, dt) {

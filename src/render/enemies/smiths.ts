@@ -25,6 +25,7 @@ import {
   playSmithWindup,
 } from '../../audio/sfx';
 import { HAND_HEIGHT } from '../../sim/smith';
+import { addSpecimen } from '../warmUp';
 
 const PIXELS_PER_METER = 32;
 /** Walk animation: frames per meter walked. */
@@ -170,6 +171,9 @@ export function createSmithRenderer(scene: THREE.Scene): SmithRenderer {
       t.offset.x = (mirror ? frame + 1 : frame) / n;
     }
   }
+
+  // One hidden at startup, so the warm-up compiles its shaders (render/warmUp.ts).
+  addSpecimen(scene, () => create());
 
   return {
     update(entities, events, camera, alpha, dt) {

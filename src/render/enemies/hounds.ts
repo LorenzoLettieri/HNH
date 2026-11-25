@@ -18,6 +18,7 @@ import { spawnDirt, spawnSnort } from '../particles';
 import { soundAt } from '../soundPosition';
 import { FRAMES, FRAME_H, FRAME_W, houndSheet } from './houndSprite';
 import { playGhoulDeath, playHowl, playSwipe } from '../../audio/sfx';
+import { addSpecimen } from '../warmUp';
 
 const PIXELS_PER_METER = 32;
 /** Gallop animation speed: frames per meter run (one 4-frame stride ≈ 2.5 m). */
@@ -106,6 +107,9 @@ export function createHoundRenderer(scene: THREE.Scene): HoundRenderer {
       t.offset.x = (mirror ? frame + 1 : frame) / n;
     }
   }
+
+  // One hidden at startup, so the warm-up compiles its shaders (render/warmUp.ts).
+  addSpecimen(scene, () => create());
 
   return {
     update(entities, events, camera, alpha, dt) {

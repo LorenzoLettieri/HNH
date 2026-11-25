@@ -13,6 +13,7 @@ import { addHeightFog } from '../heightFog';
 import { soundAt } from '../soundPosition';
 import { EYEBAT_FRAMES, EYEBAT_FRAME_H, EYEBAT_FRAME_W, eyebatSheet } from './eyebatSprite';
 import { playEyebatCharge, playFireball, playGhoulDeath } from '../../audio/sfx';
+import { addSpecimen } from '../warmUp';
 
 const PIXELS_PER_METER = 32;
 /** Wing beats per second (one beat = the 4-frame cycle). */
@@ -67,6 +68,9 @@ export function createEyebatRenderer(scene: THREE.Scene): EyebatRenderer {
     v.map.offset.x = frame / sheet.frameCount;
     v.glowMap.offset.x = frame / sheet.frameCount;
   }
+
+  // One hidden at startup, so the warm-up compiles its shaders (render/warmUp.ts).
+  addSpecimen(scene, () => create());
 
   return {
     update(entities, events, camera, alpha, dt) {

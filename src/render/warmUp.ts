@@ -45,11 +45,20 @@ export function warmUp(renderer: THREE.WebGLRenderer, target: THREE.WebGLRenderT
   for (const { scene, camera } of scenes) renderer.compile(scene, camera);
 
   // Switch on everything that's hidden or would be culled, remembering it.
+  // A light inside a hidden group is off in the game and must stay off: it's
+  // hidden itself for the warm-up frame, since its group is about to show.
   const hidden: THREE.Object3D[] = [];
   const culled: THREE.Object3D[] = [];
+  const darkened: THREE.Object3D[] = [];
   for (const { scene } of scenes) {
     scene.traverse((o) => {
-      if ((o as THREE.Light).isLight) return;
+      if ((o as THREE.Light).isLight) {
+        if (o.visible && !shown(o)) {
+          darkened.push(o);
+          o.visible = false;
+        }
+        return;
+      }
       if (!o.visible) {
         hidden.push(o);
         o.visible = true;
@@ -71,8 +80,38 @@ export function warmUp(renderer: THREE.WebGLRenderer, target: THREE.WebGLRenderT
 
   for (const o of hidden) o.visible = false;
   for (const o of culled) o.frustumCulled = true;
+  for (const o of darkened) o.visible = true;
+  // Such a light is a hitch waiting to happen: the moment its group shows,
+  // the number of lights changes and EVERY lit shader is compiled again.
+  // Better in the scene with intensity 0 (see wagerTable.ts).
+  for (const o of darkened) console.warn(`a light inside a hidden group (${o.parent?.name || o.parent?.type}): showing it recompiles every shader`);
   renderer.setRenderTarget(previousTarget);
   return performance.now() - start;
+}
+
+/** Is the object drawn: visible itself and all its parents? */
+function shown(o: THREE.Object3D): boolean {
+  for (let p: THREE.Object3D | null = o; p; p = p.parent) if (!p.visible) return false;
+  return true;
+}
+
+/**
+ * Things created during the game (an enemy, a fireball, a pickup) bring
+ * materials the warm-up never saw. So each renderer builds ONE of them at
+ * startup, a "specimen": hidden, never moved, never removed. The warm-up
+ * compiles its programs, and a material created later with the same setup
+ * finds its program in the cache (the cache key is the setup, not the
+ * material). Never removed matters too: Three.js deletes a program when the
+ * last material using it is disposed (a Smith dying would take its shock
+ * wave's shader with it, and the next Smith would compile it again).
+ *
+ * `build` creates the objects and adds them to the scene, as the renderer
+ * does in the game: whatever it added gets hidden.
+ */
+export function addSpecimen(scene: THREE.Scene, build: () => void): void {
+  const before = new Set(scene.children);
+  build();
+  for (const o of scene.children) if (!before.has(o)) o.visible = false;
 }
 
 /**
@@ -88,7 +127,8 @@ export function createShaderWatch(renderer: THREE.WebGLRenderer): { check(): voi
       const programs = renderer.info.programs ?? [];
       if (programs.length === known.size) return;
       for (const p of programs) {
-        if (!known.has(p)) console.warn(`shader compiled during the game: ${p.name || '(a ShaderMaterial without a name)'}`);
+        // The name is the material's name, or its type; the cache key says how it was set up.
+        if (!known.has(p)) console.warn(`shader compiled during the game: ${p.name || '(no name)'}`, p.cacheKey.slice(0, 200));
       }
       known = new Set(programs);
     },

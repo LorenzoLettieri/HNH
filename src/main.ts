@@ -625,5 +625,6 @@ renderer.setAnimationLoop((now: number) => {
   props.update(now / 1000);
   updateParticles(dt, now / 1000, camera, post.sceneSize.y);
   post.render(scene, camera, viewmodel);
-  shaderWatch.check();
+  // Only while playing: on the menu the .glb guns still arriving compile their shaders, and that's fine there.
+  if (!paused) shaderWatch.check();
 });

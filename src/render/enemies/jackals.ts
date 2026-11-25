@@ -22,6 +22,7 @@ import { addHeightFog } from '../heightFog';
 import { spawnBlastFire, spawnSmoke, spawnSparks } from '../particles';
 import { soundAt } from '../soundPosition';
 import { FRAMES, FRAME_H, FRAME_W, jackalSheet } from './jackalSprite';
+import { addSpecimen } from '../warmUp';
 
 const PIXELS_PER_METER = 32;
 /** Run animation: frames per meter (one 4-frame stride ≈ 1.8 m: short legs, quick steps). */
@@ -142,6 +143,9 @@ export function createJackalRenderer(scene: THREE.Scene): JackalRenderer {
     v.glowMap.dispose();
     views.delete(id);
   }
+
+  // One hidden at startup, so the warm-up compiles its shaders (render/warmUp.ts).
+  addSpecimen(scene, () => create());
 
   return {
     update(entities, events, camera, alpha, dt) {

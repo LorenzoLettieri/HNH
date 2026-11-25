@@ -14,6 +14,7 @@ import type { Projectile } from '../sim/projectiles';
 import { playFireballHit, playRicochet } from '../audio/sfx';
 import { spawnSparks } from './particles';
 import { soundAt } from './soundPosition';
+import { addSpecimen } from './warmUp';
 
 /** Size of the fireball on screen, meters (a bit bigger than its hitbox: it's a warning, it must be seen). */
 const SIZE = 0.7;
@@ -78,6 +79,32 @@ export function createProjectileRenderer(scene: THREE.Scene): ProjectileRenderer
   const point = new THREE.Vector3();
   const normal = new THREE.Vector3();
 
+  /** A fireball: a sprite is a quad that always faces the camera (Three.js does the billboarding for us). One material each: it spins on its own. */
+  function fireballSprite(): { sprite: THREE.Sprite; material: THREE.SpriteMaterial } {
+    const material = new THREE.SpriteMaterial({ map: texture, alphaTest: 0.5 });
+    material.color.setScalar(BRIGHTNESS);
+    const sprite = new THREE.Sprite(material);
+    sprite.scale.setScalar(SIZE);
+    scene.add(sprite);
+    return { sprite, material };
+  }
+
+  /** A tracer: a line of two points, rewritten every frame. */
+  function tracerLine(): THREE.Line {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
+    const line = new THREE.Line(geometry, tracerMaterial);
+    line.frustumCulled = false;
+    scene.add(line);
+    return line;
+  }
+
+  // One hidden at startup, so the warm-up compiles its shaders (render/warmUp.ts).
+  addSpecimen(scene, () => {
+    fireballSprite();
+    tracerLine();
+  });
+
   return {
     update(projectiles, events, camera, alpha, dt) {
       for (const e of events) {
@@ -103,14 +130,7 @@ export function createProjectileRenderer(scene: THREE.Scene): ProjectileRenderer
         }
         let v = views.get(p.id);
         if (!v) {
-          // A sprite is a quad that always faces the camera (Three.js does the
-          // billboarding for us). One material each: it spins on its own.
-          const material = new THREE.SpriteMaterial({ map: texture, alphaTest: 0.5 });
-          material.color.setScalar(BRIGHTNESS);
-          const sprite = new THREE.Sprite(material);
-          sprite.scale.setScalar(SIZE);
-          scene.add(sprite);
-          v = { sprite, material, emberDebt: 0 };
+          v = { ...fireballSprite(), emberDebt: 0 };
           views.set(p.id, v);
         }
         v.sprite.position.set(p.px + (p.x - p.px) * alpha, p.py + (p.y - p.py) * alpha, p.pz + (p.z - p.pz) * alpha);
@@ -146,11 +166,7 @@ export function createProjectileRenderer(scene: THREE.Scene): ProjectileRenderer
   function updateTracer(p: Projectile, alpha: number): void {
     let t = tracers.get(p.id);
     if (!t) {
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
-      const line = new THREE.Line(geometry, tracerMaterial);
-      line.frustumCulled = false;
-      scene.add(line);
+      const line = tracerLine();
       t = { line };
       tracers.set(p.id, t);
       // Where it started: the streak doesn't reach behind this point.

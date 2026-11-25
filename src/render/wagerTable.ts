@@ -14,7 +14,8 @@
 // It only READS the simulation: game.mapEvent (where, what curse, which
 // phase) and the wager events for the sounds.
 //
-// Everything is built ONCE at startup and hidden, the light included: adding
+// Everything is built ONCE at startup and hidden, the light included (but
+// outside the hidden group: see where it's made): adding
 // a light to the scene while playing makes Three.js recompile every shader
 // (a hitch right when the table appears; see the explosions' light pool).
 // A light that's always there with intensity 0 costs nothing to switch on.
@@ -202,9 +203,12 @@ export function createWagerTableRenderer(scene: THREE.Scene): WagerTableRenderer
   const beam = new THREE.Mesh(beamGeometry, beamMaterial);
   beam.position.y = TOP_Y + CARD_FLOAT + CARD_H / 2 + 0.2; // above the card: it mustn't hide it
   root.add(beam);
+  // In the scene, NOT in the root: a light inside a hidden group doesn't
+  // count, so showing the table would add one (see the top of the file).
+  // It follows the root by hand, every frame.
   const light = new THREE.PointLight(LIGHT_COLOR, 0, LIGHT_RANGE);
-  light.position.y = TOP_Y + 0.9;
-  root.add(light); // always in the scene (see the top of the file)
+  const LIGHT_Y = TOP_Y + 0.9;
+  scene.add(light);
 
   // --- State of the drawing ---
   let shown: WagerEvent | null = null; // the event the table is showing (a copy of where and what)
@@ -259,6 +263,7 @@ export function createWagerTableRenderer(scene: THREE.Scene): WagerTableRenderer
         light.intensity = 0;
         return;
       }
+      light.position.set(root.position.x, root.position.y + LIGHT_Y, root.position.z);
 
       // Sinking into the ground, burning.
       if (vanish >= 0) {

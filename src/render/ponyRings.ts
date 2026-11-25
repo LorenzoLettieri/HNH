@@ -20,6 +20,7 @@ import { playRingPassed } from '../audio/sfx';
 import { beamTexture } from './bells';
 import { spawnBlastFire, spawnSnort } from './particles';
 import { soundAt } from './soundPosition';
+import { addSpecimen } from './warmUp';
 
 // --- Shape (meters) ---
 // The ring's radius is the simulation's ponyRingRadius, read every frame (the
@@ -92,6 +93,20 @@ export function createPonyRingRenderer(scene: THREE.Scene): PonyRingRenderer {
   const point = new THREE.Vector3();
   const up = new THREE.Vector3(0, 0.25, 0);
 
+  /** A ring's fire: its own material, each ring pulses and pops on its own. */
+  function ringMaterial(): THREE.MeshBasicMaterial {
+    return new THREE.MeshBasicMaterial({
+      map: texture,
+      color: FIRE,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      fog: false, // the next ring must be seen across town; the faint one is faint anyway
+    });
+  }
+  // One hidden at startup, so the warm-up compiles its shaders (render/warmUp.ts).
+  addSpecimen(scene, () => scene.add(new THREE.Mesh(geometry, ringMaterial())));
+
   function build(ev: PonyExpressEvent): void {
     views = ev.rings.map((r, i) => {
       // Heading: toward the next ring (the last one: away from the one before).
@@ -102,14 +117,7 @@ export function createPonyRingRenderer(scene: THREE.Scene): PonyRingRenderer {
       // The torus lies in its XY plane, so it faces +Z: turning it around Y by
       // atan2(dx, dz) points that face along the trail.
       group.rotation.y = Math.atan2(to.x - from.x, to.z - from.z);
-      const material = new THREE.MeshBasicMaterial({
-        map: texture,
-        color: FIRE,
-        transparent: true,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        fog: false, // the next ring must be seen across town; the faint one is faint anyway
-      });
+      const material = ringMaterial();
       const mesh = new THREE.Mesh(geometry, material);
       group.add(mesh);
       group.visible = false;

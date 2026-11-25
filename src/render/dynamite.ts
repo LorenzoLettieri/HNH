@@ -15,6 +15,7 @@ import { tuning } from '../sim/config';
 import { playDynamiteBounce, playFuseHiss, type LoopingSound } from '../audio/sfx';
 import { spawnHolyFlame, spawnSmoke, spawnSnort, spawnSparks } from './particles';
 import { soundAt } from './soundPosition';
+import { addSpecimen } from './warmUp';
 
 /** Size of the stick, meters (a bit bigger than a real one: it must be readable in flight). */
 const STICK_LENGTH = 0.28;
@@ -188,19 +189,31 @@ export function createDynamiteRenderer(scene: THREE.Scene): DynamiteRenderer {
   const axis = new THREE.Vector3();
   const spin = new THREE.Quaternion();
 
-  function createView(d: Dynamite, camera: THREE.Camera): StickView {
+  /** The stick itself: paper, fuse and ember, added to the scene. */
+  function buildStick(holy: boolean): Pick<StickView, 'mesh' | 'fuse' | 'ember'> {
     const mesh = new THREE.Group();
-    mesh.add(new THREE.Mesh(body, d.holy ? holyMaterials : materials));
+    mesh.add(new THREE.Mesh(body, holy ? holyMaterials : materials));
     const fuse = new THREE.Mesh(fuseGeometry, fuseMaterial);
     fuse.position.x = STICK_LENGTH / 2;
     mesh.add(fuse);
-    const ember = new THREE.Mesh(emberGeometry, d.holy ? holyEmberMaterial : emberMaterial);
+    const ember = new THREE.Mesh(emberGeometry, holy ? holyEmberMaterial : emberMaterial);
     mesh.add(ember);
+    scene.add(mesh);
+    return { mesh, fuse, ember };
+  }
+
+  // Two (plain and holy) hidden at startup, so the warm-up compiles its shaders (render/warmUp.ts).
+  addSpecimen(scene, () => {
+    buildStick(false);
+    buildStick(true);
+  });
+
+  function createView(d: Dynamite, camera: THREE.Camera): StickView {
+    const { mesh, fuse, ember } = buildStick(d.holy);
     // Start at a random angle, so two sticks don't look identical.
     mesh.rotation.set(Math.random() * 6, Math.random() * 6, 0);
     mesh.position.set(d.x, d.y + DYNAMITE_RADIUS, d.z);
     if (d.mini) mesh.scale.setScalar(MINI_SCALE); // card "A grappolo": the little ones
-    scene.add(mesh);
     return { mesh, fuse, ember, hiss: playFuseHiss(soundAt(camera, d.x, d.y, d.z)) };
   }
 

@@ -2,6 +2,7 @@
 // The sparks are in particles.ts.
 import * as THREE from 'three';
 import { PixelCanvas, seededRandom } from './props/pixelCanvas';
+import { addSpecimen } from './warmUp';
 
 /** How many holes stay on the walls; the oldest is reused after that. */
 const MAX_DECALS = 64;
@@ -41,6 +42,8 @@ export function createImpacts(scene: THREE.Scene): Impacts {
   const decals: THREE.Mesh[] = [];
   let next = 0;
   const target = new THREE.Vector3();
+  // One hidden at startup, so the warm-up compiles its shaders (render/warmUp.ts).
+  addSpecimen(scene, () => scene.add(new THREE.Mesh(geometry, material)));
 
   return {
     add(point, normal) {

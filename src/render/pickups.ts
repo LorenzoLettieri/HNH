@@ -8,6 +8,7 @@ import type { Pickup, PickupKind } from '../sim/pickups';
 import { TICK_DT } from '../sim/config';
 import { addHeightFog } from './heightFog';
 import { PICKUP_FRAME, PICKUP_FRAMES, pickupSheet } from './pickupSprites';
+import { addSpecimen } from './warmUp';
 
 /** Sprite size: pixels per meter (the enemies use 32; a bit bigger here: they must be noticed). */
 const PIXELS_PER_METER = 26;
@@ -101,6 +102,13 @@ export function createPickupRenderer(scene: THREE.Scene): PickupRenderer {
   // One view per pickup id (same pattern as the enemies): create the new
   // ones, remove the ones no longer in the list.
   const views = new Map<number, PickupView>();
+
+  // One of each kind hidden at startup, so the warm-up compiles its shaders (render/warmUp.ts).
+  addSpecimen(scene, () => {
+    for (const kind of Object.keys(spriteMaterials) as PickupKind[]) {
+      scene.add(new THREE.Mesh(spriteGeometry, spriteMaterials[kind]), new THREE.Mesh(poolGeometry, poolMaterials[kind]));
+    }
+  });
 
   return {
     update(pickups, camera, alpha, time) {

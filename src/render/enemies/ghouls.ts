@@ -10,6 +10,7 @@ import { addHeightFog } from '../heightFog';
 import { soundAt } from '../soundPosition';
 import { FRAMES, FRAME_H, FRAME_W, GHOUL_FRAME_COUNT, ghoulSheet } from './ghoulSprite';
 import { playGhoulDeath, playGroan, playLungeScreech, playSwipe } from '../../audio/sfx';
+import { addSpecimen } from '../warmUp';
 
 const PIXELS_PER_METER = 32;
 /** Walk animation speed: frames per meter walked (feet must not "skate"). */
@@ -78,6 +79,9 @@ export function createGhoulRenderer(scene: THREE.Scene): GhoulRenderer {
     v.map.offset.x = frame / GHOUL_FRAME_COUNT;
     v.glowMap.offset.x = frame / GHOUL_FRAME_COUNT;
   }
+
+  // One hidden at startup, so the warm-up compiles its shaders (render/warmUp.ts).
+  addSpecimen(scene, () => create({ runner: false } as GhoulEntity));
 
   return {
     update(entities, events, camera, alpha, dt) {

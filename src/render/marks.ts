@@ -4,6 +4,7 @@
 // pixel by pixel on a tiny canvas, like the other pixel-art sprites.
 import * as THREE from 'three';
 import { hitBox, isAlive, type Entity } from '../sim/entities';
+import { addSpecimen } from './warmUp';
 
 /** Size of the sigil in the world (meters), how high above the hitbox, how fast it pulses. */
 const SIZE = 0.45;
@@ -34,6 +35,8 @@ export function createMarks(scene: THREE.Scene) {
   /** One sprite per marked enemy, by entity id. */
   const sprites = new Map<number, THREE.Sprite>();
   let time = 0;
+  // One hidden at startup, so the warm-up compiles its shaders (render/warmUp.ts).
+  addSpecimen(scene, () => scene.add(new THREE.Sprite(material)));
   return {
     update(entities: Entity[], alpha: number, dt: number): void {
       time += dt;

@@ -33,6 +33,7 @@ import { soundAt } from '../soundPosition';
 import { bullSheet, FRAMES, FRAME_H, FRAME_W } from './bullSprite';
 import { spawnDirt, spawnSnort } from '../particles';
 import { playBullBellow, playBullCrash, playBullSnort, playGhoulDeath } from '../../audio/sfx';
+import { addSpecimen } from '../warmUp';
 
 const PIXELS_PER_METER = 32;
 /** Walk animation speed: frames per meter (a 4-frame stride ≈ 2.7 m). */
@@ -133,6 +134,9 @@ export function createBullRenderer(scene: THREE.Scene): BullRenderer {
       t.offset.x = (mirror ? frame + 1 : frame) / n;
     }
   }
+
+  // One hidden at startup, so the warm-up compiles its shaders (render/warmUp.ts).
+  addSpecimen(scene, () => create());
 
   return {
     update(entities, events, camera, alpha, dt) {

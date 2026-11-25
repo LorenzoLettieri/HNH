@@ -17,6 +17,7 @@ import type { HolyFire } from '../sim/holyFire';
 import { playHolyFireLoop, type LoopingSound } from '../audio/sfx';
 import { spawnHolyFlame, spawnSnort } from './particles';
 import { soundAt } from './soundPosition';
+import { addSpecimen } from './warmUp';
 
 /** Lifted over the floor: two surfaces on the same plane flicker (z-fighting; see materials.ts). */
 const LIFT = 0.03;
@@ -102,6 +103,19 @@ export function createHolyFireRenderer(scene: THREE.Scene): HolyFireRenderer {
   const point = new THREE.Vector3();
   const up = new THREE.Vector3(0, 1, 0);
 
+  /** The glow on the floor of one pool: its own material, it fades on its own. */
+  function poolMaterial(holy: boolean): THREE.MeshBasicMaterial {
+    return new THREE.MeshBasicMaterial({
+      map,
+      color: new THREE.Color(holy ? COLOR : EMBER_COLOR).multiplyScalar(GLOW),
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+  }
+  // One hidden at startup, so the warm-up compiles its shaders (render/warmUp.ts).
+  addSpecimen(scene, () => scene.add(new THREE.Mesh(disc, poolMaterial(true))));
+
   /** 0..1: swelling in, burning, dying out. */
   function strength(f: HolyFire, v: PoolView): number {
     const end = Math.min(1, f.ticksLeft / (DIE * 60));
@@ -115,13 +129,7 @@ export function createHolyFireRenderer(scene: THREE.Scene): HolyFireRenderer {
         alive.add(f.id);
         let v = views.get(f.id);
         if (!v) {
-          const material = new THREE.MeshBasicMaterial({
-            map,
-            color: new THREE.Color(f.holy ? COLOR : EMBER_COLOR).multiplyScalar(GLOW),
-            transparent: true,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false,
-          });
+          const material = poolMaterial(f.holy);
           const mesh = new THREE.Mesh(disc, material);
           mesh.position.set(f.x, f.y + LIFT, f.z);
           mesh.rotation.y = Math.random() * Math.PI * 2; // every pool's rim a different shape
