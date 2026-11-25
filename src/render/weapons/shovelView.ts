@@ -116,11 +116,11 @@ export const shovelSettings = {
   /** Random variation from swing to swing (fraction: 0.15 = ±15%). */
   variation: 0.15,
   /** HELD in your hands (key 5): the grip, and the shaft's angles (blade up on the right, its face toward you). */
-  heldX: 0.2,
-  heldY: -0.42,
-  heldZ: -0.2,
-  heldPitch: 1.05,
-  heldYaw: -0.45,
+  heldX: 0.16,
+  heldY: -0.4,
+  heldZ: -0.3,
+  heldPitch: 0.72,
+  heldYaw: -0.38,
   heldRoll: 1.0,
   /** Seconds for it to come back up into the held pose after a swing. */
   returnTime: 0.22,

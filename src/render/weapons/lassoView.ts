@@ -186,7 +186,8 @@ export function createLassoView(): LassoView {
   const spokePts = Array.from({ length: spoke.count }, () => new THREE.Vector3());
   const runningPts = Array.from({ length: running.count }, () => new THREE.Vector3());
 
-  const spring = new PoseSpring(s.stiffness, s.damping);
+  let spring = new PoseSpring(s.stiffness, s.damping);
+  let springFor = `${s.stiffness}|${s.damping}`; // rebuilt when the debug panel changes them
   let pending = 0;
   let cast: Cast = 'idle';
   let castTime = 0;
@@ -282,6 +283,10 @@ export function createLassoView(): LassoView {
           target.y += (Math.random() * 2 - 1) * shake;
           target.pitch += (Math.random() * 2 - 1) * shake * 4;
         }
+      }
+      if (springFor !== `${s.stiffness}|${s.damping}`) {
+        spring = new PoseSpring(s.stiffness, s.damping);
+        springFor = `${s.stiffness}|${s.damping}`;
       }
       pending += dt;
       while (pending >= ELASTIC_STEP) {

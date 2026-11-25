@@ -30,7 +30,7 @@ import { RELEASE, RETRACT_TIME, YANK_TIME } from './weapons/lassoView';
 /** Points along the rope (more = rounder curves; it's rebuilt every frame). */
 const POINTS = 28;
 /** Rope radius, meters (a bit thicker than the one in your hand: it's seen from far). */
-const RADIUS = 0.012;
+const RADIUS = 0.018;
 /** The noose model's radius (NOOSE_R in tools/blender/lasso.py): to scale it to a size in meters. */
 const MODEL_RADIUS = 0.24;
 /** The open loop in flight, the loop on a hook's anchor, meters. */
@@ -50,7 +50,7 @@ const TAUT_SHAKE = 0.012;
 type Mode = 'none' | 'throw' | 'yank' | 'hook' | 'back';
 
 export interface LassoRope {
-  update(game: GameState, events: SimEvent[], camera: THREE.Camera, alpha: number, dt: number, hand: THREE.Vector3 | null): void;
+  update(game: GameState, events: SimEvent[], alpha: number, dt: number, hand: THREE.Vector3 | null): void;
 }
 
 /**
@@ -65,7 +65,8 @@ export function viewToWorld(p: THREE.Vector3, viewFov: number, camera: THREE.Per
 }
 
 export function createLassoRope(scene: THREE.Scene): LassoRope {
-  const material = new THREE.MeshLambertMaterial({ color: 0xc49e62 });
+  // A little light of its own (the texture itself, dimmed): a thin rope against a dark street must still read.
+  const material = new THREE.MeshLambertMaterial({ color: 0xc49e62, emissive: new THREE.Color(0.35, 0.28, 0.2) });
   const rope = createRope(POINTS, RADIUS, material);
   rope.mesh.visible = false;
   scene.add(rope.mesh);
@@ -81,6 +82,7 @@ export function createLassoRope(scene: THREE.Scene): LassoRope {
       // The world's lights: a Lambert material, like the level (the model's is for the gun's scene).
       const m = o.material as THREE.MeshStandardMaterial;
       material.map = m.map;
+      material.emissiveMap = m.map;
       material.color.set(0xffffff);
       material.needsUpdate = true;
       o.material = material;
@@ -98,7 +100,7 @@ export function createLassoRope(scene: THREE.Scene): LassoRope {
   let backRadius = ANCHOR_RADIUS;
   let caughtRadius = FLYING_RADIUS;
   let wavePhase = 0;
-  let lastHand = new THREE.Vector3();
+  const lastHand = new THREE.Vector3();
 
   const dir = new THREE.Vector3();
   const across = new THREE.Vector3();
@@ -118,7 +120,7 @@ export function createLassoRope(scene: THREE.Scene): LassoRope {
   }
 
   return {
-    update(game, events, camera, alpha, dt, hand) {
+    update(game, events, alpha, dt, hand) {
       // --- Events: what the rope does now ---
       for (const e of events) {
         if (e.type === 'kickStart' && e.tool === 'lasso') {
@@ -199,7 +201,8 @@ export function createLassoRope(scene: THREE.Scene): LassoRope {
             sag = FLY_SAG * 0.5;
             wave = WAVE * 0.6;
           } else {
-            radius = hk.entityId >= 0 ? bodyRadius(game.entities.find((x) => x.id === hk.entityId) ?? game.entities[0]) * CINCH : ANCHOR_RADIUS;
+            const held = hk.entityId >= 0 ? game.entities.find((x) => x.id === hk.entityId) : undefined;
+            radius = held ? bodyRadius(held) * CINCH : ANCHOR_RADIUS;
             flat = hk.entityId >= 0;
             taut = true;
           }
@@ -237,7 +240,6 @@ export function createLassoRope(scene: THREE.Scene): LassoRope {
       const shake = taut ? (Math.random() * 2 - 1) * TAUT_SHAKE : 0;
       layRope(pts, h, end, sag * length, wave + shake, wavePhase, across);
       rope.setPoints(pts);
-      void camera;
     },
   };
 }

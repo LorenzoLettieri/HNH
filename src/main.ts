@@ -577,7 +577,7 @@ renderer.setAnimationLoop((now: number) => {
 
   // The lasso's rope: from the fist in the gun's scene to the same pixel in the world.
   const hand = viewmodel.lassoHand(lassoHandView);
-  lassoRope.update(game, events, camera, alpha, dt, hand ? viewToWorld(hand, viewmodelSettings.fov, camera, lassoHandWorld) : null);
+  lassoRope.update(game, events, alpha, dt, hand ? viewToWorld(hand, viewmodelSettings.fov, camera, lassoHandWorld) : null);
   // Weapon events of this frame → effects and sounds.
   weaponFx.handle(events, camera);
   weaponFx.update(dt);
