@@ -25,7 +25,7 @@
 // of you, 9 m: it catches ONE enemy (lassoTarget in lasso.ts, picked at the
 // press so the loop on screen flies at it) and YANKS it toward you (yank).
 import { hasDrink } from './drinks';
-import { stun } from './status';
+import { ignite, markSlam, stun } from './status';
 import type { InputCommand } from './command';
 import { secondsToTicks, tuning } from './config';
 import { damage, hitBox, isAlive, isEnemy, type Entity } from './entities';
@@ -138,6 +138,7 @@ export function stepKick(p: PlayerState, cmd: InputCommand, world: World, entiti
   if (p.kickTicks > 0 && p.kickTicks === Math.max(1, secondsToTicks(stats.windup))) {
     if (tool === 'lasso') landLasso(p, stats, world, entities, events);
     else landKick(p, tool, stats, world, entities, events);
+    if (tool === 'shovel') startSkyDive(p, events);
   }
   // The kick is "over" when the cooldown is: the renderer reads kickTicks to animate the leg.
   if (p.kickCooldownTicks === 0) {
@@ -165,7 +166,7 @@ function putGunAway(p: PlayerState, tool: MeleeTool): void {
 function landKick(
   p: PlayerState,
   tool: MeleeTool,
-  stats: MeleeStats,
+  baseStats: MeleeStats,
   world: World,
   entities: Entity[],
   events: SimEvent[],
@@ -174,14 +175,21 @@ function landKick(
   // looking down at a ghoul in front of you still kicks it).
   const fx = -Math.sin(p.yaw);
   const fz = -Math.cos(p.yaw);
-  // Comparing the dot product with cos(angle) instead of computing angles:
-  // dot(a, b) = |a|·|b|·cos(angle between them). With unit vectors it IS the
-  // cosine, and "angle < 45°" becomes "dot > cos 45°". No acos needed.
-  const minDot = Math.cos((stats.angle * Math.PI) / 180);
   const hipY = p.y + 0.9;
+  let stats = baseStats;
+  // Card "Spazzata in scivolata": sliding, a wide arc and a longer reach, and everyone hit goes down.
+  const sweep = tool === 'shovel' && p.sliding && hasCard(p, 'slideSweep');
+  if (sweep) {
+    stats = { ...stats, angle: tuning.slideSweepAngle, range: stats.range * tuning.slideSweepRangeScale };
+  }
   // Read once, before the swing touches anything: the speed you hit with.
   const power = tool === 'shovel' ? momentumMultiplier(p) : 1;
   const dealt = stats.damage * power;
+  // Comparing the dot product with cos(angle) instead of computing angles:
+  // dot(a, b) = |a|·|b|·cos(angle between them). With unit vectors it IS the
+  // cosine, and "angle < 45°" becomes "dot > cos 45°". No acos needed.
+  // (Past 90° the cosine goes negative: the arc reaches behind your shoulders.)
+  const minDot = Math.cos((stats.angle * Math.PI) / 180);
 
   let hits = 0;
   const at: { x: number; y: number; z: number; flesh: boolean }[] = [];
@@ -244,8 +252,78 @@ function landKick(
     kz /= kLen;
     knockBack(e, kx, kz, stats.knockback, stats.lift);
     if (hasDrink(p, 'hardHoof')) stun(e); // drink "Zoccolo duro"
+    if (sweep && !killed && e.type !== 'smith') holdDown(e, tuning.slideSweepStun);
   }
   events.push({ type: 'kickLand', tool, hits, at, power });
+  // Card "Pogo": hit something in mid-air and you bounce off it, up (head to head).
+  if (tool === 'shovel' && hits > 0 && !p.onGround && hasCard(p, 'pogo')) {
+    p.vy = Math.max(p.vy, tuning.pogoBounce);
+    p.skyDive = false; // a bounce up isn't a dive any more
+    events.push({ type: 'pogo', x: p.x, y: p.y, z: p.z });
+  }
+}
+
+/** Knocked down for a while: the stun of status.ts (no AI, only physics), never shortened. */
+function holdDown(e: Entity, seconds: number): void {
+  e.stunTicks = Math.max(e.stunTicks ?? 0, secondsToTicks(seconds));
+}
+
+/**
+ * Card "Schianto dal cielo": a shovel swing in the air while looking down
+ * (pitch is negative looking down) turns into a dive. The shockwave itself
+ * waits for the landing: stepSkySlam, called by stepGame. Not if the same
+ * swing just bounced you up with "Pogo" (the bounce wins).
+ */
+function startSkyDive(p: PlayerState, events: SimEvent[]): void {
+  if (p.onGround || p.skyDive || !hasCard(p, 'skySlam')) return;
+  if (p.pitch > -(tuning.skySlamPitch * Math.PI) / 180) return;
+  if (events.length > 0 && events[events.length - 1].type === 'pogo') return;
+  p.skyDive = true;
+  p.vy = Math.min(p.vy, -tuning.skySlamDiveSpeed);
+  events.push({ type: 'skyDive' });
+}
+
+/**
+ * Card "Schianto dal cielo", the landing: reads this tick's 'land' event
+ * (stepPlayer reports how many meters you fell, `drop`) and sends the
+ * shockwave out. Higher fall = wider and harder, up to a cap. Thrown
+ * straight away from you, like the drink "Zoccolo del diavolo" but with
+ * damage. Called by stepGame AFTER the melee, so its kills count as yours.
+ */
+export function stepSkySlam(p: PlayerState, entities: Entity[], events: SimEvent[], from: number, to: number): void {
+  if (!p.skyDive) return;
+  // The rope took you away from the dive: it's off.
+  if (p.hook.phase === 'attached') {
+    p.skyDive = false;
+    return;
+  }
+  let drop = -1;
+  for (let i = from; i < to; i++) {
+    const e = events[i];
+    if (e.type === 'land') drop = e.drop;
+  }
+  if (drop < 0) return;
+  p.skyDive = false;
+  // Whole meters only: the damage goes up in clean steps (the breakpoint rule), not by 0.37 m of fall.
+  drop = Math.floor(drop);
+  const radius = Math.min(tuning.skySlamMaxRadius, tuning.skySlamRadius + drop * tuning.skySlamRadiusPerMeter);
+  const amount = Math.min(tuning.skySlamMaxDamage, tuning.skySlamDamage + drop * tuning.skySlamDamagePerMeter);
+  let hits = 0;
+  for (const e of entities) {
+    if (!isEnemy(e) || !isAlive(e)) continue;
+    const dx = e.x - p.x;
+    const dz = e.z - p.z;
+    const d = Math.hypot(dx, dz);
+    if (d > radius || Math.abs(e.y - p.y) > 2) continue;
+    hits++;
+    const killed = damage(e, amount);
+    events.push({
+      type: 'hit', entityId: e.id, damage: amount, killed, surface: 'flesh',
+      headshot: false, source: 'shovel', distance: d, target: e.type,
+    });
+    if (!killed) knockBack(e, d > 0.01 ? dx / d : 1, d > 0.01 ? dz / d : 0, tuning.skySlamPush, tuning.skySlamLift);
+  }
+  events.push({ type: 'skySlam', x: p.x, y: p.y, z: p.z, radius, hits });
 }
 
 /**
@@ -276,8 +354,23 @@ function landLasso(p: PlayerState, stats: MeleeStats, world: World, entities: En
   const e = stillThere ? picked : lassoTarget(p, entities, world);
   p.lassoTargetId = -1;
   if (!e) return void events.push({ type: 'kickLand', tool: 'lasso', hits: 0, at: [], power: 1 });
+  const caught = [e];
+  // Card "Laccio doppio": the loop closes on the enemy nearest to the first one too.
+  if (hasCard(p, 'doubleLoop')) {
+    const second = nearestTo(e, entities, world, p);
+    if (second) caught.push(second);
+  }
+  const at: { x: number; y: number; z: number; flesh: boolean }[] = [];
+  for (const target of caught) {
+    at.push({ ...hitCenter(target), flesh: isEnemy(target) });
+    catchOne(p, target, stats, events);
+  }
+  events.push({ type: 'kickLand', tool: 'lasso', hits: caught.length, at, power: 1 });
+}
+
+/** One body in the loop: the damage, the cards that ride on the rope, the yank. */
+function catchOne(p: PlayerState, e: Entity, stats: MeleeStats, events: SimEvent[]): void {
   const c = hitCenter(e);
-  const dist = Math.hypot(c.x - p.x, c.z - p.z);
   const killed = damage(e, stats.damage);
   events.push({
     type: 'hit',
@@ -287,11 +380,39 @@ function landLasso(p: PlayerState, stats: MeleeStats, world: World, entities: En
     surface: isEnemy(e) ? 'flesh' : 'metal',
     headshot: false,
     source: 'lasso',
-    distance: dist,
+    distance: Math.hypot(c.x - p.x, c.z - p.z),
     target: e.type,
   });
-  if (!killed) yank(e, p, stats.lift);
-  events.push({ type: 'kickLand', tool: 'lasso', hits: 1, at: [{ ...c, flesh: isEnemy(e) }], power: 1 });
+  if (killed) return;
+  if (hasCard(p, 'hotRope')) ignite(e); // card "Corda rovente"
+  yank(e, p, stats.lift);
+  // Card "Strattone che schianta": AFTER the yank (markSlam reads the speed it was just given).
+  if (hasCard(p, 'slamYank')) markSlam(e, 'lasso');
+}
+
+/**
+ * Card "Laccio doppio": the living enemy nearest to `first`, within
+ * doubleLoopRadius, that you can see (no catching through a wall).
+ */
+function nearestTo(first: Entity, entities: Entity[], world: World, p: PlayerState): Entity | null {
+  const a = hitCenter(first);
+  const eyeY = p.y + tuning.playerHeight * 0.9;
+  let best: Entity | null = null;
+  let bestD = tuning.doubleLoopRadius;
+  for (const e of entities) {
+    if (e === first || !isEnemy(e) || !isAlive(e)) continue;
+    const c = hitCenter(e);
+    const d = Math.hypot(c.x - a.x, c.y - a.y, c.z - a.z);
+    if (d > bestD) continue;
+    const dx = c.x - p.x;
+    const dy = c.y - eyeY;
+    const dz = c.z - p.z;
+    const len = Math.hypot(dx, dy, dz);
+    if (len > 0.01 && raycastBoxes(p.x, eyeY, p.z, dx / len, dy / len, dz / len, len, world.boxes)) continue;
+    best = e;
+    bestD = d;
+  }
+  return best;
 }
 
 /**

@@ -185,6 +185,10 @@ export interface PlayerState {
   kickGunAway: boolean;
   /** The lasso's throw: the entity it's flying at (picked at the press, -1 = none: kick.ts). */
   lassoTargetId: number;
+  /** Card "Schianto dal cielo": diving from the sky, the shockwave goes off where you land (kick.ts). */
+  skyDive: boolean;
+  /** Card "Scia Napalm": meters flown on the rope since the last patch of fire (game.ts). */
+  napalmMeters: number;
   /** The lasso's grappling hook (the right button with the lasso in your hands: lasso.ts). */
   hook: HookState;
 
@@ -256,6 +260,8 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     kickHeld: false,
     kickGunAway: false,
     lassoTargetId: -1,
+    skyDive: false,
+    napalmMeters: 0,
     hook: noHook(),
     melee: null,
     meleeDrawn: false,
@@ -614,6 +620,7 @@ export function respawn(p: PlayerState, world: World): void {
   p.meleeDrawn = false;
   p.hook = noHook();
   p.lassoTargetId = -1;
+  p.skyDive = false;
   p.kickGunAway = false;
   p.money = 0; // dead = the game starts over: empty pockets
   p.cards = noCards(); // ...and plain weapons

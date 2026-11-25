@@ -229,7 +229,12 @@ export type SimEvent =
    */
   | { type: 'hookThrow'; x: number; y: number; z: number; miss: boolean }
   | { type: 'hookAttach'; x: number; y: number; z: number; entityId: number }
-  | { type: 'hookRelease'; x: number; y: number; z: number; attached: boolean }
+  | { type: 'hookRelease'; x: number; y: number; z: number; attached: boolean; sling: boolean }
+  /** Card "Pogo": a shovel hit bounced you up. */
+  | { type: 'pogo'; x: number; y: number; z: number }
+  /** Card "Schianto dal cielo": the dive started / the shockwave where you landed. */
+  | { type: 'skyDive' }
+  | { type: 'skySlam'; x: number; y: number; z: number; radius: number; hits: number }
   | { type: 'dryFire' } // pulled the trigger with an empty cylinder
   /**
    * A reload starts; `seconds` = how long it lasts (cards can change it: the

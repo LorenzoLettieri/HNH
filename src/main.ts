@@ -54,6 +54,7 @@ import { createSermonRenderer } from './render/sermon';
 import { createBountyRenderer } from './render/bounty';
 import { createBountyPoster } from './render/bountyPoster';
 import { handlePactEvents } from './render/pactFx';
+import { handleMeleeCardEvents } from './render/meleeCardFx';
 import { createShopMenu } from './render/shopMenu';
 import { createMapOverlay } from './render/mapOverlay';
 import { shopInReach } from './sim/shop';
@@ -610,6 +611,7 @@ renderer.setAnimationLoop((now: number) => {
   bounty.update(game, events, camera, alpha, dt, now / 1000);
   bountyPoster.update(game, dt);
   handlePactEvents(events, game.entities, camera, dt); // the drinks that make something happen (pactFx.ts)
+  handleMeleeCardEvents(events); // the shovel's and the lasso's cards that make something happen (meleeCardFx.ts)
   // Walked away from the vendor (or died, and woke up at the spawn): the shop closes.
   const shopNearby = shopInReach(player, world);
   if (shopMenu.isOpen && !shopNearby) closeShop();

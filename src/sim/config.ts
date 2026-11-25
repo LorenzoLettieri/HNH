@@ -569,6 +569,28 @@ export const tuning = {
   momentumFrom: 9,
   momentumStep: 3,
   momentumMaxMultiplier: 4,
+  /** Card "Pogo": upward speed a shovel hit in mid-air gives you, m/s (a jump is 7). */
+  pogoBounce: 9,
+  /**
+   * Card "Schianto dal cielo": swing in the air looking down at least this
+   * many degrees and you dive at skySlamDiveSpeed m/s. Where you land, a
+   * shockwave: radius and damage grow with the meters you fell (the land
+   * event's `drop`), up to a cap.
+   */
+  skySlamPitch: 35,
+  skySlamDiveSpeed: 26,
+  skySlamRadius: 2.5,
+  skySlamRadiusPerMeter: 0.4,
+  skySlamMaxRadius: 7,
+  skySlamDamage: 50,
+  skySlamDamagePerMeter: 10,
+  skySlamMaxDamage: 200,
+  skySlamPush: 12,
+  skySlamLift: 7,
+  /** Card "Spazzata in scivolata": half-width of the arc (degrees), reach ×, how long the swept are down (s). */
+  slideSweepAngle: 150,
+  slideSweepRangeScale: 1.3,
+  slideSweepStun: 0.8,
 
   // --- Lasso (melee weapon, key 5: kick.ts for the throw, lasso.ts for the hook) ---
   /**
@@ -618,6 +640,34 @@ export const tuning = {
   lassoHookMaxTime: 3,
   /** Hooked while standing: a little hop, m/s, so the pull lifts you off the ground. */
   lassoHookHop: 4,
+  /** Card "Rampino lungo": hook range ×, reel acceleration and top speed ×. */
+  longRopeRangeScale: 1.5,
+  longRopeReelScale: 1.3,
+  /** Card "Fionda": speed added along your velocity when you let go of the rope in mid-air, m/s. */
+  slingshotBoost: 9,
+  /** Card "Laccio doppio": the second enemy must be within this many meters of the first. */
+  doubleLoopRadius: 4,
+  /**
+   * Card "Strattone che schianta": seconds a yanked enemy stays dangerous,
+   * the damage it takes (and gives) hitting a wall or another enemy, and how
+   * close counts as "flew into" (meters, center to center).
+   */
+  slamYankTime: 0.9,
+  slamYankDamage: 60,
+  slamYankReach: 1.1,
+  /** Card "Arrivo di stivale": damage of the kick on arrival, its push (m/s), and the stun (s). */
+  bootArrivalDamage: 75,
+  bootArrivalPush: 14,
+  bootArrivalStun: 1.2,
+  /**
+   * Card "Scia Napalm": while the rope pulls you, a patch of fire on the floor
+   * under you every napalmSpacing meters flown; its radius, how long it burns
+   * (s), how far below you the floor can be (m).
+   */
+  napalmSpacing: 2.2,
+  napalmRadius: 1.2,
+  napalmTime: 4,
+  napalmFallReach: 12,
 
   // --- Player health ---
   playerMaxHealth: 100,

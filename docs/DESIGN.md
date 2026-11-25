@@ -376,7 +376,7 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
   (1,6 m, ±45°), 25 danni (mezzo ghoul base: è uno strumento, non l'arma principale), e **spinge via**
   (13 m/s in avanti, 5 m/s in alto): il ghoul vola via, interrompe artigliata e balzo, e resta a terra
   0,5 s. Si può calciare mentre si ricarica. Ricarica di 0,55 s.
-- **Badile (melee potenziato)** [FATTI: simulazione, modello, colpo a schermo, suoni ed effetti; carte: Slancio FATTA, le altre da fare]:
+- **Badile (melee potenziato)** [FATTI: simulazione, modello, colpo a schermo, suoni ed effetti; carte FATTE, da provare]:
   si compra all'armeria (600 vildenaro) e **prende il posto dello stivale sul tasto F**, come il
   coltello bowie di CoD Zombies, non è uno slot. Stesso attacco del calcio
   (cono davanti, niente attraverso i muri, spinta), numeri diversi: portata 2,2 m, arco ±60°,
@@ -395,11 +395,15 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
     breakpoint): sotto 9 m/s normale (75), da 9 m/s ×2 (150: un ghoul in un colpo fino all'ondata 19), da 12 ×3,
     da 15 ×4 (tetto). Correndo (6,5 m/s) non scatta: serve uno slide o il bhop. Si sente: il BONK più grave con un
     colpo sordo sotto, più scintille, hit-stop più lungo.
-  - **Schianto dal cielo**: colpisci in aria guardando in basso, piombi giù e all'impatto parte
-    un'**onda d'urto** con raggio e danno proporzionali al volo (tempo in aria / velocità di caduta).
-  - **Pogo**: colpire un nemico in aria ti fa rimbalzare in su (di testa in testa).
-  - **Parata**: un colpo al momento giusto rimanda indietro palle di fuoco e proiettili del tiratore.
-  - **Spazzata in scivolata**: in slide il colpo diventa un arco largo che butta a terra tutti.
+  - **Schianto dal cielo** [FATTA]: colpisci in aria guardando in basso (almeno 35°) e piombi giù a 26 m/s;
+    all'atterraggio un'**onda d'urto**: raggio 2,5 m + 0,4 per metro di caduta (tetto 7), danno 50 + 10 per
+    metro (tetto 200), contati a **metri interi** (breakpoint). Somiglia al drink Zoccolo del diavolo, ma fa danno
+    e serve lo swing: l'utente le ha volute tutte e due (novembre 2026).
+  - **Pogo** [FATTA]: colpire un nemico in aria ti fa rimbalzare in su (9 m/s; di testa in testa). Vince sullo Schianto.
+  - **Parata** [FATTA]: lo swing rimanda indietro palle di fuoco e proiettili del tiratore, come il drink **Bobby**
+    (stessa funzione, `batProjectiles`): la carta è la versione "dell'armeria", solo col badile.
+  - **Spazzata in scivolata** [FATTA]: in slide il colpo diventa un arco di ±150° (anche ai lati e un po' dietro),
+    portata ×1,3, e chi prende resta a terra 0,8 s (lo stordimento; non il Fabbro).
 - **Niente rigenerazione della salute.** La salute torna coi **medikit** lasciati dai nemici (vedi Stile → Risorse).
 
 ## 4. La mappa [DECISO: cittadina all'aperto]
@@ -967,6 +971,16 @@ futuro **poligono di tiro / tutorial**.
   premuto ti tira (accelerazione fino a una velocità massima lungo la corda) e la corda non si allunga mai
   (pendolo); mollando **tieni tutta la velocità** (fionda). Si stacca se arrivi, se la corda si incastra in
   uno spigolo o dopo 3 s. Premio di Stile "AL LAZO" quando si aggancia, uccisione "YEEHAW".
+  **Mazzo del lazo** (7 carte) [FATTE, da provare, novembre 2026]:
+  - **Rampino lungo**: portata ×1,5 (48 m), avvolgi più forte (accelerazione e velocità massima ×1,3).
+  - **Fionda**: mollando la corda in aria la velocità cresce di 9 m/s nella direzione in cui vai.
+  - **Laccio doppio**: il cappio prende anche il nemico più vicino al primo (entro 4 m, in vista).
+  - **Strattone che schianta**: chi trascini, se sbatte contro un muro o contro un altro nemico mentre vola
+    (0,9 s), prende 60 danni, e anche l'altro.
+  - **Corda rovente**: chi finisce nel cappio o sotto il rampino prende fuoco (il fuoco di Fiato di drago).
+  - **Arrivo di stivale**: agganciato a un nemico, arrivi con un calcio (75 danni, spinta, stordito 1,2 s).
+  - **Scia Napalm** (idea dell'utente): mentre la corda ti tira lasci pozze di fuoco sul terreno sotto di te,
+    una ogni 2,2 m (le pozze del drink Scia di brace).
 
 ---
 

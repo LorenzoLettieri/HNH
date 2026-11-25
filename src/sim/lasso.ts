@@ -29,7 +29,10 @@
 //   (Projection again: along = v · u, the part of v along the rope; v − u·along
 //   is v with that part removed, the sideways rest.)
 import { secondsToTicks, TICK_DT, tuning } from './config';
-import { hitBox, isAlive, type Entity } from './entities';
+import { damage, hitBox, isAlive, isEnemy, type Entity } from './entities';
+import { ignite } from './status';
+import { hasCard } from './upgrades';
+import { knockBack } from './kick';
 import type { SimEvent } from './events';
 import { hitCenter } from './gunDamage';
 import type { InputCommand } from './command';
@@ -71,6 +74,16 @@ export function noHook(): HookState {
     phase: 'idle', x: 0, y: 0, z: 0, px: 0, py: 0, pz: 0, tx: 0, ty: 0, tz: 0,
     entityId: -1, miss: false, length: 0, ticks: 0, cooldownTicks: 0, held: false,
   };
+}
+
+/** The hook's reach, meters (card "Rampino lungo": farther). */
+function hookRange(p: PlayerState): number {
+  return tuning.lassoHookRange * (hasCard(p, 'longRope') ? tuning.longRopeRangeScale : 1);
+}
+
+/** The reel's acceleration and top speed along the rope, × this (card "Rampino lungo": stronger). */
+function reelScale(p: PlayerState): number {
+  return hasCard(p, 'longRope') ? tuning.longRopeReelScale : 1;
 }
 
 /** Is the lasso in your hands (not just on the melee key)? */
@@ -184,13 +197,18 @@ export function stepHook(p: PlayerState, cmd: InputCommand, world: World, entiti
       h.y += (dy / left) * step;
       h.z += (dz / left) * step;
       // An enemy that runs off faster than the rope: it never catches it.
-      if (Math.hypot(h.x - o.x, h.y - o.y, h.z - o.z) > tuning.lassoHookRange * 1.2) release(p, events);
+      if (Math.hypot(h.x - o.x, h.y - o.y, h.z - o.z) > hookRange(p) * 1.2) release(p, events);
       return;
     }
     h.x = h.tx;
     h.y = h.ty;
     h.z = h.tz;
     if (h.miss) return release(p, events); // the end of the rope: nothing caught
+    // Card "Corda rovente": the loop bites into an enemy red-hot.
+    if (h.entityId >= 0 && hasCard(p, 'hotRope')) {
+      const e = entities.find((x) => x.id === h.entityId);
+      if (e) ignite(e);
+    }
     return attach(p, events);
   }
 
@@ -205,6 +223,10 @@ export function stepHook(p: PlayerState, cmd: InputCommand, world: World, entiti
   const dist = Math.hypot(dx, dy, dz);
   // Arrived (closer to an enemy: you'd be inside its body), or held too long: let go, keep the speed.
   const arrive = h.entityId >= 0 ? tuning.lassoEnemyDetach : tuning.lassoHookDetach;
+  if (dist < arrive && h.entityId >= 0 && hasCard(p, 'bootArrival')) {
+    const e = entities.find((x) => x.id === h.entityId);
+    if (e) bootArrival(p, e, events);
+  }
   if (dist < arrive || h.ticks > secondsToTicks(tuning.lassoHookMaxTime)) return release(p, events);
   // The rope snagged on a corner between you and the anchor: it slips off.
   // (Stopping a bit short of the anchor: the last stretch is the surface it holds.)
@@ -217,7 +239,7 @@ function throwHook(p: PlayerState, world: World, entities: Entity[], events: Sim
   const h = p.hook;
   const o = eye(p);
   const d = aimDir(p);
-  const range = tuning.lassoHookRange;
+  const range = hookRange(p);
   // Two rays, like a bullet: the level and the enemies. The nearer one wins.
   const level = raycastBoxes(o.x, o.y, o.z, d.x, d.y, d.z, range, world.boxes);
   const living = entities.filter(isAlive);
@@ -260,9 +282,47 @@ function attach(p: PlayerState, events: SimEvent[]): void {
   events.push({ type: 'hookAttach', x: h.x, y: h.y, z: h.z, entityId: h.entityId });
 }
 
+/**
+ * Card "Arrivo di stivale": pulled all the way to an enemy, you arrive boot
+ * first (Doom Eternal's meat hook, plus a kick): damage, a push along the way
+ * you were flying, and a stun. Reported as a kick: same sound, same Style.
+ */
+function bootArrival(p: PlayerState, e: Entity, events: SimEvent[]): void {
+  if (!isEnemy(e) || !isAlive(e)) return;
+  const c = hitCenter(e);
+  const killed = damage(e, tuning.bootArrivalDamage);
+  events.push({
+    type: 'hit', entityId: e.id, damage: tuning.bootArrivalDamage, killed, surface: 'flesh',
+    headshot: false, source: 'kick', distance: Math.hypot(c.x - p.x, c.z - p.z), target: e.type,
+  });
+  if (!killed) {
+    // Along your flight (or straight away from you, if you came in slow).
+    const speed = Math.hypot(p.vx, p.vz);
+    const dx = speed > 0.1 ? p.vx : c.x - p.x;
+    const dz = speed > 0.1 ? p.vz : c.z - p.z;
+    const len = Math.hypot(dx, dz) || 1;
+    knockBack(e, dx / len, dz / len, tuning.bootArrivalPush, 5);
+    if (e.type !== 'smith') e.stunTicks = Math.max(e.stunTicks ?? 0, secondsToTicks(tuning.bootArrivalStun));
+  }
+  events.push({ type: 'kickLand', tool: 'kick', hits: 1, at: [{ ...c, flesh: true }], power: 1 });
+}
+
 function release(p: PlayerState, events: SimEvent[]): void {
   const h = p.hook;
-  events.push({ type: 'hookRelease', x: h.x, y: h.y, z: h.z, attached: h.phase === 'attached' });
+  // Card "Fionda": let go in mid-air and the rope throws you on, along where
+  // you were already going (scaling the velocity vector keeps its direction).
+  let sling = false;
+  if (h.phase === 'attached' && !p.onGround && hasCard(p, 'slingshot')) {
+    const speed = Math.hypot(p.vx, p.vy, p.vz);
+    if (speed > 1) {
+      const k = (speed + tuning.slingshotBoost) / speed;
+      p.vx *= k;
+      p.vy *= k;
+      p.vz *= k;
+      sling = true;
+    }
+  }
+  events.push({ type: 'hookRelease', x: h.x, y: h.y, z: h.z, attached: h.phase === 'attached', sling });
   h.phase = 'idle';
   h.entityId = -1;
   h.cooldownTicks = secondsToTicks(tuning.lassoHookCooldown);
@@ -291,8 +351,9 @@ export function applyHook(p: PlayerState, dt: number): void {
   const uz = dz / dist;
   // REEL: speed toward the anchor, up to the reel's own top speed.
   let along = p.vx * ux + p.vy * uy + p.vz * uz;
-  if (along < tuning.lassoReelMaxSpeed) {
-    const add = Math.min(tuning.lassoReelAccel * dt, tuning.lassoReelMaxSpeed - along);
+  const top = tuning.lassoReelMaxSpeed * reelScale(p);
+  if (along < top) {
+    const add = Math.min(tuning.lassoReelAccel * reelScale(p) * dt, top - along);
     p.vx += ux * add;
     p.vy += uy * add;
     p.vz += uz * add;
