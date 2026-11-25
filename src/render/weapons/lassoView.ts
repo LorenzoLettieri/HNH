@@ -105,9 +105,9 @@ const HOOK_POSE: GunPose = { x: -0.06, y: 0.03, z: -0.13, pitch: -0.25, yaw: 0.2
 const BACK_POSE: GunPose = { x: 0.02, y: -0.03, z: 0.04, pitch: 0.25, yaw: 0, roll: 0.1 };
 
 /** Where the rope comes out of the fist, in the fist's coordinates (where a revolver's hammer would be). */
-const FIST_EXIT = new THREE.Vector3(0, 0.05, -0.015);
+const FIST_EXIT = new THREE.Vector3(-0.015, 0.012, -0.005);
 /** Where the running line goes into the bottom of the fist. */
-const FIST_BOTTOM = new THREE.Vector3(0, -0.04, 0.02);
+const FIST_BOTTOM = new THREE.Vector3(-0.01, -0.065, 0.025);
 /** The honda (the knot the loop runs through) in the noose's own coordinates (see lasso.py: NOOSE_R at +X). */
 const HONDA = new THREE.Vector3(0.235, 0.01, 0);
 /** The top of the coil (where the line leaves it), in the palm's coordinates. */
@@ -353,7 +353,7 @@ export function createLassoView(): LassoView {
       }
       // The running line hangs between the hands; tighter when the loop is out (it's paying out rope).
       across.set(0, 0, 1);
-      layRope(runningPts, coilTop, bottom, out ? 0.03 : 0.08, 0, 0, across);
+      layRope(runningPts, coilTop, bottom, out ? 0.015 : 0.035, 0, 0, across);
       running.setPoints(runningPts);
     },
   };
