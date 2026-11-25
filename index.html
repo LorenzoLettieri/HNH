@@ -54,6 +54,16 @@
       }
       #menu h2 { margin: 0 0 16px; font: bold 24px Georgia, 'Times New Roman', serif; letter-spacing: 2px; }
       .menu-page[hidden] { display: none; }
+      /* The settings page: one width for every tab, so the box doesn't jump when you switch. */
+      .menu-page[data-page='settings'] { width: min(640px, 84vw); }
+      .settings-tab[hidden] { display: none; }
+      /* Tab bar: stays at the top while the page scrolls (#menu scrolls; -24px = its padding). */
+      #menu .tabs {
+        position: sticky; top: -24px; z-index: 1; display: flex; gap: 6px; margin: 0 -8px 8px; padding: 8px;
+        background: rgb(28, 12, 6); border-bottom: 2px solid #5a3a20;
+      }
+      #menu .tabs .tab { flex: 1; margin: 0; padding: 8px 4px; background: #2a1810; color: #a08060; }
+      #menu .tabs .tab[aria-selected='true'] { background: #7a4a24; color: #fff0c0; }
       #menu button {
         display: block; width: 100%; margin: 8px 0; padding: 10px; cursor: pointer;
         background: #5a3a20; color: #f0c080; border: 2px solid #120604; font: bold 18px monospace;
@@ -653,8 +663,6 @@
           <button id="menu-play">Gioca</button>
           <button data-goto="leaderboard">Classifica</button>
           <button data-goto="settings">Impostazioni</button>
-          <button data-goto="video">Video</button>
-          <button data-goto="controls">Comandi</button>
           <button id="menu-fullscreen">Schermo intero</button>
           <p class="hint" id="menu-esc-hint">A schermo intero Esc apre e chiude la pausa (tienilo premuto per uscire dallo schermo intero).</p>
         </div>
@@ -677,121 +685,123 @@
 
         <div class="menu-page" data-page="settings" hidden>
           <h2>Impostazioni</h2>
-          <h3>Mouse</h3>
-          <label class="setting">
-            <span>Sensibilità mouse</span>
-            <input type="range" id="set-sens" min="0.5" max="15" step="0.1" />
-            <input type="number" id="set-sens-num" step="0.01" />
-          </label>
-          <p class="hint">Stessa scala di Quake e Counter-Strike: a parità di DPI del mouse puoi usare lo stesso valore.</p>
-          <h3>Audio</h3>
-          <label class="setting">
-            <span>Volume</span>
-            <input type="range" id="set-volume" min="0" max="100" step="1" />
-            <input type="number" id="set-volume-num" min="0" max="100" step="1" />
-          </label>
-          <label class="setting toggle">
-            <span>Fischio nelle orecchie</span>
-            <input type="checkbox" id="set-ear-ringing" />
-          </label>
-          <label class="setting toggle">
-            <span>Audio ovattato quando sei colpito</span>
-            <input type="checkbox" id="set-hit-muffle" />
-          </label>
-          <p class="hint">Fischio e audio ovattato rendono più pesanti i colpi subiti: spegnili se ti danno fastidio. Le impostazioni sono salvate nel browser.</p>
-          <button class="back" data-goto="main">Indietro</button>
-        </div>
-
-        <div class="menu-page" data-page="video" hidden>
-          <h2>Video</h2>
-          <h3>Immagine</h3>
-          <label class="setting select">
-            <span>Risoluzione</span>
-            <select id="set-resolution">
-              <option value="270">Retrò (pixel grossi, 270 righe)</option>
-              <option value="405">Media (405 righe)</option>
-              <option value="540">Alta (540 righe)</option>
-              <option value="720">Molto alta (720 righe)</option>
-              <option value="0">Piena (niente pixel art)</option>
-            </select>
-          </label>
-          <label class="setting toggle">
-            <span>Colori retrò (meno sfumature e retinatura)</span>
-            <input type="checkbox" id="set-color-reduction" />
-          </label>
-          <label class="setting">
-            <span>Luminosità %</span>
-            <input type="range" id="set-brightness" min="50" max="200" step="5" />
-            <input type="number" id="set-brightness-num" step="1" />
-          </label>
-          <label class="setting">
-            <span>Nebbia %</span>
-            <input type="range" id="set-fog" min="25" max="100" step="5" />
-            <input type="number" id="set-fog-num" step="1" />
-          </label>
-          <label class="setting">
-            <span>Campo visivo (FOV verticale)</span>
-            <input type="range" id="set-fov" min="60" max="110" step="1" />
-            <input type="number" id="set-fov-num" step="1" />
-          </label>
-          <p class="hint">Se vedi poco: alza la luminosità (schiarisce le ombre senza bruciare il cielo) o abbassa la nebbia. Se i pixel grossi ti stancano: alza la risoluzione e spegni i colori retrò. Il FOV è verticale: 75 corrisponde a circa 107° in orizzontale su uno schermo 16:9.</p>
-          <h3>Comfort</h3>
-          <label class="setting">
-            <span>Scossoni della vista %</span>
-            <input type="range" id="set-shake" min="0" max="100" step="5" />
-            <input type="number" id="set-shake-num" step="1" />
-          </label>
-          <label class="setting">
-            <span>Lampi a schermo %</span>
-            <input type="range" id="set-flashes" min="0" max="100" step="5" />
-            <input type="number" id="set-flashes-num" step="1" />
-          </label>
-          <label class="setting toggle">
-            <span>FOV che si allarga con la velocità</span>
-            <input type="checkbox" id="set-speed-fov" />
-          </label>
-          <label class="setting toggle">
-            <span>Inclinazione della vista (strafe e scivolata)</span>
-            <input type="checkbox" id="set-view-roll" />
-          </label>
-          <p class="hint">Se ti viene il mal di movimento: abbassa gli scossoni e spegni FOV dinamico e inclinazione. I lampi sono il rosso quando sei colpito, il colore dei raccoglibili e il bianco di HIGH NOON.</p>
-          <h3>Mirino</h3>
-          <label class="setting select">
-            <span>Colore</span>
-            <select id="set-crosshair-color">
-              <option value="warm">Bianco caldo</option>
-              <option value="white">Bianco</option>
-              <option value="green">Verde</option>
-              <option value="yellow">Giallo</option>
-              <option value="cyan">Azzurro</option>
-              <option value="magenta">Magenta</option>
-            </select>
-          </label>
-          <label class="setting">
-            <span>Grandezza</span>
-            <input type="range" id="set-crosshair-size" min="1" max="3" step="1" />
-            <input type="number" id="set-crosshair-size-num" step="1" />
-          </label>
-          <label class="setting toggle">
-            <span>Contorno nero</span>
-            <input type="checkbox" id="set-crosshair-outline" />
-          </label>
-          <button id="video-reset">Ripristina le impostazioni video</button>
-          <button class="back" data-goto="main">Indietro</button>
-        </div>
-
-        <div class="menu-page" data-page="controls" hidden>
-          <h2>Comandi</h2>
-          <p class="hint">Clicca un tasto e premi quello nuovo (anche un tasto del mouse o la rotellina; Esc annulla). Click destro su un tasto per toglierlo. Un tasto fa una cosa sola: se lo usava un’altra azione, lo perde. Attenzione a Ctrl: Ctrl+W chiude la scheda.</p>
-          <!-- Filled by menu.ts from ACTIONS in src/keybinds.ts. -->
-          <table class="keys" id="keys-table"></table>
-          <p class="hint" id="keys-note" aria-live="polite"></p>
-          <table class="keys">
-            <tr><th colspan="2">Fissi</th></tr>
-            <tr><td><kbd>Esc</kbd></td><td>Pausa · a schermo intero (Chrome/Edge) anche per riprendere</td></tr>
-            <tr><td><kbd>\</kbd> / <kbd>`</kbd></td><td>Pannello di debug (tasto sotto Esc): valori, ondate, nemici da far apparire, viste di debug, respawn</td></tr>
-          </table>
-          <button id="keys-reset">Ripristina i comandi di default</button>
+          <!-- Tabs: menu.ts shows the .settings-tab with the same data-tab as the clicked button. -->
+          <div class="tabs" role="tablist">
+            <button class="tab" role="tab" data-tab="general">Generali</button>
+            <button class="tab" role="tab" data-tab="video">Video</button>
+            <button class="tab" role="tab" data-tab="controls">Comandi</button>
+          </div>
+          <div class="settings-tab" role="tabpanel" data-tab="general">
+            <h3>Mouse</h3>
+            <label class="setting">
+              <span>Sensibilità mouse</span>
+              <input type="range" id="set-sens" min="0.5" max="15" step="0.1" />
+              <input type="number" id="set-sens-num" step="0.01" />
+            </label>
+            <p class="hint">Stessa scala di Quake e Counter-Strike: a parità di DPI del mouse puoi usare lo stesso valore.</p>
+            <h3>Audio</h3>
+            <label class="setting">
+              <span>Volume</span>
+              <input type="range" id="set-volume" min="0" max="100" step="1" />
+              <input type="number" id="set-volume-num" min="0" max="100" step="1" />
+            </label>
+            <label class="setting toggle">
+              <span>Fischio nelle orecchie</span>
+              <input type="checkbox" id="set-ear-ringing" />
+            </label>
+            <label class="setting toggle">
+              <span>Audio ovattato quando sei colpito</span>
+              <input type="checkbox" id="set-hit-muffle" />
+            </label>
+            <p class="hint">Fischio e audio ovattato rendono più pesanti i colpi subiti: spegnili se ti danno fastidio. Le impostazioni sono salvate nel browser.</p>
+          </div>
+          <div class="settings-tab" role="tabpanel" data-tab="video" hidden>
+            <h3>Immagine</h3>
+            <label class="setting select">
+              <span>Risoluzione</span>
+              <select id="set-resolution">
+                <option value="270">Retrò (pixel grossi, 270 righe)</option>
+                <option value="405">Media (405 righe)</option>
+                <option value="540">Alta (540 righe)</option>
+                <option value="720">Molto alta (720 righe)</option>
+                <option value="0">Piena (niente pixel art)</option>
+              </select>
+            </label>
+            <label class="setting toggle">
+              <span>Colori retrò (meno sfumature e retinatura)</span>
+              <input type="checkbox" id="set-color-reduction" />
+            </label>
+            <label class="setting">
+              <span>Luminosità %</span>
+              <input type="range" id="set-brightness" min="50" max="200" step="5" />
+              <input type="number" id="set-brightness-num" step="1" />
+            </label>
+            <label class="setting">
+              <span>Nebbia %</span>
+              <input type="range" id="set-fog" min="25" max="100" step="5" />
+              <input type="number" id="set-fog-num" step="1" />
+            </label>
+            <label class="setting">
+              <span>Campo visivo (FOV verticale)</span>
+              <input type="range" id="set-fov" min="60" max="110" step="1" />
+              <input type="number" id="set-fov-num" step="1" />
+            </label>
+            <p class="hint">Se vedi poco: alza la luminosità (schiarisce le ombre senza bruciare il cielo) o abbassa la nebbia. Se i pixel grossi ti stancano: alza la risoluzione e spegni i colori retrò. Il FOV è verticale: 75 corrisponde a circa 107° in orizzontale su uno schermo 16:9.</p>
+            <h3>Comfort</h3>
+            <label class="setting">
+              <span>Scossoni della vista %</span>
+              <input type="range" id="set-shake" min="0" max="100" step="5" />
+              <input type="number" id="set-shake-num" step="1" />
+            </label>
+            <label class="setting">
+              <span>Lampi a schermo %</span>
+              <input type="range" id="set-flashes" min="0" max="100" step="5" />
+              <input type="number" id="set-flashes-num" step="1" />
+            </label>
+            <label class="setting toggle">
+              <span>FOV che si allarga con la velocità</span>
+              <input type="checkbox" id="set-speed-fov" />
+            </label>
+            <label class="setting toggle">
+              <span>Inclinazione della vista (strafe e scivolata)</span>
+              <input type="checkbox" id="set-view-roll" />
+            </label>
+            <p class="hint">Se ti viene il mal di movimento: abbassa gli scossoni e spegni FOV dinamico e inclinazione. I lampi sono il rosso quando sei colpito, il colore dei raccoglibili e il bianco di HIGH NOON.</p>
+            <h3>Mirino</h3>
+            <label class="setting select">
+              <span>Colore</span>
+              <select id="set-crosshair-color">
+                <option value="warm">Bianco caldo</option>
+                <option value="white">Bianco</option>
+                <option value="green">Verde</option>
+                <option value="yellow">Giallo</option>
+                <option value="cyan">Azzurro</option>
+                <option value="magenta">Magenta</option>
+              </select>
+            </label>
+            <label class="setting">
+              <span>Grandezza</span>
+              <input type="range" id="set-crosshair-size" min="1" max="3" step="1" />
+              <input type="number" id="set-crosshair-size-num" step="1" />
+            </label>
+            <label class="setting toggle">
+              <span>Contorno nero</span>
+              <input type="checkbox" id="set-crosshair-outline" />
+            </label>
+            <button id="video-reset">Ripristina le impostazioni video</button>
+          </div>
+          <div class="settings-tab" role="tabpanel" data-tab="controls" hidden>
+            <p class="hint">Clicca un tasto e premi quello nuovo (anche un tasto del mouse o la rotellina; Esc annulla). Click destro su un tasto per toglierlo. Un tasto fa una cosa sola: se lo usava un’altra azione, lo perde. Attenzione a Ctrl: Ctrl+W chiude la scheda.</p>
+            <!-- Filled by menu.ts from ACTIONS in src/keybinds.ts. -->
+            <table class="keys" id="keys-table"></table>
+            <p class="hint" id="keys-note" aria-live="polite"></p>
+            <table class="keys">
+              <tr><th colspan="2">Fissi</th></tr>
+              <tr><td><kbd>Esc</kbd></td><td>Pausa · a schermo intero (Chrome/Edge) anche per riprendere</td></tr>
+              <tr><td><kbd>\</kbd> / <kbd>`</kbd></td><td>Pannello di debug (tasto sotto Esc): valori, ondate, nemici da far apparire, viste di debug, respawn</td></tr>
+            </table>
+            <button id="keys-reset">Ripristina i comandi di default</button>
+          </div>
           <button class="back" data-goto="main">Indietro</button>
         </div>
       </div>

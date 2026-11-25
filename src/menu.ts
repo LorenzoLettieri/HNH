@@ -1,8 +1,9 @@
 // The pause / start menu shown over the game (the "overlay" in index.html).
 // Pure DOM: the markup lives in index.html, here we only wire the buttons.
 //
-// Pages: "main" (Gioca, Classifica, Impostazioni, Video, Comandi, Schermo intero), "leaderboard", "settings",
-// "video" (resolution, brightness, fog, FOV, comfort, crosshair), "controls" (the rebindable keys: keysMenu.ts).
+// Pages: "main" (Gioca, Classifica, Impostazioni, Schermo intero), "leaderboard", "settings".
+// The settings page has three TABS: "general" (mouse, audio), "video" (resolution,
+// brightness, fog, FOV, comfort, crosshair), "controls" (the rebindable keys: keysMenu.ts).
 // Every page is a <div class="menu-page" data-page="..."> and every button
 // with data-goto="..." switches to that page: like a tiny client-side router.
 import { RANGES, resetVideo, set, settings, type Settings } from './settings';
@@ -36,6 +37,23 @@ export function createMenu(options: { onPlay: () => void }): Menu {
     for (const page of pages) page.hidden = page.dataset.page !== name;
     if (name === 'leaderboard') void refreshLeaderboard();
   }
+
+  // --- Settings tabs ----------------------------------------------------------
+  // Same idea as the pages, one level down: a button and a panel share a
+  // data-tab name, a click shows that panel and hides the others. The tab you
+  // were on stays chosen when you come back (it's just which panel isn't hidden).
+  const tabButtons = overlay.querySelectorAll<HTMLElement>('.tab[data-tab]');
+  const tabPanels = overlay.querySelectorAll<HTMLElement>('.settings-tab[data-tab]');
+  function showTab(name: string): void {
+    keysPage.cancel(); // switching tab while it waits for a key
+    for (const panel of tabPanels) panel.hidden = panel.dataset.tab !== name;
+    // aria-selected: screen readers say which tab is on, and the CSS colors it.
+    for (const button of tabButtons) button.setAttribute('aria-selected', String(button.dataset.tab === name));
+    // Back to the top of the box: a long tab scrolled halfway would open in the middle.
+    document.getElementById('menu')!.scrollTop = 0;
+  }
+  for (const button of tabButtons) button.addEventListener('click', () => showTab(button.dataset.tab!));
+  showTab('general');
 
   // --- Leaderboard page -----------------------------------------------------
   const nameBox = document.getElementById('set-name') as HTMLInputElement;
