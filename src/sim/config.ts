@@ -305,7 +305,7 @@ export const tuning = {
   dynamiteReserveStart: 10,
   dynamiteReserveMax: 20,
   /** Launch speed of a stick along the aim, m/s (slow enough to see the arc). */
-  dynamiteSpeed: 22,
+  dynamiteSpeed: 30,
   /** Extra upward speed at launch, m/s: the arc starts a bit above the aim, like a lob. */
   dynamiteLift: 2.5,
   /** How much of YOUR velocity the stick keeps (0..1): throwing while running forward throws farther. */
