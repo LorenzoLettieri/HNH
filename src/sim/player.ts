@@ -50,8 +50,8 @@ export interface PlayerState {
   /** The GUN in your hands (or, with a melee weapon drawn, the one that comes back up). */
   weapon: WeaponId;
   /**
-   * The melee weapon on the melee key (F): the last one you held or bought,
-   * null = none (your boot). See MELEE in weapon.ts.
+   * The ONE melee weapon you carry (key 5 and F): the last one bought, or
+   * swapped back at the armory (shop.ts); null = none (your boot). See MELEE in weapon.ts.
    */
   melee: MeleeId | null;
   /** That melee weapon is in your HANDS (key 5), instead of the gun: see heldItem in weapon.ts. */
