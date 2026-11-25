@@ -765,7 +765,7 @@ export const tuning = {
 
   // --- Hellhound (fast ground enemy; AI in src/sim/hound.ts) ---
   /** Health: the same as the ghoul (same breakpoints). Its danger is speed, not toughness. */
-  houndHealth: 50,
+  houndHealth: 25,
   /**
    * Running speed while stalking / retreating, m/s. Faster than you on foot
    * (maxGroundSpeed 8): it can always keep up and get behind you.
