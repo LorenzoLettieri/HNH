@@ -19,7 +19,7 @@ const FORGE_TEXT: Record<ForgeableWeapon, { name: string; desc: string }> = {
   revolver: { name: 'Revolver → Akimbo', desc: 'Il doppio del danno. (Presto: un secondo revolver nell’altra mano.)' },
   shotgun: { name: 'Doppietta → Fucile a pompa', desc: 'Il doppio del danno. (Presto: il fucile a pompa.)' },
   dynamite: { name: 'Lancia-dinamite → Acqua santa', desc: 'Il doppio del danno, e i candelotti bagnati nell’acqua santa: dove scoppiano resta un fuoco blu che brucia i dannati. Non te.' },
-  rifle: { name: 'Carabina → Ottica', desc: 'Il doppio del danno e un cannocchiale: mirando, uno zoom tre volte più forte.' },
+  rifle: { name: 'Carabina → Tesla', desc: 'Il doppio del danno, un cannocchiale e proiettili elettrici: la scossa salta da un dannato all’altro, li ferisce e li stordisce.' },
 };
 
 /** The lines at the top of the panel: nobody behind this counter, the Forge "speaks" in italics. */

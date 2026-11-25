@@ -443,6 +443,17 @@ export const tuning = {
   forgeIronCostStep: 1,
   /** Highest forge level (for now only 1: the next levels are still to design). */
   forgeMaxLevel: 1,
+  // --- The Tesla (the Forge's carbine, tesla.ts): a chain of sparks between enemies ---
+  /** How many times the spark jumps to another enemy after the one the bullet hit. */
+  teslaArcJumps: 4,
+  /** How far (meters) a spark reaches from an enemy to the next one. */
+  teslaArcRange: 7,
+  /** The first jolt's damage, as a share of the bullet's base damage (forge included: 0.3 × 200 = 60)... */
+  teslaArcShare: 0.3,
+  /** ...and every further jump does this × the previous one (60, 45, 34, 25). */
+  teslaArcFalloff: 0.75,
+  /** Seconds every jolted enemy is stunned (the bullet's target too; never the Damned Smith). */
+  teslaStunTime: 0.8,
   /**
    * Akimbo revolvers (the reinforced revolver): seconds between shots, as a
    * fraction of revolverFireInterval. The guns alternate, so each one fires

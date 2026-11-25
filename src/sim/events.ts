@@ -69,6 +69,8 @@ export type SimEvent =
   | { type: 'duelReady' }
   /** Card "Ricochet": a bullet bounced off a head toward another enemy (the ptiiing). From where. */
   | { type: 'ricochet'; x: number; y: number; z: number }
+  /** The Tesla (the Forge's carbine): a chain of sparks, from the bullet's impact through every enemy it jolted, in order. */
+  | { type: 'teslaArc'; points: { x: number; y: number; z: number }[] }
   /** Card "Ultimo colpo": the last round exploded. Where, and how big. */
   /** Something blew up (kind: what, the renderer draws them differently: a small pop or a big blast). */
   | { type: 'explosion'; kind: ExplosionKind; x: number; y: number; z: number; radius: number }

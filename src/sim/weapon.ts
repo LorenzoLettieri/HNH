@@ -45,6 +45,7 @@ import { ignite, markSlam } from './status';
 import { hasCard } from './upgrades';
 import { applyGunDamage, hitCenter, lineFree } from './gunDamage';
 import { explode, lastShotBlast } from './explosion';
+import { teslaChain } from './tesla';
 
 export type WeaponId = 'revolver' | 'shotgun' | 'rifle' | 'dynamite';
 /** Weapon slots, in order: key 1 = revolver, key 2 = shotgun, key 3 = carbine, key 4 = dynamite launcher. */
@@ -57,6 +58,14 @@ export const WEAPONS: readonly WeaponId[] = ['revolver', 'shotgun', 'rifle', 'dy
  */
 export function isAkimbo(p: PlayerState): boolean {
   return p.forged.revolver > 0;
+}
+
+/**
+ * The reinforced carbine is the TESLA (the Forge): a coil around the barrel,
+ * electric bullets that jump from enemy to enemy (tesla.ts).
+ */
+export function isTesla(p: PlayerState): boolean {
+  return p.forged.rifle > 0;
 }
 
 /**
@@ -747,8 +756,11 @@ function fireRifle(p: PlayerState, world: World, entities: Entity[], events: Sim
   // stops at the first one, as always.
   let living = entities.filter(isAlive);
   const pierce = hasCard(p, 'piercing');
+  // The Forge's carbine is the Tesla (tesla.ts): the first enemy hit starts a chain of sparks.
+  let tesla = isTesla(p);
   for (let i = 0; i < 16; i++) {
-    const hit = trace(a.ox, a.oy, a.oz, dx, dy, dz, tuning.weaponRange, world, living, false, events);
+    const end = newEnd();
+    const hit = trace(a.ox, a.oy, a.oz, dx, dy, dz, tuning.weaponRange, world, living, false, events, end);
     if (!hit) break;
     const critical = hit.headshot || quickscope || p.quickDrawTicks > 0;
     let amount = tuning.rifleDamage * gunPower(p, 'rifle') * (critical ? critMultiplier : 1) * duel;
@@ -760,6 +772,10 @@ function fireRifle(p: PlayerState, world: World, entities: Entity[], events: Sim
     }
     applyGunDamage(hit.target, amount, critical, 'rifle', hit.distance, events);
     if (marks && !wasMarked && isAlive(hit.target) && isEnemy(hit.target)) hit.target.marked = true;
+    if (tesla && isEnemy(hit.target)) {
+      teslaChain(p, end, hit.target, tuning.rifleDamage * gunPower(p, 'rifle'), world, entities, events);
+      tesla = false; // one chain per shot, even through a "Perforante" line of enemies
+    }
     if (!pierce) break;
     living = living.filter((e) => e !== hit.target);
   }

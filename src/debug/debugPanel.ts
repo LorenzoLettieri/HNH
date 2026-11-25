@@ -199,6 +199,11 @@ export function createDebugPanel(options: {
   shop.number(tuning, 'cardSharpFichesScale', 1, 5, 1);
   shop.number(tuning, 'cardSharpHealthCost', 0, 75, 5);
   shop.number(tuning, 'forgeDamageMultiplier', 1, 5, 0.5);
+  shop.number(tuning, 'teslaArcJumps', 0, 10, 1);
+  shop.number(tuning, 'teslaArcRange', 1, 20, 0.5);
+  shop.number(tuning, 'teslaArcShare', 0, 1, 0.05);
+  shop.number(tuning, 'teslaArcFalloff', 0, 1, 0.05);
+  shop.number(tuning, 'teslaStunTime', 0, 3, 0.1);
   shop.number(tuning, 'forgeIronCost', 0, 5, 1);
   shop.number(tuning, 'forgeIronCostStep', 0, 5, 1);
   shop.number(tuning, 'upgradeBasePrice', 0, 3000, 50);
