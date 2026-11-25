@@ -172,6 +172,10 @@ const CARD_TEXT: Record<CardId, { name: string; desc: string }> = {
     name: 'Razzo',
     desc: 'Vola dritto e veloce per mezzo secondo e scoppia al primo contatto, anche col terreno. Ai tuoi piedi: un salto molto più alto.',
   },
+  momentum: {
+    name: 'Slancio',
+    desc: 'Più corri, più fa male. Da nove metri al secondo il colpo vale doppio, poi triplo, fino al quadruplo: scivola o fai bhop e i ghoul volano via in un colpo.',
+  },
   cluster: {
     name: 'A grappolo',
     desc: 'Scoppiando lancia tre candelotti più piccoli tutt’intorno, che esplodono un attimo dopo. Per le orde ammassate.',

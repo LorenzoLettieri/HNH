@@ -214,16 +214,19 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
               break;
             }
             // The shovel: BONK, sparks off the blade and blood where it lands, and the whole game stops for an instant.
-            playShovelBonk(e.hits);
+            playShovelBonk(e.hits, e.power);
             for (const c of e.at) {
               point.set(c.x, c.y, c.z);
               // Toward you: the blood and the sparks fly back off the face of the blade.
               normal.set(camera.position.x - c.x, 0, camera.position.z - c.z).normalize();
               normal.y = 0.6;
-              spawnSparks(point, normal, SHOVEL_SPARKS);
+              spawnSparks(point, normal, SHOVEL_SPARKS * e.power);
               if (c.flesh) spawnBlood(point, normal, SHOVEL_BLOOD);
             }
-            requestHitStop(hitStopSettings.shovel + hitStopSettings.perExtraHit * (e.hits - 1));
+            // (Card "Slancio": a harder hit freezes the game a little longer, more sparks flew above.)
+            requestHitStop(
+              hitStopSettings.shovel * (1 + 0.5 * (e.power - 1)) + hitStopSettings.perExtraHit * (e.hits - 1),
+            );
             break;
           case 'dryFire':
             playDryFire();

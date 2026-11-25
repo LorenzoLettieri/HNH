@@ -214,7 +214,14 @@ export type SimEvent =
    * and WHERE on each one (the side of its body facing you, at chest
    * height): sparks go there, and blood if it's `flesh` (not a steel target).
    */
-  | { type: 'kickLand'; tool: MeleeTool; hits: number; at: { x: number; y: number; z: number; flesh: boolean }[] }
+  | {
+      type: 'kickLand';
+      tool: MeleeTool;
+      hits: number;
+      at: { x: number; y: number; z: number; flesh: boolean }[];
+      /** Damage multiplier of this swing (card "Slancio"; 1 = a normal hit). */
+      power: number;
+    }
   /**
    * The lasso's grappling hook (lasso.ts): thrown toward (x, y, z) (`miss`:
    * nothing there, it'll come back empty), caught something (`entityId`: an

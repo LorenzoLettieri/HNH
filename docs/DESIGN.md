@@ -376,7 +376,7 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
   (1,6 m, ±45°), 25 danni (mezzo ghoul base: è uno strumento, non l'arma principale), e **spinge via**
   (13 m/s in avanti, 5 m/s in alto): il ghoul vola via, interrompe artigliata e balzo, e resta a terra
   0,5 s. Si può calciare mentre si ricarica. Ricarica di 0,55 s.
-- **Badile (melee potenziato)** [FATTI: simulazione, modello, colpo a schermo, suoni ed effetti; da fare: carte]:
+- **Badile (melee potenziato)** [FATTI: simulazione, modello, colpo a schermo, suoni ed effetti; carte: Slancio FATTA, le altre da fare]:
   si compra all'armeria (600 vildenaro) e **prende il posto dello stivale sul tasto F**, come il
   coltello bowie di CoD Zombies, non è uno slot. Stesso attacco del calcio
   (cono davanti, niente attraverso i muri, spinta), numeri diversi: portata 2,2 m, arco ±60°,
@@ -391,8 +391,10 @@ Gioco **aim-intensive** che premia il movimento: niente nemici "spugna".
   (e sangue sui nemici) nel punto colpito, botta della camera e **hit-stop** di 0,07 s (tutto si ferma un
   istante, il suono no: il peso del colpo). Se un giorno servirà, braccio vero in posa come quelli della carabina. Ha il **suo mazzo di carte** (§6c), pensato
   attorno all'idea che **premia la velocità** (il danno × velocità è una carta, non la base):
-  - **Slancio**: il danno cresce con la velocità orizzontale (fermo = normale, a velocità da bhop
-    un ghoul muore in un colpo).
+  - **Slancio** [FATTA, da provare]: il danno cresce con la velocità orizzontale **a gradini** (regola dei
+    breakpoint): sotto 9 m/s normale (75), da 9 m/s ×2 (150: un ghoul in un colpo fino all'ondata 19), da 12 ×3,
+    da 15 ×4 (tetto). Correndo (6,5 m/s) non scatta: serve uno slide o il bhop. Si sente: il BONK più grave con un
+    colpo sordo sotto, più scintille, hit-stop più lungo.
   - **Schianto dal cielo**: colpisci in aria guardando in basso, piombi giù e all'impatto parte
     un'**onda d'urto** con raggio e danno proporzionali al volo (tempo in aria / velocità di caduta).
   - **Pogo**: colpire un nemico in aria ti fa rimbalzare in su (di testa in testa).

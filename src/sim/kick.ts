@@ -36,6 +36,7 @@ import type { World } from './world';
 import type { MeleeId } from './weapon';
 import { lassoMissPoint, lassoTarget } from './lasso';
 import { hitCenter } from './gunDamage';
+import { hasCard } from './upgrades';
 
 /** What swings when you press F: your boot, or the melee weapon you own (the last held or bought). */
 export type MeleeTool = 'kick' | MeleeId;
@@ -178,6 +179,9 @@ function landKick(
   // cosine, and "angle < 45°" becomes "dot > cos 45°". No acos needed.
   const minDot = Math.cos((stats.angle * Math.PI) / 180);
   const hipY = p.y + 0.9;
+  // Read once, before the swing touches anything: the speed you hit with.
+  const power = tool === 'shovel' ? momentumMultiplier(p) : 1;
+  const dealt = stats.damage * power;
 
   let hits = 0;
   const at: { x: number; y: number; z: number; flesh: boolean }[] = [];
@@ -217,11 +221,11 @@ function landKick(
       z: cz - dz * toYou,
       flesh: isEnemy(e),
     });
-    const killed = damage(e, stats.damage);
+    const killed = damage(e, dealt);
     events.push({
       type: 'hit',
       entityId: e.id,
-      damage: stats.damage,
+      damage: dealt,
       killed,
       surface: isEnemy(e) ? 'flesh' : 'metal',
       headshot: false,
@@ -241,7 +245,23 @@ function landKick(
     knockBack(e, kx, kz, stats.knockback, stats.lift);
     if (hasDrink(p, 'hardHoof')) stun(e); // drink "Zoccolo duro"
   }
-  events.push({ type: 'kickLand', tool, hits, at });
+  events.push({ type: 'kickLand', tool, hits, at, power });
+}
+
+/**
+ * Card "Slancio" (shovel): how many times the normal damage this swing does,
+ * from your horizontal speed. Steps, not a smooth curve: "150 kills a ghoul,
+ * 140 doesn't" is something you can learn and aim for (docs/DESIGN.md §3,
+ * breakpoints); a curve that gives +7% for 0.4 m/s more is not.
+ *   speed < from            → 1
+ *   from ≤ speed < from+step → 2, then +1 every step, capped.
+ */
+export function momentumMultiplier(p: PlayerState): number {
+  if (!hasCard(p, 'momentum')) return 1;
+  const speed = Math.hypot(p.vx, p.vz);
+  if (speed < tuning.momentumFrom) return 1;
+  const steps = 2 + Math.floor((speed - tuning.momentumFrom) / tuning.momentumStep);
+  return Math.min(tuning.momentumMaxMultiplier, steps);
 }
 
 /**
@@ -255,7 +275,7 @@ function landLasso(p: PlayerState, stats: MeleeStats, world: World, entities: En
   const stillThere = picked && lassoTarget(p, [picked], world, 1.4) === picked;
   const e = stillThere ? picked : lassoTarget(p, entities, world);
   p.lassoTargetId = -1;
-  if (!e) return void events.push({ type: 'kickLand', tool: 'lasso', hits: 0, at: [] });
+  if (!e) return void events.push({ type: 'kickLand', tool: 'lasso', hits: 0, at: [], power: 1 });
   const c = hitCenter(e);
   const dist = Math.hypot(c.x - p.x, c.z - p.z);
   const killed = damage(e, stats.damage);
@@ -271,7 +291,7 @@ function landLasso(p: PlayerState, stats: MeleeStats, world: World, entities: En
     target: e.type,
   });
   if (!killed) yank(e, p, stats.lift);
-  events.push({ type: 'kickLand', tool: 'lasso', hits: 1, at: [{ ...c, flesh: isEnemy(e) }] });
+  events.push({ type: 'kickLand', tool: 'lasso', hits: 1, at: [{ ...c, flesh: isEnemy(e) }], power: 1 });
 }
 
 /**

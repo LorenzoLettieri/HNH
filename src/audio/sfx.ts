@@ -1608,11 +1608,13 @@ export function playShovelSwing(impact: number): void {
  *   fades out with the vibration.
  * More things hit = louder.
  */
-export function playShovelBonk(hits: number): void {
+export function playShovelBonk(hits: number, power = 1): void {
   if (!ctx) return;
-  const v = 0.92 + Math.random() * 0.16;
+  // power > 1 (card "Slancio"): every step lowers the pitch a bit (a bigger, heavier bell) and adds a deep crunch.
+  const v = (0.92 + Math.random() * 0.16) * Math.pow(0.88, power - 1);
   const loud = Math.min(1, 0.75 + hits * 0.1);
   thump({ duration: 0.2, volume: 0.9 * loud, from: 140 * v, to: 45 });
+  if (power > 1) thump({ duration: 0.35, volume: Math.min(1, 0.4 + 0.2 * power), from: 90, to: 28 });
   noiseBurst({ duration: 0.05, volume: 0.5 * loud, filter: 'highpass', frequency: 2500 }); // the slap
   ring(520 * v, 0.5, 0.18 * loud);
 

@@ -559,6 +559,16 @@ export const tuning = {
   shovelKnockback: 15,
   /** Upward speed given to a hit enemy, m/s. */
   shovelLift: 6,
+  /**
+   * Card "Slancio": the shovel's damage grows with your horizontal speed, in
+   * WHOLE steps (the breakpoint rule): below momentumFrom m/s it's the normal
+   * hit; at momentumFrom ×2, then +1 every momentumStep m/s, up to
+   * momentumMaxMultiplier. Running (6.5) never gets there: it takes a slide or
+   * a bhop. 9 m/s → 150 (one-shots a ghoul up to wave 19), 12 → 225, 15 → 300.
+   */
+  momentumFrom: 9,
+  momentumStep: 3,
+  momentumMaxMultiplier: 4,
 
   // --- Lasso (melee weapon, key 5: kick.ts for the throw, lasso.ts for the hook) ---
   /**
