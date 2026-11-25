@@ -1087,8 +1087,10 @@ scegli un'arma, e l'arma si **trasforma**:
   mondo è ingrandito, con una seconda camera renderizzata in una texture): bella da vedere ma illeggibile.
   La lente era piccola (~120 pixel su 270) e mostrava solo 7° di mondo (3,7 m di larghezza a 30 m): in un
   gioco dove ci si muove sempre, un bersaglio esce dalla lente in due passi. Tornati alla vista nera.
-- **Carabina → Tesla** [FATTO, da provare, novembre 2026] Oltre all'ottica, una **bobina di rame** attorno alla
-  canna (con gli isolanti di ceramica e un anello alla bocca da cui scoccano piccole scintille) e **proiettili
+- **Carabina → Tesla** [FATTO, da provare, novembre 2026] Oltre all'ottica, **bobine di rame** attorno alla
+  canna: anelli separati tenuti da due binari, che alla bocca diventano due **elettrodi a forcella** tra cui salta
+  la scintilla; a ogni sparo gli anelli si accendono uno dopo l'altro verso la bocca. [SCARTATA] Una bobina
+  unica, piena, con un anello in punta: la sagoma ricordava tutt'altro. E **proiettili
   elettrici**: un colpo che prende un nemico fa saltare una **scossa** al nemico più vicino in vista (entro 7 m),
   poi al prossimo, fino a 4 salti. Ogni scossa fa una parte del danno del colpo (30%, poi ×0,75 a salto) e
   **stordisce** per 0,8 s (anche il primo colpito; il Fabbro no). Una "Wunderwaffe" **depotenziata** apposta:

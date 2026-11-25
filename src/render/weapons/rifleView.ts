@@ -100,52 +100,46 @@ function createScope(): THREE.Group {
   return g;
 }
 
-// --- The Tesla coil (the Forge's carbine) ------------------------------------------
+// --- The Tesla coils (the Forge's carbine) ----------------------------------------
 // Measured on rifle.glb like the scope: the barrel's axis is 0.054 above the
 // grip (radius ~1 cm), the magazine tube runs under it (y 0.030 → 0.044);
-// the left hand holds the fore-end up to about z −0.38. The coil wraps
-// barrel AND tube ahead of the hand, up to the front sight; at the muzzle a
-// copper ring (the "top load" of a real Tesla coil, where the sparks leap
-// from). Built in code, hidden until the Forge.
-/** The coil: from COIL_BACK to COIL_FRONT (z), around COIL_AXIS_Y, COIL_TURNS turns of copper wire. */
-const COIL_BACK = -0.42;
-const COIL_FRONT = -0.68;
+// the left hand holds the fore-end up to about z −0.38.
+// Not one solid coil (a fat rounded cylinder at the end of a barrel has an
+// unfortunate silhouette): an OPEN "coil gun" look. Separate copper rings
+// around barrel and tube, with the barrel visible between them; two thin
+// rails along the sides holding them; at the muzzle the rails become two
+// ELECTRODES, a fork with a copper ball on each tip, and the spark jumps
+// between the balls. A fork reads as "weapon" (a taser, a cattle prod).
+// At every shot the rings flash one after the other, back to front: the
+// charge running down the barrel. Built in code, hidden until the Forge.
+/** Center of the rings (between barrel and magazine tube), their radius, the flat copper band's thickness. */
 const COIL_AXIS_Y = 0.047;
-const COIL_RADIUS = 0.027;
-const COIL_TURNS = 8;
-const COIL_WIRE = 0.0055;
+const COIL_RADIUS = 0.026;
+const COIL_BAND = 0.0045;
+/** Where the rings are, z (back to front: the first one just ahead of the left hand). */
+const COIL_RINGS = [-0.44, -0.51, -0.58, -0.65];
+/** The rails: from RAIL_BACK to the muzzle (RAIL_FRONT), at ±COIL_RADIUS on the sides. */
+const RAIL_BACK = -0.42;
+const RAIL_FRONT = -0.72;
+const RAIL_SIZE = 0.005;
+/** The electrodes: from RAIL_FRONT to PRONG_TIP_Z, closing in from ±COIL_RADIUS to ±PRONG_TIP_X; a ball on each tip. */
+const PRONG_TIP_Z = -0.79;
+const PRONG_TIP_X = 0.014;
+const PRONG_BALL = 0.0065;
 const COPPER = 0xd8781c;
-/** The dark iron core inside the coil: it shows between the turns, so at low resolution the coil reads as stripes. */
-const CORE = 0x18181e;
-const CERAMIC = 0xd8cfb8; // the insulators at the ends
-/** The ring at the muzzle: center, size. */
-const RING_Z = -0.738;
-const RING_Y = 0.054;
-const RING_RADIUS = 0.024;
-const RING_TUBE = 0.008;
-/** The glow of the copper: GLOW_IDLE at rest (0: the crawling sparks are enough), a blue flash at every shot that fades in GLOW_FADE s. */
+const IRON = 0x2a2a30; // the rails
+/** The copper's blue flash at every shot: how bright, how long each ring stays lit, the delay from one ring to the next (s). */
 const GLOW_COLOR = 0x4aa0ff;
-const GLOW_IDLE = 0;
 const GLOW_SHOT = 3;
-const GLOW_FADE = 0.35;
-/** Little sparks crawling between the coil and the ring: how many, how likely each is lit in a frame (idle / just fired). */
-const ARCS = 3;
-const ARC_CHANCE_IDLE = 0.12;
-const ARC_CHANCE_SHOT = 0.9;
-const ARC_POINTS = 6;
+const GLOW_FADE = 0.3;
+const RING_DELAY = 0.035;
+/** The spark between the two balls: how likely it's lit in a frame (idle / just fired), its points, color. */
+const ARC_CHANCE_IDLE = 0.15;
+const ARC_CHANCE_SHOT = 1;
+const ARC_POINTS = 7;
 const ARC_COLOR = new THREE.Color(0xb8e0ff).multiplyScalar(4);
-
-/** A helix along −Z: THREE.Curve gives a point for every t in 0..1, TubeGeometry wraps a tube around it. */
-class Helix extends THREE.Curve<THREE.Vector3> {
-  constructor() {
-    super(); // THREE.Curve's own constructor is protected: a public one here
-  }
-
-  getPoint(t: number, out = new THREE.Vector3()): THREE.Vector3 {
-    const a = t * COIL_TURNS * Math.PI * 2;
-    return out.set(Math.cos(a) * COIL_RADIUS, COIL_AXIS_Y + Math.sin(a) * COIL_RADIUS, COIL_BACK + (COIL_FRONT - COIL_BACK) * t);
-  }
-}
+/** A second, fainter spark sometimes jumps from a ring to a rail. */
+const RING_ARC_CHANCE = 0.08;
 
 interface TeslaCoil {
   group: THREE.Group;
@@ -155,56 +149,72 @@ interface TeslaCoil {
 
 function createCoil(): TeslaCoil {
   const g = new THREE.Group();
-  const copper = new THREE.MeshStandardMaterial({ color: COPPER, emissive: GLOW_COLOR, emissiveIntensity: GLOW_IDLE, roughness: 0.4, metalness: 0, flatShading: true });
-  const ceramic = new THREE.MeshStandardMaterial({ color: CERAMIC, roughness: 0.7, metalness: 0, flatShading: true });
-  // Low-poly on purpose (4 sides to the wire): at pixel-art resolution a round wire and a square one look the same.
-  g.add(new THREE.Mesh(new THREE.TubeGeometry(new Helix(), COIL_TURNS * 10, COIL_WIRE, 4, false), copper));
-  const core = new THREE.Mesh(
-    new THREE.CylinderGeometry(COIL_RADIUS - COIL_WIRE, COIL_RADIUS - COIL_WIRE, COIL_BACK - COIL_FRONT, 10).rotateX(-Math.PI / 2),
-    new THREE.MeshStandardMaterial({ color: CORE, roughness: 0.8, metalness: 0, flatShading: true }),
-  );
-  core.position.set(0, COIL_AXIS_Y, (COIL_BACK + COIL_FRONT) / 2);
-  g.add(core);
-  // Two ceramic insulators holding the coil, one at each end (cylinders turned along −Z, as in the scope).
-  for (const z of [COIL_BACK + 0.006, COIL_FRONT - 0.006]) {
-    const disc = new THREE.Mesh(new THREE.CylinderGeometry(COIL_RADIUS + 0.004, COIL_RADIUS + 0.004, 0.012, 10).rotateX(-Math.PI / 2), ceramic);
-    disc.position.set(0, COIL_AXIS_Y, z);
-    g.add(disc);
+  const material = (color: number, emissive = 0) =>
+    new THREE.MeshStandardMaterial({ color, emissive, emissiveIntensity: 0, roughness: 0.4, metalness: 0, flatShading: true });
+  const iron = material(IRON);
+  const copper = material(COPPER, GLOW_COLOR); // the electrodes
+  // The rings: TorusGeometry lies in the XY plane, i.e. already around the
+  // −Z barrel. 4 sides to the tube = a flat band of copper, angular on purpose.
+  // One material per ring (clones share the shader program: no extra
+  // compile), so each can flash on its own.
+  const ringMaterials: THREE.MeshStandardMaterial[] = [];
+  for (const z of COIL_RINGS) {
+    const m = material(COPPER, GLOW_COLOR);
+    ringMaterials.push(m);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(COIL_RADIUS, COIL_BAND, 4, 10), m);
+    ring.position.set(0, COIL_AXIS_Y, z);
+    g.add(ring);
   }
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(RING_RADIUS, RING_TUBE, 6, 12), copper);
-  ring.position.set(0, RING_Y, RING_Z);
-  g.add(ring);
+  // The two rails along the sides.
+  for (const side of [-1, 1]) {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(RAIL_SIZE, RAIL_SIZE, RAIL_BACK - RAIL_FRONT), iron);
+    rail.position.set(side * COIL_RADIUS, COIL_AXIS_Y, (RAIL_BACK + RAIL_FRONT) / 2);
+    g.add(rail);
+  }
+  // The electrodes: a box from the rail's end to the tip, turned toward the
+  // middle (its direction = atan2 of the sideways and forward steps), and a ball.
+  const tips: THREE.Vector3[] = [];
+  for (const side of [-1, 1]) {
+    const from = new THREE.Vector3(side * COIL_RADIUS, COIL_AXIS_Y, RAIL_FRONT);
+    const to = new THREE.Vector3(side * PRONG_TIP_X, COIL_AXIS_Y, PRONG_TIP_Z);
+    const prong = new THREE.Mesh(new THREE.BoxGeometry(RAIL_SIZE, RAIL_SIZE, from.distanceTo(to)), copper);
+    prong.position.copy(from).add(to).multiplyScalar(0.5);
+    prong.rotation.y = Math.atan2(to.x - from.x, to.z - from.z);
+    g.add(prong);
+    const ball = new THREE.Mesh(new THREE.IcosahedronGeometry(PRONG_BALL, 0), copper);
+    ball.position.copy(to);
+    g.add(ball);
+    tips.push(to);
+  }
 
-  // The crawling sparks: short jagged lines (1 pixel is fine here, the gun is
-  // right in your face), redrawn at random every frame.
+  // The sparks: short jagged lines (1 pixel is fine here, the gun is right
+  // in your face), redrawn at random every frame.
   const arcMaterial = new THREE.LineBasicMaterial({ color: ARC_COLOR, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, fog: false });
-  const arcs: THREE.Line[] = [];
-  for (let i = 0; i < ARCS; i++) {
+  const makeArc = () => {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(ARC_POINTS * 3), 3).setUsage(THREE.DynamicDrawUsage));
     const line = new THREE.Line(geo, arcMaterial);
     line.frustumCulled = false;
-    arcs.push(line);
     g.add(line);
-  }
-  let glow = 0; // 1 right after a shot, fading to 0
+    return line;
+  };
+  const tipArc = makeArc();
+  const ringArc = makeArc();
+  let sinceShot = Infinity;
+  const a = new THREE.Vector3();
+  const b = new THREE.Vector3();
 
-  function jagArc(line: THREE.Line): void {
-    // From a random point on the coil's front turns to a random point of the ring.
-    const a0 = Math.random() * Math.PI * 2;
-    const a1 = Math.random() * Math.PI * 2;
-    const z0 = COIL_FRONT + Math.random() * 0.06;
+  /** A jagged line from a to b: straight at the ends, bent at random in between (more in the middle). */
+  function jag(line: THREE.Line, from: THREE.Vector3, to: THREE.Vector3, amount: number): void {
     const pos = line.geometry.attributes.position as THREE.BufferAttribute;
     for (let i = 0; i < ARC_POINTS; i++) {
       const t = i / (ARC_POINTS - 1);
-      const r = COIL_RADIUS + (RING_RADIUS + RING_TUBE - COIL_RADIUS) * t;
-      const angle = a0 + (a1 - a0) * t;
-      const wiggle = i === 0 || i === ARC_POINTS - 1 ? 0 : (Math.random() - 0.5) * 0.012;
+      const k = Math.sin(Math.PI * t) * amount;
       pos.setXYZ(
         i,
-        Math.cos(angle) * r + wiggle,
-        COIL_AXIS_Y + (RING_Y - COIL_AXIS_Y) * t + Math.sin(angle) * r + wiggle,
-        z0 + (RING_Z - z0) * t,
+        from.x + (to.x - from.x) * t + (Math.random() - 0.5) * k,
+        from.y + (to.y - from.y) * t + (Math.random() - 0.5) * k,
+        from.z + (to.z - from.z) * t + (Math.random() - 0.5) * k,
       );
     }
     pos.needsUpdate = true;
@@ -213,16 +223,31 @@ function createCoil(): TeslaCoil {
   return {
     group: g,
     fired() {
-      glow = 1;
+      sinceShot = 0;
     },
     update(dt) {
-      glow = Math.max(0, glow - dt / GLOW_FADE);
-      // A hum that never quite stays still (the coil is "alive"), plus the shot's flash.
-      copper.emissiveIntensity = GLOW_IDLE + GLOW_SHOT * glow * glow * (0.7 + Math.random() * 0.3);
-      const chance = ARC_CHANCE_IDLE + (ARC_CHANCE_SHOT - ARC_CHANCE_IDLE) * glow;
-      for (const line of arcs) {
-        line.visible = Math.random() < chance;
-        if (line.visible) jagArc(line);
+      sinceShot += dt;
+      // Each ring flashes RING_DELAY after the one behind it; the electrodes last.
+      ringMaterials.forEach((m, i) => {
+        const t = sinceShot - i * RING_DELAY;
+        const k = t < 0 ? 0 : Math.max(0, 1 - t / GLOW_FADE);
+        m.emissiveIntensity = GLOW_SHOT * k * k;
+      });
+      const tipT = sinceShot - COIL_RINGS.length * RING_DELAY;
+      const tipGlow = tipT < 0 ? 0 : Math.max(0, 1 - tipT / GLOW_FADE);
+      copper.emissiveIntensity = GLOW_SHOT * tipGlow * tipGlow;
+
+      const shot = Math.max(0, 1 - sinceShot / (GLOW_FADE + COIL_RINGS.length * RING_DELAY));
+      tipArc.visible = Math.random() < ARC_CHANCE_IDLE + (ARC_CHANCE_SHOT - ARC_CHANCE_IDLE) * shot;
+      if (tipArc.visible) jag(tipArc, tips[0], tips[1], 0.012);
+      ringArc.visible = Math.random() < RING_ARC_CHANCE + shot * 0.5;
+      if (ringArc.visible) {
+        // From the top of a random ring to the nearest rail, around the outside.
+        const z = COIL_RINGS[Math.floor(Math.random() * COIL_RINGS.length)];
+        const side = Math.random() < 0.5 ? -1 : 1;
+        a.set(0, COIL_AXIS_Y + COIL_RADIUS, z);
+        b.set(side * COIL_RADIUS, COIL_AXIS_Y, z - 0.02 - Math.random() * 0.03);
+        jag(ringArc, a, b, 0.01);
       }
     },
   };
