@@ -3,7 +3,7 @@
 // appends them to a list; it doesn't know or care who listens.
 // (On a future server, the same events would be sent to the clients.)
 
-import type { SlotId, WeaponId } from './weapon';
+import type { MeleeId, SlotId, WeaponId } from './weapon';
 import type { Entity } from './entities';
 import type { MeleeTool } from './kick';
 import type { PickupKind } from './pickups';
@@ -32,7 +32,7 @@ export type SimEvent =
   | { type: 'fire'; weapon: WeaponId; barrel: number; seconds: number; forged: boolean }
   /** You switched weapon: the new one is coming up. `forged`: its reinforced version (each gun is drawn its own way). */
   /** `melee`: not a real switch, the same gun coming back up after a melee swing (shovel, lasso). */
-  /** `weapon` can be a melee weapon too: the shovel or the lasso put in your hands (keys 5, 6). */
+  /** `weapon` can be a melee weapon too: the shovel or the lasso put in your hands (key 5). */
   | { type: 'weaponSwitch'; weapon: SlotId; forged: boolean; melee?: boolean }
   /** One bullet or pellet: where it went and what it hit (impacts, blood). A shotgun blast is many of these. */
   | {
@@ -237,6 +237,8 @@ export type SimEvent =
   | { type: 'reloadEnd'; weapon: WeaponId; forged: boolean }
   /** You bought something at a shop (sound, the panel's thanks). */
   | { type: 'purchase'; item: PurchaseId; price: number }
+  /** You carry one melee weapon: the other one (already bought) taken back from the counter, free (shop.ts). */
+  | { type: 'meleeSwap'; item: MeleeId }
   /**
    * A purchase the simulation refused: not enough money, already yours, too far from the vendor,
    * or (a card) not on the counter / weapon not yours / weapon maxed out.

@@ -1,5 +1,5 @@
 // The LASSO (docs/DESIGN.md §6): a melee weapon you can hold in your hands
-// (key 6), with two attacks.
+// (key 5: you carry one melee weapon), with two attacks.
 //
 // 1. LEFT BUTTON (or the melee key, F, even with a gun in your hands): the
 //    loop is thrown in front of you, medium range, and CATCHES ONE enemy: it

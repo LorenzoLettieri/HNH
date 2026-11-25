@@ -7,7 +7,7 @@
 // pixelated), like the rest of the game. Markup is built here; CSS in
 // index.html (#weapon-bar, .weapon-slot).
 import type { PlayerState } from '../sim/player';
-import { heldItem, SLOTS, type SlotId } from '../sim/weapon';
+import { heldItem, isMelee, MELEE_KEY, SLOTS, type SlotId } from '../sim/weapon';
 import './fonts'; // the key numbers are written in Rye
 
 /** Silhouette color (bone, like the HUD numbers); the CSS dims the inactive ones. */
@@ -147,12 +147,13 @@ const bar = document.getElementById('weapon-bar')!;
 const slots = new Map<SlotId, HTMLElement>();
 
 // Build the slots once, in slot order (= key order).
+// (The two melee weapons share key 5: only the one you carry is shown.)
 SLOTS.forEach((weapon, i) => {
   const slot = document.createElement('div');
   slot.className = 'weapon-slot';
   const key = document.createElement('span');
   key.className = 'weapon-key';
-  key.textContent = String(i + 1);
+  key.textContent = String(isMelee(weapon) ? MELEE_KEY : i + 1);
   const sil = SILHOUETTES[weapon];
   const canvas = document.createElement('canvas');
   canvas.width = sil.width;
@@ -173,12 +174,13 @@ export function updateWeaponBar(player: PlayerState): void {
   // Touch the DOM only when something changes (weapon in hand, or a weapon
   // bought / lost at death), not every frame. One string is an easy "key".
   const held = heldItem(player);
-  const key = `${held}|${SLOTS.map((w) => (player.owned[w] ? 1 : 0)).join('')}`;
+  const key = `${held}|${player.melee}|${SLOTS.map((w) => (player.owned[w] ? 1 : 0)).join('')}`;
   if (key === shown) return;
   shown = key;
   for (const [weapon, slot] of slots) {
     slot.classList.toggle('active', weapon === held);
     // A weapon you don't own (yet): no slot. It appears when you buy it.
-    slot.hidden = !player.owned[weapon];
+    // A melee weapon left at the armory's counter: not carried, no slot.
+    slot.hidden = !player.owned[weapon] || (isMelee(weapon) && player.melee !== weapon);
   }
 }

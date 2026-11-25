@@ -30,8 +30,8 @@ export interface InputCommand {
   reload: boolean;
   /**
    * Weapon change asked this tick: 0 = none, 1..N = that slot (1 = revolver,
-   * 2 = shotgun, 3 = carbine, 4 = dynamite launcher, 5 = shovel, 6 = lasso: SLOTS in
-   * weapon.ts), -1 = next weapon, -2 = previous (mouse wheel).
+   * 2 = shotgun, 3 = carbine, 4 = dynamite launcher, 5 = the melee weapon you carry:
+   * MELEE_KEY in weapon.ts), -1 = next weapon, -2 = previous (mouse wheel).
    */
   weaponSelect: number;
   /** Go back to the spawn point (debug/testing). */

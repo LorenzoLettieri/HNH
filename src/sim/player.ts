@@ -54,7 +54,7 @@ export interface PlayerState {
    * null = none (your boot). See MELEE in weapon.ts.
    */
   melee: MeleeId | null;
-  /** That melee weapon is in your HANDS (keys 5, 6), instead of the gun: see heldItem in weapon.ts. */
+  /** That melee weapon is in your HANDS (key 5), instead of the gun: see heldItem in weapon.ts. */
   meleeDrawn: boolean;
   /** Ticks left before the weapon you just switched to is ready (0 = ready). */
   switchTicks: number;

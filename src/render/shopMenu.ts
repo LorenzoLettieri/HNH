@@ -21,14 +21,14 @@
 // Markup and CSS in index.html (#shop, #shop-upgrades, #shop-prompt, #grab-hint).
 import { canAfford } from '../sim/drinks';
 import { mainKeyName, onKeybindsChange } from '../keybinds';
-import { playPurchase, playPurchaseDenied } from '../audio/sfx';
+import { playMeleeSwap, playPurchase, playPurchaseDenied } from '../audio/sfx';
 import { queueBuy } from '../controls';
 import { tuning } from '../sim/config';
 import type { SimEvent } from '../sim/events';
 import type { PlayerState } from '../sim/player';
 import { ownsItem, shopCatalog, type PurchaseId, type ShopItemId } from '../sim/shop';
 import { upgradeLevel, upgradeOffer, upgradePrice, type CardId } from '../sim/upgrades';
-import type { GearId } from '../sim/weapon';
+import { isMelee, type GearId } from '../sim/weapon';
 import type { ShopSpawn } from '../sim/world';
 import { createForgeRows, FORGE_GREETING } from './forgeMenu';
 import { BAR_GREETING, createBarRows } from './barMenu';
@@ -54,11 +54,11 @@ const ITEM_TEXT: Record<ShopItemId, { name: string; desc: string }> = {
   },
   shovel: {
     name: 'Badile da becchino',
-    desc: 'Tasto 5 per impugnarlo, ed è anche il tuo F. Più lungo dello stivale, più largo, tre volte il danno. Scava fosse, ne riempie altre.',
+    desc: 'Arma melee (tasto 5, ed è anche il tuo F). Più lungo dello stivale, più largo, tre volte il danno. Se ne porta una: comprate tutte e due, qui le scambi gratis.',
   },
   lasso: {
     name: 'Lazo del mandriano',
-    desc: 'Tasto 6. Sinistro (o F): il cappio prende un nemico a nove metri e te lo trascina davanti. Destro: rampino, ti aggrappi dove guardi e voli.',
+    desc: 'Arma melee (tasto 5, e F). Sinistro: il cappio prende un nemico a nove metri e te lo trascina davanti. Destro: rampino, ti aggrappi dove guardi e voli. Se ne porta una sola.',
   },
 };
 
@@ -195,6 +195,8 @@ const WEAPON_NAMES: Record<GearId, string> = {
 /** What he says after a purchase, and when you can't pay. */
 const THANKS = '“Affare fatto. Trattala bene, e lei tratterà bene te.”';
 const CARD_THANKS = '“Ora sì che ragiona. Torna quando vuoi altro ferro buono.”';
+/** When he swaps your melee weapons. */
+const SWAP_LINE = '“Te lo tengo io, l’altro. Un uomo porta un ferro solo per le mani.”';
 const NO_MONEY = '“Con quei quattro spiccioli? Torna quando avrai il vildenaro, straniero.”';
 /** The upgrade panel when there's nothing to choose. */
 const MAXED = 'Al massimo. Nemmeno il diavolo sa fare di meglio.';
@@ -252,6 +254,8 @@ interface Row {
   poor: boolean;
   /** A weapon you own: the box opens its upgrades instead of buying. */
   owned: boolean;
+  /** A melee weapon you bought but left here (you carry the other): the box swaps it back, free. */
+  swap: boolean;
 }
 
 export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu {
@@ -313,6 +317,12 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
    *   which refuses it (and the vendor has his say).
    */
   function onItemClick(r: Row): void {
+    if (r.swap) {
+      // Free and undoable (swap back the same way): no "CONFERMA".
+      cancelAllConfirms();
+      queueBuy(r.id);
+      return;
+    }
     if (r.owned) {
       cancelAllConfirms();
       selected = selected === r.weapon ? null : r.weapon;
@@ -369,6 +379,7 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
       confirmTimer: 0,
       poor: false,
       owned: false,
+      swap: false,
     };
     row.addEventListener('click', () => onItemClick(r));
     noFocus(row);
@@ -428,13 +439,17 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
 
   /** Every frame: prices in red, "POTENZIA" on your weapons, which one is selected. */
   function refreshRow(r: Row, player: PlayerState): void {
-    r.owned = !r.card && ownsItem(player, r.id as ShopItemId);
-    r.poor = !r.owned && !canAfford(player, r.price); // (Debito col diavolo: below zero is fine)
+    const has = !r.card && ownsItem(player, r.id as ShopItemId);
+    // You carry one melee weapon: the other one, if you bought it, is here to be swapped (free).
+    r.swap = has && isMelee(r.weapon) && player.melee !== r.weapon;
+    r.owned = has && !r.swap;
+    r.poor = !has && !canAfford(player, r.price); // (Debito col diavolo: below zero is fine)
     r.el.classList.toggle('owned', r.owned);
     r.el.classList.toggle('poor', r.poor);
     r.el.classList.toggle('selected', r.owned && selected === r.weapon);
     if (r.owned && r.confirmTimer) cancelConfirm(r);
-    r.label.textContent = r.owned ? 'POTENZIA' : String(r.price);
+    r.el.classList.toggle('swap', r.swap);
+    r.label.textContent = r.swap ? 'SCAMBIA' : r.owned ? 'POTENZIA' : String(r.price);
   }
 
   /** Shake a box: restart a CSS animation (remove the class, force a layout so the browser notices, add it back). */
@@ -493,7 +508,8 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
         return;
       }
       if (weaponsSignature() !== weaponsBuiltFor) buildWeapons();
-      if (selected !== null && !player.owned[selected]) selected = null; // (died with the panel open)
+      // (Died with the panel open, or swapped that melee weapon away.)
+      if (selected !== null && (!player.owned[selected] || (isMelee(selected) && player.melee !== selected))) selected = null;
       if (cardsSignature(player) !== cardsBuiltFor) buildCards(player);
       upPanel.hidden = selected === null;
       moneyEl.textContent = String(player.money);
@@ -506,7 +522,10 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
       const barLine = bar.onEvents(events);
       if (barLine) greeting.textContent = barLine;
       for (const e of events) {
-        if (e.type === 'purchase') {
+        if (e.type === 'meleeSwap') {
+          playMeleeSwap();
+          greeting.textContent = SWAP_LINE;
+        } else if (e.type === 'purchase') {
           playPurchase();
           greeting.textContent = e.item in CARD_TEXT ? CARD_THANKS : THANKS;
         } else if (e.type === 'purchaseFailed' && e.reason === 'money') {

@@ -949,7 +949,9 @@ futuro **poligono di tiro / tutorial**.
   7. premi dello Stile e taratura. Dopo: carte e Forgia.
 - **Fuoco alternativo (tasto destro)** [DECISO]: ogni arma può averne uno. Revolver: fanning;
   carabina: mira dal mirino; doppietta: da decidere.
-- **Armi melee impugnabili** [DECISO e FATTO]: badile e lazo sono anche **slot** come le armi (tasti 5 e 6).
+- **Armi melee impugnabili** [DECISO e FATTO]: badile e lazo si impugnano come le armi, sul **tasto 5**.
+  **Se ne porta UNA sola**: comprare l'altra la sostituisce; quella vecchia resta all'armeria, e una volta
+  comprate tutte e due si **scambiano gratis** dal bancone ("SCAMBIA"). Le carte restano a ciascuna.
   In mano: **sinistro = il loro attacco** (come F), **destro = il loro fuoco alternativo**. **F usa sempre
   un'arma melee**: quella in mano, oppure (con una pistola in mano) l'ultima impugnata o comprata; senza armi
   melee lo stivale. Da F con una pistola in mano l'arma scende e torna su come per il badile.

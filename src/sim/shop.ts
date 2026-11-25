@@ -11,7 +11,7 @@ import { tuning } from './config';
 import type { SimEvent } from './events';
 import type { PlayerState } from './player';
 import { CARDS, upgradeOffer, upgradePrice, type CardId } from './upgrades';
-import { drawMelee, isMelee, switchWeapon, type GearId } from './weapon';
+import { drawMelee, isMelee, switchWeapon, type GearId, type MeleeId } from './weapon';
 import { hasCurse } from './wager';
 import type { ShopSpawn, World } from './world';
 
@@ -89,14 +89,17 @@ export function stepShop(p: PlayerState, cmd: InputCommand, world: World, events
   const shop = shopInReach(p, world);
   const item = shop ? shopCatalog(shop.kind).find((i) => i.id === id) : undefined;
   if (!item) return void events.push({ type: 'purchaseFailed', item: id, reason: 'far' });
+  // A melee weapon you bought before but left at the counter: swapped back for free.
+  if (isMelee(id) && ownsItem(p, id) && p.melee !== id) return swapMelee(p, id, events);
   if (ownsItem(p, id)) return void events.push({ type: 'purchaseFailed', item: id, reason: 'owned' });
   if (!canAfford(p, item.price)) return void events.push({ type: 'purchaseFailed', item: id, reason: 'money' });
 
   p.money -= item.price;
   p.owned[id] = true;
   if (isMelee(id)) {
-    // Not a gun: nothing to load. From now on the melee key swings it
-    // (kick.ts), and it goes to your hands, like a new gun (it's a slot too).
+    // Not a gun: nothing to load. You carry ONE melee weapon: the new one
+    // takes the old one's place (which stays yours, at the counter: swapMelee).
+    // From now on the melee key swings it (kick.ts), and it goes to your hands.
     p.melee = id;
     if (!hasCurse(p, 'oneGun')) drawMelee(p, id, events);
     return void events.push({ type: 'purchase', item: id, price: item.price });
@@ -119,6 +122,19 @@ export function stepShop(p: PlayerState, cmd: InputCommand, world: World, events
   // (Not with the wager's "one gun" curse: it's yours, but it stays in the holster until the wave is over.)
   if (!hasCurse(p, 'oneGun')) switchWeapon(p, id, events);
   events.push({ type: 'purchase', item: id, price: item.price });
+}
+
+/**
+ * You carry one melee weapon at a time. Once you've bought both, the vendor
+ * keeps the other one for you: asking for it (cmd.buy, the same click as a
+ * purchase) swaps them, free. Its cards stay with it (p.cards is per weapon).
+ * If the old one was in your hands, the new one is (a draw, like a switch).
+ */
+function swapMelee(p: PlayerState, id: MeleeId, events: SimEvent[]): void {
+  const inHands = p.meleeDrawn;
+  p.melee = id;
+  if (inHands) drawMelee(p, id, events);
+  events.push({ type: 'meleeSwap', item: id });
 }
 
 /**

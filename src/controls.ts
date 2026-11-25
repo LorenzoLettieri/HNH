@@ -87,7 +87,7 @@ export function buildCommand(tick: number): InputCommand {
   let weaponSelect = 0;
   const slots = [
     actionPressed('weapon1'), actionPressed('weapon2'), actionPressed('weapon3'),
-    actionPressed('weapon4'), actionPressed('weapon5'), actionPressed('weapon6'),
+    actionPressed('weapon4'), actionPressed('weapon5'),
   ];
   slots.forEach((pressed, i) => {
     if (pressed) weaponSelect = i + 1;

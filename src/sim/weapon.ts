@@ -98,8 +98,10 @@ function gunPower(p: PlayerState, weapon: WeaponId): number {
 
 /**
  * MELEE WEAPONS: the shovel and the lasso. They aren't guns (no magazine,
- * no ammo), but since the lasso they are SLOTS like the guns: keys 5 and 6
- * put one in your hands, and then the left button attacks with it (and the
+ * no ammo), but since the lasso they can be HELD like the guns: key 5 puts
+ * it in your hands. You CARRY ONE melee weapon at a time (p.melee): buying
+ * the other one replaces it, and once you've bought both you swap them at
+ * the armory for free (shop.ts). With it in your hands and then the left button attacks with it (and the
  * right button does its alternate fire: the lasso's grappling hook). The
  * melee key (F) ALWAYS swings one: the one in your hands, or with a gun in
  * your hands the last one you held or bought (p.melee); the boot if you
@@ -112,8 +114,16 @@ export type MeleeId = 'shovel' | 'lasso';
 export const MELEE: readonly MeleeId[] = ['shovel', 'lasso'];
 /** Anything that can be in your hands: a gun or a melee weapon. */
 export type SlotId = WeaponId | MeleeId;
-/** Every slot, in key order: 1-4 the guns, 5 the shovel, 6 the lasso. */
+/** Everything that can be owned, in the shop's order: the guns, then the melee weapons. */
 export const SLOTS: readonly SlotId[] = [...WEAPONS, ...MELEE];
+/** The key of the melee slot: after the guns (5). Whatever melee weapon you carry sits there. */
+export const MELEE_KEY = WEAPONS.length + 1;
+
+/** What you carry, in key order: the guns you own, then the one melee weapon (if any). */
+export function carried(p: PlayerState): SlotId[] {
+  const guns: SlotId[] = WEAPONS.filter((w) => p.owned[w]);
+  return p.melee ? [...guns, p.melee] : guns;
+}
 export function isMelee(id: SlotId): id is MeleeId {
   return (MELEE as readonly SlotId[]).includes(id);
 }
@@ -520,7 +530,7 @@ export function switchWeapon(p: PlayerState, w: WeaponId, events: SimEvent[]): v
 }
 
 /**
- * Puts a melee weapon in your hands (keys 5, 6): drawn like a gun (it takes
+ * Puts a melee weapon in your hands (key 5): drawn like a gun (it takes
  * weaponSwitchTime before it can swing), and from now on it's also the one
  * on the melee key. The gun you held stays p.weapon: it's the one that comes
  * back with the wheel or its key.
@@ -546,19 +556,16 @@ function selectedSlot(p: PlayerState, select: number): SlotId {
   const current = heldItem(p);
   // The wager's "one gun" curse: the gun in your hands when the wave started is the only one.
   if (select === 0 || hasCurse(p, 'oneGun')) return current;
+  if (select === MELEE_KEY) return p.melee ?? current;
   if (select > 0) {
-    const slot = SLOTS[select - 1];
+    const slot = WEAPONS[select - 1];
     return slot && p.owned[slot] ? slot : current;
   }
-  // Cycle: step forward (or back) until the next slot you own.
+  // Cycle: the next (or previous) thing you carry.
+  const list = carried(p);
+  const i = list.indexOf(current);
   const step = select === -1 ? 1 : -1;
-  const n = SLOTS.length;
-  let i = SLOTS.indexOf(current);
-  for (let k = 0; k < n; k++) {
-    i = (i + step + n) % n;
-    if (p.owned[SLOTS[i]]) return SLOTS[i];
-  }
-  return current;
+  return list[(i + step + list.length) % list.length] ?? current;
 }
 
 /** Where the player's eye is and where it looks (a unit vector). Same yaw/pitch math as the camera. */

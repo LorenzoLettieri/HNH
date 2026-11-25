@@ -45,8 +45,7 @@ export const ACTIONS = {
   weapon2: { label: 'Doppietta', group: 'Armi', keys: ['Digit2'] },
   weapon3: { label: 'Carabina a leva', group: 'Armi', keys: ['Digit3'] },
   weapon4: { label: 'Lancia-dinamite', group: 'Armi', keys: ['Digit4'] },
-  weapon5: { label: 'Badile', group: 'Armi', keys: ['Digit5'] },
-  weapon6: { label: 'Lazo', group: 'Armi', keys: ['Digit6'] },
+  weapon5: { label: 'Arma melee', group: 'Armi', keys: ['Digit5'], note: 'badile o lazo: se ne porta una' },
   nextWeapon: { label: 'Arma successiva', group: 'Armi', keys: ['WheelDown'] },
   prevWeapon: { label: 'Arma precedente', group: 'Armi', keys: ['WheelUp'] },
   interact: {

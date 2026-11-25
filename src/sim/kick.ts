@@ -18,7 +18,7 @@
 // wider arc, more damage). The numbers are picked once per attack by
 // meleeStats(): the attack doesn't care WHAT hits, only how far, how wide,
 // how hard. (Like a Laravel controller that receives a config array instead
-// of an if per case.) They are also SLOTS (keys 5, 6: weapon.ts): with one in
+// of an if per case.) They can be HELD too (key 5: you carry one, weapon.ts): with one in
 // your hands, the LEFT button attacks with it too, like F.
 //
 // The LASSO is the odd one: not a cone around you but a loop thrown in front

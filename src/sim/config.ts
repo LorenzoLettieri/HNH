@@ -415,9 +415,9 @@ export const tuning = {
   riflePrice: 1000,
   /** Price of the dynamite launcher: the most expensive gun (it comes with dynamiteReserveStart sticks). */
   dynamitePrice: 1500,
-  /** Price of the shovel (it replaces the kick on F, and it's a slot: key 5). */
+  /** Price of the shovel (it replaces the kick on F, and you hold it with key 5). */
   shovelPrice: 400,
-  /** Price of the lasso (key 6; on F too: the last melee weapon you held or bought). */
+  /** Price of the lasso (key 5 and F: you carry one melee weapon, buying it replaces the shovel). */
   lassoPrice: 400,
   // --- Weapon upgrades: decks of cards at the armory (see upgrades.ts) ---
   /** Price of a weapon's first card, in vildenaro. */
@@ -549,7 +549,7 @@ export const tuning = {
   /** Upward speed given to a hit enemy, m/s. */
   shovelLift: 6,
 
-  // --- Lasso (melee weapon, key 6: kick.ts for the throw, lasso.ts for the hook) ---
+  // --- Lasso (melee weapon, key 5: kick.ts for the throw, lasso.ts for the hook) ---
   /**
    * Seconds from the press to the loop catching: it flies out meanwhile (the
    * animation and the rope in render/ are timed on this number). Longer than

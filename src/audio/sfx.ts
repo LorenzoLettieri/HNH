@@ -2627,7 +2627,7 @@ export function playHookRelease(): void {
   noiseBurst({ start: 0.17, duration: 0.05, volume: 0.25, filter: 'bandpass', frequency: 800, q: 3 }); // caught in the glove
 }
 
-/** The lasso in your hands (key 6): the coil shaken loose and the loop starting to spin. */
+/** The lasso in your hands (key 5): the coil shaken loose and the loop starting to spin. */
 export function playLassoDraw(): void {
   if (!ctx) return;
   noiseBurst({ duration: 0.08, volume: 0.3, filter: 'bandpass', frequency: 900, q: 2 });
@@ -2640,4 +2640,12 @@ export function playShovelDraw(): void {
   noiseBurst({ duration: 0.12, volume: 0.3, filter: 'bandpass', frequency: 3200, frequencyEnd: 1500, q: 2 });
   thump({ start: 0.15, duration: 0.08, volume: 0.4, from: 180, to: 110 });
   ring(640, 0.25, 0.04);
+}
+
+/** At the armory, the two melee weapons swapped: one laid on the counter, the other picked up (a wooden knock, a slide, a clink). */
+export function playMeleeSwap(): void {
+  if (!ctx) return;
+  thump({ duration: 0.08, volume: 0.45, from: 200, to: 120 });
+  noiseBurst({ start: 0.06, duration: 0.14, volume: 0.25, filter: 'bandpass', frequency: 1800, frequencyEnd: 900, q: 1.5 });
+  ring(880, 0.2, 0.05);
 }
