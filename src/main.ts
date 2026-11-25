@@ -74,6 +74,7 @@ import { updateBurning } from './render/burning';
 import { createMarks } from './render/marks';
 import { applyHeightFog } from './render/heightFog';
 import { applySky, createSky, directionFromAngles, updateSky } from './render/sky';
+import { createShaderWatch } from './render/warmUp';
 
 // --- Renderer -------------------------------------------------------------
 const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -356,7 +357,14 @@ loadSettings();
 loadKeybinds();
 void loadKeyNames(); // the real letters of this keyboard (Chrome/Edge), for the menu and the shop's label
 startGame(); // the first game: does it count for the leaderboard? (fairPlay.ts)
-const menu = createMenu({ onPlay: () => requestLock(renderer.domElement) });
+const menu = createMenu({
+  onPlay: () => {
+    // The guns, arms and leg (.glb files) load in the background and may have
+    // arrived after the first warm-up: warm up again (what's done is free).
+    warmUpShaders();
+    requestLock(renderer.domElement);
+  },
+});
 const shopMenu = createShopMenu({ onCloseClick: () => closeShop() });
 // The end-of-game screen (render/endScreen.ts). While it's open the game is
 // frozen (updatePause). "Ricomincia" grabs the mouse again: the new game
@@ -464,6 +472,19 @@ window.addEventListener('resize', () => {
   post.setSize(window.innerWidth, window.innerHeight);
   viewmodel.setAspect(window.innerWidth / window.innerHeight);
 });
+
+// --- Shader warm-up ---------------------------------------------------------
+// Every shader compiled and every texture uploaded now, while loading, instead
+// of the first time a Smith or an event appears (see render/warmUp.ts).
+// From then on, a shader compiled in the middle of the game is a warm-up miss:
+// the watch says so in the console (with the shader's name).
+const shaderWatch = createShaderWatch(renderer);
+function warmUpShaders(): void {
+  const ms = post.warmUp(scene, camera, viewmodel);
+  shaderWatch.accept();
+  console.log(`shader warm-up: ${renderer.info.programs?.length ?? 0} shaders, ${ms.toFixed(0)} ms`);
+}
+warmUpShaders();
 
 // --- Loop -----------------------------------------------------------------
 // Fixed timestep with an accumulator:
@@ -604,4 +625,5 @@ renderer.setAnimationLoop((now: number) => {
   props.update(now / 1000);
   updateParticles(dt, now / 1000, camera, post.sceneSize.y);
   post.render(scene, camera, viewmodel);
+  shaderWatch.check();
 });

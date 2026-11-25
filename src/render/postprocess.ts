@@ -6,6 +6,7 @@
 //                     (e.g. 480×270)   (upscale with sharp pixels,
 //                                       limit colors, dither)
 import * as THREE from 'three';
+import { warmUp } from './warmUp';
 
 /** Post-processing settings. A mutable object so the debug panel can change them live. */
 export const postSettings = {
@@ -197,6 +198,12 @@ export interface PostProcess {
   refresh(): void;
   /** Size in pixels of the image the scene is rendered into. */
   readonly sceneSize: THREE.Vector2;
+  /**
+   * Compiles every shader and uploads every texture of the scene (and the
+   * overlay) ahead of time, drawing them once off screen (see warmUp.ts).
+   * Returns how long it took (ms).
+   */
+  warmUp(scene: THREE.Scene, camera: THREE.PerspectiveCamera, overlay?: { scene: THREE.Scene; camera: THREE.Camera }): number;
 }
 
 export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
@@ -296,6 +303,13 @@ export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
     setSun(direction, strength) {
       sunDirection.copy(direction);
       godRays = strength;
+    },
+    warmUp(scene, camera, overlay) {
+      const start = performance.now();
+      warmUp(renderer, sceneTarget, overlay ? [{ scene, camera }, overlay] : [{ scene, camera }]);
+      // One real frame too: it compiles the post-process' own shaders (bloom, god rays, final).
+      this.render(scene, camera, overlay);
+      return performance.now() - start;
     },
     render(scene, camera, overlay) {
       // Settings may have changed (debug panel): copy them into the uniforms.
