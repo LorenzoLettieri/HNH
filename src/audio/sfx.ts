@@ -2471,3 +2471,87 @@ export function playStickThrow(where: Where): void {
   noiseBurst({ out, duration: 0.25, volume: 0.45, filter: 'bandpass', frequency: 2000, frequencyEnd: 500, q: 1.5 });
   thump({ out, duration: 0.12, volume: 0.35, from: 140, to: 80 });
 }
+
+/**
+ * A crackle of electricity: many tiny clicks of noise, very close together
+ * and at random times (an electric arc is a storm of small discharges), each
+ * through a bandpass at a random high pitch. Used by the Tesla's shot and arcs.
+ */
+function crackle(out: AudioNode, start: number, duration: number, volume: number, clicks: number): void {
+  let t = start;
+  const gap = duration / clicks;
+  for (let i = 0; i < clicks; i++) {
+    t += gap * (0.3 + Math.random() * 1.4);
+    const fade = 1 - i / (clicks + 2);
+    noiseBurst({ out, start: t, duration: 0.012 + Math.random() * 0.02, volume: volume * fade, filter: 'bandpass', frequency: 2500 + Math.random() * 5000, q: 4 });
+  }
+}
+
+/**
+ * An electric BUZZ: a square wave (harsh, full of harmonics, the sound of
+ * mains hum) whose pitch jumps at random every few milliseconds: a regular
+ * buzz is a transformer, a jittery one is a spark. Through a bandpass so it
+ * doesn't cover everything.
+ */
+function zapBuzz(out: AudioNode, start: number, duration: number, volume: number, pitch: number): void {
+  if (!ctx) return;
+  const t0 = ctx.currentTime + start;
+  const osc = ctx.createOscillator();
+  osc.type = 'square';
+  for (let t = 0; t < duration; t += 0.012) {
+    osc.frequency.setValueAtTime(pitch * (0.6 + Math.random() * 0.9), t0 + t);
+  }
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.value = pitch * 4;
+  filter.Q.value = 1.2;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.001, t0);
+  gain.gain.exponentialRampToValueAtTime(volume, t0 + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.001, t0 + duration);
+  osc.connect(filter).connect(gain).connect(out);
+  osc.start(t0);
+  osc.stop(t0 + duration);
+}
+
+/**
+ * The Tesla's shot: the carbine's shot (the gun is still a carbine), with
+ * the coil's discharge on top: a rising whine (the coil charging in the
+ * instant before), a SNAP of crackle and a buzz that dies out.
+ */
+export function playTeslaShot(): void {
+  if (!ctx) return;
+  playCarbineShot();
+  const t0 = ctx.currentTime;
+  const whine = ctx.createOscillator();
+  whine.type = 'sawtooth';
+  whine.frequency.setValueAtTime(900, t0);
+  whine.frequency.exponentialRampToValueAtTime(3200, t0 + 0.08);
+  whine.frequency.exponentialRampToValueAtTime(400, t0 + 0.35);
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0.001, t0);
+  env.gain.exponentialRampToValueAtTime(0.09, t0 + 0.04);
+  env.gain.exponentialRampToValueAtTime(0.001, t0 + 0.35);
+  whine.connect(env).connect(world);
+  whine.start(t0);
+  whine.stop(t0 + 0.36);
+  crackle(world, 0, 0.25, 0.5, 14);
+  zapBuzz(world, 0, 0.3, 0.12, 120);
+}
+
+/** A spark jumping between two enemies (where = the middle of the chain): a crackle and a short buzz. */
+export function playTeslaArc(where: Where, jumps: number): void {
+  const out = placeSound(where);
+  if (!out) return;
+  const duration = 0.15 + 0.07 * jumps;
+  crackle(out, 0, duration, 0.6, 8 + 5 * jumps);
+  zapBuzz(out, 0, duration, 0.15, 90 + Math.random() * 40);
+  noiseBurst({ out, duration: 0.05, volume: 0.5, filter: 'highpass', frequency: 3500 }); // the snap of the first jump
+}
+
+/** An enemy still twitching from the jolt: a small crackle now and then. */
+export function playTeslaTwitch(where: Where): void {
+  const out = placeSound(where);
+  if (!out) return;
+  crackle(out, 0, 0.12, 0.25, 5);
+}

@@ -42,6 +42,7 @@ import { createProjectileRenderer } from './render/projectiles';
 import { createPickupRenderer } from './render/pickups';
 import { createDynamiteRenderer } from './render/dynamite';
 import { createExplosionRenderer } from './render/explosions';
+import { createTeslaRenderer } from './render/tesla';
 import { createHolyFireRenderer } from './render/holyFire';
 import { createVendorRenderer } from './render/vendors';
 import { createBellRenderer } from './render/bells';
@@ -178,6 +179,7 @@ const projectiles = createProjectileRenderer(scene);
 const pickups = createPickupRenderer(scene);
 const dynamite = createDynamiteRenderer(scene);
 const explosions = createExplosionRenderer(scene);
+const tesla = createTeslaRenderer(scene); // the Forge's carbine: bolts and jolts
 const holyFires = createHolyFireRenderer(scene);
 const vendors = createVendorRenderer(scene, world);
 const bells = createBellRenderer(scene, world);
@@ -586,6 +588,7 @@ renderer.setAnimationLoop((now: number) => {
   pickups.update(game.pickups, camera, alpha, now / 1000);
   dynamite.update(game.dynamite, events, camera, alpha, dt);
   explosions.update(events, camera, dt);
+  tesla.update(game.entities, events, camera, dt);
   holyFires.update(game.holyFires, camera, dt, now / 1000);
   vendors.update(camera, now / 1000);
   bells.update(game, events, camera, dt, now / 1000);

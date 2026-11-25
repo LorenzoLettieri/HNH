@@ -377,6 +377,27 @@ export function spawnSoulWisp(point: THREE.Vector3, direction: THREE.Vector3, co
   soulWisp.spawn(point, direction, count);
 }
 
+/**
+ * ZAPS (the Tesla, render/tesla.ts): tiny white-blue sparks, very fast and
+ * very short-lived, that barely fall: electricity, not hot metal (the
+ * orange sparks fall in arcs and glow longer).
+ */
+const zap = new Burst({
+  max: 600,
+  life: 0.16,
+  size: 0.06,
+  speed: 6,
+  gravity: 2,
+  color: 0x9cd8ff,
+  brightness: 6,
+  additive: true,
+  spread: 2.6,
+});
+
+export function spawnZap(point: THREE.Vector3, direction: THREE.Vector3, count: number): void {
+  zap.spawn(point, direction, count);
+}
+
 export function spawnBlastFire(point: THREE.Vector3, direction: THREE.Vector3, count: number): void {
   blastFire.spawn(point, direction, count);
 }
@@ -391,7 +412,7 @@ export function createParticles(
   levelVents: THREE.Vector3[] = [],
 ): void {
   vents = levelVents;
-  scene.add(steam.points, sparks.layer.points, blood.layer.points, dirt.layer.points, snort.layer.points, blastFire.layer.points, smoke.layer.points, holyFlame.layer.points, soulWisp.layer.points);
+  scene.add(steam.points, sparks.layer.points, blood.layer.points, dirt.layer.points, snort.layer.points, blastFire.layer.points, smoke.layer.points, holyFlame.layer.points, soulWisp.layer.points, zap.layer.points);
   steam.material.uniforms.color.value.set(0xe8dccc);
   fires = levelFires;
   totalEmberRate = fires.reduce((sum, f) => sum + f.emberRate, 0);
@@ -452,6 +473,7 @@ export function updateParticles(
   smoke.update(dt);
   holyFlame.update(dt);
   soulWisp.update(dt);
+  zap.update(dt);
 }
 
 function updateDust(dt: number, time: number, cam: THREE.Vector3): void {

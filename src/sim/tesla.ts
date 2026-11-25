@@ -55,7 +55,7 @@ export function teslaChain(
     amount *= tuning.teslaArcFalloff;
   }
   // Only the impact point: no jump, no lightning to draw (the first jolt is the bullet itself).
-  if (points.length > 1) events.push({ type: 'teslaArc', points });
+  if (points.length > 1) events.push({ type: 'teslaArc', points, entityIds: [...struck].map((e) => e.id) });
 }
 
 /** The nearest living enemy within teslaArcRange of `at`, not struck yet, in sight. */

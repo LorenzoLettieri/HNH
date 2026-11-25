@@ -18,6 +18,7 @@ import {
   playReload,
   playRevolverDraw,
   playCarbineShot,
+  playTeslaShot,
   playCarbineDraw,
   playCarbineLever,
   playCarbineReloadStart,
@@ -103,7 +104,8 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
               // per shot: "Doppio botto" sends two fire events, the pump is racked once.
               if (e.forged && e.barrel === 0) playPumpRack(pumpTimes(e.seconds));
             } else if (e.weapon === 'rifle') {
-              playCarbineShot();
+              if (e.forged) playTeslaShot(); // the Tesla: the carbine's shot plus the coil's discharge
+              else playCarbineShot();
               playCarbineLever(leverTimes(e.seconds)); // cla-CLACK, timed on the animation (the event says how long)
             } else if (e.weapon === 'dynamite') playDynamiteLaunch(drumTimes(e.seconds)); // the drum's CLACK on the animation
             else playShot();
