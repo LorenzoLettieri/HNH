@@ -554,7 +554,7 @@ export const tuning = {
   /** Half-width of the swing, degrees: a wide horizontal arc. */
   shovelAngle: 60,
   /** Damage: 1.5 basic ghouls (the carbine's body shot). Triple the kick: it's what you paid for. */
-  shovelDamage: 75,
+  shovelDamage: 100,
   /** Horizontal speed given to a hit enemy, m/s. */
   shovelKnockback: 15,
   /** Upward speed given to a hit enemy, m/s. */
@@ -608,7 +608,7 @@ export const tuning = {
   /** Radius of the catch around your aim, meters (plus the enemy's own half-width): a loop, not a bullet. */
   lassoCatchRadius: 0.7,
   /** Damage: a little, it's for dragging them, not for killing them. */
-  lassoDamage: 20,
+  lassoDamage: 50,
   /**
    * The yank: the caught enemy flies toward you on an arc with this upward
    * speed, m/s, and lands lassoYankStop meters in front of you (the
