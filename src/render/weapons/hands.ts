@@ -21,7 +21,7 @@
 // same rig, sleeves and materials: see createRifleHands below. (The original
 // rig, with IK and 18 animations, is in assets-src/ for when we need it.)
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { loadGltf } from './gunModel';
 
 export interface Hands {
   /** Goes inside the gun's group: holds the grip, recoils with the gun. */
@@ -57,7 +57,7 @@ export function createHands(): Hands {
   const right = new THREE.Group();
   const left = new THREE.Group();
   const rightShotgun = new THREE.Group();
-  new GLTFLoader().load(`${import.meta.env.BASE_URL}models/arms.glb`, (gltf) => {
+  loadGltf('arms.glb', (gltf) => {
     prepareArms(gltf.scene);
     const armR = gltf.scene.getObjectByName('Arm_R');
     const armL = gltf.scene.getObjectByName('Arm_L');
@@ -92,7 +92,7 @@ export function createRifleHands(): RifleHands {
   const right = new THREE.Group();
   const left = new THREE.Group();
   const morphMeshes: THREE.Mesh[] = []; // the meshes whose morph target follows the lever
-  new GLTFLoader().load(`${import.meta.env.BASE_URL}models/rifleArms.glb`, (gltf) => {
+  loadGltf('rifleArms.glb', (gltf) => {
     prepareArms(gltf.scene);
     const armR = gltf.scene.getObjectByName('Arm_R_Rifle');
     const armL = gltf.scene.getObjectByName('Arm_L_Rifle');

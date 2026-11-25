@@ -6,6 +6,7 @@ import { loadSettings, settings } from './settings';
 import { submitScore } from './leaderboard';
 import { markPractice, practiceGame, startGame } from './fairPlay';
 import { createMenu } from './menu';
+import { finishLoading, loadingStep } from './loading';
 import { createDebugPanel, debugTime, type DebugTool } from './debug/debugPanel';
 import { hitStopScale } from './render/hitStop';
 import { buildCommand, controlSettings, queueRespawn, queueWager, updateLook, view } from './controls';
@@ -75,6 +76,7 @@ import { createMarks } from './render/marks';
 import { applyHeightFog } from './render/heightFog';
 import { applySky, createSky, directionFromAngles, updateSky } from './render/sky';
 import { createShaderWatch } from './render/warmUp';
+import { modelsLoaded } from './render/weapons/gunModel';
 
 // --- Renderer -------------------------------------------------------------
 const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -142,13 +144,17 @@ const seed = Number(params.get('seed') ?? Math.floor(Math.random() * 2 ** 32));
 console.log(`seed: ${seed}`);
 const game = createGame(world, seed);
 
+// The loading screen (loading.ts) tells what's going on; each step is awaited so it gets painted.
+await loadingStep(0.1, 'Texture…');
 await loadMaterials(); // top-level await: the game starts once textures are ready
+await loadingStep(0.3, 'La cittadina…');
 // All the level's boxes, merged into one mesh per texture (see createLevelMeshes).
 for (const mesh of createLevelMeshes(world.boxes)) scene.add(mesh);
 // Streets, squares, boardwalks and rails painted on the ground.
 for (const mesh of createGroundMeshes(world.ground ?? [])) scene.add(mesh);
 // Doors and windows: pictures on the walls (see decals.ts).
 for (const mesh of await createDecalMeshes(world.decals ?? [])) scene.add(mesh);
+await loadingStep(0.45, 'Nemici, armi ed effetti…');
 // Props (barrels, signs, torches, lanterns, grass): models + their flames.
 const props = createProps(scene, world);
 createFireLights(scene, props.fires);
@@ -358,12 +364,7 @@ loadKeybinds();
 void loadKeyNames(); // the real letters of this keyboard (Chrome/Edge), for the menu and the shop's label
 startGame(); // the first game: does it count for the leaderboard? (fairPlay.ts)
 const menu = createMenu({
-  onPlay: () => {
-    // The guns, arms and leg (.glb files) load in the background and may have
-    // arrived after the first warm-up: warm up again (what's done is free).
-    warmUpShaders();
-    requestLock(renderer.domElement);
-  },
+  onPlay: () => requestLock(renderer.domElement),
 });
 const shopMenu = createShopMenu({ onCloseClick: () => closeShop() });
 // The end-of-game screen (render/endScreen.ts). While it's open the game is
@@ -479,12 +480,15 @@ window.addEventListener('resize', () => {
 // From then on, a shader compiled in the middle of the game is a warm-up miss:
 // the watch says so in the console (with the shader's name).
 const shaderWatch = createShaderWatch(renderer);
-function warmUpShaders(): void {
-  const ms = post.warmUp(scene, camera, viewmodel);
-  shaderWatch.accept();
-  console.log(`shader warm-up: ${renderer.info.programs?.length ?? 0} shaders, ${ms.toFixed(0)} ms`);
-}
-warmUpShaders();
+// The guns, arms and leg (.glb files) load in the background: the warm-up
+// waits for them, or their shaders would be left out.
+await loadingStep(0.6, 'Modelli delle armi…');
+await modelsLoaded();
+await loadingStep(0.8, 'Shader…');
+const warmUpMs = post.warmUp(scene, camera, viewmodel);
+shaderWatch.accept();
+console.log(`shader warm-up: ${renderer.info.programs?.length ?? 0} shaders, ${warmUpMs.toFixed(0)} ms`);
+finishLoading(); // everything ready: the loading screen fades, the menu is under it
 
 // --- Loop -----------------------------------------------------------------
 // Fixed timestep with an accumulator:

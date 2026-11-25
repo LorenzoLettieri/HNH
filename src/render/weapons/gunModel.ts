@@ -7,7 +7,46 @@
 // with their origin on their pivot: `onLoad` receives the model to find them
 // by name.
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
+
+// --- Every .glb goes through loadGltf: so the loading screen can wait for them ---
+let pending = 0;
+let waiting: (() => void)[] = [];
+
+/**
+ * Loads a .glb file of public/models/ (GLTFLoader, asynchronous like fetch())
+ * and calls `onLoad` with it. It also counts the files still on their way,
+ * for modelsLoaded(). A file that fails is counted as done (with a warning):
+ * the game goes on without that model rather than waiting forever.
+ */
+export function loadGltf(file: string, onLoad: (gltf: GLTF) => void): void {
+  pending++;
+  const done = (): void => {
+    pending--;
+    if (pending === 0) {
+      for (const resolve of waiting) resolve();
+      waiting = [];
+    }
+  };
+  new GLTFLoader().load(
+    `${import.meta.env.BASE_URL}models/${file}`,
+    (gltf) => {
+      onLoad(gltf);
+      done();
+    },
+    undefined,
+    (err) => {
+      console.warn(`Model ${file} not loaded:`, err);
+      done();
+    },
+  );
+}
+
+/** Resolves when every model asked for so far has arrived (like Promise.all over the loads). */
+export function modelsLoaded(): Promise<void> {
+  if (pending === 0) return Promise.resolve();
+  return new Promise((resolve) => waiting.push(resolve));
+}
 
 /**
  * Returns a group right away; the model is added inside it when the file
@@ -15,7 +54,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
  */
 export function loadGunModel(file: string, onLoad?: (model: THREE.Object3D) => void): THREE.Group {
   const root = new THREE.Group();
-  new GLTFLoader().load(`${import.meta.env.BASE_URL}models/${file}`, (gltf) => {
+  loadGltf(file, (gltf) => {
     gltf.scene.traverse((o) => {
       if (!(o instanceof THREE.Mesh)) return;
       const m = o.material as THREE.MeshStandardMaterial;

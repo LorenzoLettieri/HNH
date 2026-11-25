@@ -9,6 +9,36 @@
       html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
       canvas { display: block; width: 100%; height: 100%; }
       /* --- Menu (start / pause) --- */
+      /* --- Loading screen (src/loading.ts): plain HTML, so it's on screen the
+         instant the page opens, before the game's JavaScript has even arrived.
+         Above the menu (z-index 5); it fades out when the game is ready. The
+         progress bar is a burning fuse: --progress (0..1) is set from the TS. */
+      #loading {
+        position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 22px;
+        background: radial-gradient(ellipse at center, #1c0804, #000 75%); color: #c8b8a0;
+        transition: opacity 0.6s ease-out; --progress: 0;
+      }
+      #loading.done { opacity: 0; pointer-events: none; }
+      #loading-title {
+        margin: 0; color: #d02010; letter-spacing: 4px;
+        font: bold 44px Georgia, 'Times New Roman', serif; text-shadow: 3px 3px 0 #000;
+      }
+      #loading-fuse { position: relative; width: min(360px, 80vw); height: 6px; background: #2a1408; border: 2px solid #120604; }
+      #loading-burnt {
+        position: absolute; inset: 0; transform-origin: left; transform: scaleX(var(--progress));
+        background: linear-gradient(90deg, #5a1808, #c83a10); transition: transform 0.25s ease-out;
+      }
+      /* The spark at the fuse's tip: flickers on its own (a CSS animation runs
+         on the compositor, so it keeps going even while the JS is busy). */
+      #loading-spark {
+        position: absolute; top: 50%; left: calc(var(--progress) * 100%); width: 14px; height: 14px;
+        margin: -7px 0 0 -7px; border-radius: 50%; transition: left 0.25s ease-out;
+        background: radial-gradient(circle, #fff0c0 0%, #ffb040 35%, rgba(255, 90, 20, 0) 70%);
+        animation: loading-spark 0.18s infinite alternate;
+      }
+      @keyframes loading-spark { from { transform: scale(0.8); opacity: 0.8; } to { transform: scale(1.3); opacity: 1; } }
+      #loading-step { font: 14px monospace; letter-spacing: 1px; color: #8a7a68; min-height: 1.2em; }
       #overlay {
         position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
         background: rgba(0, 0, 0, 0.6); color: #f0c080; font: 16px monospace; z-index: 5;
@@ -602,6 +632,11 @@
       <div id="shop-upgrades-head"><h3 id="shop-upgrades-title"></h3><span id="shop-upgrades-pips"></span></div>
       <div id="shop-upgrades-note">Scegli un potenziamento. Il prossimo coster&agrave; di pi&ugrave;.</div>
       <div id="shop-upgrades-cards"></div>
+    </div>
+    <div id="loading">
+      <h1 id="loading-title">HIGH NOON HELL</h1>
+      <div id="loading-fuse"><div id="loading-burnt"></div><div id="loading-spark"></div></div>
+      <div id="loading-step">Caricamento…</div>
     </div>
     <div id="overlay">
       <div id="menu">

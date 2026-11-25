@@ -17,7 +17,7 @@
 //   bone rotations. An AnimationAction is one clip playing in a mixer, with
 //   its own speed, looping, etc. (think of an <audio> element: play, reset, rate).
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { loadGltf } from './gunModel';
 import { tuning } from '../../sim/config';
 
 // Frames of the clip, at 60 fps (same numbers as in tools/blender/leg.py).
@@ -44,7 +44,7 @@ export function createKickLeg(): KickLeg {
 
   // Loading is asynchronous (like fetch()): until it's done, kicks just
   // don't show a leg. The game doesn't wait for it.
-  new GLTFLoader().load(`${import.meta.env.BASE_URL}models/leg.glb`, (gltf) => {
+  loadGltf('leg.glb', (gltf) => {
     gltf.scene.traverse((o) => {
       if (!(o instanceof THREE.Mesh)) return;
       // A skinned mesh's bounding box is computed in the rest pose (standing,
