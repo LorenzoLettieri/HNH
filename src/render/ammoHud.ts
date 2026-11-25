@@ -30,8 +30,9 @@ function build(weapon: WeaponId, size: number, akimbo: boolean, holy: boolean): 
     r.className = `round ${weapon}`;
     // Akimbo: two cylinders, so a gap in the middle ("6 + 6").
     if (akimbo && i === size / 2) r.classList.add('cylinder-gap');
-    // The Forge's dynamite: holy-water sticks, ivory with a blue cross.
-    if (holy) r.classList.add('holy');
+    // The Forge's guns: the dynamite's holy-water sticks (ivory, a blue cross),
+    // the Tesla's charged rounds (a glowing blue tip).
+    if (holy) r.classList.add(weapon === 'rifle' ? 'tesla' : 'holy');
     roundsEl.append(r);
     rounds.push(r);
   }
@@ -41,7 +42,7 @@ function build(weapon: WeaponId, size: number, akimbo: boolean, holy: boolean): 
 export function updateAmmoHud(player: PlayerState): void {
   const size = magazineSize(player, player.weapon);
   const akimbo = player.weapon === 'revolver' && isAkimbo(player);
-  const holy = player.weapon === 'dynamite' && player.forged.dynamite > 0;
+  const holy = (player.weapon === 'dynamite' || player.weapon === 'rifle') && player.forged[player.weapon] > 0;
   if (builtFor !== `${player.weapon}:${size}:${akimbo}:${holy}`) build(player.weapon, size, akimbo, holy);
 
   // Full rounds on the left, spent ones on the right (they're fired from the right).

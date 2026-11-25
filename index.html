@@ -459,6 +459,9 @@
       /* Carbine: the same .44-40 as the revolver, but 8 of them in a row: a bit slimmer, gap smaller. */
       .round.rifle { width: 6px; height: 24px; background: linear-gradient(#8c8478 0 25%, #b08c4c 25% 90%, #6a5228 90%); }
       #ammo-rounds:has(.rifle) { gap: 4px; }
+      /* The Tesla (the Forge's carbine): charged rounds, a copper case and a pale-blue tip that glows. */
+      .round.rifle.tesla { background: linear-gradient(#bfe4ff 0 25%, #c06a30 25% 90%, #6a3a18 90%); box-shadow: 0 -3px 5px -1px #4aa0ff; }
+      .round.rifle.tesla.spent { background: transparent; box-shadow: inset 0 0 0 1px #4a3c2a, 2px 2px 0 rgba(0, 0, 0, 0.5); }
       /* Dynamite: a fat red stick with darker paper folds at the ends and a pale fuse sticking out on top
          (the fuse is a ::before: a tiny box drawn above the stick, like a second element without touching the HTML). */
       .round.dynamite { position: relative; width: 11px; height: 30px; margin-top: 7px; background: linear-gradient(to right, rgba(255, 255, 255, 0.16) 0 3px, transparent 3px), linear-gradient(#5a100c 0 3px, #b3261e 3px calc(100% - 3px), #5a100c calc(100% - 3px)); }
