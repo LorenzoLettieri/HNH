@@ -18,6 +18,7 @@ import { tuning } from '../sim/config';
 import type { PlayerState } from '../sim/player';
 import { adsAmount } from '../sim/weapon';
 import { ELASTIC_STEP, springKick } from './weapons/elastic';
+import { videoSettings } from './videoSettings';
 
 /** Mutable so the debug panel can change them. */
 export const cameraFeelSettings = {
@@ -99,6 +100,10 @@ export function shotKick(up: number, roll: number, fov: number): void {
   const s = cameraFeelSettings;
   const { jump, speed } = springKick(s.shotStiffness, s.shotDamping, s.shotSnap);
   const side = Math.random() < 0.5 ? -1 : 1;
+  // The menu's "Scossoni della vista" (videoSettings.ts) scales every shake.
+  up *= videoSettings.shake;
+  roll *= videoSettings.shake;
+  fov *= videoSettings.shake;
   shot.pitch += up * jump;
   shot.pitchVel += up * speed;
   shot.roll += side * roll * jump;
@@ -116,7 +121,7 @@ export function shotKick(up: number, roll: number, fov: number): void {
  */
 export function hurtKick(angle: number, damage: number): void {
   const s = cameraFeelSettings;
-  const size = THREE.MathUtils.degToRad(s.hurtKick) * Math.min(2, damage / s.hurtKickDamage);
+  const size = THREE.MathUtils.degToRad(s.hurtKick) * Math.min(2, damage / s.hurtKickDamage) * videoSettings.shake;
   // For a damped spring kicked with speed v the head goes out by about v/ω × peak
   // (ω = sqrt(stiffness), peak ≈ 0.57 with damping 0.45): solve for v.
   const omega = Math.sqrt(s.hurtStiffness);
@@ -124,7 +129,7 @@ export function hurtKick(angle: number, damage: number): void {
   snap.pitchVel += Math.cos(angle) * v;
   snap.rollVel += Math.sin(angle) * v;
   // Shake: the snap is one smooth movement, the shake adds the "rattle".
-  shake = Math.max(shake, THREE.MathUtils.degToRad(s.hurtShake) * Math.min(2, damage / s.hurtKickDamage));
+  shake = Math.max(shake, THREE.MathUtils.degToRad(s.hurtShake) * Math.min(2, damage / s.hurtKickDamage) * videoSettings.shake);
 }
 
 /**
@@ -134,7 +139,7 @@ export function hurtKick(angle: number, damage: number): void {
  */
 export function blastShake(amount: number): void {
   const s = cameraFeelSettings;
-  shake = Math.max(shake, THREE.MathUtils.degToRad(s.blastShake) * Math.min(1, amount));
+  shake = Math.max(shake, THREE.MathUtils.degToRad(s.blastShake) * Math.min(1, amount) * videoSettings.shake);
 }
 
 /**
@@ -169,7 +174,8 @@ export function updateCameraFeel(
 
   // 1. Speed FOV: 0 below speedFovStart, 1 at speedFovFull, linear in between.
   const t = THREE.MathUtils.clamp((speed - s.speedFovStart) / (s.speedFovFull - s.speedFovStart), 0, 1);
-  fov = approach(fov, s.baseFov + s.speedFovExtra * t, s.fovRate, dt);
+  // (Off in the menu: "FOV con la velocità", videoSettings.ts.)
+  fov = approach(fov, s.baseFov + (videoSettings.speedFov ? s.speedFovExtra * t : 0), s.fovRate, dt);
   // The zoom goes on top, faster than the speed FOV: aiming must be snappy.
   ads = approach(ads, adsAmount(player), 30, dt);
   const target = player.forged.rifle > 0 ? s.opticAdsFov : s.adsFov;
@@ -201,6 +207,7 @@ export function updateCameraFeel(
   const sideways = (player.vx * rightX + player.vz * rightZ) / tuning.maxGroundSpeed;
   let targetRoll = -THREE.MathUtils.clamp(sideways, -1, 1) * s.strafeRoll;
   if (player.sliding) targetRoll -= s.slideRoll * (sideways >= 0 ? 1 : -1);
+  if (!videoSettings.viewRoll) targetRoll = 0; // the menu's "Inclinazione della vista"
   roll = approach(roll, THREE.MathUtils.degToRad(targetRoll), s.rollRate, dt);
   // Hit snap, on top of the view and the roll: only visual, aim is unaffected.
   // Small substeps: a stiff spring with a long frame (a hitch) could explode.

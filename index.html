@@ -77,6 +77,12 @@
       }
       /* Leaderboard page: name box (spans two columns) and the table. */
       .setting.name { grid-template-columns: auto 1fr; }
+      /* Drop-down rows (Video page): label, then the list over the last two columns. */
+      .setting.select { margin-top: 8px; }
+      .setting select {
+        grid-column: 2 / 4; box-sizing: border-box; width: 100%; background: #2a1810; color: inherit;
+        border: 1px solid #5a3a20; font: 15px monospace; padding: 2px 4px;
+      }
       .setting input[type='text'] {
         box-sizing: border-box; width: 100%; background: #2a1810; color: inherit;
         border: 1px solid #5a3a20; font: 16px monospace; padding: 2px 6px;
@@ -131,10 +137,11 @@
       #debug-panel input[type='number'] { width: 56px; background: #2a1810; color: inherit; border: 1px solid #5a3a20; }
       #debug-panel button { margin: 6px 0 10px; background: #5a3a20; color: inherit; border: 0; padding: 4px 8px; cursor: pointer; }
 
-      /* Crosshair: a canvas painted by src/render/crosshair.ts (18 × 18 pixels, centered;
-         a canvas because forced dark modes repaint CSS colors). */
+      /* Crosshair: a canvas painted by src/render/crosshair.ts (centered; its size and
+         margins are set there, they depend on the menu's settings; a canvas because
+         forced dark modes repaint CSS colors). */
       #crosshair {
-        position: fixed; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px;
+        position: fixed; left: 50%; top: 50%;
         pointer-events: none; image-rendering: pixelated;
       }
       /* The view through the reinforced carbine's scope (src/render/scopeOverlay.ts): a
@@ -646,6 +653,7 @@
           <button id="menu-play">Gioca</button>
           <button data-goto="leaderboard">Classifica</button>
           <button data-goto="settings">Impostazioni</button>
+          <button data-goto="video">Video</button>
           <button data-goto="controls">Comandi</button>
           <button id="menu-fullscreen">Schermo intero</button>
           <p class="hint" id="menu-esc-hint">A schermo intero Esc apre e chiude la pausa (tienilo premuto per uscire dallo schermo intero).</p>
@@ -691,6 +699,84 @@
             <input type="checkbox" id="set-hit-muffle" />
           </label>
           <p class="hint">Fischio e audio ovattato rendono più pesanti i colpi subiti: spegnili se ti danno fastidio. Le impostazioni sono salvate nel browser.</p>
+          <button class="back" data-goto="main">Indietro</button>
+        </div>
+
+        <div class="menu-page" data-page="video" hidden>
+          <h2>Video</h2>
+          <h3>Immagine</h3>
+          <label class="setting select">
+            <span>Risoluzione</span>
+            <select id="set-resolution">
+              <option value="270">Retrò (pixel grossi, 270 righe)</option>
+              <option value="405">Media (405 righe)</option>
+              <option value="540">Alta (540 righe)</option>
+              <option value="720">Molto alta (720 righe)</option>
+              <option value="0">Piena (niente pixel art)</option>
+            </select>
+          </label>
+          <label class="setting toggle">
+            <span>Colori retrò (meno sfumature e retinatura)</span>
+            <input type="checkbox" id="set-color-reduction" />
+          </label>
+          <label class="setting">
+            <span>Luminosità %</span>
+            <input type="range" id="set-brightness" min="50" max="200" step="5" />
+            <input type="number" id="set-brightness-num" step="1" />
+          </label>
+          <label class="setting">
+            <span>Nebbia %</span>
+            <input type="range" id="set-fog" min="25" max="100" step="5" />
+            <input type="number" id="set-fog-num" step="1" />
+          </label>
+          <label class="setting">
+            <span>Campo visivo (FOV verticale)</span>
+            <input type="range" id="set-fov" min="60" max="110" step="1" />
+            <input type="number" id="set-fov-num" step="1" />
+          </label>
+          <p class="hint">Se vedi poco: alza la luminosità (schiarisce le ombre senza bruciare il cielo) o abbassa la nebbia. Se i pixel grossi ti stancano: alza la risoluzione e spegni i colori retrò. Il FOV è verticale: 75 corrisponde a circa 107° in orizzontale su uno schermo 16:9.</p>
+          <h3>Comfort</h3>
+          <label class="setting">
+            <span>Scossoni della vista %</span>
+            <input type="range" id="set-shake" min="0" max="100" step="5" />
+            <input type="number" id="set-shake-num" step="1" />
+          </label>
+          <label class="setting">
+            <span>Lampi a schermo %</span>
+            <input type="range" id="set-flashes" min="0" max="100" step="5" />
+            <input type="number" id="set-flashes-num" step="1" />
+          </label>
+          <label class="setting toggle">
+            <span>FOV che si allarga con la velocità</span>
+            <input type="checkbox" id="set-speed-fov" />
+          </label>
+          <label class="setting toggle">
+            <span>Inclinazione della vista (strafe e scivolata)</span>
+            <input type="checkbox" id="set-view-roll" />
+          </label>
+          <p class="hint">Se ti viene il mal di movimento: abbassa gli scossoni e spegni FOV dinamico e inclinazione. I lampi sono il rosso quando sei colpito, il colore dei raccoglibili e il bianco di HIGH NOON.</p>
+          <h3>Mirino</h3>
+          <label class="setting select">
+            <span>Colore</span>
+            <select id="set-crosshair-color">
+              <option value="warm">Bianco caldo</option>
+              <option value="white">Bianco</option>
+              <option value="green">Verde</option>
+              <option value="yellow">Giallo</option>
+              <option value="cyan">Azzurro</option>
+              <option value="magenta">Magenta</option>
+            </select>
+          </label>
+          <label class="setting">
+            <span>Grandezza</span>
+            <input type="range" id="set-crosshair-size" min="1" max="3" step="1" />
+            <input type="number" id="set-crosshair-size-num" step="1" />
+          </label>
+          <label class="setting toggle">
+            <span>Contorno nero</span>
+            <input type="checkbox" id="set-crosshair-outline" />
+          </label>
+          <button id="video-reset">Ripristina le impostazioni video</button>
           <button class="back" data-goto="main">Indietro</button>
         </div>
 

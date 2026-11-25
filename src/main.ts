@@ -18,6 +18,7 @@ import { forceMapEventNextWave } from './sim/mapEvents';
 import { wagerInReach } from './sim/wager';
 import { DEFAULT_LEVEL, LEVELS } from './levels';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
+import { onVideoChange, videoSettings } from './render/videoSettings';
 import { lookScale, updateCameraFeel } from './render/cameraFeel';
 import { createGroundMeshes, createLevelMeshes, loadMaterials } from './render/materials';
 import { createDecalMeshes } from './render/decals';
@@ -125,8 +126,9 @@ function applyAtmosphere(a: Atmosphere): void {
   post.setSun(directionFromAngles(a.sunElevation, a.sunAzimuth), a.godRays);
   viewmodel.applyAtmosphere(a);
   fog.color.set(a.skyHorizon);
-  fog.near = a.fogNear;
-  fog.far = a.fogFar;
+  // The menu's "Nebbia" (videoSettings.fog): less fog = the same fog, farther away.
+  fog.near = a.fogNear / videoSettings.fog;
+  fog.far = a.fogFar / videoSettings.fog;
   ambient.color.set(a.ambientSky);
   ambient.groundColor.set(a.ambientGround);
   ambient.intensity = a.ambientIntensity;
@@ -207,6 +209,8 @@ function currentAtmosphere(): Atmosphere {
   return mixAtmosphere(mixAtmosphere(ATMOSPHERES[atmosphereIndex], FIRE_ECLIPSE, eclipseAmount), DEVIL_NIGHT, darknessAmount);
 }
 applyAtmosphere(currentAtmosphere());
+// A video setting changed in the menu (the fog): apply the atmosphere again.
+onVideoChange(() => applyAtmosphere(currentAtmosphere()));
 
 // --- Debug panel (key below Esc) -------------------------------------------
 /** Debug tools that change the game: this game won't count for the leaderboard (fairPlay.ts). */
@@ -550,7 +554,7 @@ renderer.setAnimationLoop((now: number) => {
   updateScopeOverlay(player); // a reinforced carbine fully aimed: the view through the scope
   camera.position.set(
     prevPlayer.x + (player.x - prevPlayer.x) * alpha,
-    prevPlayer.y + (player.y - prevPlayer.y) * alpha + eyeHeight - updateLandingDip(dt),
+    prevPlayer.y + (player.y - prevPlayer.y) * alpha + eyeHeight - updateLandingDip(dt) * videoSettings.shake,
     prevPlayer.z + (player.z - prevPlayer.z) * alpha,
   );
   // The sky follows the camera: you can never get closer to it.

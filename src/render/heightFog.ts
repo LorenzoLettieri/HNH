@@ -3,6 +3,7 @@
 // its fog shader code into ours.
 import * as THREE from 'three';
 import type { Atmosphere } from './atmospheres';
+import { videoSettings } from './videoSettings';
 
 // Shared uniform objects: every patched material points to THESE objects,
 // so changing a value here updates all materials at once.
@@ -73,6 +74,6 @@ export function patchHeightFog(shader: THREE.WebGLProgramParametersWithUniforms)
 }
 
 export function applyHeightFog(a: Atmosphere): void {
-  uniforms.hfDensity.value = a.groundFogDensity;
+  uniforms.hfDensity.value = a.groundFogDensity * videoSettings.fog; // the menu's "Nebbia"
   uniforms.hfFalloff.value = a.groundFogFalloff;
 }

@@ -10,10 +10,24 @@ import { warmUp } from './warmUp';
 
 /** Post-processing settings. A mutable object so the debug panel can change them live. */
 export const postSettings = {
+  /**
+   * true = the low-res pixel-art image (pixelHeight rows); false = the
+   * screen's full resolution. The menu's "Risoluzione" (settings.ts) sets both.
+   */
+  pixelArt: true,
   /** Vertical resolution of the low-res image. Lower = bigger pixels. */
   pixelHeight: 270,
+  /** Color reduction + dithering on or off (the menu's "Colori retrò"). */
+  colorReduction: true,
   /** Shades per color channel (red, green, blue). Lower = more "retro" banding. */
   colorLevels: 20,
+  /**
+   * Brightness as a gamma curve: color^(1/gamma), on the final sRGB values.
+   * 1 = unchanged; above 1 the darks come up a lot and the brights barely move
+   * (0.1 → 0.32 at gamma 2, while 1 stays 1): it shows what's in the shadows
+   * without burning the sky white, which a plain multiplication would do.
+   */
+  gamma: 1,
   /** Dithering strength: 0 = hard color bands, 1 = bands broken by a pixel pattern. */
   dither: 1,
 
@@ -125,6 +139,7 @@ const finalFragment = /* glsl */ `
   uniform vec2 resolution;   // size of the low-res image, in pixels
   uniform float levels;      // 0 = no color reduction
   uniform float dither;
+  uniform float gamma;
   varying vec2 vUv;
 
   // Ordered dithering: a 4×4 grid of thresholds (Bayer matrix). Neighboring
@@ -156,6 +171,7 @@ const finalFragment = /* glsl */ `
     // clipping each channel: a too-bright orange stays orange, not yellow-white.
     color /= max(1.0, max(color.r, max(color.g, color.b)));
     color = linearToSRGB(color);
+    color = pow(color, vec3(1.0 / gamma)); // brightness (postSettings.gamma)
 
     if (levels > 0.0) {
       vec2 pixel = floor(vUv * resolution); // which low-res pixel we're in
@@ -256,6 +272,7 @@ export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
     resolution: { value: new THREE.Vector2() },
     levels: { value: 0 },
     dither: { value: 0 },
+    gamma: { value: 1 },
   });
 
   // One full-screen rectangle; we swap its material for each pass.
@@ -271,13 +288,18 @@ export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
     renderer.render(postScene, postCamera);
   }
 
-  let pixelArt = true;
   let screenW = 1;
   let screenH = 1;
   const sceneSize = new THREE.Vector2();
+  // What the targets were last sized for: render() resizes them when the
+  // settings change (menu or debug panel), without anyone having to tell it.
+  let sizedPixelArt = true;
+  let sizedHeight = 0;
 
   function resizeTargets(): void {
-    if (pixelArt) {
+    sizedPixelArt = postSettings.pixelArt;
+    sizedHeight = postSettings.pixelHeight;
+    if (postSettings.pixelArt) {
       // Keep the screen's aspect ratio, with a fixed number of rows.
       const h = Math.round(postSettings.pixelHeight);
       sceneSize.set(Math.round((h * screenW) / screenH), h);
@@ -315,8 +337,10 @@ export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
       // Settings may have changed (debug panel): copy them into the uniforms.
       brightMaterial.uniforms.threshold.value = postSettings.bloomThreshold;
       finalMaterial.uniforms.bloomStrength.value = postSettings.bloomStrength;
-      finalMaterial.uniforms.levels.value = pixelArt ? postSettings.colorLevels : 0;
+      finalMaterial.uniforms.levels.value = postSettings.colorReduction ? postSettings.colorLevels : 0;
       finalMaterial.uniforms.dither.value = postSettings.dither;
+      finalMaterial.uniforms.gamma.value = postSettings.gamma;
+      if (sizedPixelArt !== postSettings.pixelArt || sizedHeight !== postSettings.pixelHeight) resizeTargets();
 
       // 1. Scene → low-res image.
       renderer.setRenderTarget(sceneTarget);
@@ -369,7 +393,7 @@ export function createPostProcess(renderer: THREE.WebGLRenderer): PostProcess {
       resizeTargets();
     },
     togglePixelArt() {
-      pixelArt = !pixelArt;
+      postSettings.pixelArt = !postSettings.pixelArt;
       resizeTargets();
     },
     refresh() {

@@ -23,6 +23,7 @@ import { updateLowHealth } from './lowHealth';
 import { addHurtArc, screenAngle, updateHurtArcs } from './damageIndicator';
 import { hurtKick } from './cameraFeel';
 import { mainKeyName } from '../keybinds';
+import { videoSettings } from './videoSettings';
 
 const damage = document.getElementById('damage')!;
 const pickupFlash = document.getElementById('pickup-flash')!;
@@ -232,10 +233,10 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
   // Red vignette: a flash on each hit (low health has its own effect, lowHealth.ts).
   flash = Math.max(0, flash - dt * FLASH_FADE);
   updateHurtArcs(player, dt);
-  damage.style.opacity = String(flash);
+  damage.style.opacity = String(flash * videoSettings.flashes); // the menu's "Lampi a schermo"
 
   pickupTime = Math.max(0, pickupTime - dt * 5); // gone in 0.2 s
-  pickupFlash.style.opacity = String(pickupTime * 0.35);
+  pickupFlash.style.opacity = String(pickupTime * 0.35 * videoSettings.flashes);
 
 }
 

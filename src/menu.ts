@@ -1,11 +1,11 @@
 // The pause / start menu shown over the game (the "overlay" in index.html).
 // Pure DOM: the markup lives in index.html, here we only wire the buttons.
 //
-// Pages: "main" (Gioca, Classifica, Impostazioni, Comandi, Schermo intero), "leaderboard", "settings", "controls"
-// (the rebindable keys: keysMenu.ts).
+// Pages: "main" (Gioca, Classifica, Impostazioni, Video, Comandi, Schermo intero), "leaderboard", "settings",
+// "video" (resolution, brightness, fog, FOV, comfort, crosshair), "controls" (the rebindable keys: keysMenu.ts).
 // Every page is a <div class="menu-page" data-page="..."> and every button
 // with data-goto="..." switches to that page: like a tiny client-side router.
-import { SENSITIVITY_MAX, SENSITIVITY_MIN, set, settings, type Settings } from './settings';
+import { RANGES, resetVideo, set, settings, type Settings } from './settings';
 import { NAME_MAX_LENGTH } from './leaderboard';
 import { fillScoreTable } from './render/scoreTable';
 import { createKeysPage } from './keysMenu';
@@ -97,9 +97,12 @@ export function createMenu(options: { onPlay: () => void }): Menu {
    * The slider covers the common range, the box accepts any valid value
    * (set() clamps it) with finer steps.
    */
-  function bindNumber(sliderId: string, boxId: string, key: 'sensitivity' | 'volume'): void {
+  function bindNumber(sliderId: string, boxId: string, key: keyof typeof RANGES): void {
     const slider = document.getElementById(sliderId) as HTMLInputElement;
     const box = document.getElementById(boxId) as HTMLInputElement;
+    // The box accepts the whole valid range (the slider may cover less of it).
+    box.min = String(RANGES[key][0]);
+    box.max = String(RANGES[key][1]);
     const show = (): void => {
       slider.value = String(settings[key]);
       box.value = String(settings[key]);
@@ -128,13 +131,43 @@ export function createMenu(options: { onPlay: () => void }): Menu {
     refreshers.push(() => (box.checked = settings[key]));
   }
 
-  const sensBox = document.getElementById('set-sens-num') as HTMLInputElement;
-  sensBox.min = String(SENSITIVITY_MIN);
-  sensBox.max = String(SENSITIVITY_MAX);
+  /**
+   * A drop-down list (<select>) for a setting with a few choices. The
+   * <option> values are strings: `parse` turns them back (Number for the
+   * resolution); set() refuses anything that isn't one of the choices.
+   */
+  function bindSelect<K extends 'resolution' | 'crosshairColor'>(
+    id: string,
+    key: K,
+    parse: (value: string) => Settings[K],
+  ): void {
+    const select = document.getElementById(id) as HTMLSelectElement;
+    select.addEventListener('change', () => set(key, parse(select.value)));
+    refreshers.push(() => (select.value = String(settings[key])));
+  }
+
   bindNumber('set-sens', 'set-sens-num', 'sensitivity');
   bindNumber('set-volume', 'set-volume-num', 'volume');
   bindToggle('set-ear-ringing', 'earRinging');
   bindToggle('set-hit-muffle', 'hitMuffle');
+
+  // Video page.
+  bindSelect('set-resolution', 'resolution', Number);
+  bindToggle('set-color-reduction', 'colorReduction');
+  bindNumber('set-brightness', 'set-brightness-num', 'brightness');
+  bindNumber('set-fog', 'set-fog-num', 'fog');
+  bindNumber('set-fov', 'set-fov-num', 'fov');
+  bindNumber('set-shake', 'set-shake-num', 'shake');
+  bindNumber('set-flashes', 'set-flashes-num', 'flashes');
+  bindToggle('set-speed-fov', 'speedFov');
+  bindToggle('set-view-roll', 'viewRoll');
+  bindSelect('set-crosshair-color', 'crosshairColor', (v) => v as Settings['crosshairColor']);
+  bindNumber('set-crosshair-size', 'set-crosshair-size-num', 'crosshairSize');
+  bindToggle('set-crosshair-outline', 'crosshairOutline');
+  document.getElementById('video-reset')!.addEventListener('click', () => {
+    resetVideo();
+    refreshAll();
+  });
   refreshAll();
 
   return {

@@ -13,6 +13,7 @@ import { TICK_DT } from '../sim/config';
 import type { SimEvent } from '../sim/events';
 import { isHighNoon, type StyleState } from '../sim/style';
 import { playHighNoon, playQuench, setCanyonEcho } from '../audio/sfx';
+import { videoSettings } from './videoSettings';
 
 /** The flash at the start: how long it lasts (s), how strong in the middle and at the borders (0..1). */
 const FLASH_TIME = 0.7;
@@ -64,7 +65,8 @@ export function updateHighNoon(style: StyleState, events: readonly SimEvent[], d
   // How much the climax is "on": 1 for the whole climax, down to 0 in its last END_FADE seconds.
   const on = highNoon ? Math.min(1, (style.highNoonTicks * TICK_DT) / END_FADE) : 0;
   const pulse = Math.sin(clock * GLOW_HZ * Math.PI * 2);
-  const f = flash * flash; // squared: it drops fast, then lingers a little
+  // Squared: it drops fast, then lingers a little. Scaled by the menu's "Lampi a schermo".
+  const f = flash * flash * videoSettings.flashes;
 
   setLayer(heatLayer, { '--heat': HEAT * on });
   setLayer(lightLayer, {
