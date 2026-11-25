@@ -20,7 +20,8 @@ export interface InputCommand {
   /**
    * Alternate fire held (right mouse button): what it does depends on the
    * weapon. The carbine aims down the sights; the revolver FANS the whole
-   * cylinder in a burst (a press starts it); the shotgun nothing, for now.
+   * cylinder in a burst (a press starts it); the lasso throws its grappling
+   * hook (held = it reels you in); the shotgun nothing, for now.
    */
   altFire: boolean;
   /** Kick button held (melee). */
@@ -29,7 +30,8 @@ export interface InputCommand {
   reload: boolean;
   /**
    * Weapon change asked this tick: 0 = none, 1..N = that slot (1 = revolver,
-   * 2 = shotgun, 3 = carbine, 4 = dynamite launcher), -1 = next weapon, -2 = previous (mouse wheel, Q).
+   * 2 = shotgun, 3 = carbine, 4 = dynamite launcher, 5 = the melee weapon you carry:
+   * MELEE_KEY in weapon.ts), -1 = next weapon, -2 = previous (mouse wheel).
    */
   weaponSelect: number;
   /** Go back to the spawn point (debug/testing). */

@@ -35,6 +35,7 @@ const STYLE_AWARD_NAMES: Record<StyleAward, AwardLook> = {
   slideKill: { name: 'IN SCIVOLATA' },
   kickKill: { name: 'KUNG FU' },
   shovelKill: { name: 'BONK' },
+  lassoKill: { name: 'YEEHAW' },
   quickSwitch: { name: 'CAMBIO LAMPO' },
   quickscope: { name: 'QUICKSCOPE' },
   noscope: { name: 'NOSCOPE' },
@@ -50,6 +51,7 @@ const STYLE_AWARD_NAMES: Record<StyleAward, AwardLook> = {
   bhop: { name: (n) => (n > 1 ? `BHOP ×${n}` : 'BHOP'), minor: true },
   slideJump: { name: 'SLIDE JUMP', minor: true },
   vent: { name: 'UIIII', minor: true },
+  grapple: { name: 'AL LAZO', minor: true },
   nearMiss: { name: 'PER UN PELO' },
   torero: { name: 'OLÉ!' },
 };

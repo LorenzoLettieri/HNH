@@ -5,7 +5,8 @@ import { findWall, moveAndCollide, overlapsAny } from './collision';
 import type { World } from './world';
 import { ventUnder } from './props';
 import { secondsToTicks, tuning } from './config';
-import type { AmmoType, GearId, WeaponId } from './weapon';
+import type { AmmoType, GearId, MeleeId, WeaponId } from './weapon';
+import { applyHook, hooked, noHook, type HookState } from './lasso';
 import type { SimEvent } from './events';
 import { noCards, type CardId } from './upgrades';
 import type { WagerCurse } from './wager';
@@ -46,8 +47,15 @@ export interface PlayerState {
   airTicks: number;
 
   // --- Weapons (see weapon.ts) ---
-  /** The weapon in your hands. */
+  /** The GUN in your hands (or, with a melee weapon drawn, the one that comes back up). */
   weapon: WeaponId;
+  /**
+   * The ONE melee weapon you carry (key 5 and F): the last one bought, or
+   * swapped back at the armory (shop.ts); null = none (your boot). See MELEE in weapon.ts.
+   */
+  melee: MeleeId | null;
+  /** That melee weapon is in your HANDS (key 5), instead of the gun: see heldItem in weapon.ts. */
+  meleeDrawn: boolean;
   /** Ticks left before the weapon you just switched to is ready (0 = ready). */
   switchTicks: number;
   /**
@@ -173,6 +181,12 @@ export interface PlayerState {
   kickCooldownTicks: number;
   /** Was kick held during the previous tick? (one press = one kick) */
   kickHeld: boolean;
+  /** This melee attack put the gun away (it was in your hands): it comes back up at the end (kick.ts). */
+  kickGunAway: boolean;
+  /** The lasso's throw: the entity it's flying at (picked at the press, -1 = none: kick.ts). */
+  lassoTargetId: number;
+  /** The lasso's grappling hook (the right button with the lasso in your hands: lasso.ts). */
+  hook: HookState;
 
   // --- Health ---
   /** No regeneration: health comes back only from pickups (future). */
@@ -240,6 +254,11 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     kickTicks: 0,
     kickCooldownTicks: 0,
     kickHeld: false,
+    kickGunAway: false,
+    lassoTargetId: -1,
+    hook: noHook(),
+    melee: null,
+    meleeDrawn: false,
     health: tuning.playerMaxHealth,
   };
 }
@@ -253,6 +272,7 @@ export function copyPlayer(from: PlayerState, to: PlayerState): void {
   to.loaded = { ...from.loaded };
   to.owned = { ...from.owned }; // same story
   to.forged = { ...from.forged };
+  to.hook = { ...from.hook };
   // Arrays inside an object: one level deeper (each array copied too).
   to.cards = {
     revolver: [...from.cards.revolver],
@@ -260,6 +280,7 @@ export function copyPlayer(from: PlayerState, to: PlayerState): void {
     rifle: [...from.cards.rifle],
     dynamite: [...from.cards.dynamite],
     shovel: [...from.cards.shovel],
+    lasso: [...from.cards.lasso],
   };
 }
 
@@ -371,8 +392,10 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
     // Sliding: very little friction, and only a bit of steering (like in the air).
     applyFriction(p, tuning.slideFriction, dt);
     accelerate(p, wishX, wishZ, tuning.maxGroundSpeed, tuning.airSpeedCap, tuning.slideSteer, dt);
-  } else if (p.onGround) {
+  } else if (p.onGround && !hooked(p)) {
     // On foot (standing or crouch-walking): friction + ground acceleration.
+    // (Not while the lasso's rope pulls you: friction would eat the pull.
+    // Hooked, your boots steer like in the air.)
     // Right after landing there's a grace window with no friction: a hop
     // within it keeps all your speed (forgiving bunny hopping).
     const maxSpeed = p.crouched ? tuning.crouchSpeed : tuning.maxGroundSpeed;
@@ -393,6 +416,8 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
   // That's how we know we're still standing on something (and not on air,
   // e.g. after walking off a ledge).
   p.vy -= tuning.gravity * dt;
+  // The lasso's grappling hook, if it holds something (lasso.ts).
+  applyHook(p, dt);
 
   // 6. Move, colliding with the level.
   const wasOnGround = p.onGround;
@@ -564,7 +589,7 @@ function noForge(): Record<WeaponId, number> {
 }
 
 function startingWeapons(): Record<GearId, boolean> {
-  return { revolver: true, shotgun: false, rifle: false, dynamite: false, shovel: false };
+  return { revolver: true, shotgun: false, rifle: false, dynamite: false, shovel: false, lasso: false };
 }
 
 export function respawn(p: PlayerState, world: World): void {
@@ -585,6 +610,11 @@ export function respawn(p: PlayerState, world: World): void {
   p.adsTicks = 0;
   p.owned = startingWeapons(); // dead = start over: what you bought is gone
   p.weapon = 'revolver';
+  p.melee = null; // back to your boots
+  p.meleeDrawn = false;
+  p.hook = noHook();
+  p.lassoTargetId = -1;
+  p.kickGunAway = false;
   p.money = 0; // dead = the game starts over: empty pockets
   p.cards = noCards(); // ...and plain weapons
   p.damnedIron = 0;

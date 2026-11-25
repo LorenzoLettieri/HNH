@@ -949,7 +949,22 @@ futuro **poligono di tiro / tutorial**.
   7. premi dello Stile e taratura. Dopo: carte e Forgia.
 - **Fuoco alternativo (tasto destro)** [DECISO]: ogni arma può averne uno. Revolver: fanning;
   carabina: mira dal mirino; doppietta: da decidere.
-- **Lazo / rampino** — mobilità (aggancio a punti della mappa) e utilità (tirare a sé i nemici?).
+- **Armi melee impugnabili** [DECISO e FATTO]: badile e lazo si impugnano come le armi, sul **tasto 5**.
+  **Se ne porta UNA sola**: comprare l'altra la sostituisce; quella vecchia resta all'armeria, e una volta
+  comprate tutte e due si **scambiano gratis** dal bancone ("SCAMBIA"). Le carte restano a ciascuna.
+  In mano: **sinistro = il loro attacco** (come F), **destro = il loro fuoco alternativo**. **F usa sempre
+  un'arma melee**: quella in mano, oppure (con una pistola in mano) l'ultima impugnata o comprata; senza armi
+  melee lo stivale. Da F con una pistola in mano l'arma scende e torna su come per il badile.
+- **Lazo / rampino** [FATTO: simulazione, modello Blender, mani e corda a schermo, suoni; da fare: carte]:
+  si compra all'armeria a **400**. **Sinistro / F**: il cappio parte davanti a **media distanza** (9 m) e prende
+  **un** nemico (un cilindro attorno alla mira, più largo di un proiettile): poco danno e lo **strattona verso di
+  te** in volo, fino a ~2 m davanti alle canne (combo con la doppietta). I pesanti (toro, Fabbro) non si
+  trascinano: la corda li **tiene fermi** un attimo (un toro in carica si ferma). **Destro (tenuto)**:
+  **rampino**, il cappio vola dove guardi (30 m) e si aggancia a **qualsiasi superficie** (niente punti di
+  aggancio da piazzare) o **a un nemico** (ti tira da lui, come il meat hook di Doom Eternal); finché tieni
+  premuto ti tira (accelerazione fino a una velocità massima lungo la corda) e la corda non si allunga mai
+  (pendolo); mollando **tieni tutta la velocità** (fionda). Si stacca se arrivi, se la corda si incastra in
+  uno spigolo o dopo 3 s. Premio di Stile "AL LAZO" quando si aggancia, uccisione "YEEHAW".
 
 ---
 

@@ -85,7 +85,10 @@ export function buildCommand(tick: number): InputCommand {
   // switch back and forth every tick.) Every action is asked, even after a
   // "yes": asking also consumes the press (keybinds.ts).
   let weaponSelect = 0;
-  const slots = [actionPressed('weapon1'), actionPressed('weapon2'), actionPressed('weapon3'), actionPressed('weapon4')];
+  const slots = [
+    actionPressed('weapon1'), actionPressed('weapon2'), actionPressed('weapon3'),
+    actionPressed('weapon4'), actionPressed('weapon5'),
+  ];
   slots.forEach((pressed, i) => {
     if (pressed) weaponSelect = i + 1;
   });

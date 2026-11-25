@@ -34,7 +34,18 @@ import {
   playShotgunReload,
   playTargetDown,
   playTargetHit,
+  playLassoThrow,
+  playLassoCatch,
+  playLassoMiss,
+  playHookThrow,
+  playHookCatch,
+  playHookRelease,
+  playRopeStrain,
+  playLassoDraw,
+  playShovelDraw,
+  type LoopingSound,
 } from '../audio/sfx';
+import { RELEASE } from './weapons/lassoView';
 import type { WeaponId } from '../sim/weapon';
 import type { MeleeTool } from '../sim/kick';
 import { createImpacts } from './impacts';
@@ -86,6 +97,7 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
 
   const point = new THREE.Vector3();
   const up = new THREE.Vector3(0, 1, 0);
+  let strain: LoopingSound | null = null; // the lasso's rope creaking while it pulls you
   const normal = new THREE.Vector3();
   const forward = new THREE.Vector3();
 
@@ -130,7 +142,24 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
               else spawnSparks(point, normal, Math.ceil((e.surface === 'metal' ? 18 : 10) / (e.pellet ? 3 : 1)));
             }
             break;
+          case 'hookThrow':
+            playHookThrow();
+            break;
+          case 'hookAttach':
+            playHookCatch(e.entityId >= 0);
+            strain?.stop();
+            strain = playRopeStrain(); // the rope creaks for as long as it pulls you
+            if (e.entityId >= 0) spawnBlood(point.set(e.x, e.y, e.z), up, 10);
+            else spawnSparks(point.set(e.x, e.y, e.z), up, 4); // splinters off the beam
+            break;
+          case 'hookRelease':
+            strain?.stop();
+            strain = null;
+            playHookRelease();
+            break;
           case 'weaponSwitch':
+            if (e.weapon === 'lasso') playLassoDraw();
+            if (e.weapon === 'shovel') playShovelDraw();
             // Each gun is drawn its own way (render/weapons/*View.ts): its
             // signature sound lands when the gun is ready to fire.
             if (e.weapon === 'shotgun' && e.forged) playPumpDraw(pumpDrawTimes());
@@ -167,10 +196,18 @@ export function createWeaponFx(scene: THREE.Scene): WeaponFx {
           }
           case 'kickStart':
             if (e.tool === 'shovel') playShovelSwing(tuning.shovelWindup);
+            else if (e.tool === 'lasso') playLassoThrow(RELEASE * tuning.lassoWindup, tuning.lassoWindup);
             else playKickSwing();
             for (const f of fx.onKick) f(e.tool);
             break;
           case 'kickLand':
+            if (e.tool === 'lasso') {
+              // The loop catches (a slap of blood where it bites) or flops in the dirt.
+              if (e.hits === 0) playLassoMiss();
+              else playLassoCatch();
+              for (const c of e.at) if (c.flesh) spawnBlood(point.set(c.x, c.y, c.z), up, 6);
+              break;
+            }
             if (e.hits === 0) break;
             if (e.tool === 'kick') {
               playKickImpact(e.hits);

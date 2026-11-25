@@ -45,7 +45,7 @@ export function countStats(stats: Stats, events: SimEvent[], style: StyleState):
     if (e.type !== 'hit' || e.surface !== 'flesh') continue;
     if (e.headshot) stats.headshots++;
     // Only gun hits count for accuracy (the boot and the shovel aren't "shots").
-    if (e.source !== 'kick' && e.source !== 'shovel') hitSomething = true;
+    if (e.source !== 'kick' && e.source !== 'shovel' && e.source !== 'lasso') hitSomething = true;
   }
   stats.shots += fired;
   // A trigger pull and its hits happen in the same tick (hitscan). Almost

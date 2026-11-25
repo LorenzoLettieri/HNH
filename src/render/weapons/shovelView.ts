@@ -35,12 +35,20 @@
 // Two identical swings in a row give the trick away: each swing gets small
 // random variations (height, sweep, blade roll). Cosmetic only.
 //
+// HELD (key 5: the shovel in your hands instead of a gun): it rests on your
+// right, the grip still below the screen, the shaft rising across the right
+// side and the blade up in the corner, its face toward you (`held*` below).
+// The swing then starts FROM there: during the backswing it's lifted away up
+// and back (a blend from the held pose to the swing's path, so nothing pops),
+// and after the follow-through it comes back up from below into the held
+// pose (`returnTime`), like a gun after a switch.
+//
 // Rotation order 'YXZ': first turn left/right (yaw), then tilt the shaft up
 // (pitch), then roll the blade around the shaft. The same order as an FPS
 // camera, and for the same reason: each angle means one clear thing.
 import * as THREE from 'three';
 import { tuning } from '../../sim/config';
-import { ELASTIC_STEP, smoothstep } from './elastic';
+import { ELASTIC_STEP, smoothstep, type GunPose } from './elastic';
 import { loadGunModel } from './gunModel';
 
 /** Pose and timing of the swing. Camera space (x right, y up, -z forward); angles in radians. */
@@ -107,6 +115,15 @@ export const shovelSettings = {
   quiverDamping: 18,
   /** Random variation from swing to swing (fraction: 0.15 = ±15%). */
   variation: 0.15,
+  /** HELD in your hands (key 5): the grip, and the shaft's angles (blade up on the right, its face toward you). */
+  heldX: 0.16,
+  heldY: -0.4,
+  heldZ: -0.3,
+  heldPitch: 0.72,
+  heldYaw: -0.38,
+  heldRoll: 1.0,
+  /** Seconds for it to come back up into the held pose after a swing. */
+  returnTime: 0.22,
 };
 
 export interface ShovelView {
@@ -114,18 +131,23 @@ export interface ShovelView {
   root: THREE.Group;
   /** A swing starts now. */
   play(): void;
-  /** Advance the animation. */
-  update(dt: number): void;
+  /**
+   * Advance the animation. `held` = the shovel is in your hands (key 5):
+   * between swings it rests in the held pose, moved by `offset` (the
+   * viewmodel's sway, bob and draw).
+   */
+  update(dt: number, held: boolean, offset: GunPose): void;
 }
 
 /**
  * How far the gun is put away, `t` seconds after the press: 0 = in your hands,
  * 1 = gone below the screen. It goes down with an ease-in (u²: it drops, it
- * doesn't glide), stays away during the swing, and at tuning.shovelGunBack
- * the viewmodel draws it back like a weapon switch (from then on: 0).
+ * doesn't glide), stays away during the swing, and at `gunBack` (the melee
+ * weapon's: tuning.shovelGunBack, lassoGunBack) the viewmodel draws it back
+ * like a weapon switch (from then on: 0). The lasso uses it too.
  */
-export function gunAwayAt(t: number): number {
-  if (t >= tuning.shovelGunBack) return 0;
+export function gunAwayAt(t: number, gunBack: number): number {
+  if (t >= gunBack) return 0;
   const u = Math.min(1, t / Math.max(0.01, shovelSettings.gunDownTime));
   return u * u;
 }
@@ -165,14 +187,23 @@ export function createShovelView(): ShovelView {
       yawScale = 1 + 0.1 * wobble() * k;
       rollOffset = 0.2 * wobble() * k;
     },
-    update(dt) {
+    update(dt, held, offset) {
       time += dt;
       // Phase boundaries, in seconds (read every frame: the debug panel can change them).
       const impact = tuning.shovelWindup;
       const back = impact * s.backShare;
       const end = impact + s.throughTime;
-      root.visible = time < end;
+      root.visible = time < end || held;
       if (!root.visible) return;
+      if (time >= end) {
+        // Held, between swings: the rest pose, coming back up from below after a swing.
+        // (time = Infinity: no swing yet. Ease-out: it rises fast and settles.)
+        const r = time === Infinity ? 1 : Math.min(1, (time - end) / s.returnTime);
+        const k = 1 - Math.pow(1 - r, 3);
+        root.position.set(s.heldX + offset.x, s.heldY + offset.y - 0.35 * (1 - k), s.heldZ + offset.z);
+        root.rotation.set(s.heldPitch + offset.pitch - 0.7 * (1 - k), s.heldYaw + offset.yaw, s.heldRoll + offset.roll);
+        return;
+      }
 
       // 1. TIME → s (where along the swing).
       const top = -1 - s.windBack;
@@ -215,6 +246,14 @@ export function createShovelView(): ShovelView {
       const ends = side * side; // 0 at the impact, 1 at either end
       root.position.set(s.gripX - s.gripSwing * swing, s.gripY + s.gripRise * ends, s.gripZ + s.gripBack * ends);
       root.rotation.set(pitch, yaw, s.roll - s.rollTwist * swing + rollOffset + quiver);
+      if (held && time < back) {
+        // From the held pose, lifted away into the backswing: a blend (the
+        // rotation channel by channel: fine for angles this close).
+        const b = smoothstep(time / back);
+        const mix = (a: number, c: number) => a + (c - a) * b;
+        root.position.set(mix(s.heldX, root.position.x), mix(s.heldY, root.position.y), mix(s.heldZ, root.position.z));
+        root.rotation.set(mix(s.heldPitch, root.rotation.x), mix(s.heldYaw, root.rotation.y), mix(s.heldRoll, root.rotation.z));
+      }
     },
   };
 }

@@ -72,7 +72,8 @@ import { updateThreats } from './render/threatIndicator';
 import { createNavDebug } from './render/navDebug';
 import { createHitboxDebug } from './render/hitboxDebug';
 import { BIG_BODY, getFlowField, getNavGraph } from './sim/nav';
-import { createViewmodel } from './render/weapons/viewmodel';
+import { createViewmodel, viewmodelSettings } from './render/weapons/viewmodel';
+import { createLassoRope, viewToWorld } from './render/lassoRope';
 import type { SimEvent } from './sim/events';
 import { initAudio, setAudioPaused } from './audio/sfx';
 import { applyParticles, createParticles, updateParticles } from './render/particles';
@@ -202,6 +203,10 @@ viewmodel.setAspect(window.innerWidth / window.innerHeight);
 weaponFx.onShot.push((weapon, barrel, forged) => viewmodel.onShot(weapon, barrel, forged));
 weaponFx.onReload.push((weapon, seconds, forged) => viewmodel.onReload(weapon, seconds, forged));
 weaponFx.onKick.push((tool) => viewmodel.onKick(tool));
+// The lasso's rope out in the world (from your fist to the loop: render/lassoRope.ts).
+const lassoRope = createLassoRope(scene);
+const lassoHandView = new THREE.Vector3();
+const lassoHandWorld = new THREE.Vector3();
 
 let atmosphereIndex = 0;
 // The Damned Smith's waves bring the Fire Eclipse (render/eclipse.ts):
@@ -451,7 +456,8 @@ const prevPlayer = createPlayer();
 if (params.get('slow')) debugTime.timeScale = Number(params.get('slow'));
 // ?guns=all: start with every weapon (to try them without going to the shop).
 if (params.get('guns') === 'all') {
-  for (const w of GEAR) game.player.owned[w] = true; // the shovel too
+  for (const w of GEAR) game.player.owned[w] = true; // the melee weapons too
+  game.player.melee = 'lasso'; // (on F: the last one "bought")
   game.player.reserve.sticks = tuning.dynamiteReserveStart; // the launcher's spare sticks (bought, they come with it)
 }
 // ?forged=all: every gun already reinforced at the Forge, and loaded (akimbo, pump-action, scope).
@@ -546,6 +552,7 @@ renderer.setAnimationLoop((now: number) => {
   // interpolating them would add a tick of delay to aiming.
   // (rotation.z, the roll, is set by the camera feel below.)
   // The gun animates first: it also returns the visual "punch" of the shot.
+  viewmodel.handleEvents(events); // (the lasso's catch and hook)
   const viewKick = viewmodel.update(
     dt,
     player,
@@ -570,6 +577,9 @@ renderer.setAnimationLoop((now: number) => {
   // The sky follows the camera: you can never get closer to it.
   sky.position.copy(camera.position);
 
+  // The lasso's rope: from the fist in the gun's scene to the same pixel in the world.
+  const hand = viewmodel.lassoHand(lassoHandView);
+  lassoRope.update(game, events, alpha, dt, hand ? viewToWorld(hand, viewmodelSettings.fov, camera, lassoHandWorld) : null);
   // Weapon events of this frame → effects and sounds.
   weaponFx.handle(events, camera);
   weaponFx.update(dt);
