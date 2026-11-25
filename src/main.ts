@@ -49,6 +49,7 @@ import { createPonyRingRenderer } from './render/ponyRings';
 import { createWagerTableRenderer } from './render/wagerTable';
 import { createEmberHeartRenderer } from './render/emberHeart';
 import { createSoulWellRenderer } from './render/soulWell';
+import { createSermonRenderer } from './render/sermon';
 import { handlePactEvents } from './render/pactFx';
 import { createShopMenu } from './render/shopMenu';
 import { createMapOverlay } from './render/mapOverlay';
@@ -182,6 +183,7 @@ const ponyRings = createPonyRingRenderer(scene);
 const wagerTable = createWagerTableRenderer(scene);
 const emberHeart = createEmberHeartRenderer(scene);
 const soulWell = createSoulWellRenderer(scene);
+const sermon = createSermonRenderer(scene);
 const mapOverlay = createMapOverlay(world);
 const navDebug = createNavDebug(scene, getNavGraph(world));
 const navDebugBig = createNavDebug(scene, getNavGraph(world, BIG_BODY));
@@ -261,6 +263,7 @@ const debugPanel = createDebugPanel({
     spawnTool('Evento Cuore di Brace alla prossima ondata', (g) => forceMapEventNextWave(g.mapEvent, g.wave.number, 'emberHeart')),
     spawnTool('Evento Sciacallo alla prossima ondata', (g) => forceMapEventNextWave(g.mapEvent, g.wave.number, 'jackal')),
     spawnTool('Evento Pozzo delle Anime alla prossima ondata', (g) => forceMapEventNextWave(g.mapEvent, g.wave.number, 'soulWell')),
+    spawnTool('Evento Spettacolo Cruento alla prossima ondata', (g) => forceMapEventNextWave(g.mapEvent, g.wave.number, 'sermon')),
     // Like the respawn below, it should go through the InputCommand one day: it's only a flag the next tick reads.
     spawnTool("Completa l'evento in corso", (g) => { g.mapEvent.forceSuccess = true; }),
     // Respawn goes through the InputCommand like a key would (controls.ts):
@@ -585,6 +588,7 @@ renderer.setAnimationLoop((now: number) => {
   wagerTable.update(game, events, camera, dt, now / 1000);
   emberHeart.update(game, events, camera, alpha, dt, now / 1000);
   soulWell.update(game, events, camera, alpha, dt, now / 1000);
+  sermon.update(game, events, camera, dt, now / 1000);
   handlePactEvents(events, game.entities, camera, dt); // the drinks that make something happen (pactFx.ts)
   // Walked away from the vendor (or died, and woke up at the spawn): the shop closes.
   const shopNearby = shopInReach(player, world);

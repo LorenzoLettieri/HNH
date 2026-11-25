@@ -1150,6 +1150,179 @@ export function playSoulWellDie(where: Where): void {
   thump({ out, start: 0.4, duration: 1, volume: 0.45, from: 50, to: 22 });
 }
 
+// --- "Spettacolo Cruento" (render/sermon.ts): the preacher and his organ ---
+
+/**
+ * A CHURCH ORGAN chord: for every note, a few sine "pipes" at the note and
+ * its octaves (1, 2, 4 × the pitch, plus a quiet fifth above: the organ's
+ * DRAWBARS, each one a row of pipes you pull in), through a low-pass so it
+ * sounds like wood and air rather than a synth. Slow swell in, slow fade out:
+ * organ pipes don't strike, they breathe. A slight detune per pipe makes the
+ * chord shimmer like a real room full of pipes.
+ */
+function organChord(out: AudioNode, start: number, notes: number[], duration: number, volume: number): void {
+  if (!ctx) return;
+  const t0 = ctx.currentTime + start;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 2400;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.exponentialRampToValueAtTime(volume, t0 + Math.min(0.25, duration * 0.3));
+  gain.gain.setValueAtTime(volume, t0 + duration * 0.7);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+  filter.connect(gain).connect(out);
+  for (const note of notes) {
+    for (const [ratio, level] of [[1, 1], [2, 0.6], [3, 0.25], [4, 0.3]]) {
+      const osc = ctx.createOscillator();
+      osc.frequency.value = note * ratio * (1 + (Math.random() - 0.5) * 0.004);
+      const pipe = ctx.createGain();
+      pipe.gain.value = level / notes.length;
+      osc.connect(pipe).connect(filter);
+      osc.start(t0);
+      osc.stop(t0 + duration);
+    }
+  }
+}
+
+/**
+ * The preacher's VOICE: one shouted syllable. Like the devil's laugh (devilLaugh
+ * below), a buzz (sawtooth) shaped by the throat, but with TWO formants, the
+ * two resonances that tell vowels apart: "a" ≈ 750 + 1200 Hz, "e" ≈ 500 + 1900 Hz,
+ * "o" ≈ 450 + 850 Hz, "u" ≈ 330 + 800 Hz. Moving them while the voice sounds
+ * glides from one vowel to the next ("a-men"). The pitch falls at the end of
+ * the syllable, like someone shouting from a pulpit.
+ */
+const VOWELS = { a: [750, 1200], e: [500, 1900], o: [450, 850], u: [330, 800], i: [300, 2300] } as const;
+type Vowel = keyof typeof VOWELS;
+function preacherSyllable(out: AudioNode, start: number, pitch: number, duration: number, from: Vowel, to: Vowel, volume: number): void {
+  if (!ctx) return;
+  const t0 = ctx.currentTime + start;
+  const osc = ctx.createOscillator();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(pitch * 1.06, t0);
+  osc.frequency.linearRampToValueAtTime(pitch, t0 + duration * 0.3);
+  osc.frequency.exponentialRampToValueAtTime(pitch * 0.82, t0 + duration);
+  // A little vibrato: a voice holding a note is never perfectly still.
+  const lfo = ctx.createOscillator();
+  lfo.frequency.value = 5.5;
+  const depth = ctx.createGain();
+  depth.gain.value = pitch * 0.02;
+  lfo.connect(depth).connect(osc.frequency);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.exponentialRampToValueAtTime(volume, t0 + 0.04);
+  gain.gain.setValueAtTime(volume, t0 + duration * 0.75);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+  gain.connect(out);
+  for (let k = 0; k < 2; k++) {
+    const formant = ctx.createBiquadFilter();
+    formant.type = 'bandpass';
+    formant.Q.value = 5;
+    formant.frequency.setValueAtTime(VOWELS[from][k], t0);
+    formant.frequency.linearRampToValueAtTime(VOWELS[to][k], t0 + duration * 0.5);
+    const level = ctx.createGain();
+    level.gain.value = k === 0 ? 1 : 0.6;
+    osc.connect(formant).connect(level).connect(gain);
+  }
+  osc.start(t0);
+  lfo.start(t0);
+  osc.stop(t0 + duration);
+  lfo.stop(t0 + duration);
+}
+
+/** A big church bell far away: the low ring of ring(), longer. */
+function churchBell(out: AudioNode, start: number, pitch: number, volume: number): void {
+  setTimeout(() => ring(pitch, 3.5, volume, out), start * 1000);
+}
+
+/**
+ * The preacher wakes up (you walked to him): he slams his book shut (a dry
+ * thump and the slap of the cover), the church bell tolls, the organ swells
+ * on a dark minor chord and he shouts "BRE-THREN!" (two syllables, falling).
+ */
+export function playSermonWake(where: Where): void {
+  const out = placeSound({ volume: Math.max(0.6, where.volume), pan: where.pan });
+  if (!out) return;
+  thump({ out, duration: 0.18, volume: 0.7, from: 140, to: 60 });
+  noiseBurst({ out, duration: 0.08, volume: 0.4, filter: 'bandpass', frequency: 1600, q: 2 });
+  churchBell(out, 0.1, 110, 0.3);
+  organChord(out, 0.2, [110, 131, 165], 2.6, 0.35); // A minor, low
+  preacherSyllable(out, 0.45, 150, 0.32, 'e', 'e', 0.35);
+  preacherSyllable(out, 0.8, 135, 0.6, 'e', 'e', 0.4);
+}
+
+/**
+ * The show goes up a rank under his eyes: "A-MEN!", higher at every rank
+ * (`rank` 1..5: he gets more and more excited), with an organ stab on a
+ * major chord climbing with it.
+ */
+export function playSermonAmen(where: Where, rank: number): void {
+  const out = placeSound({ volume: Math.max(0.45, where.volume), pan: where.pan });
+  if (!out) return;
+  const pitch = 130 * 2 ** (rank * 2 / 12); // a whole tone higher at every rank
+  preacherSyllable(out, 0, pitch, 0.18, 'a', 'a', 0.35);
+  preacherSyllable(out, 0.2, pitch * 1.12, 0.5, 'e', 'e', 0.4);
+  const root = 196 * 2 ** (rank * 2 / 12);
+  organChord(out, 0.05, [root, root * 1.26, root * 1.5], 0.9, 0.22);
+}
+
+/**
+ * HIGH NOON outside his circle: he didn't see it. A disappointed "tsk" (a
+ * short click of high noise), the organ on a sour chord (two notes a
+ * semitone apart: a minor second, the most "wrong" interval) and a grumbled
+ * "noo" falling.
+ */
+export function playSermonMissed(where: Where): void {
+  const out = placeSound({ volume: Math.max(0.4, where.volume), pan: where.pan });
+  if (!out) return;
+  noiseBurst({ out, duration: 0.03, volume: 0.3, filter: 'highpass', frequency: 4000 });
+  noiseBurst({ out, start: 0.12, duration: 0.03, volume: 0.25, filter: 'highpass', frequency: 4000 });
+  organChord(out, 0.2, [98, 104], 1.2, 0.3);
+  preacherSyllable(out, 0.3, 120, 0.7, 'o', 'u', 0.3);
+}
+
+/**
+ * GLORY: HIGH NOON inside his circle, the show is over and it was good.
+ * "HAL-LE-LU-JAH!" over the full organ on a major chord climbing an octave,
+ * the church bells ringing, and then the roar of fire (noise opening up: he
+ * goes up in flames, in ecstasy).
+ */
+export function playSermonGlory(where: Where): void {
+  const out = placeSound({ volume: Math.max(0.7, where.volume), pan: where.pan });
+  if (!out) return;
+  organChord(out, 0, [131, 165, 196, 262], 1.2, 0.4); // C major
+  organChord(out, 1.0, [175, 220, 262, 349], 1.0, 0.4); // F major
+  organChord(out, 1.8, [196, 247, 294, 392, 523], 2.4, 0.45); // G major, the top: the "amen" cadence goes home
+  const syllables: [number, Vowel, Vowel, number][] = [
+    [0.1, 'a', 'a', 165],
+    [0.4, 'e', 'e', 175],
+    [0.7, 'u', 'u', 196],
+    [1.0, 'a', 'a', 262],
+  ];
+  for (const [at, from, to, pitch] of syllables) preacherSyllable(out, at, pitch, at === 1.0 ? 0.9 : 0.28, from, to, 0.4);
+  churchBell(out, 0.0, 220, 0.25);
+  churchBell(out, 0.6, 330, 0.2);
+  churchBell(out, 1.2, 440, 0.18);
+  noiseBurst({ out, start: 1.9, duration: 1.6, volume: 0.5, filter: 'lowpass', frequency: 300, frequencyEnd: 4000 });
+  thump({ out, start: 1.9, duration: 1.0, volume: 0.7, from: 90, to: 30 });
+}
+
+/**
+ * The wave ended without a show: he slams the book (a heavy thump), the
+ * organ slides down into a dissonant low chord and dies, and a long
+ * disgusted groan.
+ */
+export function playSermonFail(where: Where): void {
+  const out = placeSound({ volume: Math.max(0.4, where.volume), pan: where.pan });
+  if (!out) return;
+  thump({ out, duration: 0.25, volume: 0.6, from: 120, to: 45 });
+  organChord(out, 0.1, [110, 117, 147], 1.0, 0.3);
+  organChord(out, 0.9, [55, 58, 73], 2.0, 0.35);
+  preacherSyllable(out, 0.4, 110, 1.2, 'u', 'o', 0.3);
+  noiseBurst({ out, start: 0.8, duration: 1.4, volume: 0.25, filter: 'lowpass', frequency: 800, frequencyEnd: 150 });
+}
+
 /**
  * The devil's laugh: three "HA"s, each lower than the one before. A voice
  * is a buzz (sawtooth, full of harmonics) shaped by the throat: a band-pass

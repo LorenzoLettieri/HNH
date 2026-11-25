@@ -203,6 +203,12 @@ export interface World {
    * never shows up.
    */
   soulWell?: { x: number; y: number; z: number };
+  /**
+   * Where the preacher of the "Spettacolo Cruento" map event (sermon.ts)
+   * stands, feet level (his soapbox is behind him, drawn only). Optional:
+   * without it that event never shows up.
+   */
+  preacher?: { x: number; y: number; z: number };
   /** Where the player (re)appears, feet position. */
   spawn: { x: number; y: number; z: number };
 }

@@ -576,6 +576,9 @@ export const town: World = {
   // The "Pozzo delle Anime" map event (src/sim/soulWell.ts): the town well
   // itself (the stone ring near the bottom of this file), the top of its mouth.
   soulWell: { x: 2, y: 1, z: 0 },
+  // The "Spettacolo Cruento" map event (src/sim/sermon.ts): the preacher on
+  // the church's forecourt, south of the steam vent, facing Main Street.
+  preacher: { x: 9.5, y: 0, z: -20 },
   bellSpots: [
     { x: -15, y: 7.3, z: -12 }, // saloon
     { x: 17, y: 9.3, z: -12 }, // church

@@ -4,7 +4,7 @@
 //
 // This file is the SKELETON shared by every event: WHEN one appears, its
 // lifecycle (active → success or failure), the prize and the events it
-// reports. What each event asks you to do lives in its own file (bells.ts, ponyExpress.ts, wager.ts, emberHeart.ts, jackal.ts, soulWell.ts):
+// reports. What each event asks you to do lives in its own file (bells.ts, ponyExpress.ts, wager.ts, emberHeart.ts, jackal.ts, soulWell.ts, sermon.ts):
 // a create function and a step function that says "running / success /
 // failure". If the wave ends first, the event fails. One exception: the
 // devil's wager (wager.ts) spans two waves (the bet, then the cursed wave),
@@ -34,6 +34,7 @@ import { createWagerEvent, stepWager, type WagerEvent } from './wager';
 import { createEmberHeartEvent, stepEmberHeart, type EmberHeartEvent } from './emberHeart';
 import { createJackalEvent, jackalEscapes, stepJackalEvent, type JackalEvent } from './jackal';
 import { createSoulWellEvent, stepSoulWell, type SoulWellEvent } from './soulWell';
+import { createSermonEvent, stepSermon, type SermonEvent } from './sermon';
 import type { InputCommand } from './command';
 
 /**
@@ -49,7 +50,7 @@ export type MapEventKind = ActiveMapEvent['kind'];
  * which ones after a check on `kind`. Every kind has `kind` and `wave` (the
  * wave it showed up in: it ends with it).
  */
-export type ActiveMapEvent = BellsEvent | PonyExpressEvent | WagerEvent | EmberHeartEvent | JackalEvent | SoulWellEvent;
+export type ActiveMapEvent = BellsEvent | PonyExpressEvent | WagerEvent | EmberHeartEvent | JackalEvent | SoulWellEvent | SermonEvent;
 
 /**
  * How to build each kind. A Record over every MapEventKind: a kind with no
@@ -66,6 +67,7 @@ const CREATORS: Record<MapEventKind, (world: World, game: GameState, wave: numbe
   emberHeart: createEmberHeartEvent,
   jackal: createJackalEvent,
   soulWell: createSoulWellEvent,
+  sermon: createSermonEvent,
 };
 const KINDS = Object.keys(CREATORS) as MapEventKind[];
 
@@ -146,6 +148,8 @@ function stepEvent(ev: ActiveMapEvent, game: GameState, world: World, cmd: Input
       return stepJackalEvent(ev, game, events, firstEvent);
     case 'soulWell':
       return stepSoulWell(ev, game, world, events, firstEvent);
+    case 'sermon':
+      return stepSermon(ev, game, events);
   }
 }
 

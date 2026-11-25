@@ -686,7 +686,8 @@ evento (stile gli eventi di Diablo 4) **durante un'ondata**.
 - **La Testa del Ricercato** (trasporto): un teschio da portare all'altare o all'ufficio dello sceriffo;
   mentre lo porti solo revolver e i nemici puntano te; un colpo forte te lo fa cadere. Non rallenta.
 - **Il Pozzo delle Anime** (raccolta) [FATTO, da tarare: passo 14]: i nemici uccisi lasciano un'anima che si spegne in 8 s; portane N al pozzo.
-- **Il Sermone di Sangue** (Stile): un predicatore vuole spettacolo: rank S, o catena viva per 45 s, nel suo raggio.
+- **Spettacolo Cruento** (Stile) [FATTO, da tarare: passo 15; sulla carta era "Il Sermone di Sangue"]: un predicatore vuole
+  spettacolo: **raggiungi HIGH NOON nel suo cerchio** [DECISO dall'utente, al posto di "rank S o catena viva per 45 s"].
 - **La Scommessa del Diavolo** (rischio): sopravvivi alla prossima ondata con una maledizione (niente medikit,
   nemici più veloci, una sola arma, buio). Riusa tutto: cambia solo dei numeri.
 - Scartati per ora (troppo pesanti): **treno fantasma** sui binari (servono piattaforme mobili), **carro
@@ -810,6 +811,28 @@ accordo maggiore; fallito, un lungo lamento e il buio. Suoni fatti con le "voci 
 vibrato lento che entra e svanisce). Sulla mappa (Tab) il pozzo (pulsa finché dorme o finché porti anime) e le anime a terra.
 Provato con una simulazione (risveglio, l'anima scende a 1,1 m, la calamita la porta in 11 tick, deposito, si spegne a 8 s, il
 toro vale 5, pieno = riuscito, fine ondata = fallito) e con screenshot in Chrome headless senza errori.
+
+**Passo 15** [FATTO, da tarare]: **Spettacolo Cruento**, il settimo evento (`src/sim/sermon.ts`, `src/render/sermon.ts`,
+sprite in `src/render/preacherSprite.ts`). Sulla carta era "Il Sermone di Sangue"; **rinominato e con l'obiettivo deciso
+dall'utente: raggiungere HIGH NOON**. Un predicatore infernale (cappello piatto a tesa larga, pelle da cadavere, occhi
+accesi, collarino bianco con una goccia di sangue, finanziera nera, libro rosso con la croce d'oro) sta su una cassa sul
+**sagrato della chiesa**, tra due candelabri (`preacher` del livello). Si avvia **andandoci** (entro 4 m): chiude il libro di
+scatto e comincia a predicare, e si apre il suo **cerchio di 22 m** (`sermonRadius`; una colonna come quella del Cuore di
+Brace: valgono anche i tetti intorno, a partire da quello della chiesa). **Conta il momento in cui HIGH NOON comincia**: deve
+cominciare dentro il cerchio. Uno acceso fuori non conta ("NON TI HA VISTO", torna a leggere offeso), ed entrare già in HIGH
+NOON nemmeno: va acceso sotto i suoi occhi. Finito il climax lo Stile riparte da zero e si può riprovare; niente orologio,
+**l'ondata è l'orologio**. Perché fa muovere: HIGH NOON si costruisce col movimento e con la varietà, e il cerchio tiene lo
+spettacolo davanti a lui mentre l'orda ti segue dentro. A schermo: cerchio di sangue a terra a trattini che corrono più
+veloci col rank, e un muro di luce rossa lungo il bordo che **pulsa quando sei fuori**; colonna di luce rossa finché dorme.
+**A ogni rank che sali dentro il cerchio** grida "A-MEN!" (più acuto a ogni rank) con le braccia al cielo, un accordo d'organo
+e uno **spruzzo di sangue** dalle mani; più sali, più gesticola veloce. **Gloria**: "HAL-LE-LU-JAH" sull'organo (cadenza
+Do-Fa-Sol), si solleva dalla cassa grondando sangue e **prende fuoco in estasi**; il cerchio esplode verso fuori. **Fallito**:
+sbatte il libro, l'organo scende in un accordo stonato, sprofonda nel fumo e le candele si spengono. Suoni con l'**organo**
+(`organChord`: canne sinusoidali a ottave, come i registri) e la **voce del predicatore** (`preacherSyllable`: dente di sega
+con **due formanti** che scivolano da una vocale all'altra). Riga dell'HUD "RANK B → HIGH NOON", rossa fuori dal cerchio;
+sulla mappa (Tab) una croce rossa e il cerchio in scala. Provato con una simulazione (sveglia, HIGH NOON fuori = `sermonMissed`,
+dentro = riuscito con la fiche, fine ondata = fallito) e con screenshot in Chrome headless senza errori né shader compilati
+durante il gioco.
 
 **Ordine proposto**: prima lo **scheletro comune** con l'evento più semplice (Campane o Scommessa): comparsa e
 annuncio, timer, successo/fallimento, valuta nuova nell'HUD; poi il barista e i drink; poi gli eventi con un'IA

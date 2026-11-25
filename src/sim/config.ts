@@ -1230,6 +1230,12 @@ export const tuning = {
   /** Within this many meters of the well's middle (on the ground plane) you wake it and drop the souls in. */
   soulWellReach: 3.5,
 
+  // "Spettacolo Cruento" (src/sim/sermon.ts)
+  /** The preacher's circle (meters, on the ground plane: a column, the rooftops count): HIGH NOON must start in here. */
+  sermonRadius: 22,
+  /** Walk within this many meters of him to wake him up (the show starts). */
+  sermonWakeReach: 4,
+
   // --- Enemy projectiles (src/sim/projectiles.ts) ---
   /** Radius of an enemy projectile, meters (for hitting the player). */
   projectileRadius: 0.25,

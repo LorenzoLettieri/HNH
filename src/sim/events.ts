@@ -126,6 +126,10 @@ export type SimEvent =
   | { type: 'soulFaded'; x: number; y: number; z: number }
   /** You dropped `souls` into the well: it now holds `total` of `goal`. */
   | { type: 'soulsDeposited'; souls: number; total: number; goal: number }
+  /** You walked to the preacher of "Spettacolo Cruento" (sermon.ts): he wakes up, his circle opens. Where he stands. */
+  | { type: 'sermonWake'; x: number; y: number; z: number }
+  /** HIGH NOON started OUTSIDE the preacher's circle: it doesn't count for the show. */
+  | { type: 'sermonMissed' }
   /** You took the devil's wager at the table (wager.ts): the next wave is played with this curse. */
   | { type: 'wagerAccepted'; curse: WagerCurse }
   /** The wave you bet on starts: the curse is on you until it ends. */

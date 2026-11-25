@@ -121,6 +121,9 @@ export function createDebugPanel(options: {
   waves.number(tuning, 'soulMagnetSpeed', 1, 30, 1);
   waves.number(tuning, 'soulCollectReach', 0.3, 3, 0.1);
   waves.number(tuning, 'soulWellReach', 1, 8, 0.1);
+  // Spettacolo Cruento (src/sim/sermon.ts)
+  waves.number(tuning, 'sermonRadius', 5, 60, 1);
+  waves.number(tuning, 'sermonWakeReach', 1, 10, 0.5);
   waves.number(tuning, 'ghoulSpawnWeight', 0, 30, 1);
   waves.number(tuning, 'eyebatSpawnWeight', 0, 30, 1);
   waves.number(tuning, 'houndSpawnWeight', 0, 30, 1);

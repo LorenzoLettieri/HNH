@@ -15,6 +15,8 @@ import { horizontalSpeed } from '../sim/player';
 import { isEnemy } from '../sim/entities';
 import { jackalOf } from '../sim/jackal';
 import { inEmberCircle } from '../sim/emberHeart';
+import { inSermonCircle } from '../sim/sermon';
+import { isHighNoon, STYLE_RANKS, styleRank } from '../sim/style';
 import { updateStyleMeter } from './styleMeter';
 import { updateStyleFeed } from './styleFeed';
 import { updateHighNoon } from './highNoon';
@@ -172,6 +174,14 @@ export function updateHud(game: GameState, events: SimEvent[], dt: number): void
     if (e.type === 'wagerCurse') {
       queueBanner(WAGER_CURSE_TEXT[e.curse].name, `${WAGER_CURSE_TEXT[e.curse].rule} · sopravvivi`, 4, () => {}); // its sound: playWagerCurse (render/wagerTable.ts)
     }
+    // Spettacolo Cruento (sermon.ts): the preacher wakes up (his voice: render/sermon.ts),
+    // and a HIGH NOON he didn't see (after the climax's own banner).
+    if (e.type === 'sermonWake') {
+      queueBanner('IL PREDICATORE TI GUARDA', 'resta nel suo cerchio e accendi HIGH NOON sotto i suoi occhi', 4, () => {});
+    }
+    if (e.type === 'sermonMissed') {
+      queueBanner('NON TI HA VISTO', 'HIGH NOON fuori dal cerchio non conta: riprova da dentro', 3, () => {});
+    }
     // The Ember Heart (emberHeart.ts) woke up: its sound is at the crystal (render/emberHeart.ts).
     if (e.type === 'emberHeartWake') {
       queueBanner('IL CUORE SI È RISVEGLIATO', 'resta nel suo cerchio di fuoco e uccidi: le anime vanno a lui', 3, () => {});
@@ -281,6 +291,18 @@ function updateEventLine(game: GameState): void {
     eventGoal.textContent = !ev.awake
       ? 'tocca il cristallo di brace per risvegliarlo'
       : `ANIME ${ev.souls} / ${ev.goal} · ${outside ? 'FUORI DAL CERCHIO: torna dentro!' : 'uccidi da dentro il cerchio'}`;
+    eventGoal.classList.toggle('hurry', outside);
+    return;
+  }
+  // Spettacolo Cruento has no clock either: the rank you're at (the preacher
+  // wants the top), and red when you're outside his circle (a HIGH NOON
+  // there is wasted).
+  if (ev.kind === 'sermon') {
+    const outside = ev.awake && !inSermonCircle(ev, game.player);
+    const rank = isHighNoon(game.style) ? 'HIGH NOON' : `RANK ${STYLE_RANKS[styleRank(game.style.points)].letter}`;
+    eventGoal.textContent = !ev.awake
+      ? 'vai dal predicatore davanti alla chiesa'
+      : `${rank} → HIGH NOON · ${outside ? 'FUORI DAL CERCHIO: torna dentro!' : 'dagli spettacolo'}`;
     eventGoal.classList.toggle('hurry', outside);
     return;
   }

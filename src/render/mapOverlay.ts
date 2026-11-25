@@ -51,6 +51,8 @@ const PING_TIME = 1.2;
 const PING_RADIUS = 26;
 /** The Soul Well and its souls: their ghost green, and how many ticks before a soul goes out it starts blinking (2 s). */
 const SOUL_GREEN = '#7affc8';
+/** The preacher of Spettacolo Cruento: blood red. */
+const SERMON_RED = '#ff3030';
 const SOUL_HURRY_TICKS = 2 * TICK_RATE;
 /** Shop names on the map, by kind. */
 const SHOP_NAMES: Record<ShopSpawn['kind'], string> = { weapons: 'ARMERIA', forge: 'FORGIA', saloon: 'SALOON' };
@@ -335,6 +337,44 @@ export function createMapOverlay(world: World): MapOverlay {
         ctx.fillStyle = '#6a4010';
         ctx.fillRect(jx - 0.5 * unit, jy - BELL_RADIUS * 0.6 * unit, unit, BELL_RADIUS * 1.2 * unit); // the "$" stroke, roughly
         label('SCIACALLO', jx, jy + BELL_RADIUS * unit, '#ffd040');
+      }
+
+      // Spettacolo Cruento (src/sim/sermon.ts): the preacher a red cross;
+      // asleep with a pulsing ring, awake with his whole CIRCLE to scale
+      // (tuning.sermonRadius), like the Ember Heart's: the stage of the show.
+      if (ev?.kind === 'sermon') {
+        const sx = mapX(ev.x);
+        const sy = mapY(ev.z);
+        if (ev.awake) {
+          ctx.beginPath();
+          ctx.arc(sx, sy, tuning.sermonRadius * scale, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255, 40, 40, 0.12)';
+          ctx.fill();
+          ctx.setLineDash([4 * unit, 3 * unit]);
+          ctx.lineWidth = 2 * unit;
+          ctx.strokeStyle = SERMON_RED;
+          ctx.stroke();
+          ctx.setLineDash([]);
+        } else {
+          const phase = (time % PING_TIME) / PING_TIME;
+          ctx.globalAlpha = 1 - phase;
+          ctx.lineWidth = 2 * unit;
+          ctx.strokeStyle = SERMON_RED;
+          ctx.beginPath();
+          ctx.arc(sx, sy, (BELL_RADIUS + phase * PING_RADIUS * 1.5) * unit, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+        // The cross: two black bars, two red ones on top (a black edge, like the other marks).
+        const arm = BELL_RADIUS * 1.2 * unit;
+        const bar = 1.6 * unit;
+        ctx.fillStyle = '#000';
+        ctx.fillRect(sx - bar - unit, sy - arm - unit, (bar + unit) * 2, (arm + unit) * 2);
+        ctx.fillRect(sx - arm * 0.7 - unit, sy - arm * 0.45 - bar - unit, (arm * 0.7 + unit) * 2, (bar + unit) * 2);
+        ctx.fillStyle = SERMON_RED;
+        ctx.fillRect(sx - bar, sy - arm, bar * 2, arm * 2);
+        ctx.fillRect(sx - arm * 0.7, sy - arm * 0.45 - bar, arm * 1.4, bar * 2);
+        label('PREDICATORE', sx, sy + arm, SERMON_RED);
       }
 
       // The Soul Well (src/sim/soulWell.ts): the well a ghost-green ring (a
