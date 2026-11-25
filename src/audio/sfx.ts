@@ -2332,3 +2332,142 @@ export function playJackalEscape(where: Where): void {
   thump({ out, start: 0.1, duration: 0.6, volume: 0.6, from: 90, to: 30 });
   jackalCackle(out, 0.15);
 }
+
+// --- La Taglia (src/sim/bounty.ts, src/render/bounty.ts) -------------------
+
+/**
+ * A whistled note that slides: a sine with a little VIBRATO (a slow
+ * oscillator, an LFO, wobbling its pitch: the lips' tremble) and a breath of
+ * noise on top. `from` → `to` Hz over `duration`.
+ */
+function whistle(start: number, duration: number, from: number, to: number, volume: number, out: AudioNode = world): void {
+  if (!ctx) return;
+  const t0 = ctx.currentTime + start;
+  const osc = ctx.createOscillator();
+  osc.frequency.setValueAtTime(from, t0);
+  osc.frequency.exponentialRampToValueAtTime(to, t0 + duration * 0.6);
+  const lfo = ctx.createOscillator();
+  lfo.frequency.value = 6;
+  const depth = ctx.createGain();
+  depth.gain.value = to * 0.012;
+  lfo.connect(depth).connect(osc.frequency);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.exponentialRampToValueAtTime(volume, t0 + 0.04);
+  gain.gain.setValueAtTime(volume, t0 + duration * 0.7);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+  osc.connect(gain).connect(out);
+  osc.start(t0);
+  lfo.start(t0);
+  osc.stop(t0 + duration);
+  lfo.stop(t0 + duration);
+  noiseBurst({ out, start, duration, volume: volume * 0.15, filter: 'bandpass', frequency: to * 2, q: 4 });
+}
+
+/**
+ * The outlaw is in town (the poster went up a moment ago): a far-off shot
+ * that echoes down the canyon, then the classic western whistle, a call and
+ * its answer ("wa-wa-waaa", the second phrase lower), like the opening of an
+ * old spaghetti western. Not positional: it's an announcement.
+ */
+export function playOutlawArrived(): void {
+  if (!ctx) return;
+  noiseBurst({ duration: 0.05, volume: 0.35, filter: 'highpass', frequency: 2200 });
+  noiseBurst({ duration: 0.4, volume: 0.4, filter: 'lowpass', frequency: 1400, frequencyEnd: 150 });
+  for (const at of [0.25, 0.55, 0.9]) noiseBurst({ start: at, duration: 0.45, volume: 0.12 / (1 + at), filter: 'lowpass', frequency: 700, frequencyEnd: 120 });
+  whistle(0.7, 0.18, 880, 1175, 0.18);
+  whistle(0.9, 0.18, 1175, 880, 0.18);
+  whistle(1.1, 0.7, 880, 1320, 0.2);
+  whistle(1.95, 0.18, 660, 784, 0.16);
+  whistle(2.15, 0.18, 784, 660, 0.16);
+  whistle(2.35, 0.9, 660, 587, 0.18);
+}
+
+/**
+ * The shielded outlaw's shield breaks: glass and iron. A bright crash of
+ * high noise, a scatter of tiny "tinks" (the shards), and a low "whump" of
+ * the energy going out. Positional.
+ */
+export function playBountyShieldBreak(where: Where): void {
+  const out = placeSound({ volume: Math.max(0.4, where.volume), pan: where.pan });
+  if (!out) return;
+  noiseBurst({ out, duration: 0.35, volume: 0.7, filter: 'highpass', frequency: 3000, frequencyEnd: 6000 });
+  for (let i = 0; i < 8; i++) {
+    noiseBurst({ out, start: 0.05 + i * 0.04 + Math.random() * 0.03, duration: 0.03, volume: 0.25, filter: 'bandpass', frequency: 5000 + Math.random() * 4000, q: 12 });
+  }
+  thump({ out, duration: 0.3, volume: 0.6, from: 220, to: 50 });
+  ring(1400, 0.5, 0.12, out);
+}
+
+/** The shield is full again: a hum that rises (a sine sweeping up) and a soft chime on top. */
+export function playBountyShieldUp(where: Where): void {
+  const out = placeSound({ volume: Math.max(0.25, where.volume), pan: where.pan });
+  if (!out || !ctx) return;
+  const t0 = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(180, t0);
+  osc.frequency.exponentialRampToValueAtTime(720, t0 + 0.45);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.exponentialRampToValueAtTime(0.3, t0 + 0.2);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.55);
+  osc.connect(gain).connect(out);
+  osc.start(t0);
+  osc.stop(t0 + 0.6);
+  setTimeout(() => ring(1440, 0.6, 0.1, out), 400);
+}
+
+/** A bullet on the shield: a short glassy "tink" (no blood, no thud: it didn't go through). */
+export function playBountyShieldHit(where: Where): void {
+  const out = placeSound(where);
+  if (!out) return;
+  noiseBurst({ out, duration: 0.04, volume: 0.35, filter: 'bandpass', frequency: 4200 + Math.random() * 800, q: 6 });
+  ring(2100 + Math.random() * 300, 0.25, 0.07, out);
+}
+
+/**
+ * The bounty claimed: coins pouring out of the outlaw's body, a long
+ * rattling cascade (many quick high ticks, thinning out) and the cash
+ * register's "ka-ching" on top. Positional, but never too quiet: it's the prize.
+ */
+export function playBountyClaimed(where: Where): void {
+  const out = placeSound({ volume: Math.max(0.5, where.volume), pan: where.pan });
+  if (!out) return;
+  for (let i = 0; i < 24; i++) {
+    const at = 0.9 * (i / 24) ** 1.6 + Math.random() * 0.02; // dense at first, then sparse
+    noiseBurst({ out, start: at, duration: 0.025, volume: 0.3 * (1 - i / 30), filter: 'bandpass', frequency: 4000 + Math.random() * 3500, q: 9 });
+  }
+  setTimeout(() => ring(1760, 0.5, 0.12, out), 150);
+  setTimeout(() => ring(2640, 0.9, 0.13, out), 230);
+}
+
+/**
+ * The outlaw got away: hooves galloping off (pairs of low thuds, quieter and
+ * quieter) and a mocking whistle sliding down. Not positional: it's gone.
+ */
+export function playOutlawEscaped(): void {
+  for (let i = 0; i < 8; i++) {
+    const v = 0.5 * (1 - i / 9);
+    thump({ start: i * 0.2, duration: 0.07, volume: v, from: 160, to: 70 });
+    thump({ start: i * 0.2 + 0.08, duration: 0.07, volume: v * 0.8, from: 140, to: 60 });
+  }
+  whistle(0.3, 0.25, 1320, 1175, 0.14);
+  whistle(0.6, 0.8, 1175, 523, 0.16);
+}
+
+/** "Polveriera" lights a stick: a match struck on a boot (a short scrape of noise) and the flare catching ("fwoomp"). */
+export function playMatchStrike(where: Where): void {
+  const out = placeSound({ volume: Math.max(0.3, where.volume), pan: where.pan });
+  if (!out) return;
+  noiseBurst({ out, duration: 0.12, volume: 0.5, filter: 'bandpass', frequency: 3000, frequencyEnd: 5000, q: 2 });
+  noiseBurst({ out, start: 0.1, duration: 0.3, volume: 0.35, filter: 'lowpass', frequency: 1500, frequencyEnd: 400 });
+}
+
+/** "Polveriera" throws: a whoosh of the arm (noise sweeping down) and a grunt (a low thump). */
+export function playStickThrow(where: Where): void {
+  const out = placeSound({ volume: Math.max(0.3, where.volume), pan: where.pan });
+  if (!out) return;
+  noiseBurst({ out, duration: 0.25, volume: 0.45, filter: 'bandpass', frequency: 2000, frequencyEnd: 500, q: 1.5 });
+  thump({ out, duration: 0.12, volume: 0.35, from: 140, to: 80 });
+}

@@ -681,8 +681,8 @@ evento (stile gli eventi di Diablo 4) **durante un'ondata**.
   verso di te moltiplicato per ~−1,2 e ricalcolato: scappa verso le vie aperte invece che negli angoli).
 - **Le Campane del Giudizio** (sequenza): 3–4 campane sui tetti da suonare in ordine entro 60 s (sparo o calcio).
 - **Pony Express dell'Inferno** (percorso): anelli/checkpoint da attraversare in tempo, ognuno aggiunge secondi.
-- **La Taglia** (élite): un manifesto WANTED; un nemico con un modificatore (più veloce, scudo, esplode)
-  da uccidere entro l'ondata, segnato sulla mappa (Tab). I "miniboss come eventi" di §3.
+- **La Taglia** (élite) [FATTO, da tarare]: un manifesto WANTED; un nemico con un modificatore (più veloce, scudo, esplode)
+  da uccidere entro l'ondata, segnato sulla mappa (Tab). I "miniboss come eventi" di §3. Vedi il passo 16.
 - **La Testa del Ricercato** (trasporto): un teschio da portare all'altare o all'ufficio dello sceriffo;
   mentre lo porti solo revolver e i nemici puntano te; un colpo forte te lo fa cadere. Non rallenta.
 - **Il Pozzo delle Anime** (raccolta) [FATTO, da tarare: passo 14]: i nemici uccisi lasciano un'anima che si spegne in 8 s; portane N al pozzo.
@@ -833,6 +833,29 @@ con **due formanti** che scivolano da una vocale all'altra). Riga dell'HUD "RANK
 sulla mappa (Tab) una croce rossa e il cerchio in scala. Provato con una simulazione (sveglia, HIGH NOON fuori = `sermonMissed`,
 dentro = riuscito con la fiche, fine ondata = fallito) e con screenshot in Chrome headless senza errori né shader compilati
 durante il gioco.
+
+**Passo 16** [FATTO, da tarare]: **La Taglia**, l'ottavo evento (`src/sim/bounty.ts`, a schermo `src/render/bounty.ts` e
+`src/render/bountyPoster.ts`). A inizio ondata un **manifesto RICERCATO** entra a sinistra dello schermo: foto segnaletica
+(lo sprite del nemico ritagliato e stampato "a inchiostro"), un nome western a caso, che nemico è, il modificatore e cosa
+vuol dire, la taglia. Dopo **4 s** il ricercato arriva in città (fuori vista, come gli altri, con un fischio da spaghetti
+western): un nemico già comparso in quell'ondata (mai il Fabbro), con **5× la salute** (un miniboss: un ghoul all'ondata 5
+= 5 colpi, 2 alla testa) e **un modificatore**:
+- **Lesto**: il suo **tempo** corre 1,6 volte più veloce (lo stesso trucco della maledizione della Scommessa, per lui solo);
+- **Corazzato**: uno **scudo** grande quanto la sua salute para i colpi prima della carne (fanno "tink" e non danno
+  punti) e **ricresce** se smetti di colpirlo per 2,5 s: bisogna tenere la pressione;
+- **Polveriera**: **ti lancia la dinamite**. Ogni 3 s, se ti vede (3–28 m), accende un candelotto (0,7 s di preavviso:
+  bagliore nella mano, fiammifero, miccia che sfrigola, freccia se è fuori schermo) e te lo lancia ad arco **dove
+  stai per andare**; il candelotto rimbalza, la miccia brucia 0,6 s dopo l'atterraggio e scoppia (o subito se ti
+  tocca): 35 danni al centro, raggio 3,5 m, **solo a te**. Il **ghoul** Polveriera tiene la distanza (gli altri tipi
+  combattono già da lontano): se ti vede entro 11 m si ferma e lancia, sotto i 6 m indietreggia (più lento di te: caricarlo
+  funziona), sotto i 3 m torna a graffiare. Prima versione [SCARTATA, decisione dell'utente]: esplodeva
+  da morta, ferendo anche i nemici intorno; era un regalo al giocatore, non un rafforzamento del nemico.
+Sopra la testa una **stella da sceriffo** sempre visibile, anche attraverso i muri, con la gemma del colore del
+modificatore; sulla mappa (Tab) una stella d'oro (anche col buio); nell'HUD nome, modificatore e **distanza**.
+**Il ricercato non tiene aperta l'ondata** [DECISO]: se la tenesse, l'ondata non finirebbe mai prima di ucciderlo e la
+taglia non si potrebbe perdere. Quindi la gara è "uccidilo prima dell'ultimo degli altri": quando ne restano 3 o meno
+la riga dell'HUD diventa rossa; finita l'ondata **scappa** (fumo, galoppo e fischio beffardo). **La taglia**: 30 monete
+che esplodono dal corpo (300 vildenaro senza Stile, moltiplicate dallo Stile come tutte) più la fiche dell'evento.
 
 **Ordine proposto**: prima lo **scheletro comune** con l'evento più semplice (Campane o Scommessa): comparsa e
 annuncio, timer, successo/fallimento, valuta nuova nell'HUD; poi il barista e i drink; poi gli eventi con un'IA

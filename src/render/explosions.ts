@@ -129,7 +129,8 @@ export function createExplosionRenderer(scene: THREE.Scene): ExplosionRenderer {
   return {
     update(events, camera, dt) {
       for (const e of events) {
-        if (e.type === 'explosion' && (e.kind === 'dynamite' || e.kind === 'holyDynamite')) blast(e.x, e.y, e.z, e.radius, camera, e.kind === 'holyDynamite');
+        // 'bounty' = La Taglia's explosive outlaw (src/sim/bounty.ts): the same blast, as big as its radius.
+        if (e.type === 'explosion' && (e.kind === 'dynamite' || e.kind === 'holyDynamite' || e.kind === 'bounty')) blast(e.x, e.y, e.z, e.radius, camera, e.kind === 'holyDynamite');
       }
       for (let i = fireballs.length - 1; i >= 0; i--) {
         const f = fireballs[i];

@@ -125,7 +125,8 @@ interface Loot {
 function whatDrops(game: GameState, enemy: Enemy): Loot[] {
   const loot: Loot[] = [];
   // The jackal (jackal.ts) carries a whole sack of them: it all bursts out.
-  const coins = enemy.type === 'jackal' ? tuning.jackalBagCoins : Math.round(enemyCost(enemy) * tuning.coinsPerWeight);
+  // La Taglia (bounty.ts): the outlaw's bounty bursts out of its body too, on top of its usual coins.
+  const coins = enemy.type === 'jackal' ? tuning.jackalBagCoins : Math.round(enemyCost(enemy) * tuning.coinsPerWeight) + (enemy.bounty ? tuning.bountyCoins : 0);
   const coinValue = coinValueNow(game);
   for (let i = 0; i < coins; i++) loot.push({ kind: 'coin', value: coinValue });
   // The Damned Smith ALWAYS leaves its Damned Iron (the reason to kill it).

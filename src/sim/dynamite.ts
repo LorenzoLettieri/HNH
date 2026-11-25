@@ -8,14 +8,16 @@
 // they are plain data in a list in the GameState: serializable, no Three.js.
 // The renderer reads them (render/dynamite.ts) and never changes them.
 //
-// Written generic on purpose: the Dynamiter (the enemy in docs/DESIGN.md)
-// will throw the same sticks.
+// Written generic on purpose: the enemies throw the same sticks (`hostile`:
+// La Taglia's "Polveriera" outlaw, bounty.ts; one day the Dynamiter of
+// docs/DESIGN.md). A hostile stick blows up on YOU (fuse, or touching you)
+// and hurts only you (hostileBlast in explosion.ts): never the enemies.
 import { tuning, TICK_RATE } from './config';
 import { moveAndCollide } from './collision';
 import type { SimEvent } from './events';
-import { currentEyeHeight, type PlayerState } from './player';
+import { currentEyeHeight, currentHeight, type PlayerState } from './player';
 import { hitBox, isAlive, isEnemy, type Entity } from './entities';
-import { dynamiteBlast, explode } from './explosion';
+import { dynamiteBlast, explode, hostileBlast } from './explosion';
 import { raycastBoxes } from './raycast';
 import type { Box, World } from './world';
 import { hasCard } from './upgrades';
@@ -93,6 +95,37 @@ export interface Dynamite {
    * all go off at once, right there.
    */
   armTicks: number;
+  /** Thrown by an enemy (bounty.ts): it goes off against you instead of the enemies, and hurts only you. */
+  hostile: boolean;
+}
+
+/**
+ * A stick thrown by an ENEMY, from (x, y, z) (its bottom) with this velocity
+ * and fuse. No cards, no Forge: the plain stick, with hostile = true.
+ */
+export function enemyStick(id: number, x: number, y: number, z: number, vx: number, vy: number, vz: number, fuseTicks: number): Dynamite {
+  return {
+    id,
+    x, y, z,
+    px: x, py: y, pz: z,
+    vx, vy, vz,
+    fuseTicks,
+    fuseTotal: fuseTicks,
+    holy: false,
+    power: 1,
+    radius: tuning.bountyBlastRadius,
+    hellBounce: false,
+    bounces: 0,
+    rolling: false,
+    sticky: false,
+    stuck: false,
+    rocket: false,
+    rocketTicks: 0,
+    cluster: false,
+    mini: false,
+    armTicks: 0,
+    hostile: true,
+  };
 }
 
 /**
@@ -146,6 +179,7 @@ export function throwDynamite(p: PlayerState, world: World, nextId: number): Dyn
     cluster: hasCard(p, 'cluster'),
     mini: false,
     armTicks: 0,
+    hostile: false,
   };
 }
 
@@ -176,6 +210,11 @@ export function stepDynamite(
     const b = hitBox(e);
     targets.push({ ...b, minX: b.minX - r, maxX: b.maxX + r, minY: b.minY - r, maxY: b.maxY + r, minZ: b.minZ - r, maxZ: b.maxZ + r });
   }
+  // The enemies' sticks look for YOUR body instead (grown the same way).
+  const pr = tuning.playerRadius + r;
+  const you: Box[] = player.health > 0
+    ? [{ minX: player.x - pr, maxX: player.x + pr, minY: player.y - r, maxY: player.y + currentHeight(player) + r, minZ: player.z - pr, maxZ: player.z + pr }]
+    : [];
 
   for (const d of sticks) {
     d.px = d.x;
@@ -202,7 +241,7 @@ export function stepDynamite(
         d.stuck = true;
         d.vx = d.vy = d.vz = 0;
       }
-      boom = boom || (d.armTicks <= 0 && touches(ax, ay, az, d, targets));
+      boom = boom || (d.armTicks <= 0 && touches(ax, ay, az, d, d.hostile ? you : targets));
     }
     // One "tonk" per tick at most, and only for real hits: rolling makes
     // tiny impacts on every tick, and a sound for each would be a buzz.
@@ -211,6 +250,10 @@ export function stepDynamite(
     }
     // A REAL bounce (hard enough to leave the surface, not rolling): one more for "Rimbalzo infernale".
     if (impact > tuning.dynamiteBounceMinSpeed) d.bounces++;
+    if (boom && d.hostile) {
+      hostileBlast(player, { x: d.x, y: d.y + r, z: d.z }, world, events);
+      continue;
+    }
     if (boom) {
       // Card "Rimbalzo infernale": every bounce (up to hellBounceMax) adds damage.
       const bonus = d.hellBounce ? 1 + tuning.hellBounceBonus * Math.min(d.bounces, tuning.hellBounceMax) : 1;
@@ -266,6 +309,7 @@ function clusterOf(d: Dynamite, nextId: () => number): Dynamite[] {
       cluster: false, // a mini never splits again
       mini: true,
       armTicks: 12, // 0.2 s
+      hostile: false,
     });
   }
   return out;

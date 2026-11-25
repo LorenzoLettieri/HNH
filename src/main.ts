@@ -50,6 +50,8 @@ import { createWagerTableRenderer } from './render/wagerTable';
 import { createEmberHeartRenderer } from './render/emberHeart';
 import { createSoulWellRenderer } from './render/soulWell';
 import { createSermonRenderer } from './render/sermon';
+import { createBountyRenderer } from './render/bounty';
+import { createBountyPoster } from './render/bountyPoster';
 import { handlePactEvents } from './render/pactFx';
 import { createShopMenu } from './render/shopMenu';
 import { createMapOverlay } from './render/mapOverlay';
@@ -184,6 +186,8 @@ const wagerTable = createWagerTableRenderer(scene);
 const emberHeart = createEmberHeartRenderer(scene);
 const soulWell = createSoulWellRenderer(scene);
 const sermon = createSermonRenderer(scene);
+const bounty = createBountyRenderer(scene); // La Taglia: the star over the outlaw, its shield, its fuse
+const bountyPoster = createBountyPoster(); // ...and the WANTED poster
 const mapOverlay = createMapOverlay(world);
 const navDebug = createNavDebug(scene, getNavGraph(world));
 const navDebugBig = createNavDebug(scene, getNavGraph(world, BIG_BODY));
@@ -264,6 +268,7 @@ const debugPanel = createDebugPanel({
     spawnTool('Evento Sciacallo alla prossima ondata', (g) => forceMapEventNextWave(g.mapEvent, g.wave.number, 'jackal')),
     spawnTool('Evento Pozzo delle Anime alla prossima ondata', (g) => forceMapEventNextWave(g.mapEvent, g.wave.number, 'soulWell')),
     spawnTool('Evento Spettacolo Cruento alla prossima ondata', (g) => forceMapEventNextWave(g.mapEvent, g.wave.number, 'sermon')),
+    spawnTool('Evento Taglia alla prossima ondata', (g) => forceMapEventNextWave(g.mapEvent, g.wave.number, 'bounty')),
     // Like the respawn below, it should go through the InputCommand one day: it's only a flag the next tick reads.
     spawnTool("Completa l'evento in corso", (g) => { g.mapEvent.forceSuccess = true; }),
     // Respawn goes through the InputCommand like a key would (controls.ts):
@@ -589,6 +594,8 @@ renderer.setAnimationLoop((now: number) => {
   emberHeart.update(game, events, camera, alpha, dt, now / 1000);
   soulWell.update(game, events, camera, alpha, dt, now / 1000);
   sermon.update(game, events, camera, dt, now / 1000);
+  bounty.update(game, events, camera, alpha, dt, now / 1000);
+  bountyPoster.update(game, dt);
   handlePactEvents(events, game.entities, camera, dt); // the drinks that make something happen (pactFx.ts)
   // Walked away from the vendor (or died, and woke up at the spawn): the shop closes.
   const shopNearby = shopInReach(player, world);

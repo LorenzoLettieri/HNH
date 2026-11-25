@@ -15,6 +15,7 @@ import { stepBull } from './bull';
 import { stepSmith } from './smith';
 import { stepSharpshooter } from './sharpshooter';
 import { stepJackal } from './jackal';
+import { stepHoldGround } from './bounty';
 import { createWaveState, scoreHits, stepWaves, wavePressure, type WaveState } from './waves';
 import { countStats, createStats, type Stats } from './stats';
 import { createMapEventState, stepMapEvents, type MapEventState } from './mapEvents';
@@ -201,30 +202,35 @@ export function stepGame(
   }
   const pressure = wavePressure(game.wave.number);
 
-  // One step of every enemy's AI. Usually once per tick; with the wager's
-  // "faster enemies" curse, sometimes twice (see below).
+  // One step of one enemy's AI. Usually once per tick; with the wager's
+  // "faster enemies" curse or a swift outlaw (bounty.ts), sometimes twice (see below).
+  const stepEnemy = (e: Entity) => {
+    if (e.type === 'target') return;
+    // Drink "Zoccolo duro": a stunned enemy doesn't think, it only falls and slides (status.ts).
+    if (stepStunned(e, world, dt)) return;
+    if (e.type === 'eyebat') stepEyebat(e, game, world, air, dt, events);
+    else if (e.type === 'sharpshooter') stepSharpshooter(e, game, world, graph, dt, events);
+    // Hounds: the ghouls' graph, but their own flow field with no climbing (they ride the vents instead).
+    else if (e.type === 'hound') stepHound(e, game.player, game.entities, world, graph, getFlowField(graph, game.navGoal, NO_CLIMB), dt, events);
+    else if (e.type === 'bull') {
+      // Asked here, not every tick: with no bulls around it's never computed (cached per goal).
+      stepBull(e, game.player, game.entities, world, bigGraph, getFlowField(bigGraph, game.navGoalBig), dt, events);
+    } else if (e.type === 'smith') {
+      // The Smith has the bull's body: it walks on the bulls' graph, but it doesn't ride the
+      // vents (too heavy to fly: it waits below and pulls you down with the hook).
+      stepSmith(e, game.player, game.entities, world, bigGraph, getFlowField(bigGraph, game.navGoalBig, NO_VENT), dt, events);
+    }
+    // The jackal (a map event): the ghouls' graph, but it runs AWAY from you (its own escape map, jackal.ts).
+    else if (e.type === 'jackal') stepJackal(e, game, world, graph, dt);
+    // La Taglia's ghoul "Polveriera" keeps its distance to throw (bounty.ts): its ghoul AI waits.
+    else if (e.state !== 'dead' && stepHoldGround(e, game, world, dt)) return;
+    else if (e.state !== 'dead') stepGhoul(e, game.player, game.entities, world, graph, flow, dt, events, pressure);
+  };
   const stepEnemies = (targets: boolean) => {
     for (const e of game.entities) {
       if (e.type === 'target') {
         if (targets) stepTarget(e);
-      }
-      // Drink "Zoccolo duro": a stunned enemy doesn't think, it only falls and slides (status.ts).
-      else if (stepStunned(e, world, dt)) continue;
-      else if (e.type === 'eyebat') stepEyebat(e, game, world, air, dt, events);
-      else if (e.type === 'sharpshooter') stepSharpshooter(e, game, world, graph, dt, events);
-      // Hounds: the ghouls' graph, but their own flow field with no climbing (they ride the vents instead).
-      else if (e.type === 'hound') stepHound(e, game.player, game.entities, world, graph, getFlowField(graph, game.navGoal, NO_CLIMB), dt, events);
-      else if (e.type === 'bull') {
-        // Asked here, not every tick: with no bulls around it's never computed (cached per goal).
-        stepBull(e, game.player, game.entities, world, bigGraph, getFlowField(bigGraph, game.navGoalBig), dt, events);
-      } else if (e.type === 'smith') {
-        // The Smith has the bull's body: it walks on the bulls' graph, but it doesn't ride the
-        // vents (too heavy to fly: it waits below and pulls you down with the hook).
-        stepSmith(e, game.player, game.entities, world, bigGraph, getFlowField(bigGraph, game.navGoalBig, NO_VENT), dt, events);
-      }
-      // The jackal (a map event): the ghouls' graph, but it runs AWAY from you (its own escape map, jackal.ts).
-      else if (e.type === 'jackal') stepJackal(e, game, world, graph, dt);
-      else if (e.state !== 'dead') stepGhoul(e, game.player, game.entities, world, graph, flow, dt, events, pressure);
+      } else stepEnemy(e);
     }
   };
   stepEnemies(true);
@@ -243,6 +249,17 @@ export function stepGame(
     }
   } else {
     game.enemyTimeDebt = 0;
+  }
+  // La Taglia's swift outlaw (bounty.ts): the same trick for one enemy only,
+  // with the debt written on the entity. (A copy of the list: an AI step may
+  // add entities, and those shouldn't get an extra step this tick.)
+  for (const e of [...game.entities]) {
+    if (e.bounty !== 'swift' || e.type === 'target' || e.state === 'dead') continue;
+    e.timeDebt = (e.timeDebt ?? 0) + Math.max(0, tuning.bountySwiftScale - 1);
+    while (e.timeDebt >= 1 && e.health > 0) {
+      e.timeDebt -= 1;
+      stepEnemy(e);
+    }
   }
   // Enemies are solid: push the player out of their bodies (after they moved, see bodyBlock.ts).
   blockPlayerWithBodies(game.player, game.entities, world, dt);

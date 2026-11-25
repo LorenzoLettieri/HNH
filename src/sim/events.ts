@@ -13,13 +13,14 @@ import type { StyleAward } from './style';
 import type { Stats } from './stats';
 import type { MapEventKind } from './mapEvents';
 import type { WagerCurse } from './wager';
+import type { BountyModifier } from './bounty';
 import type { DrinkId, DrinkRefusal } from './drinks';
 
 /** What hit an enemy ('hit' events). */
 export type HitSource = WeaponId | MeleeTool | 'dynamite';
 
 /** Which explosion (explosion.ts): the card Ultimo colpo or a dynamite stick. */
-export type ExplosionKind = 'lastShot' | 'dynamite' | 'holyDynamite';
+export type ExplosionKind = 'lastShot' | 'dynamite' | 'holyDynamite' | 'bounty';
 
 export type SimEvent =
   /** A weapon fired (sound, flash, recoil). For the shotgun, `barrel` is 0 = right, 1 = left. */
@@ -135,6 +136,15 @@ export type SimEvent =
   /** The wave you bet on starts: the curse is on you until it ends. */
   | { type: 'wagerCurse'; curse: WagerCurse; wave: number }
   /** A bell of the bells event rang (bells.ts): the `index`-th of `count`, where it hangs, and whether it was the last one. */
+  /** La Taglia (bounty.ts): the outlaw is in town, here. */
+  | { type: 'bountySpawned'; entityId: number; modifier: BountyModifier; x: number; y: number; z: number }
+  /** The shielded outlaw's shield broke (up = false) or is full again (up = true). Where its body is. */
+  | { type: 'bountyShield'; entityId: number; up: boolean; x: number; y: number; z: number }
+  /** The "Polveriera" outlaw lit a stick (the warning: bountyThrowWindup s), and threw it. Where its hand is. */
+  | { type: 'bountyWindup'; entityId: number; x: number; y: number; z: number }
+  | { type: 'bountyThrow'; entityId: number; x: number; y: number; z: number }
+  /** The wave ended with the outlaw alive: it got away from here. */
+  | { type: 'bountyEscaped'; entityId: number; x: number; y: number; z: number }
   | { type: 'bellRung'; index: number; count: number; x: number; y: number; z: number; last: boolean }
   /** You ran through a ring of the Pony Express (ponyExpress.ts): the `index`-th of `count`, where, and whether it was the last one. */
   | { type: 'ringPassed'; index: number; count: number; x: number; y: number; z: number; last: boolean }

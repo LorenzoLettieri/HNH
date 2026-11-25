@@ -215,7 +215,8 @@ export function stepWaves(game: GameState, world: World, events: SimEvent[], ski
   const aliveByType: Record<Enemy['type'], number> = { ghoul: 0, eyebat: 0, hound: 0, bull: 0, sharpshooter: 0, smith: 0, jackal: 0 };
   for (const e of game.entities) {
     // The jackal (a map event, jackal.ts) isn't part of the wave: the wave doesn't wait for it.
-    if (!isEnemy(e) || e.state === 'dead' || e.type === 'jackal') continue;
+    // Nor does the bounty's outlaw (bounty.ts): if it did, the wave could never end before you killed it, and it could never escape.
+    if (!isEnemy(e) || e.state === 'dead' || e.type === 'jackal' || e.bounty) continue;
     alive += enemyCost(e);
     aliveByType[e.type]++;
   }
@@ -318,7 +319,7 @@ function pickWeighted(game: GameState, types: EnemyType[]): EnemyType {
  *   3. (spawnAheadChance of the time, if you're moving) ahead of you
  * then picks at random among what's left.
  */
-function pickSpawn(game: GameState, world: World): SpawnPoint | null {
+export function pickSpawn(game: GameState, world: World): SpawnPoint | null {
   const p = game.player;
   const far = (world.enemySpawns ?? []).filter((s) => Math.hypot(s.x - p.x, s.z - p.z) > tuning.spawnMinDistance);
   if (far.length === 0) return null;

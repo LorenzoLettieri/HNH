@@ -4,11 +4,13 @@
 //
 // This file is the SKELETON shared by every event: WHEN one appears, its
 // lifecycle (active → success or failure), the prize and the events it
-// reports. What each event asks you to do lives in its own file (bells.ts, ponyExpress.ts, wager.ts, emberHeart.ts, jackal.ts, soulWell.ts, sermon.ts):
+// reports. What each event asks you to do lives in its own file (bells.ts, ponyExpress.ts, wager.ts, emberHeart.ts, jackal.ts, soulWell.ts, sermon.ts, bounty.ts):
 // a create function and a step function that says "running / success /
-// failure". If the wave ends first, the event fails. One exception: the
+// failure". If the wave ends first, the event fails. Two exceptions read
+// the wave events themselves, and the skeleton leaves them to them: the
 // devil's wager (wager.ts) spans two waves (the bet, then the cursed wave),
-// so it reads the wave events itself and the skeleton leaves them to it.
+// and the bounty (bounty.ts) is already won if the wave ends during the
+// explosive outlaw's fuse.
 //
 // It's a small STATE MACHINE, the same idea as the enemies' AI:
 //
@@ -35,6 +37,7 @@ import { createEmberHeartEvent, stepEmberHeart, type EmberHeartEvent } from './e
 import { createJackalEvent, jackalEscapes, stepJackalEvent, type JackalEvent } from './jackal';
 import { createSoulWellEvent, stepSoulWell, type SoulWellEvent } from './soulWell';
 import { createSermonEvent, stepSermon, type SermonEvent } from './sermon';
+import { createBountyEvent, stepBounty, type BountyEvent } from './bounty';
 import type { InputCommand } from './command';
 
 /**
@@ -50,7 +53,7 @@ export type MapEventKind = ActiveMapEvent['kind'];
  * which ones after a check on `kind`. Every kind has `kind` and `wave` (the
  * wave it showed up in: it ends with it).
  */
-export type ActiveMapEvent = BellsEvent | PonyExpressEvent | WagerEvent | EmberHeartEvent | JackalEvent | SoulWellEvent | SermonEvent;
+export type ActiveMapEvent = BellsEvent | PonyExpressEvent | WagerEvent | EmberHeartEvent | JackalEvent | SoulWellEvent | SermonEvent | BountyEvent;
 
 /**
  * How to build each kind. A Record over every MapEventKind: a kind with no
@@ -68,6 +71,7 @@ const CREATORS: Record<MapEventKind, (world: World, game: GameState, wave: numbe
   jackal: createJackalEvent,
   soulWell: createSoulWellEvent,
   sermon: createSermonEvent,
+  bounty: createBountyEvent,
 };
 const KINDS = Object.keys(CREATORS) as MapEventKind[];
 
@@ -150,6 +154,8 @@ function stepEvent(ev: ActiveMapEvent, game: GameState, world: World, cmd: Input
       return stepSoulWell(ev, game, world, events, firstEvent);
     case 'sermon':
       return stepSermon(ev, game, events);
+    case 'bounty':
+      return stepBounty(ev, game, world, events, firstEvent);
   }
 }
 
@@ -173,8 +179,8 @@ export function stepMapEvents(game: GameState, world: World, cmd: InputCommand, 
   const end = events.length;
   for (let i = firstEvent; i < end; i++) {
     const e = events[i];
-    // The wager handles the waves itself (it has already seen them, in stepEvent above).
-    const ownsWaves = state.active?.kind === 'wager';
+    // The wager and the bounty handle the waves themselves (they have already seen them, in stepEvent above).
+    const ownsWaves = state.active?.kind === 'wager' || state.active?.kind === 'bounty';
     if (e.type === 'waveEnd' && state.active && !ownsWaves) {
       // The wave is over and the objective isn't done: failed.
       finish(game, events, 'failure');

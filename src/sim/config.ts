@@ -1129,6 +1129,39 @@ export const tuning = {
   cardSharpFichesScale: 2,
   cardSharpHealthCost: 25,
 
+  // "La Taglia" (src/sim/bounty.ts)
+  /** Seconds between the poster (the event's banner) and the outlaw showing up in town. */
+  bountyDelay: 4,
+  /** The outlaw's health: this × the health of its kind in that wave (a miniboss: a ghoul in wave 5 = 5 shots, 2 to the head). */
+  bountyHealthScale: 5,
+  /** Coins that burst out of the outlaw's body, on top of its usual ones (each worth coinValue × the style multiplier). */
+  bountyCoins: 30,
+  /** "Lesto": its time runs this much faster (1.6 = 60%: walking, attacks, everything). */
+  bountySwiftScale: 1.6,
+  /** "Corazzato": a shield of this × its health, soaked up before the health... */
+  bountyShieldScale: 1,
+  /** ...that starts growing back after this many seconds without a hit, and refills in this many. */
+  bountyShieldRegenDelay: 2.5,
+  bountyShieldRegenTime: 1.5,
+  /** "Polveriera": it throws a stick every this many seconds, after lighting it for this many (the warning)... */
+  bountyThrowInterval: 3,
+  bountyThrowWindup: 0.7,
+  /** ...only if it sees you, between these distances (meters)... */
+  bountyThrowMinRange: 3,
+  bountyThrowMaxRange: 28,
+  /** The ghoul "Polveriera" stops to throw when it sees you within this many meters, and backs off (× ghoulSpeed) when you're closer than this. */
+  bountyHoldRange: 11,
+  bountyBackOffRange: 6,
+  bountyBackOffSpeed: 0.7,
+  /** ...aimed where you'll be: this share of your velocity × the flight time (1 = a perfect interception)... */
+  bountyThrowLead: 0.6,
+  /** ...and the fuse burns this many seconds more than the flight (the moment you have to run once it lands). */
+  bountyStickFuse: 0.6,
+  /** Its sticks' blast: how big (meters), the damage to you at the center (fading to 40% at the edge), how hard it throws you (m/s). Never the enemies. */
+  bountyBlastRadius: 3.5,
+  bountyBlastDamage: 35,
+  bountyBlastPush: 9,
+
   // "Le Campane del Giudizio" (src/sim/bells.ts)
   /** How many bells to ring, in order. */
   bellsCount: 3,
