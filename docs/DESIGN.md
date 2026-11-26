@@ -1234,6 +1234,13 @@ costruzione che non complicano nulla (es. il limite di voci per i versi dei nemi
 | 400 | 2,6 ms | 16% |
 | 800 | 10,4 ms | 63% |
 
+### Misure del disegno (novembre 2026, `src/render/perfMeter.ts`)
+Inizio partita sulla cittadina, ondata 10: **~820 draw call per fotogramma con solo ~33k triangoli**
+(troppi oggetti piccoli, non troppa geometria). Delle ~430 mesh visibili, **~330 sono i props**
+(lanterne 136, torce 84, insegne 36, barili 36, forgia e incudine 34, sfiatatoi 8), quasi tutte
+proiettano ombra: ognuna è disegnata **due volte** (shadow map + scena) → ~650 draw call solo di props.
+Prossimo passo deciso: il **batching dei props** (riga sotto).
+
 ### Ottimizzazioni pronte all'uso (quando servono)
 | Ottimizzazione | Quando farla | Cosa risolve |
 |---|---|---|

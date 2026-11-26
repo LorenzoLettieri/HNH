@@ -330,6 +330,9 @@
       #event-goal { font-size: 18px; line-height: 1.2; color: #e4d8c0; text-shadow: 0 0 2px #000, 2px 2px 0 #000, 0 0 10px rgba(255, 150, 40, 0.4); }
       #event-goal.hurry { color: #e03018; }
       #fps { margin-top: 6px; font-size: 11px; opacity: 0.7; }
+      /* Performance meter (src/render/perfMeter.ts): plain monospace, numbers that don't jump around. */
+      #perf { margin-top: 4px; font: 11px/1.35 monospace; white-space: pre; color: #e8d8b0;
+              background: rgba(0, 0, 0, 0.55); padding: 4px 6px; }
       /* --- La Taglia's WANTED poster (src/render/bountyPoster.ts): yellowed paper pinned
          on the left, under the wave; it slides in when the outlaw is posted and slides out
          a few seconds after it shows up. The paper is CSS: a radial gradient (lighter in the
@@ -891,6 +894,7 @@
       <div id="wave-box" hidden><div class="hud-label">ONDATA</div><div id="wave"></div><div id="enemies-left" class="hud-label"></div></div>
       <div id="event-line" hidden><div id="event-name" class="hud-label"></div><div id="event-goal"></div></div>
       <div id="fps" class="hud-label"></div>
+      <div id="perf" hidden></div>
     </div>
     <div id="score-box"><div class="hud-label">PUNTI</div><div id="score"></div><div id="kills" class="hud-label"></div>
       <div id="money-box"><span id="money">0</span><div id="money-gain"></div></div>

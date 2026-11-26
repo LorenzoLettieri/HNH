@@ -57,6 +57,7 @@ export function createProps(scene: THREE.Scene, world: World): LevelProps {
     }
 
     const object = model.object;
+    object.name = p.type; // readable in a scene dump
     object.position.set(p.x, p.y, p.z);
     object.rotation.y = THREE.MathUtils.degToRad('rotation' in p ? (p.rotation ?? 0) : 0);
     scene.add(object);

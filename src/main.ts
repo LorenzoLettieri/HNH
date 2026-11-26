@@ -84,6 +84,7 @@ import { applyHeightFog } from './render/heightFog';
 import { applySky, createSky, directionFromAngles, updateSky } from './render/sky';
 import { createShaderWatch } from './render/warmUp';
 import { modelsLoaded } from './render/weapons/gunModel';
+import { createPerfMeter } from './render/perfMeter';
 
 // --- Renderer -------------------------------------------------------------
 const renderer = new THREE.WebGLRenderer({ antialias: false });
@@ -94,6 +95,9 @@ document.body.appendChild(renderer.domElement);
 // unfiltered edges: cheapest, and they match the pixel-art look.
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.BasicShadowMap;
+
+// Performance meter (Debug tools → "Misure prestazioni"): where a frame's time goes.
+const perf = createPerfMeter(renderer, document.getElementById('perf')!);
 
 // Post-processing pipeline: low-res render, color reduction, dithering, ...
 const post = createPostProcess(renderer);
@@ -262,6 +266,7 @@ const debugPanel = createDebugPanel({
       },
     },
     { label: 'Hitbox on/off (verde = corpo, giallo = critico)', run: () => hitboxDebug.toggle() },
+    { label: 'Misure prestazioni on/off (ms per fotogramma, draw call)', run: () => perf.toggle() },
     spawnTool('Fai apparire: Malocchio', spawnEyebatInFront),
     spawnTool('Fai apparire: cane infernale', spawnHoundInFront),
     spawnTool('Fai apparire: toro', spawnBullInFront),
@@ -527,6 +532,7 @@ renderer.setAnimationLoop((now: number) => {
   // doesn't trigger hundreds of ticks in a row ("spiral of death").
   const frameTime = Math.min((now - lastTime) / 1000, 0.25);
   lastTime = now;
+  perf.frameStart(now);
 
   updateLook(); // mouse look every frame, for the snappiest aim
 
@@ -537,6 +543,7 @@ renderer.setAnimationLoop((now: number) => {
   const dt = paused ? 0 : frameTime * debugTime.timeScale * hitStopScale(frameTime);
   accumulator += dt;
   const events: SimEvent[] = [];
+  perf.begin('sim');
   while (accumulator >= TICK_DT) {
     copyPlayer(player, prevPlayer);
     const cmd = buildCommand(game.tick);
@@ -546,6 +553,8 @@ renderer.setAnimationLoop((now: number) => {
     if (!prevPlayer.onGround && player.onGround) triggerLandingDip(-prevPlayer.vy);
     accumulator -= TICK_DT;
   }
+  perf.end('sim');
+  perf.begin('scene'); // from here to post.render: the renderers' updates
 
   // How far we are between the previous tick (0) and the current one (1).
   const alpha = accumulator / TICK_DT;
@@ -658,7 +667,13 @@ renderer.setAnimationLoop((now: number) => {
   updateFireLights(now / 1000);
   props.update(now / 1000);
   updateParticles(dt, now / 1000, camera, post.sceneSize.y);
+  perf.end('scene');
+  perf.begin('draw');
+  perf.gpuBegin();
   post.render(scene, camera, viewmodel);
+  perf.gpuEnd();
+  perf.end('draw');
+  perf.frameEnd(game.entities.length);
   // Only while playing: on the menu the .glb guns still arriving compile their shaders, and that's fine there.
   if (!paused) shaderWatch.check();
 });
