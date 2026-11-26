@@ -460,13 +460,15 @@ Obiettivo: **premiare il movimento preciso** per spostarsi, non solo per schivar
   fuga** per chi sa scivolare.
 - **Emporio in cui si entra**: porte a est e ovest, finestre a nord e sud (davanzale 0,8 m, ci si
   salta dentro). Dentro i Malocchi non ti vedono, ma i ghoul ti seguono: corpo a corpo vero, al chiuso.
-- **Tetti a capanna (pendenze vere)** [FATTO]: stalla, deposito, telegrafo, le due case, impresario,
-  la tettoia della segheria e il pozzetto della piazza. Le falde sono **rampe vere** nella simulazione
+- **Tetti a capanna (pendenze vere)** [FATTO]: quasi tutti gli edifici. Ripidi su stalla e case,
+  **bassi** (0,2–0,3, 11–17°) su saloon, hotel, sceriffo, banca, armaiolo, magazzino, emporio, bagni e
+  vagoni; la cresta è girata in modo che **dove si atterra dai salti della strada alta ci sia la gronda
+  bassa** (verificato col giocatore simulato). Restano piatti solo la chiesa (lo sfiatatoio sul tetto)
+  e le piattaforme sospese. Le falde sono **rampe vere** nella simulazione
   (`Box.rise`: un box tagliato in diagonale), non solo disegnate: ci si cammina sopra (anche i nemici,
   che hanno nodi e link "cammina" sulle falde), **in scivolata si accelera in discesa** (`slopeSlideGravity`),
   e correndo in salita **si viene lanciati oltre la cresta** (la velocità verticale della rampa resta: un
-  "ramp jump", e il salto da una rampa ci si somma). I tetti "di facciata" del western (saloon, banca,
-  hotel, sceriffo) e quelli spagnoli restano piatti.
+  "ramp jump", e il salto da una rampa ci si somma).
 - Tutti i percorsi sono verificati con un giocatore simulato (fisica vera, comandi scritti a mano).
 - Draw call: fino a ~930 nella vista più carica. Lo **static batching** (§9) sta diventando utile.
 
