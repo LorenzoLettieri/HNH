@@ -672,7 +672,7 @@ pensato perché il gioco è molto difficile (quasi tutti muoiono alla 9–10) e 
   scontrano coi patti e ogni pescata è utile, anche il decimo doppione.
 - **Esclusi apposta**: numeri del movimento che cambiano la portata (salto, gravità, velocità: la mappa è tarata su
   quelli) e aiuti alla mira.
-- **Dove**: una bara su due cavalletti davanti alla porta del becchino (`coffin` del livello). E per aprirla, sempre,
+- **Dove**: una bara su due cavalletti nel **cimitero** (sud-ovest), tra la fila di tombe più a sud e il cancello sud dello steccato (`coffin` del livello); prima stava davanti alla porta del becchino, troppo vicina alla Forgia. E per aprirla, sempre,
   anche a metà ondata. **Prezzo** 300 × 1,25^(aperture), si azzera alla morte; Debito col diavolo vale anche qui.
 - **Pescata del tutto a caso** [DECISO dall'utente], con il generatore con seed. La reliquia **arriva subito** (niente
   raccoglibile da inseguire): il coperchio salta via con un calcio da dentro, la reliquia sale girando e vola in mano.

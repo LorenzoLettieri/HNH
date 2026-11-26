@@ -681,9 +681,10 @@ export const town: World = {
   // The "Spettacolo Cruento" map event (src/sim/sermon.ts): the preacher on
   // the church's forecourt, south of the steam vent, facing Main Street.
   preacher: { x: 9.5, y: 0, z: -20 },
-  // The undertaker's coffin (src/sim/relics.ts): on two trestles in front of
-  // his door, head to the west. Pay, the lid flies open, a relic comes out.
-  coffin: { x: -33, y: 0, z: -23.4, rotation: Math.PI / 2 },
+  // The undertaker's coffin (src/sim/relics.ts): in the cemetery (south-west),
+  // on two trestles between the southern row of graves and the south gate in
+  // the fence, head to the west. Pay, the lid flies open, a relic comes out.
+  coffin: { x: -30, y: 0, z: 34.2, rotation: Math.PI / 2 },
   bellSpots: [
     { x: -15, y: roofY(SALOON, SALOON_ROOF, -15, -14), z: -14 }, // saloon (bells on the ridges)
     { x: 17, y: 9.3, z: -12 }, // church

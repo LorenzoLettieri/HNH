@@ -1,5 +1,5 @@
 // The undertaker's coffin and its RELICS (docs/DESIGN.md §5, "La Bara del
-// Becchino"). In front of the undertaker's door there's a coffin: pay
+// Becchino"). In the cemetery there's a coffin: pay
 // vildenaro, the lid flies open and out comes a dead man's belonging, drawn
 // at random. It's yours until you die, and every copy stacks.
 //

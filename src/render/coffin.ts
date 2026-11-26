@@ -1,5 +1,5 @@
 // The undertaker's coffin (the simulation: src/sim/relics.ts). A pine box on
-// two trestles in front of his door, a brass cross on the lid, two candles at
+// two trestles in the cemetery, a brass cross on the lid, two candles at
 // the head. Pay and the lid is KICKED OPEN from inside: it flies up on its
 // hinge, slams against its stop and bounces; out of the red velvet rises the
 // relic, turning like a coin, then it shoots into your hands. A moment later
