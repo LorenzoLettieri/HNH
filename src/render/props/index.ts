@@ -5,6 +5,7 @@ import type { Prop, World } from '../../sim/world';
 import type { FireSource } from '../fireLights';
 import { createAnvil } from './anvil';
 import { createBarrel } from './barrel';
+import { batchStatic } from './batch';
 import type { PropModel } from './common';
 import { createForge } from './forge';
 import { createGrass } from './grass';
@@ -26,6 +27,8 @@ export function createProps(scene: THREE.Scene, world: World): LevelProps {
   const fires: FireSource[] = [];
   const vents: THREE.Vector3[] = [];
   const updates: ((time: number) => void)[] = [];
+  const roots: THREE.Object3D[] = [];
+  const moving = new Set<THREE.Object3D>();
 
   for (const p of world.props) {
     if (p.type === 'grass') continue; // all grass patches are built together below
@@ -69,7 +72,15 @@ export function createProps(scene: THREE.Scene, world: World): LevelProps {
       fires.push({ ...f, position: object.localToWorld(f.position.clone()) });
     }
     if (model.update) updates.push(model.update);
+    roots.push(object);
+    for (const m of model.moving ?? []) moving.add(m);
   }
+
+  // Every part that never moves becomes one mesh per material: a few draw
+  // calls instead of hundreds (batch.ts). The flames, the lanterns' glass
+  // and the swinging signs stay as they are.
+  const batched = batchStatic(scene, roots, moving);
+  console.log(`props: ${batched.before} static meshes batched into ${batched.after}`);
 
   const grassPatches = world.props.filter(
     (p): p is Extract<Prop, { type: 'grass' }> => p.type === 'grass',

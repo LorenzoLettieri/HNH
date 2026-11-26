@@ -11,6 +11,8 @@ export interface PropModel {
   fires?: LocalFire[];
   /** Called every frame (animations: swinging signs, flame frames, ...). */
   update?: (time: number) => void;
+  /** Parts that move (animated by update): kept out of the static batching (batch.ts). */
+  moving?: THREE.Object3D[];
 }
 
 export interface LocalFire {

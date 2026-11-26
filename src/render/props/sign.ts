@@ -77,6 +77,7 @@ export function createSign(text: string): PropModel {
   const phase = Math.random() * 10;
   return {
     object: group,
+    moving: [pivot], // the board swings: it can't be baked into the static props
     update(time) {
       // Two sines: a slow sway plus a smaller, faster one = irregular gusts.
       const t = time * SWING_SPEED + phase;

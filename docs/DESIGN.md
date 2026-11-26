@@ -1239,12 +1239,14 @@ Inizio partita sulla cittadina, ondata 10: **~820 draw call per fotogramma con s
 (troppi oggetti piccoli, non troppa geometria). Delle ~430 mesh visibili, **~330 sono i props**
 (lanterne 136, torce 84, insegne 36, barili 36, forgia e incudine 34, sfiatatoi 8), quasi tutte
 proiettano ombra: ognuna è disegnata **due volte** (shadow map + scena) → ~650 draw call solo di props.
-Prossimo passo deciso: il **batching dei props** (riga sotto).
+Nel Chrome dell'utente, ondata 26: frame 10 ms, sim ~0, scena 0,6, **draw 4,4 ms (CPU)**, GPU 3,6 ms,
+624 draw call: il costo più grande era la CPU che manda le draw call. **Batching dei props FATTO**
+(`src/render/props/batch.ts`): 285 mesh → 14, draw call da ~820 a ~230 a inizio partita.
 
 ### Ottimizzazioni pronte all'uso (quando servono)
 | Ottimizzazione | Quando farla | Cosa risolve |
 |---|---|---|
-| **Static batching**: unire tutte le mesh statiche del livello e dei props in poche mesh (una per materiale) | **livello: FATTO** (`createLevelMeshes` in `src/render/materials.ts`: da ~330 mesh a una per texture; su Main Street da 920 a 588 draw call per fotogramma). Restano i props, se le draw call pesano | costo per-oggetto della geometria che non si muove mai |
+| **Static batching**: unire tutte le mesh statiche del livello e dei props in poche mesh (una per materiale) | **livello: FATTO** (`createLevelMeshes` in `src/render/materials.ts`: da ~330 mesh a una per texture; su Main Street da 920 a 588 draw call per fotogramma). **props: FATTO** (`src/render/props/batch.ts`: 285 mesh → 14, da ~820 a ~230 draw call) | costo per-oggetto della geometria che non si muove mai |
 | **Instancing degli sprite** (un'unica draw call per tutti i ghoul) | draw call > ~300 o fps che calano con molti nemici | costo per-oggetto del disegno (oggi 2 draw call per ghoul: corpo + ombra) |
 | **Griglia spaziale** per la separazione | > ~200 nemici insieme | costo O(N²) della separazione (ogni ghoul controlla tutti gli altri) |
 | **Ombre "a macchia"** per i nemici lontani | se le ombre pesano (molti nemici visibili) | ogni nemico viene disegnato 2 volte (scena + shadow map) |
