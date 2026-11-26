@@ -110,6 +110,12 @@ export const tuning = {
   slideStopSpeed: 3,
   /** How much you can steer during a slide (like air control). */
   slideSteer: 6,
+  /**
+   * Sliding on a slope (a pitched roof): how much of gravity's pull along the
+   * slope you feel. 1 = a frictionless sled (downhill you speed up, uphill
+   * you slow down), 0 = slopes don't matter.
+   */
+  slopeSlideGravity: 0.8,
 
   // --- Wall jump ---
   /** How close a wall must be to jump off it, meters (beyond your body). */

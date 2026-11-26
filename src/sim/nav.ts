@@ -12,7 +12,7 @@
 // ghouls share it: each one just follows the arrows from where it stands.
 import { moveAndCollide, overlapsAny } from './collision';
 import { TICK_DT, tuning } from './config';
-import type { Box, Prop } from './world';
+import { gradientOf, surfaceAt, type Box, type Prop } from './world';
 
 export type LinkKind = 'walk' | 'jump' | 'drop' | 'climb' | 'vent';
 
@@ -130,9 +130,11 @@ export function buildNavGraph(boxes: Box[], props: Prop[] = [], body: NavBody = 
     if (zs.length === 0) zs.push((b.minZ + b.maxZ) / 2);
     for (const x of xs) {
       for (const z of zs) {
-        if (!fits(x, b.maxY, z)) continue; // something above (another box, a roof...)
+        // On a slope (a pitched roof) the node sits on the plane, under the body's uphill edge.
+        const top = surfaceAt(b, x, z, r);
+        if (!fits(x, top, z)) continue; // something above (another box, a roof...)
         const id = nodes.length;
-        nodes.push({ x, y: b.maxY, z });
+        nodes.push({ x, y: top, z });
         const key = cellKey(cellOf(x), cellOf(z));
         if (!cells.has(key)) cells.set(key, []);
         cells.get(key)!.push(id);
@@ -141,8 +143,23 @@ export function buildNavGraph(boxes: Box[], props: Prop[] = [], body: NavBody = 
   }
 
   // Is there ground under (x, z) at height ~y? (So a walk link doesn't cross a gap.)
+  // On a slope the ground is the plane there, and its height wanders more.
   const supported = (x: number, y: number, z: number) =>
-    boxes.some((b) => x > b.minX && x < b.maxX && z > b.minZ && z < b.maxZ && b.maxY <= y + 0.05 && b.maxY >= y - 0.4);
+    boxes.some((b) => {
+      if (!(x > b.minX && x < b.maxX && z > b.minZ && z < b.maxZ)) return false;
+      const top = surfaceAt(b, x, z, r);
+      const slack = gradientOf(b) * S;
+      return top <= y + 0.05 + slack && top >= y - 0.4 - slack;
+    });
+  // How steep is the ground under (x, z) at height ~y? 0 = flat (or nothing).
+  const steepness = (x: number, y: number, z: number) => {
+    let g = 0;
+    for (const b of boxes) {
+      if (!b.rise || !(x > b.minX && x < b.maxX && z > b.minZ && z < b.maxZ)) continue;
+      if (Math.abs(surfaceAt(b, x, z, r) - y) < 0.4 + gradientOf(b) * S) g = Math.max(g, gradientOf(b));
+    }
+    return g;
+  };
 
   // Is the straight line from A to B free for a body standing at height y?
   const clearPath = (a: NavNode, b: NavNode, y: number, steps = 4) => {
@@ -168,10 +185,14 @@ export function buildNavGraph(boxes: Box[], props: Prop[] = [], body: NavBody = 
           const dy = b.y - a.y;
 
           // WALK: neighbors on the same surface (8 directions), ground all along.
-          if (Math.abs(dy) < 0.35 && dist <= S * 1.5) {
-            const midX = (a.x + b.x) / 2;
-            const midZ = (a.z + b.z) / 2;
-            if (supported(midX, Math.max(a.y, b.y), midZ) && clearPath(a, b, Math.max(a.y, b.y))) {
+          // Up and down a pitched roof the height changes along the way:
+          // as much as the slope says over that distance is still a walk.
+          const midX = (a.x + b.x) / 2;
+          const midZ = (a.z + b.z) / 2;
+          const slopeRise = dist <= S * 1.5 ? steepness(midX, (a.y + b.y) / 2, midZ) * dist : 0;
+          if (Math.abs(dy) < 0.35 + slopeRise && dist <= S * 1.5) {
+            const midY = slopeRise > 0 ? (a.y + b.y) / 2 : Math.max(a.y, b.y);
+            if (supported(midX, midY, midZ) && clearPath(a, b, Math.max(a.y, b.y))) {
               links[ia].push({ to: ib, kind: 'walk', cost: dist });
             }
             continue;

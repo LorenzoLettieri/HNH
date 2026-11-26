@@ -47,6 +47,71 @@ export interface Box {
     // Riveted iron (towers, floating platforms) and the canyon's rock.
     | 'metal'
     | 'rock';
+  /**
+   * A SLOPE (a wedge, half a pitched roof): the top face isn't flat, it climbs
+   * toward this direction, from minY on the opposite edge up to maxY on this
+   * one (east = +X, west = -X, south = +Z, north = -Z). The solid is the part
+   * of the box UNDER that slanted plane: seen from the side, a right triangle.
+   * Missing = an ordinary box. Two wedges back to back make a gable roof
+   * (`gable` in src/levels/town.ts). The math is in `surfaceAt` below; the
+   * collisions in collision.ts, the bullets in raycast.ts.
+   */
+  rise?: Facing;
+  /**
+   * A wedge's vertical faces (the gable's triangles) drawn with this look
+   * instead of `look`: the wall's material, so the gable reads as the top of
+   * the wall and the slopes as the roofing. Only drawn: the simulation ignores it.
+   */
+  sideLook?: Box['look'];
+}
+
+/**
+ * How steep a wedge is: meters of height per meter along its slope (the
+ * "gradient", the tangent of its angle). 0 for an ordinary box.
+ */
+export function gradientOf(b: Box): number {
+  if (!b.rise) return 0;
+  const run = b.rise === 'east' || b.rise === 'west' ? b.maxX - b.minX : b.maxZ - b.minZ;
+  return (b.maxY - b.minY) / run;
+}
+
+/**
+ * The height of a box's top at (x, z): maxY for an ordinary box, the slanted
+ * plane for a wedge (a linear function of one coordinate, clamped to the box).
+ *
+ * With `radius` > 0 it's the top under a square FOOTPRINT (x ± radius, z ± radius),
+ * that is the highest point of the plane under it: the footprint's uphill edge.
+ * Our bodies are boxes too, so a body on a slope rests on its uphill edge and
+ * the downhill one hangs a little above the roof (like the box-shaped players
+ * of Quake): `radius × gradient`, a few centimeters.
+ */
+export function surfaceAt(b: Box, x: number, z: number, radius = 0): number {
+  if (!b.rise) return b.maxY;
+  let t: number; // 0 at the low edge, 1 at the high edge
+  switch (b.rise) {
+    case 'east': t = (x + radius - b.minX) / (b.maxX - b.minX); break;
+    case 'west': t = (b.maxX - (x - radius)) / (b.maxX - b.minX); break;
+    case 'south': t = (z + radius - b.minZ) / (b.maxZ - b.minZ); break;
+    case 'north': t = (b.maxZ - (z - radius)) / (b.maxZ - b.minZ); break;
+  }
+  return b.minY + (b.maxY - b.minY) * Math.min(1, Math.max(0, t));
+}
+
+/**
+ * The slope under a footprint, as "meters up per meter" along X and Z (the
+ * gradient vector, dh/dx and dh/dz). Zero where the footprint's uphill edge
+ * is past the high end (it rests on the ridge: flat there). Moving with
+ * velocity (vx, vz) on it, you go up at vx·gx + vz·gz m/s.
+ */
+export function slopeAt(b: Box, x: number, z: number, radius = 0): { gx: number; gz: number } {
+  const g = gradientOf(b);
+  switch (b.rise) {
+    case 'east': return { gx: x + radius < b.maxX ? g : 0, gz: 0 };
+    case 'west': return { gx: x - radius > b.minX ? -g : 0, gz: 0 };
+    case 'south': return { gx: 0, gz: z + radius < b.maxZ ? g : 0 };
+    case 'north': return { gx: 0, gz: z - radius > b.minZ ? -g : 0 };
+    default: return { gx: 0, gz: 0 };
+  }
 }
 
 /**

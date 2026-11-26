@@ -1,6 +1,6 @@
 // Ray casting: "if I shoot a straight line from here in this direction,
 // what's the first box it hits, and where?"
-import type { Box } from './world';
+import { gradientOf, type Box } from './world';
 
 export interface RayHit {
   /** Distance from the origin to the hit point, meters. */
@@ -90,15 +90,57 @@ function rayBox(
     tExit = Math.min(tExit, t2);
     if (tEnter > tExit) return null;
   }
-  if (tEnter < 0 || normalAxis === -1) return null; // box is behind us (or we're inside it)
+  if (normalAxis === -1) return null;
+  let nx = normalAxis === 0 ? normalSign : 0;
+  let ny = normalAxis === 1 ? normalSign : 0;
+  let nz = normalAxis === 2 ? normalSign : 0;
+
+  // A wedge (Box.rise) is the box cut by its slanted plane: one more "slab",
+  // a half-space this time (everything under the plane). The plane as
+  // n·p = c, with n pointing up and out of the slope. Where the ray crosses
+  // it: t = (c − n·o) / (n·d). Going against n (n·d < 0) it ENTERS the
+  // solid there, going along n it LEAVES it: the same "latest entry,
+  // earliest exit" as the other slabs.
+  if (b.rise) {
+    const g = gradientOf(b);
+    // Up the slope = the rise direction (sx, sz); the plane is y = minY + g·(distance from the low edge).
+    const sx = b.rise === 'east' ? 1 : b.rise === 'west' ? -1 : 0;
+    const sz = b.rise === 'south' ? 1 : b.rise === 'north' ? -1 : 0;
+    const lowX = sx > 0 ? b.minX : b.maxX;
+    const lowZ = sz > 0 ? b.minZ : b.maxZ;
+    // y − g·(sx·(x − lowX) + sz·(z − lowZ)) = minY  →  n = (−g·sx, 1, −g·sz)
+    const pnx = -g * sx;
+    const pnz = -g * sz;
+    const c = b.minY - g * (sx * lowX + sz * lowZ);
+    const along = pnx * dx + dy + pnz * dz;
+    const from = pnx * ox + oy + pnz * oz - c; // > 0 = the origin is above the plane
+    if (Math.abs(along) < 1e-9) {
+      if (from > 0) return null; // parallel to the plane, above it: never inside
+    } else {
+      const t = -from / along;
+      if (along < 0) {
+        if (t > tEnter) {
+          tEnter = t;
+          const len = Math.hypot(pnx, 1, pnz);
+          nx = pnx / len;
+          ny = 1 / len;
+          nz = pnz / len;
+        }
+      } else {
+        tExit = Math.min(tExit, t);
+      }
+      if (tEnter > tExit) return null;
+    }
+  }
+  if (tEnter < 0) return null; // box is behind us (or we're inside it)
 
   return {
     distance: tEnter,
     x: ox + dx * tEnter,
     y: oy + dy * tEnter,
     z: oz + dz * tEnter,
-    nx: normalAxis === 0 ? normalSign : 0,
-    ny: normalAxis === 1 ? normalSign : 0,
-    nz: normalAxis === 2 ? normalSign : 0,
+    nx,
+    ny,
+    nz,
   };
 }

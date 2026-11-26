@@ -122,6 +122,21 @@ export class QuadBatch {
     }
   }
 
+  /**
+   * Adds a triangle (the gable end of a pitched roof). `a, b, c` counter-clockwise
+   * seen from outside, so the GPU knows its front; `uv` like the quads' (only the
+   * position counts: the textures on triangles are anchored to the world).
+   */
+  addTriangle(a: Vec3, b: Vec3, c: Vec3, normal: Vec3, uv: (su: number, sv: number, p: Vec3) => [number, number]): void {
+    const first = this.positions.length / 3;
+    for (const p of [a, b, c]) {
+      this.positions.push(...p);
+      this.normals.push(...normal);
+      this.uvs.push(...uv(0, 0, p));
+    }
+    this.indices.push(first, first + 1, first + 2);
+  }
+
   toGeometry(): THREE.BufferGeometry {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(this.positions, 3));

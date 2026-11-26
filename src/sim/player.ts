@@ -25,6 +25,12 @@ export interface PlayerState {
   pitch: number;
   /** Standing on the ground (true) or airborne (false). */
   onGround: boolean;
+  /**
+   * The slope under your feet (meters up per meter along X and Z), 0 on flat
+   * ground: a pitched roof (Box.rise). Downhill a slide speeds up.
+   */
+  slopeX: number;
+  slopeZ: number;
   /** Was jump held during the previous tick? Used to detect a new press. */
   jumpHeld: boolean;
   /** Ticks left in which a jump is still allowed after leaving the ground. */
@@ -208,6 +214,8 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     yaw: 0,
     pitch: 0,
     onGround: true,
+    slopeX: 0,
+    slopeZ: 0,
     jumpHeld: false,
     coyoteTicks: 0,
     jumpBufferTicks: 0,
@@ -358,7 +366,9 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
     const isHop = p.onGround && p.groundTicks <= secondsToTicks(tuning.bhopGraceTime);
     if (isHop) addSpeedAlongVelocity(p, tuning.bhopBoost);
     events.push({ type: 'jump', hop: isHop, slide: p.sliding });
-    p.vy = tuning.jumpSpeed;
+    // Running UP a slope you already rise (vy > 0, the slope's speed): the
+    // jump adds to it, a ramp jump. On flat ground vy is 0 here.
+    p.vy = tuning.jumpSpeed + (p.onGround ? Math.max(0, p.vy) : 0);
     p.onGround = false;
     p.sliding = false; // slide-jump: the slide ends, its speed stays with you
     p.jumpBufferTicks = 0;
@@ -398,6 +408,7 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
     // Sliding: very little friction, and only a bit of steering (like in the air).
     applyFriction(p, tuning.slideFriction, dt);
     accelerate(p, wishX, wishZ, tuning.maxGroundSpeed, tuning.airSpeedCap, tuning.slideSteer, dt);
+    slideDownhill(p, dt);
   } else if (p.onGround && !hooked(p)) {
     // On foot (standing or crouch-walking): friction + ground acceleration.
     // (Not while the lasso's rope pulls you: friction would eat the pull.
@@ -427,8 +438,10 @@ export function stepPlayer(p: PlayerState, cmd: InputCommand, world: World, dt: 
 
   // 6. Move, colliding with the level.
   const wasOnGround = p.onGround;
-  const { landed } = moveAndCollide(p, tuning.playerRadius, currentHeight(p), world.boxes, dt);
+  const { landed, slopeX, slopeZ } = moveAndCollide(p, tuning.playerRadius, currentHeight(p), world.boxes, dt);
   p.onGround = landed;
+  p.slopeX = slopeX;
+  p.slopeZ = slopeZ;
   // Count ticks on the ground: 0 on the landing tick, then 1, 2, ...
   p.groundTicks = landed ? (wasOnGround ? p.groundTicks + 1 : 0) : 0;
   // Landing after a flight: say how long it was (the style rewards long ones).
@@ -688,6 +701,21 @@ function accelerate(
   const accelSpeed = Math.min(accel * wishSpeed * dt, addSpeed);
   p.vx += accelSpeed * wishX;
   p.vz += accelSpeed * wishZ;
+}
+
+/**
+ * Sliding down a slope: gravity pulls you along it. On a plane of gradient
+ * G (= tan θ) the pull along the surface is g·sin θ; its horizontal part is
+ * g·sin θ·cos θ = g·G / (1 + G²), pointing downhill (against the gradient
+ * vector). × tuning.slopeSlideGravity: 1 = a frictionless sled. Sliding up a
+ * slope it's the same force, slowing you down.
+ */
+function slideDownhill(p: PlayerState, dt: number): void {
+  const G2 = p.slopeX * p.slopeX + p.slopeZ * p.slopeZ;
+  if (G2 === 0) return;
+  const pull = (tuning.gravity * tuning.slopeSlideGravity) / (1 + G2);
+  p.vx -= p.slopeX * pull * dt;
+  p.vz -= p.slopeZ * pull * dt;
 }
 
 /**

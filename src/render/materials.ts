@@ -174,8 +174,21 @@ function faceUV(
 export function createLevelMeshes(boxes: readonly Box[]): THREE.Mesh[] {
   const batches = new Map<string, QuadBatch>();
 
+  const batchFor = (name: string) => {
+    let batch = batches.get(name);
+    if (!batch) {
+      batch = new QuadBatch();
+      batches.set(name, batch);
+    }
+    return batch;
+  };
+
   for (const b of boxes) {
     if (!b.look) continue;
+    if (b.rise) {
+      addWedge(b, batchFor);
+      continue;
+    }
     const look = LOOKS[b.look];
     const center: Vec3 = [(b.minX + b.maxX) / 2, (b.minY + b.maxY) / 2, (b.minZ + b.maxZ) / 2];
     const half: Vec3 = [(b.maxX - b.minX) / 2, (b.maxY - b.minY) / 2, (b.maxZ - b.minZ) / 2];
@@ -208,6 +221,76 @@ export function createLevelMeshes(boxes: readonly Box[]): THREE.Mesh[] {
     mesh.receiveShadow = true; // shows shadows cast by others
     return mesh;
   });
+}
+
+/**
+ * A wedge (Box.rise, half a pitched roof) as faces: the SLOPE (a rectangle tilted
+ * up toward `rise`, with the look's top texture: shingles, tin, tiles), the two
+ * TRIANGLES at its ends and the tall rectangle on the high side (the wall's
+ * look, `sideLook`, if it has one), and the underside. The low side has no
+ * height: no face.
+ */
+function addWedge(b: Box, batchFor: (name: string) => QuadBatch): void {
+  const look = LOOKS[b.look!];
+  const wall = LOOKS[b.sideLook ?? b.look!];
+  const alongX = b.rise === 'east' || b.rise === 'west';
+  // Up the slope, horizontally: (sx, sz). The low and high edges' coordinate along it.
+  const sx = b.rise === 'east' ? 1 : b.rise === 'west' ? -1 : 0;
+  const sz = b.rise === 'south' ? 1 : b.rise === 'north' ? -1 : 0;
+  const run = alongX ? b.maxX - b.minX : b.maxZ - b.minZ;
+  const rise = b.maxY - b.minY;
+  const slopeLen = Math.hypot(run, rise);
+
+  // --- The slope: v = up the slope (unit), normal = out of it, u = v × normal
+  //     (so that u × v = normal, like every face: see FaceAxes). ---
+  const v: Vec3 = [(sx * run) / slopeLen, rise / slopeLen, (sz * run) / slopeLen];
+  const n: Vec3 = [(-sx * rise) / slopeLen, run / slopeLen, (-sz * rise) / slopeLen];
+  const u: Vec3 = [v[1] * n[2] - v[2] * n[1], v[2] * n[0] - v[0] * n[2], v[0] * n[1] - v[1] * n[0]];
+  const slope: FaceAxes = { normal: n, u, v };
+  const center: Vec3 = [(b.minX + b.maxX) / 2, (b.minY + b.maxY) / 2, (b.minZ + b.maxZ) / 2];
+  const halfAcross = alongX ? (b.maxZ - b.minZ) / 2 : (b.maxX - b.minX) / 2; // along u
+  const top = look.top ?? look.side;
+  batchFor(top).addTiled(center, slope, halfAcross, slopeLen / 2, MAX_TILE, faceUV(top, false, slope, halfAcross, slopeLen / 2));
+
+  // --- The tall side: a rectangle on the high edge, facing `rise`. ---
+  const tall = SIDES[b.rise!];
+  const tallCenter: Vec3 = [
+    sx > 0 ? b.maxX : sx < 0 ? b.minX : center[0],
+    center[1],
+    sz > 0 ? b.maxZ : sz < 0 ? b.minZ : center[2],
+  ];
+  batchFor(wall.side).addTiled(tallCenter, tall, halfAcross, rise / 2, MAX_TILE, faceUV(wall.side, false, tall, halfAcross, rise / 2));
+
+  // --- The two triangles, at the ends across the slope. Corners: low edge
+  //     (bottom), high edge (bottom), high edge (top). ---
+  const lowX = sx > 0 ? b.minX : b.maxX;
+  const highX = sx > 0 ? b.maxX : b.minX;
+  const lowZ = sz > 0 ? b.minZ : b.maxZ;
+  const highZ = sz > 0 ? b.maxZ : b.minZ;
+  const ends: { facing: 'east' | 'west' | 'south' | 'north'; at: number }[] = alongX
+    ? [{ facing: 'north', at: b.minZ }, { facing: 'south', at: b.maxZ }]
+    : [{ facing: 'west', at: b.minX }, { facing: 'east', at: b.maxX }];
+  for (const end of ends) {
+    const face = SIDES[end.facing];
+    const p0: Vec3 = alongX ? [lowX, b.minY, end.at] : [end.at, b.minY, lowZ];
+    const p1: Vec3 = alongX ? [highX, b.minY, end.at] : [end.at, b.minY, highZ];
+    const p2: Vec3 = alongX ? [highX, b.maxY, end.at] : [end.at, b.maxY, highZ];
+    // Counter-clockwise seen from outside: check with the normal, flip if not.
+    const e1: Vec3 = [p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]];
+    const e2: Vec3 = [p2[0] - p0[0], p2[1] - p0[1], p2[2] - p0[2]];
+    const cross: Vec3 = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+    const uv = faceUV(wall.side, false, face, 1, 1);
+    if (dot(cross, face.normal) > 0) batchFor(wall.side).addTriangle(p0, p1, p2, face.normal, uv);
+    else batchFor(wall.side).addTriangle(p0, p2, p1, face.normal, uv);
+  }
+
+  // --- The underside (hidden on a roof slab, seen under a ramp in the air). ---
+  if (b.minY > 0) {
+    const under = look.bottom ?? look.side;
+    const halfX = (b.maxX - b.minX) / 2;
+    const halfZ = (b.maxZ - b.minZ) / 2;
+    batchFor(under).addTiled([center[0], b.minY, center[2]], BOTTOM, halfX, halfZ, MAX_TILE, faceUV(under, false, BOTTOM, halfX, halfZ));
+  }
 }
 
 /**

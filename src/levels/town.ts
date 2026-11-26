@@ -46,6 +46,10 @@
 //   From the gunsmith's roof (bank, east tower) you can also drop onto the balcony.
 // - Low roofs (≤ 4.5 m: undertaker, houses, general store,
 //   telegraph) can be climbed with three well-timed wall jumps on one wall.
+// - PITCHED ROOFS (gables: stable, depot, telegraph, the two houses,
+//   undertaker, the sawmill's shed, the well): you walk on the slopes, slide
+//   down them faster and faster, and running up one you're thrown off the
+//   ridge (a ramp jump). The gables are in `gable` below.
 // - SLIDE ONLY (1.1 m clearance, the ghouls are 1.8 m and go around): under
 //   the deck between the rail wagons (middle crossing), under the covered
 //   wagon on Cross Street.
@@ -140,6 +144,61 @@ function building(
 function buildingOf(b: Block, look: Box['look'], roof: Box['look'] = 'roof'): Box[] {
   return building(b.x, b.z, b.sizeX, b.height, b.sizeZ, look, roof);
 }
+
+// --- Pitched roofs: two slopes (wedges, Box.rise) back to back on the roof slab ---
+// The western town's false fronts are flat; the barns, the houses and the
+// sheds have gables. You walk on the slopes (collision.ts lifts you up them,
+// a slide speeds up going down), and running up one you jump off the ridge.
+/** How a building's gable is made: which way the ridge runs, how steep the slopes. */
+interface Gable {
+  /** 'x' = the ridge runs east-west (the triangles face east and west), 'z' = north-south. */
+  ridge: 'x' | 'z';
+  /** Meters up per meter across (the tangent of the angle): 0.5 ≈ 27°, 0.75 ≈ 37°. */
+  pitch: number;
+}
+/**
+ * The two slopes of a gable roof, sitting on the roof slab (top = height + 0.3).
+ * Along the ridge they're as long as the walls (the triangles are the top of
+ * the walls, in the wall's `look`); across, as wide as the slab (the eaves).
+ */
+function gable(b: Block, g: Gable, roof: Box['look'], wall: Box['look']): Box[] {
+  const base = b.height + 0.3;
+  if (g.ridge === 'x') {
+    const half = b.sizeZ / 2 + 0.3;
+    const top = base + half * g.pitch;
+    const minX = b.x - b.sizeX / 2;
+    const maxX = b.x + b.sizeX / 2;
+    return [
+      { minX, maxX, minY: base, maxY: top, minZ: b.z - half, maxZ: b.z, rise: 'south', look: roof, sideLook: wall },
+      { minX, maxX, minY: base, maxY: top, minZ: b.z, maxZ: b.z + half, rise: 'north', look: roof, sideLook: wall },
+    ];
+  }
+  const half = b.sizeX / 2 + 0.3;
+  const top = base + half * g.pitch;
+  const minZ = b.z - b.sizeZ / 2;
+  const maxZ = b.z + b.sizeZ / 2;
+  return [
+    { minX: b.x - half, maxX: b.x, minY: base, maxY: top, minZ, maxZ, rise: 'east', look: roof, sideLook: wall },
+    { minX: b.x, maxX: b.x + half, minY: base, maxY: top, minZ, maxZ, rise: 'west', look: roof, sideLook: wall },
+  ];
+}
+/** A building with a gable roof: the block, the slab, the two slopes. */
+function gabledOf(b: Block, g: Gable, look: Box['look'], roof: Box['look'] = 'roof'): Box[] {
+  return [...buildingOf(b, look, roof), ...gable(b, g, roof, look)];
+}
+/** The height of a gable's ridge (where a bell of the map event stands). */
+function ridgeTop(b: Block, g: Gable): number {
+  return b.height + 0.3 + ((g.ridge === 'x' ? b.sizeZ : b.sizeX) / 2 + 0.3) * g.pitch;
+}
+/** Which gable each building gets (the others stay flat). */
+const STABLE_ROOF: Gable = { ridge: 'x', pitch: 0.75 }; // a barn: steep, gable on Main Street
+const DEPOT_ROOF: Gable = { ridge: 'z', pitch: 0.5 };
+const TELEGRAPH_ROOF: Gable = { ridge: 'x', pitch: 0.6 };
+const HOUSE_WEST_ROOF: Gable = { ridge: 'z', pitch: 0.6 };
+const HOUSE_SOUTH_ROOF: Gable = { ridge: 'x', pitch: 0.6 };
+// Ridge north-south: from the pillars of the high road you land on the low
+// east eave, not against the gable's triangle.
+const UNDERTAKER_ROOF: Gable = { ridge: 'z', pitch: 0.5 };
 
 // --- Close-quarters dressing: small pieces that turn open ground into choices -----
 // The rule (docs/DESIGN.md, "La mappa"): the streets should never be a wide
@@ -589,9 +648,9 @@ export const town: World = {
     { x: -9, y: 14, z: 24 }, // west twin tower
     { x: 25, y: 6.3, z: 35 }, // warehouse
     { x: -26.3, y: 8, z: -13 }, // water tower
-    { x: 8, y: 6.3, z: -35 }, // stable
-    { x: 38.5, y: 5.3, z: -30 }, // depot
-    { x: 38.5, y: 4.3, z: 5 }, // telegraph office
+    { x: 8, y: ridgeTop(STABLE, STABLE_ROOF), z: -35 }, // stable (on the ridge)
+    { x: 38.5, y: ridgeTop(DEPOT, DEPOT_ROOF), z: -30 }, // depot
+    { x: 38.5, y: ridgeTop(TELEGRAPH, TELEGRAPH_ROOF), z: 5 }, // telegraph office
     { x: -38.5, y: 5.3, z: 1 }, // bathhouse
     { x: 18, y: 8, z: 26 }, // gunsmith
   ],
@@ -743,16 +802,16 @@ export const town: World = {
     // --- North: HOTEL (roof 5.3, crate steps on its east side) and UNDERTAKER ---
     ...buildingOf(HOTEL, 'clapboard'), // x -19..-9, z -37..-29
     ...crateSteps(-8, -29.8, 0, -1, 5, 1), // tops 1-5 m, going north → jump west onto the roof (5.3)
-    ...buildingOf(UNDERTAKER, 'boards'), // x -37..-29, z -32.5..-25.5
+    ...gabledOf(UNDERTAKER, UNDERTAKER_ROOF, 'boards'), // x -37..-29, z -32.5..-25.5
     // --- North: STABLE across Main Street from the hotel (Main Street north is 13 m wide) ---
-    ...buildingOf(STABLE, 'clapboardRed', 'tinRoof'), // x 4..12, z -39..-31: a red barn
+    ...gabledOf(STABLE, STABLE_ROOF, 'clapboardRed', 'tinRoof'), // x 4..12, z -39..-31: a red barn
     box(-1, 0, -33, 4, 0.8, 1, 'planks'), // water trough in the middle of the street
     // --- North-east: railway DEPOT against the cliff ---
-    ...buildingOf(DEPOT, 'clapboardOchre', 'tinRoof'), // x 35..42, z -35..-25
+    ...gabledOf(DEPOT, DEPOT_ROOF, 'clapboardOchre', 'tinRoof'), // x 35..42, z -35..-25
 
     // --- West: BLACKSMITH's open shed (forge + anvil) and a HOUSE ---
     ...shed(-36.5, -15, 7, 6, 3.5), // hearth and anvil are props (see `props`)
-    ...buildingOf(HOUSE_WEST, 'boards'), // x -39.5..-32.5, z 12..20
+    ...gabledOf(HOUSE_WEST, HOUSE_WEST_ROOF, 'boards'), // x -39.5..-32.5, z 12..20
     // --- Cross Street west: an abandoned covered wagon in the middle, up on
     //     its wheels: you can SLIDE under it (1.1 m), the ghouls go around ---
     box(-16, 1.1, 3, 4.5, 1.3, 2, 'boards'),
@@ -795,7 +854,7 @@ export const town: World = {
     box(-24, 1, 12, 0.8, 0.8, 0.8, 'crate'),
 
     // --- South: a HOUSE west of the towers, a WAREHOUSE east of them ---
-    ...buildingOf(HOUSE_SOUTH, 'clapboard'), // x -19.5..-12.5, z 31..37
+    ...gabledOf(HOUSE_SOUTH, HOUSE_SOUTH_ROOF, 'clapboard'), // x -19.5..-12.5, z 31..37
     ...buildingOf(WAREHOUSE, 'brick', 'tinRoof'), // x 20..30, z 30..38
     ...crateSteps(19, 30.4, 0, 1, 6, 1), // tops 1-6 m, going south → jump east onto the roof (6.3)
     // --- South-east: GUNSMITH between the east tower and the warehouse (3 m alley to the tower,
@@ -832,8 +891,10 @@ export const town: World = {
     box(38.5, 0, 36.8, 0.4, 3.2, 0.4, 'timber'),
     box(36.5, 3.2, 36.8, 4.4, 0.4, 0.4, 'timber'),
     // --- East: TELEGRAPH OFFICE and the SAWMILL's open shed, east of the rail line ---
-    ...buildingOf(TELEGRAPH, 'clapboard'), // x 35..42, z 2..8
+    ...gabledOf(TELEGRAPH, TELEGRAPH_ROOF, 'clapboard'), // x 35..42, z 2..8
     ...shed(38.5, -17, 7, 6, 3.5),
+    // ...with a low tin gable (ridge east-west) on its roof.
+    ...gable({ x: 38.5, z: -17, sizeX: 7.4, sizeZ: 5.8, height: 3.5 }, { ridge: 'x', pitch: 0.4 }, 'tinRoof', 'timber'),
     box(38.5, 0, -17, 4, 0.9, 1.2, 'timber'), // log on the saw bench
     // --- West: BATHHOUSE next to the gallows (2.5 m alley between them) ---
     ...buildingOf(BATHHOUSE, 'adobe', 'tiles'), // x -42..-35, z -3..5
@@ -850,6 +911,8 @@ export const town: World = {
     box(1.2, 1, 0, 0.2, 1.6, 0.2, 'timber'),
     box(2.8, 1, 0, 0.2, 1.6, 0.2, 'timber'),
     box(2, 2.6, 0, 2.4, 0.2, 2.4, 'roof'),
+    // ...and a little gable on it (block height 2.5: its slab top is 2.8, like the well's).
+    ...gable({ x: 2, z: 0, sizeX: 2.4, sizeZ: 1.8, height: 2.5 }, { ridge: 'x', pitch: 0.8 }, 'roof', 'timber'),
     // Troughs and crates: low cover along Main Street
     box(-5, 0, -3, 3, 0.8, 1, 'planks'),
     box(8.5, 0, 4, 1, 0.8, 3, 'planks'),
