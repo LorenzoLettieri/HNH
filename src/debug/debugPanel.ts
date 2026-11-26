@@ -56,6 +56,8 @@ export function createDebugPanel(options: {
   onGiveMoney: (amount: number) => void;
   /** Debug: one Damned Iron for free, to try the Forge. */
   onGiveIron: () => void;
+  /** A random relic of the undertaker's coffin, as if you had paid for it (relics.ts). */
+  onGiveRelic: () => void;
   onGiveFiche: () => void;
 }): DebugPanel {
   const panel = createPanel();
@@ -165,6 +167,20 @@ export function createDebugPanel(options: {
   shop.button('+500 vildenaro', () => options.onGiveMoney(500));
   shop.button('+1 Ferro Dannato', () => options.onGiveIron());
   shop.button('+1 fiche', () => options.onGiveFiche());
+  // The undertaker's coffin and its relics (src/sim/relics.ts).
+  shop.button('+1 reliquia a caso', () => options.onGiveRelic());
+  shop.number(tuning, 'coffinPrice', 0, 2000, 25);
+  shop.number(tuning, 'coffinPriceGrowth', 1, 2, 0.05);
+  shop.number(tuning, 'relicHeartHealth', 0, 50, 1);
+  shop.number(tuning, 'relicHideK', 0, 0.5, 0.01);
+  shop.number(tuning, 'relicPowderStep', 0, 0.5, 0.01);
+  shop.number(tuning, 'relicBeltStep', 0, 1, 0.05);
+  shop.number(tuning, 'relicGlovesK', 0, 0.5, 0.01);
+  shop.number(tuning, 'relicMagnetStep', 0, 2, 0.1);
+  shop.number(tuning, 'relicMagnetMax', 1.5, 10, 0.5);
+  shop.number(tuning, 'relicRabbitK', 0, 0.5, 0.01);
+  shop.number(tuning, 'relicRegenInterval', 0.5, 10, 0.5);
+  shop.number(tuning, 'relicRegenAmount', 0, 5, 1);
   // The barman's drinks (src/sim/drinks.ts).
   shop.number(tuning, 'drinkPrice', 0, 5, 1);
   shop.number(tuning, 'drinkOfferSize', 1, 6, 1);

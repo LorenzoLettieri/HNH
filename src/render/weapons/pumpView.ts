@@ -24,9 +24,10 @@
 // rack, "ch-CHK". See "The reload" below.
 // Everything here is cosmetic: ammo and timing are decided by the simulation.
 import * as THREE from 'three';
+import { reloadScale } from '../../sim/relics';
 import { secondsToTicks, tuning } from '../../sim/config';
 import type { PlayerState } from '../../sim/player';
-import { fireInterval, magazineSize } from '../../sim/weapon';
+import { fireInterval, magazineSize, reloadPerRound } from '../../sim/weapon';
 import type { LeverTimes } from '../../audio/sfx';
 import { ELASTIC_STEP, PoseSpring, Stroke, ZERO_POSE, phase, poseAt, smoothstep, travelTime, type GunPose } from './elastic';
 import { loadGunModel } from './gunModel';
@@ -452,8 +453,9 @@ export function createPumpView(flightSpace: THREE.Object3D): PumpView {
       // reloadTicks counts down: first the start (pumpReloadStart), then one
       // stretch per shell. openK = progress of the start (0..1), shellK = of
       // the shell being loaded; -1 = not in that part.
-      const startTicks = Math.max(1, secondsToTicks(tuning.pumpReloadStart));
-      const perShellTicks = secondsToTicks(tuning.pumpReloadPerShell);
+      // (Both × the relic Guanti di daino, like the simulation's timer.)
+      const startTicks = Math.max(1, secondsToTicks(tuning.pumpReloadStart * reloadScale(player)));
+      const perShellTicks = secondsToTicks(reloadPerRound(player, 'shotgun'));
       const r = player.reloadTicks;
       const reloading = r > 0;
       const openK = reloading && r > perShellTicks ? Math.max(0, 1 - (r - perShellTicks) / startTicks) : -1;

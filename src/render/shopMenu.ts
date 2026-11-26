@@ -267,8 +267,9 @@ export interface ShopMenu {
   /**
    * Every frame. `inReach` = the shop within reach right now (null = none): it drives the prompt.
    * `wager` = the devil's table is within reach (wager.ts): the same prompt says "SCOMMETTI".
+   * `coffin` = the price of the undertaker's coffin, if it's within reach (relics.ts), else null: "APRI LA BARA · 300".
    */
-  update(player: PlayerState, inReach: ShopSpawn | null, paused: boolean, wager: boolean): void;
+  update(player: PlayerState, inReach: ShopSpawn | null, paused: boolean, wager: boolean, coffin: number | null): void;
   /** The simulation's answers to the purchases (sounds, the vendor's line). */
   onEvents(events: SimEvent[]): void;
   /** "Clicca per riprendere la mira": the shop closed but the browser didn't give the mouse back. */
@@ -536,10 +537,17 @@ export function createShopMenu(options: { onCloseClick: () => void }): ShopMenu 
       forge.reset();
       bar.reset();
     },
-    update(player, inReach, paused, wager) {
-      // The prompt: next to a vendor (or the devil's table), shop closed, game running.
-      prompt.hidden = isOpen || paused || (inReach === null && !wager);
-      promptWord.textContent = inReach?.kind === 'forge' ? 'FORGIA' : inReach?.kind === 'saloon' ? 'ORDINA' : inReach ? 'COMMERCIA' : 'SCOMMETTI';
+    update(player, inReach, paused, wager, coffin) {
+      // The prompt: next to a vendor (or the devil's table, or the coffin), shop closed, game running.
+      prompt.hidden = isOpen || paused || (inReach === null && !wager && coffin === null);
+      promptWord.textContent =
+        inReach?.kind === 'forge' ? 'FORGIA'
+        : inReach?.kind === 'saloon' ? 'ORDINA'
+        : inReach ? 'COMMERCIA'
+        : wager ? 'SCOMMETTI'
+        : `APRI LA BARA · ${coffin} VILDENARO`;
+      // Red when you can't pay it (the same rule as the shop's prices: Debito col diavolo counts).
+      prompt.classList.toggle('poor', !inReach && !wager && coffin !== null && !canAfford(player, coffin));
       if (!isOpen) return;
       if (kind === 'saloon') {
         bar.refresh(list, player);

@@ -46,6 +46,7 @@ import { hasCard } from './upgrades';
 import { applyGunDamage, hitCenter, lineFree } from './gunDamage';
 import { explode, lastShotBlast } from './explosion';
 import { teslaChain } from './tesla';
+import { gunDamageScale, reloadScale, reserveMax } from './relics';
 
 export type WeaponId = 'revolver' | 'shotgun' | 'rifle' | 'dynamite';
 /** Weapon slots, in order: key 1 = revolver, key 2 = shotgun, key 3 = carbine, key 4 = dynamite launcher. */
@@ -98,11 +99,11 @@ export function forgeMultiplier(p: PlayerState, weapon: WeaponId): number {
 }
 
 /**
- * Everything that multiplies a gun's own bullet: the Forge and this shot's
- * power (the drink Mano del morto on the last round).
+ * Everything that multiplies a gun's own bullet: the Forge, this shot's
+ * power (the drink Mano del morto on the last round) and the relic Polvere fine.
  */
 function gunPower(p: PlayerState, weapon: WeaponId): number {
-  return forgeMultiplier(p, weapon) * p.shotPower;
+  return forgeMultiplier(p, weapon) * p.shotPower * gunDamageScale(p);
 }
 
 /**
@@ -187,6 +188,10 @@ export function fireInterval(p: PlayerState, w: WeaponId): number {
  * the gate + one round). The player, because cards can change it.
  */
 function reloadTime(p: PlayerState, w: WeaponId): number {
+  // The relic Guanti di daino: every reload a bit faster.
+  return reloadBaseTime(p, w) * reloadScale(p);
+}
+function reloadBaseTime(p: PlayerState, w: WeaponId): number {
   switch (w) {
     case 'revolver': {
       // Akimbo: the gunslinger's spin (both guns twirled round the finger), its own length.
@@ -209,9 +214,9 @@ function reloadTime(p: PlayerState, w: WeaponId): number {
 export function reloadsOneByOne(p: PlayerState, w: WeaponId): boolean {
   return w === 'rifle' || (w === 'shotgun' && isPump(p));
 }
-/** Seconds for each further round of a one-by-one reload. */
-export function reloadPerRound(w: WeaponId): number {
-  return w === 'shotgun' ? tuning.pumpReloadPerShell : tuning.rifleReloadPerRound;
+/** Seconds for each further round of a one-by-one reload (the relic Guanti di daino makes it shorter). */
+export function reloadPerRound(p: PlayerState, w: WeaponId): number {
+  return (w === 'shotgun' ? tuning.pumpReloadPerShell : tuning.rifleReloadPerRound) * reloadScale(p);
 }
 /** Rounds left in the weapon you're holding. */
 export function currentAmmo(p: PlayerState): number {
@@ -299,7 +304,7 @@ export function stepWeapon(
       if (!tuning.infiniteAmmo) p.reserve[pocket] -= moved;
       if (oneByOne && moved > 0) events.push({ type: 'reloadRound', weapon: p.weapon });
       const more = oneByOne && currentAmmo(p) < full && (tuning.infiniteAmmo || p.reserve[pocket] > 0);
-      if (more) p.reloadTicks = secondsToTicks(reloadPerRound(p.weapon));
+      if (more) p.reloadTicks = secondsToTicks(reloadPerRound(p, p.weapon));
       else endReload(p, events, 0);
     }
   }
@@ -957,7 +962,7 @@ export function refundLeadFlight(p: PlayerState, hits: SimEvent[]): void {
   if (!hits.some((e) => e.type === 'hit' && e.killed)) return;
   const toGun = Math.min(p.leadFlightShells, magazineSize(p, 'shotgun') - p.loaded.shotgun);
   p.loaded.shotgun += toGun;
-  p.reserve.shells = Math.min(tuning.shotgunReserveMax, p.reserve.shells + p.leadFlightShells - toGun);
+  p.reserve.shells = Math.min(reserveMax(p, 'shells'), p.reserve.shells + p.leadFlightShells - toGun);
   p.leadFlightShells = 0;
 }
 

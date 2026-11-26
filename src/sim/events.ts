@@ -15,6 +15,7 @@ import type { MapEventKind } from './mapEvents';
 import type { WagerCurse } from './wager';
 import type { BountyModifier } from './bounty';
 import type { DrinkId, DrinkRefusal } from './drinks';
+import type { CoffinRefusal, RelicId } from './relics';
 
 /** What hit an enemy ('hit' events). */
 export type HitSource = WeaponId | MeleeTool | 'dynamite';
@@ -266,5 +267,8 @@ export type SimEvent =
   /** A drink poured at the saloon (drinks.ts): which one and its new level. */
   | { type: 'drinkBought'; drink: DrinkId; level: number }
   | { type: 'drinkFailed'; drink: DrinkId; reason: DrinkRefusal }
+  /** The undertaker's coffin (relics.ts): opened, and what came out (`count` = copies you have now, this one included). */
+  | { type: 'coffinOpened'; relic: RelicId; count: number; price: number }
+  | { type: 'coffinFailed'; reason: CoffinRefusal }
   /** You collected a pickup (sound, flash on the HUD). */
   | { type: 'pickup'; kind: PickupKind; x: number; y: number; z: number };

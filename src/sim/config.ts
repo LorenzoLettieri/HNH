@@ -1196,6 +1196,33 @@ export const tuning = {
   wagerFiches: 2,
   /** Curse "nemici più veloci": how much faster the enemies' time runs (1.3 = 30% faster: walking, attacks, everything). */
   wagerFastEnemiesScale: 1.3,
+  // --- The undertaker's coffin and its relics (src/sim/relics.ts) ---
+  /**
+   * Vildenaro to open the coffin the first time, × coffinPriceGrowth every
+   * time after (300, 375, 469... 915 the sixth time).
+   */
+  coffinPrice: 300,
+  coffinPriceGrowth: 1.25,
+  /** Seconds before the coffin can be opened again (the lid's animation). */
+  coffinBusyTime: 1.4,
+  /** Cuore del bandito: max health per copy (linear). */
+  relicHeartHealth: 15,
+  /** Pelle conciata: damage taken × 1/(1 + k·copies) (0.08: one copy −7%, five −29%, ten −44%). */
+  relicHideK: 0.08,
+  /** Polvere fine: every gun's damage × (1 + step)^copies (compounds: five copies ×1.61). */
+  relicPowderStep: 0.1,
+  /** Cinturone del pistolero: every pocket holds × (1 + step × copies) rounds. */
+  relicBeltStep: 0.25,
+  /** Guanti di daino: reload time × 1/(1 + k·copies) (0.12: one copy −11%, five −38%). */
+  relicGlovesK: 0.12,
+  /** Calamita del cercatore: + meters of pickup reach per copy, never above relicMagnetMax. */
+  relicMagnetStep: 0.6,
+  relicMagnetMax: 5,
+  /** Zampa di coniglio: closes 1 − 1/(1 + k·copies) of the gap between the drop chance and 100%. */
+  relicRabbitK: 0.15,
+  /** Sangue freddo: every relicRegenInterval seconds, relicRegenAmount health per copy. */
+  relicRegenInterval: 3,
+  relicRegenAmount: 1,
   // --- The barman's drinks, the pacts (src/sim/drinks.ts) ---
   /**
    * Fiches per drink, how many drinks on the counter, and the highest level

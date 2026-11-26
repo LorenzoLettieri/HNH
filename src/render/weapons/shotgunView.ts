@@ -23,6 +23,7 @@
 // the sounds in audio/sfx.ts (playShotgunReload) use the same numbers.
 // Everything is cosmetic: ammo and timing are decided by the simulation.
 import * as THREE from 'three';
+import { reloadScale } from '../../sim/relics';
 import { tuning } from '../../sim/config';
 import type { PlayerState } from '../../sim/player';
 import { ELASTIC_STEP, Hinge, PoseSpring, ZERO_POSE, phase, poseAt, smoothstep, type GunPose } from './elastic';
@@ -165,7 +166,7 @@ export function createShotgunView(): ShotgunView {
       hinge.reset();
     },
     update(dt, player) {
-      const duration = tuning.shotgunReloadTime;
+      const duration = tuning.shotgunReloadTime * reloadScale(player); // the relic Guanti di daino
       // Interrupted (e.g. you died): back to normal.
       if (time >= 0 && player.reloadTicks === 0 && time < 0.9 * duration) {
         time = -1;

@@ -49,6 +49,8 @@ export interface InputCommand {
   drink: DrinkId | null;
   /** Take the devil's wager at the table within reach (wager.ts): E next to the table. */
   wager: boolean;
+  /** Open the undertaker's coffin within reach (relics.ts): E next to it. */
+  coffin: boolean;
   /**
    * Start the next wave now, without waiting for the end of the break
    * (waves.ts; default key Q, action 'skipBreak' in keybinds.ts). Ignored while a wave is on. In multiplayer it will become a

@@ -9,13 +9,15 @@ import { createMenu } from './menu';
 import { finishLoading, loadingStep } from './loading';
 import { createDebugPanel, debugTime, type DebugTool } from './debug/debugPanel';
 import { hitStopScale } from './render/hitStop';
-import { buildCommand, controlSettings, queueRespawn, queueWager, updateLook, view } from './controls';
+import { buildCommand, controlSettings, queueCoffin, queueRespawn, queueWager, updateLook, view } from './controls';
 import { TICK_DT, tuning } from './sim/config';
 import { copyPlayer, createPlayer } from './sim/player';
 import { createGame, spawnBullInFront, spawnSharpshooterInFront, spawnEyebatInFront, spawnHoundInFront, spawnSmithInFront, dropPickupsInFront, spawnHolyFireInFront, stepGame } from './sim/game';
 import { jumpToWave } from './sim/waves';
 import { forceMapEventNextWave } from './sim/mapEvents';
 import { wagerInReach } from './sim/wager';
+import { coffinInReach, coffinPrice, RELICS, type RelicId } from './sim/relics';
+import { random } from './sim/random';
 import { DEFAULT_LEVEL, LEVELS } from './levels';
 import { triggerLandingDip, updateLandingDip } from './render/landingDip';
 import { onVideoChange, videoSettings } from './render/videoSettings';
@@ -48,6 +50,8 @@ import { createVendorRenderer } from './render/vendors';
 import { createBellRenderer } from './render/bells';
 import { createPonyRingRenderer } from './render/ponyRings';
 import { createWagerTableRenderer } from './render/wagerTable';
+import { createCoffinRenderer } from './render/coffin';
+import { updateRelicHud } from './render/relicHud';
 import { createEmberHeartRenderer } from './render/emberHeart';
 import { createSoulWellRenderer } from './render/soulWell';
 import { createSermonRenderer } from './render/sermon';
@@ -191,6 +195,7 @@ const vendors = createVendorRenderer(scene, world);
 const bells = createBellRenderer(scene, world);
 const ponyRings = createPonyRingRenderer(scene);
 const wagerTable = createWagerTableRenderer(scene);
+const coffin = createCoffinRenderer(scene, world);
 const emberHeart = createEmberHeartRenderer(scene);
 const soulWell = createSoulWellRenderer(scene);
 const sermon = createSermonRenderer(scene);
@@ -302,6 +307,13 @@ const debugPanel = createDebugPanel({
     markPractice('fiches regalate dal pannello di debug');
     game.player.fiches++;
   },
+  onGiveRelic: () => {
+    markPractice('reliquia regalata dal pannello di debug');
+    // A random one, from the game's generator (like the coffin's own draw).
+    const id = RELICS[Math.floor(random(game) * RELICS.length)];
+    game.player.relics[id]++;
+    if (id === 'banditHeart') game.player.health = maxHealth(game.player);
+  },
   onGiveIron: () => {
     markPractice('Ferro Dannato regalato dal pannello di debug');
     game.player.damnedIron++;
@@ -350,6 +362,9 @@ window.addEventListener('keydown', (e) => {
       } else if (!paused && wagerInReach(game.mapEvent.active, player)) {
         // The devil's table (src/sim/wager.ts): no panel, the bet goes into the next command.
         queueWager();
+      } else if (!paused && coffinInReach(player, world)) {
+        // The undertaker's coffin (src/sim/relics.ts): no panel either, the next command opens it.
+        queueCoffin();
       }
     }
   }
@@ -480,6 +495,16 @@ const drinksParam = params.get('drinks');
 if (drinksParam) {
   const wanted = drinksParam === 'all' ? DRINKS : drinksParam.split(',').filter((d): d is DrinkId => d in DRINK_INFO);
   for (const d of wanted) game.player.drinks[d] = drinkMaxLevel(d);
+  game.player.health = maxHealth(game.player);
+}
+// ?relics=all (or ?relics=tannedHide,coldBlood: ids from RELICS in src/sim/relics.ts; add
+// ":N" for N copies, e.g. ?relics=finePowder:5): start with the undertaker's relics.
+const relicsParam = params.get('relics');
+if (relicsParam) {
+  for (const item of relicsParam === 'all' ? RELICS : relicsParam.split(',')) {
+    const [id, n] = item.split(':');
+    if ((RELICS as readonly string[]).includes(id)) game.player.relics[id as RelicId] = Math.max(1, Number(n) || 1);
+  }
   game.player.health = maxHealth(game.player);
 }
 const startPos = params.get('pos')?.split(',').map(Number);
@@ -614,6 +639,7 @@ renderer.setAnimationLoop((now: number) => {
   bells.update(game, events, camera, dt, now / 1000);
   ponyRings.update(game, events, camera, dt, now / 1000);
   wagerTable.update(game, events, camera, dt, now / 1000);
+  coffin.update(events, camera, dt, now / 1000);
   emberHeart.update(game, events, camera, alpha, dt, now / 1000);
   soulWell.update(game, events, camera, alpha, dt, now / 1000);
   sermon.update(game, events, camera, dt, now / 1000);
@@ -625,7 +651,7 @@ renderer.setAnimationLoop((now: number) => {
   const shopNearby = shopInReach(player, world);
   if (shopMenu.isOpen && !shopNearby) closeShop();
   shopMenu.onEvents(events);
-  shopMenu.update(player, shopNearby, paused, wagerInReach(game.mapEvent.active, player));
+  shopMenu.update(player, shopNearby, paused, wagerInReach(game.mapEvent.active, player), coffinInReach(player, world) ? coffinPrice(player) : null);
   updateHud(game, events, dt);
   // Game over: send the score (unless it was a practice game, fairPlay.ts)
   // and show the end screen. The simulation has already reset everything for
@@ -654,6 +680,7 @@ renderer.setAnimationLoop((now: number) => {
   updateMoneyHud(game.player.money, dt);
   updateIronHud(game.player.damnedIron, dt);
   updateFichesHud(game.player.fiches, dt);
+  updateRelicHud(game.player, events, dt);
   // The map: only while Tab is held, never over the pause menu.
   mapOverlay.update(game, alpha, camera.position.x, camera.position.z, view.yaw, actionDown('map') && !paused, now / 1000);
 

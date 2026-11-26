@@ -2782,3 +2782,72 @@ export function playMeleeSwap(): void {
   noiseBurst({ start: 0.06, duration: 0.14, volume: 0.25, filter: 'bandpass', frequency: 1800, frequencyEnd: 900, q: 1.5 });
   ring(880, 0.2, 0.05);
 }
+
+// --- The undertaker's coffin (src/render/coffin.ts, src/sim/relics.ts) ---
+
+/**
+ * A creaking hinge: a narrow band of noise whose center slides up and down
+ * a few times (a dry hinge "sings" as it turns, unevenly).
+ */
+function creak(out: AudioNode, start: number, duration: number, volume: number): void {
+  if (!ctx) return;
+  const t0 = ctx.currentTime + start;
+  const src = ctx.createBufferSource();
+  src.buffer = noiseBuffer;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.Q.value = 18;
+  filter.frequency.setValueAtTime(700, t0);
+  const steps = 5;
+  for (let i = 1; i <= steps; i++) filter.frequency.linearRampToValueAtTime(i % 2 ? 1300 + Math.random() * 400 : 650, t0 + (duration * i) / steps);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.exponentialRampToValueAtTime(volume, t0 + duration * 0.15);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+  src.connect(filter).connect(gain).connect(out);
+  src.start(t0, Math.random() * 0.3, duration);
+}
+
+/**
+ * The coffin opens: a hinge creaks, the lid is KICKED open from inside
+ * (a heavy wooden BANG and the lid slapping the trestle), a rush of hot air
+ * out of the box, a ghostly sigh rising (the dead man letting go of his
+ * belonging), and the relic's chime as it flies to you.
+ */
+export function playCoffinOpen(where: Where): void {
+  const out = placeSound(where);
+  if (!out) return;
+  creak(out, 0, 0.35, 0.25);
+  thump({ out, start: 0.3, duration: 0.18, volume: 0.7, from: 140, to: 45 });
+  noiseBurst({ out, start: 0.3, duration: 0.12, volume: 0.45, filter: 'lowpass', frequency: 1400 });
+  noiseBurst({ out, start: 0.52, duration: 0.07, volume: 0.35, filter: 'bandpass', frequency: 900, q: 3 }); // the lid hits the trestle
+  noiseBurst({ out, start: 0.32, duration: 0.7, volume: 0.25, filter: 'bandpass', frequency: 500, frequencyEnd: 2500, q: 1 }); // the breath out of the box
+  ghostVoice(out, 0.35, 220, 440, 1.0, 0.12);
+  ghostVoice(out, 0.45, 330, 660, 0.9, 0.07);
+}
+
+/** The relic reaches you: a bright chime that climbs (two notes a fifth apart) and a soft clink. */
+export function playRelicGet(): void {
+  ring(1320, 0.9, 0.12);
+  setTimeout(() => ring(1980, 1.2, 0.12), 110);
+  noiseBurst({ duration: 0.04, volume: 0.2, filter: 'bandpass', frequency: 5000, q: 8 });
+}
+
+/** The lid slams shut again: a creak and a dull thud. */
+export function playCoffinShut(where: Where): void {
+  const out = placeSound(where);
+  if (!out) return;
+  creak(out, 0, 0.25, 0.15);
+  thump({ out, start: 0.22, duration: 0.14, volume: 0.5, from: 120, to: 50 });
+  noiseBurst({ out, start: 0.22, duration: 0.08, volume: 0.3, filter: 'lowpass', frequency: 1000 });
+}
+
+/** No money: two knocks on the lid from INSIDE (somebody in there says no). */
+export function playCoffinKnock(where: Where): void {
+  const out = placeSound(where);
+  if (!out) return;
+  for (const at of [0, 0.18]) {
+    thump({ out, start: at, duration: 0.07, volume: 0.5, from: 260, to: 150 });
+    noiseBurst({ out, start: at, duration: 0.03, volume: 0.3, filter: 'bandpass', frequency: 1600, q: 4 });
+  }
+}

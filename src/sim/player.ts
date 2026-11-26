@@ -10,6 +10,7 @@ import { applyHook, hooked, noHook, type HookState } from './lasso';
 import type { SimEvent } from './events';
 import { noCards, type CardId } from './upgrades';
 import type { WagerCurse } from './wager';
+import { damageTakenScale, noRelics, type RelicId } from './relics';
 
 // Pure data: no Three.js, no DOM. Can be copied, compared, sent over the network.
 export interface PlayerState {
@@ -114,6 +115,12 @@ export interface PlayerState {
   fiches: number;
   /** The barman's drinks you've had: a level per drink, 0 = never (drinks.ts). Lost when you die. */
   drinks: Record<DrinkId, number>;
+  /** The undertaker's relics: how many copies of each (relics.ts). Lost when you die. */
+  relics: Record<RelicId, number>;
+  /** Times you've opened the coffin this game: its price grows with it (coffinPrice in relics.ts). */
+  coffinOpens: number;
+  /** Relic "Sangue freddo": ticks toward the next bit of health (relics.ts stepRegen). */
+  regenTicks: number;
   /**
    * Forge level of each gun: 0 = plain, 1 = reinforced (more damage, and
    * one day a new look: akimbo revolvers, a pump-action, a scope). Lost when you die.
@@ -238,6 +245,9 @@ export function createPlayer(x = 0, y = 0, z = 0): PlayerState {
     damnedIron: 0,
     fiches: 0,
     drinks: noDrinks(),
+    relics: noRelics(),
+    coffinOpens: 0,
+    regenTicks: 0,
     forged: noForge(),
     fireCooldownTicks: 0,
     fireBufferTicks: 0,
@@ -286,6 +296,8 @@ export function copyPlayer(from: PlayerState, to: PlayerState): void {
   to.loaded = { ...from.loaded };
   to.owned = { ...from.owned }; // same story
   to.forged = { ...from.forged };
+  to.drinks = { ...from.drinks };
+  to.relics = { ...from.relics };
   to.hook = { ...from.hook };
   // Arrays inside an object: one level deeper (each array copied too).
   to.cards = {
@@ -623,6 +635,9 @@ export function respawn(p: PlayerState, world: World): void {
   p.cardSharpPenalty = 0;
   p.curse = null;
   p.drinks = noDrinks(); // before the health: dead = no more drinks, back to the plain max
+  p.relics = noRelics(); // ...and no more relics (a bigger heart included)
+  p.coffinOpens = 0;
+  p.regenTicks = 0;
   p.health = maxHealth(p);
   p.loaded = fullWeapons();
   p.reserve = startingReserve();
@@ -731,6 +746,8 @@ function landingSoon(p: PlayerState, world: World): boolean {
 
 /** Damages the player and pushes them away from (fromX, fromZ). */
 export function hurtPlayer(p: PlayerState, amount: number, fromX: number, fromZ: number, push: number): void {
+  // Relic "Pelle conciata": every hit is a bit softer (it multiplies whatever the caller already scaled).
+  amount *= damageTakenScale(p);
   const after = p.health - amount;
   if (amount > 0) p.cleanKills = 0; // "Contratto del becchino": the clean streak is over
   // Drink "Ultimo respiro": once per wave, a lethal hit leaves you at 1.

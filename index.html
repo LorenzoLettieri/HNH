@@ -552,6 +552,33 @@
         from { color: #fff; text-shadow: 2px 2px 0 #000, 0 0 14px #ffd27a; }
       }
       /* The same action again: the points pop. */
+      /* --- Relics (src/render/relicHud.ts): a row of icons at the top, Risk of Rain style,
+         "×N" in the corner; under it the toast when the coffin gives you one. The icons are
+         16 px canvases scaled up without blur. */
+      #relic-bar {
+        position: fixed; left: 50%; top: 14px; transform: translateX(-50%); max-width: 60vw;
+        display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; pointer-events: none;
+      }
+      .relic { position: relative; width: 32px; height: 32px; background: rgba(20, 8, 4, 0.55); border: 2px solid #3a2414; box-shadow: 0 0 0 1px #000; }
+      .relic canvas { width: 32px; height: 32px; image-rendering: pixelated; display: block; }
+      .relic-count {
+        position: absolute; right: -2px; bottom: -4px; font: 13px 'Rye', Georgia, serif; color: #f0d878;
+        text-shadow: 0 0 2px #000, 1px 1px 0 #000, -1px -1px 0 #000;
+      }
+      .relic.pop { animation: relic-pop 0.45s ease-out; }
+      @keyframes relic-pop { 0% { transform: scale(2.2); filter: brightness(3); } 60% { transform: scale(0.9); } 100% { transform: scale(1); } }
+      #relic-toast {
+        position: fixed; left: 50%; top: 64px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px;
+        padding: 6px 14px 6px 8px; pointer-events: none; opacity: 0; transition: opacity 0.4s;
+        background: rgba(20, 8, 4, 0.8); border: 2px solid #6a4a24; box-shadow: 0 0 0 2px #000;
+        font-family: 'Rye', Georgia, serif; white-space: nowrap;
+      }
+      #relic-toast.show { opacity: 1; transition: none; }
+      #relic-toast.pop { animation: toast-pop 0.3s ease-out; }
+      @keyframes toast-pop { from { transform: translateX(-50%) scale(1.25); } }
+      #relic-toast-icon { width: 40px; height: 40px; image-rendering: pixelated; }
+      #relic-toast-name { font-size: 18px; letter-spacing: 2px; color: #e8c870; text-shadow: 2px 2px 0 #000; }
+      #relic-toast-effect { font: italic 14px Georgia, serif; color: #c8b8a0; }
       .feed-pop { animation: feed-pop 0.18s ease-out; }
       @keyframes feed-pop { from { transform: scale(1.5); color: #fff; } }
       /* Out: slides away to the right and fades (time = OUT_TIME in styleFeed.ts). */
@@ -577,6 +604,7 @@
         max-height: 92vh; overflow-y: auto; /* weapons + upgrade cards: on a short screen, scroll */
       }
       #shop[hidden], #shop-prompt[hidden] { display: none; }
+      #shop-prompt.poor span { color: #c03020; } /* the coffin's price, when you can't pay it */
       #shop h2 { margin: 0; font: 34px 'Rye', Georgia, serif; letter-spacing: 3px; color: #d8a838; text-shadow: 2px 2px 0 #000; }
       #shop-greeting { margin: 4px 0 12px; font-style: italic; color: #a89070; }
       #shop-wallet { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0; border-top: 1px solid #5a3a20; border-bottom: 1px solid #5a3a20; }
@@ -902,6 +930,8 @@
         <div id="iron-box" hidden><span id="iron">×0</span></div>
         <div id="fiches-box" hidden><span id="fiches">×0</span></div>
       </div></div>
+    <div id="relic-bar"></div>
+    <div id="relic-toast"><canvas id="relic-toast-icon" width="16" height="16"></canvas><div><div id="relic-toast-name"></div><div id="relic-toast-effect"></div></div></div>
     <div id="banner"><div id="banner-title"></div><div id="banner-sub"></div></div>
     <div id="bounty-poster">
       <div class="bp-title">RICERCATO</div>

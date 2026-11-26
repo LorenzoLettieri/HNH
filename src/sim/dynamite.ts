@@ -21,6 +21,7 @@ import { dynamiteBlast, explode, hostileBlast } from './explosion';
 import { raycastBoxes } from './raycast';
 import type { Box, World } from './world';
 import { hasCard } from './upgrades';
+import { gunDamageScale } from './relics';
 
 /** Half the size of the stick's collision box, meters (a 12 cm cube: a stick seen from any side). */
 export const DYNAMITE_RADIUS = 0.06;
@@ -167,7 +168,7 @@ export function throwDynamite(p: PlayerState, world: World, nextId: number): Dyn
     fuseTicks: fuse,
     fuseTotal: fuse,
     holy: p.forged.dynamite > 0,
-    power: p.shotPower, // "Mano del morto": the last stick of the drum hits ×3
+    power: p.shotPower * gunDamageScale(p), // "Mano del morto": the last stick of the drum hits ×3; the relic Polvere fine
     radius: tuning.dynamiteRadius * (hasCard(p, 'powderKeg') ? tuning.powderKegRadiusScale : 1),
     hellBounce: hasCard(p, 'hellBounce'),
     bounces: 0,

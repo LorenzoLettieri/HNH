@@ -179,6 +179,12 @@ export function createMapOverlay(world: World): MapOverlay {
         ctx.drawImage(coin, mapX(s.x) - size / 2, mapY(s.z) - size / 2, size, size);
         label(SHOP_NAMES[s.kind], mapX(s.x), mapY(s.z) + size / 2, '#d8a838');
       }
+      // The undertaker's coffin (src/sim/relics.ts): the coin pile too (it costs vildenaro).
+      if (world.coffin) {
+        const size = SHOP_ICON * unit;
+        ctx.drawImage(coin, mapX(world.coffin.x) - size / 2, mapY(world.coffin.z) - size / 2, size, size);
+        label('BARA', mapX(world.coffin.x), mapY(world.coffin.z) + size / 2, '#d8a838');
+      }
 
       // The bells of the map event (src/sim/bells.ts): the next one a gold
       // dot with a pulsing ring (where to go), the others small, the rung ones grey.

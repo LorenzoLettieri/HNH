@@ -274,6 +274,13 @@ export interface World {
    * without it that event never shows up.
    */
   preacher?: { x: number; y: number; z: number };
+  /**
+   * The undertaker's coffin (relics.ts): pay, open, a relic comes out. Feet
+   * level, in the middle of the coffin (drawn only: nothing to bump into).
+   * `rotation` = which way its head points, radians around Y (0 = −Z, north).
+   * Optional: without it there's no coffin.
+   */
+  coffin?: { x: number; y: number; z: number; rotation: number };
   /** Where the player (re)appears, feet position. */
   spawn: { x: number; y: number; z: number };
 }

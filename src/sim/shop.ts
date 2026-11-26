@@ -13,6 +13,7 @@ import type { PlayerState } from './player';
 import { CARDS, upgradeOffer, upgradePrice, type CardId } from './upgrades';
 import { drawMelee, isMelee, switchWeapon, type GearId, type MeleeId } from './weapon';
 import { hasCurse } from './wager';
+import { reserveMax } from './relics';
 import type { ShopSpawn, World } from './world';
 
 /**
@@ -113,7 +114,7 @@ export function stepShop(p: PlayerState, cmd: InputCommand, world: World, events
   if (id === 'rifle') {
     // The carbine shoots the revolver's bullets: a box of them comes with it.
     p.loaded.rifle = tuning.rifleAmmo;
-    p.reserve.bullets = Math.min(tuning.revolverReserveMax, p.reserve.bullets + tuning.rifleBuyBullets);
+    p.reserve.bullets = Math.min(reserveMax(p, 'bullets'), p.reserve.bullets + tuning.rifleBuyBullets);
   }
   if (id === 'dynamite') {
     p.loaded.dynamite = tuning.dynamiteAmmo;

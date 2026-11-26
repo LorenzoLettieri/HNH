@@ -665,6 +665,40 @@ Punteggio e moneta sono **separati**:
   carte dell'emporio o patti?
 - Si comprano anche le munizioni?
 
+**La Bara del Becchino: le reliquie** [FATTO: passo 1, da tarare; novembre 2026]. Terzo strato di progressione,
+pensato perché il gioco è molto difficile (quasi tutti muoiono alla 9–10) e serviva più robustezza permanente.
+- **Identità** [DECISO]: le **carte** cambiano un'arma, i **patti** sono regole con una condizione ("quando fai X…"),
+  le **reliquie sono numeri puri, sempre attivi, che si accumulano**: mai un "se" o un "quando". Così non si
+  scontrano coi patti e ogni pescata è utile, anche il decimo doppione.
+- **Esclusi apposta**: numeri del movimento che cambiano la portata (salto, gravità, velocità: la mappa è tarata su
+  quelli) e aiuti alla mira.
+- **Dove**: una bara su due cavalletti davanti alla porta del becchino (`coffin` del livello). E per aprirla, sempre,
+  anche a metà ondata. **Prezzo** 300 × 1,25^(aperture), si azzera alla morte; Debito col diavolo vale anche qui.
+- **Pescata del tutto a caso** [DECISO dall'utente], con il generatore con seed. La reliquia **arriva subito** (niente
+  raccoglibile da inseguire): il coperchio salta via con un calcio da dentro, la reliquia sale girando e vola in mano.
+- **Si accumulano** in due modi: **lineare** (n copie = n × il bonus) per ciò che non ha un tetto naturale;
+  **iperbolico** per riduzioni e probabilità, che non devono mai arrivare al 100%: scala = 1/(1 + k·n).
+  Con le altre fonti (Corazza di vapore, Tamburo veloce…) **si moltiplicano**, mai si sommano.
+- **Le otto reliquie** (numeri in `config.ts`, cartella "Shop" del pannello debug):
+
+| Reliquia | Per copia | Pila | 1 / 5 / 10 copie |
+|---|---|---|---|
+| Cuore del bandito | +15 salute massima | lineare | 115 / 175 / 250 |
+| Pelle conciata | danni subiti × 1/(1+0,08n) | iperbolica | −7% / −29% / −44% |
+| Polvere fine | danno delle armi × 1,1^n | composta | ×1,10 / ×1,61 / ×2,59 |
+| Cinturone del pistolero | tasche +25% | lineare | 68 / 122 / 189 proiettili |
+| Guanti di daino | ricarica × 1/(1+0,12n) | iperbolica | −11% / −37% / −55% |
+| Calamita del cercatore | raccolta +0,6 m | lineare, tetto 5 m | 2,1 / 4,5 / 5 m |
+| Zampa di coniglio | drop di oggetti verso il 100% | iperbolica | ghoul 30% → 39% / 60% / 72% |
+| Sangue freddo | +1 salute ogni 3 s | lineare | 1 / 5 / 10 ogni 3 s |
+
+  Attenzione ai **breakpoint** (§3) con la Polvere fine: conta solo quando toglie un colpo per uccidere (revolver 50
+  contro un ghoul da 150 all'ondata 20: 3 colpi; con 5 copie, 80,5, ne bastano 2).
+- **HUD** [DECISO dall'utente: come Risk of Rain]: una fila di icone in alto al centro, "×N" nell'angolo, e un
+  avviso col nome e l'effetto quando ne arriva una. La bara è anche sulla mappa (Tab).
+- Scartato: buff che durano un'ondata (nessuno li comprerebbe); scelta 1 su 2 (l'utente preferisce il caso puro).
+- [DA TARARE] prezzo e crescita contro i prezzi dell'armeria; quanto vale ogni reliquia.
+
 **Eventi sulla mappa** [DECISO, da progettare nei dettagli; novembre 2026]: ogni tot ondate compare un
 evento (stile gli eventi di Diablo 4) **durante un'ondata**.
 - **Quando**: compare **a inizio ondata**, annunciato in alto con una scritta come il Fabbro (`showBanner`),

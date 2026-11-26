@@ -58,6 +58,11 @@ let pendingWager = false;
 export function queueWager(): void {
   pendingWager = true;
 }
+/** E next to the undertaker's coffin (main.ts): the next command asks to open it (relics.ts). */
+let pendingCoffin = false;
+export function queueCoffin(): void {
+  pendingCoffin = true;
+}
 
 let pendingRespawn = false;
 export function queueRespawn(): void {
@@ -106,10 +111,12 @@ export function buildCommand(tick: number): InputCommand {
   pendingRespawn = false;
   const wager = pendingWager;
   pendingWager = false;
+  const coffin = pendingCoffin;
+  pendingCoffin = false;
   // Start the next wave now (default Q): the simulation ignores it while a wave is on (waves.ts).
   const skipBreak = actionPressed('skipBreak');
   return {
-    tick, forward, strafe, jump, crouch, fire, altFire, kick, reload, weaponSelect, respawn, buy, forge, drink, wager, skipBreak,
+    tick, forward, strafe, jump, crouch, fire, altFire, kick, reload, weaponSelect, respawn, buy, forge, drink, wager, coffin, skipBreak,
     yaw: view.yaw, pitch: view.pitch,
   };
 }

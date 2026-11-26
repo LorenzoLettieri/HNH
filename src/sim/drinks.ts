@@ -18,6 +18,7 @@ import type { SimEvent } from './events';
 import type { PlayerState } from './player';
 import { randomInt, seedFrom } from './random';
 import { shopInReach } from './shop';
+import { relicMaxHealth } from './relics';
 import type { World } from './world';
 
 /**
@@ -82,12 +83,13 @@ export function drinkLevel(p: PlayerState, id: DrinkId): number {
 
 // --- The effects: how much, asked by the code that needs it -----------------
 
-/** Max health: Contratto del becchino adds, Mano del baro takes away (never under 25). */
+/** Max health: Contratto del becchino and the relic Cuore del bandito add, Mano del baro takes away (never under 25). */
 export function maxHealth(p: PlayerState): number {
   return Math.max(
     25,
     tuning.playerMaxHealth +
-      p.contractHealth - // Contratto del becchino: what clean play has earned
+      p.contractHealth + // Contratto del becchino: what clean play has earned
+      relicMaxHealth(p) - // the relic Cuore del bandito (relics.ts)
       p.cardSharpPenalty, // Mano del baro: what the failed events have cost
   );
 }

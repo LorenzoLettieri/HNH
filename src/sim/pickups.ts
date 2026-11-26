@@ -35,6 +35,7 @@ import { styleMultiplier } from './style';
 import { AMMO_TYPE, WEAPONS, type AmmoType, type WeaponId } from './weapon';
 import type { World } from './world';
 import { hasCurse } from './wager';
+import { dropChance, pickupRadius, reserveMax } from './relics';
 
 /** 'iron' = the Damned Iron, dropped only by the Damned Smith (smith.ts), spent at the Forge. */
 export type PickupKind = 'bullets' | 'shells' | 'sticks' | 'medkit' | 'coin' | 'iron';
@@ -131,7 +132,8 @@ function whatDrops(game: GameState, enemy: Enemy): Loot[] {
   for (let i = 0; i < coins; i++) loot.push({ kind: 'coin', value: coinValue });
   // The Damned Smith ALWAYS leaves its Damned Iron (the reason to kill it).
   if (enemy.type === 'smith') loot.push({ kind: 'iron', value: 0 });
-  const chance = Math.min(tuning.dropChanceMax, enemyCost(enemy) * tuning.dropChancePerWeight);
+  // Relic "Zampa di coniglio": the chance creeps toward 100% (never there).
+  const chance = dropChance(game.player, Math.min(tuning.dropChanceMax, enemyCost(enemy) * tuning.dropChancePerWeight));
   // Debito col diavolo: while you owe, no items (the coins above still fall: that's how you pay back).
   if (random(game) < chance && !inDebt(game.player)) loot.push({ kind: pickKind(random(game), game.player), value: 0 });
   return loot;
@@ -255,7 +257,7 @@ export function stepPickups(game: GameState, world: World, dt: number, events: S
     // generous: you're running, you shouldn't have to stop on top of it),
     // and vertically from well below the feet (so jumping over it still counts)
     // to a bit above the head.
-    const near = Math.hypot(d.x - p.x, d.z - p.z) < tuning.pickupRadius;
+    const near = Math.hypot(d.x - p.x, d.z - p.z) < pickupRadius(p); // the relic Calamita del cercatore reaches farther
     const level =
       d.y > p.y - tuning.pickupReachBelow &&
       d.y < p.y + tuning.playerHeight + tuning.pickupReachAbove;
@@ -292,9 +294,10 @@ function collect(game: GameState, d: Pickup): boolean {
   if (!usesAmmo(p.owned, kind)) return false; // (the J debug key can drop it anyway: it stays on the ground)
   // One line per pocket: how much it holds, how much a drop gives.
   const pockets: Record<AmmoType, { max: number; amount: number }> = {
-    bullets: { max: tuning.revolverReserveMax, amount: tuning.ammoPickupBullets },
-    shells: { max: tuning.shotgunReserveMax, amount: tuning.ammoPickupShells },
-    sticks: { max: tuning.dynamiteReserveMax, amount: tuning.ammoPickupSticks },
+    // (How much a pocket holds: the relic Cinturone del pistolero makes it bigger.)
+    bullets: { max: reserveMax(p, 'bullets'), amount: tuning.ammoPickupBullets },
+    shells: { max: reserveMax(p, 'shells'), amount: tuning.ammoPickupShells },
+    sticks: { max: reserveMax(p, 'sticks'), amount: tuning.ammoPickupSticks },
   };
   const { max, amount } = pockets[kind];
   if (p.reserve[kind] >= max) return false;

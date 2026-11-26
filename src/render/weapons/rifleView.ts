@@ -35,7 +35,7 @@
 import * as THREE from 'three';
 import { secondsToTicks, tuning } from '../../sim/config';
 import type { PlayerState } from '../../sim/player';
-import { adsAmount, fireInterval } from '../../sim/weapon';
+import { adsAmount, fireInterval, reloadPerRound } from '../../sim/weapon';
 import type { LeverTimes } from '../../audio/sfx';
 import { ELASTIC_STEP, PoseSpring, Stroke, ZERO_POSE, phase, poseAt, smoothstep, travelTime, type GunPose } from './elastic';
 import { loadGunModel } from './gunModel';
@@ -508,7 +508,7 @@ export function createRifleView(flightSpace: THREE.Object3D): RifleView {
       coil.group.visible = player.forged.rifle > 0; // the Tesla
       if (coil.group.visible) coil.update(dt);
       const interval = fireInterval(player, 'rifle'); // "Leva da pistolero" makes it shorter
-      const perRoundTicks = secondsToTicks(tuning.rifleReloadPerRound);
+      const perRoundTicks = secondsToTicks(reloadPerRound(player, 'rifle')); // (the relic Guanti di daino shortens it)
       const reloading = player.reloadTicks > 0;
       // Progress of the round being pushed in (0..1), -1 while the gun is
       // still on its way to the gate (the first round's start time).

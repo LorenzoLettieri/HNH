@@ -30,6 +30,7 @@ import { stepHook } from './lasso';
 import { blockPlayerWithBodies } from './bodyBlock';
 import { stepShop } from './shop';
 import { stepForge } from './forge';
+import { stepCoffin, stepRegen } from './relics';
 import { createPickup, dropFromKills, stepPickups, type Pickup } from './pickups';
 import { createStyle, isHighNoon, stepStyle, styleMultiplier, type StyleState } from './style';
 import type { World } from './world';
@@ -71,6 +72,8 @@ export interface GameState {
    * Every tick adds (scale − 1); each whole tick owed is an extra AI step.
    */
   enemyTimeDebt: number;
+  /** The undertaker's coffin is still closing: ticks before it opens again (relics.ts). */
+  coffinBusyTicks: number;
 }
 
 /**
@@ -97,6 +100,7 @@ export function createGame(world: World, seed = 1): GameState {
     pickups: [],
     rng: seed,
     enemyTimeDebt: 0,
+    coffinBusyTicks: 0,
   };
   rollCardSeed(game);
   game.mapEvent = createMapEventState(game);
@@ -141,6 +145,7 @@ export function stepGame(
   stepShop(game.player, cmd, world, events);
   stepForge(game.player, cmd, world, events);
   stepBar(game.player, cmd, world, events);
+  stepCoffin(game.player, cmd, world, game, events);
   const firstNewEvent = events.length;
   // During HIGH NOON the guns are bottomless (the weapon doesn't know why: it only gets the flag).
   stepWeapon(game.player, cmd, world, game.entities, events, isHighNoon(game.style), game);
@@ -191,6 +196,8 @@ export function stepGame(
     game.player.health = Math.min(maxHealth(game.player), game.player.health + kills * heal);
   }
   stepContract(game.player, kills, events);
+  // The relic Sangue freddo: a little health back every few seconds.
+  stepRegen(game.player, maxHealth(game.player));
 
   // Navigation: where's the player on the graph? (Only while standing:
   // in mid-jump we keep the last known node.) Checked 4 times a second;

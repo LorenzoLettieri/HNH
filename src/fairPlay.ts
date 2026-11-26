@@ -11,7 +11,7 @@
 import { tuning } from './sim/config';
 
 /** URL parameters that change the game (see main.ts). Any of them = practice. */
-const DEBUG_PARAMS = ['level', 'seed', 'slow', 'guns', 'pos', 'look', 'drinks'];
+const DEBUG_PARAMS = ['level', 'seed', 'slow', 'guns', 'pos', 'look', 'drinks', 'relics'];
 
 /**
  * The tuning values as they are in config.ts, taken once when the game loads
