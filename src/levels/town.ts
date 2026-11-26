@@ -44,6 +44,8 @@
 //   balcony → wide door. (3) West: a big low window (sill 0.5 m above the
 //   floor), for whoever drops from the east tower or wall-jumps up the alley.
 //   From the gunsmith's roof (bank, east tower) you can also drop onto the balcony.
+//   (4) Trading from OUTSIDE: on the north side the upstairs floor sticks out 0.3 m,
+//   a ledge at 4.3 m under a lit window; from there the vendor is within reach.
 // - Low roofs (≤ 4.5 m: undertaker, houses, general store,
 //   telegraph) can be climbed with three well-timed wall jumps on one wall.
 // - PITCHED ROOFS (gables: almost every building, steep on the barn and the
@@ -513,6 +515,11 @@ const decals: Decal[] = [
   ...windows(GUNSMITH, 'west', BARRED, { door: 'doorGate' }),
   ...windows(GUNSMITH, 'north', BARRED),
   ...windows(GUNSMITH, 'south', BARRED),
+  // ARMORY, north side: a lit window right behind the vendor. The upstairs floor
+  // sticks out 0.3 m past the wall, a ledge at 4.3 m: standing on it you're within
+  // shopReach of the vendor through the wall, so you can trade from outside.
+  // Intended: the lit window is the "the shop is open, knock here" sign.
+  { x: 18, y: 5.85, z: 21.5, facing: 'north', width: 1.2, height: 1.2, look: 'windowLit' },
   // Frames around the real openings. GENERAL STORE (walls 0.3 m thick: the
   // outer surface is 0.15 m from the line given to wallZ/wallX).
   frame(-22.85, 1.3, 15.1, 'east', 2.2, 2.6, 'doorFrame'),
